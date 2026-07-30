@@ -5,19 +5,22 @@ systems.
 
 ## Current status
 
-The repository currently contains the build baseline for the Kotlin Integration
-Core. No order-ingestion behavior is implemented yet.
+The repository currently contains the Kotlin Integration Core baseline with a
+technical service metadata endpoint, automated tests, generated OpenAPI
+files, and Swagger UI.
 
-The baseline establishes:
+The current baseline establishes:
 
 - a Java 21 compilation target;
 - Kotlin and Quarkus LTS;
 - a reproducible Maven Wrapper;
 - automated formatting checks;
-- GitHub Actions validation.
+- GitHub Actions validation;
+- a first HTTP endpoint;
+- generated and committed OpenAPI files.
 
-Database persistence, HTTP APIs, messaging, search, external connectors, and
-user interfaces will be added as separate executable increments.
+Order ingestion, database persistence, messaging, search, external connectors,
+and user interfaces will be added as separate executable increments.
 
 ## Repository structure
 
