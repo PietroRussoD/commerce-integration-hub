@@ -1,0 +1,48 @@
+{
+  "openapi" : "3.1.0",
+  "components" : {
+    "schemas" : {
+      "ServiceInfoResponse" : {
+        "type" : "object",
+        "required" : [ "name", "status", "version" ],
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "string"
+          }
+        }
+      }
+    }
+  },
+  "paths" : {
+    "/api/service-info" : {
+      "get" : {
+        "operationId" : "getServiceInfo",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ServiceInfoResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Service Info",
+        "tags" : [ "Service Info Resource" ]
+      }
+    }
+  },
+  "info" : {
+    "title" : "Commerce Integration Hub API",
+    "version" : "0.1.0-SNAPSHOT",
+    "description" : "Reliable commerce order ingestion and integration API."
+  }
+}
