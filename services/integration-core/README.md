@@ -4,7 +4,8 @@ The Integration Core will own the canonical order model and reliable ingestion
 workflow.
 
 The current increment contains the Quarkus/Kotlin baseline, a technical service
-metadata endpoint, automated tests, Swagger UI, and generated OpenAPI files.
+metadata endpoint, automated tests, health checks, Swagger UI, and generated
+OpenAPI files.
 It deliberately has no order domain, database schema, or messaging components
 yet.
 
@@ -40,6 +41,14 @@ Runtime API documentation:
 ```text
 http://localhost:8080/openapi/integration-core
 http://localhost:8080/openapi-ui/integration-core/
+```
+
+Operational endpoints:
+
+```text
+http://localhost:8080/health
+http://localhost:8080/health/live
+http://localhost:8080/health/ready
 ```
 
 ## Format
