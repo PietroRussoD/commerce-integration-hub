@@ -51,6 +51,32 @@ http://localhost:8080/health/live
 http://localhost:8080/health/ready
 ```
 
+## Container Image
+
+Build the Quarkus application first:
+
+```bash
+./mvnw clean verify
+```
+
+Build the JVM container image:
+
+```bash
+docker build \
+  -f src/main/docker/Dockerfile.jvm \
+  -t commerce-integration-hub/integration-core:dev \
+  .
+```
+
+Run it locally:
+
+```bash
+docker run --rm \
+  --name integration-core \
+  -p 8080:8080 \
+  commerce-integration-hub/integration-core:dev
+```
+
 ## Format
 
 ```bash

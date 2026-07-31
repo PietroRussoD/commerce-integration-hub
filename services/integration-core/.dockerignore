@@ -1,0 +1,7 @@
+.git
+.idea
+*.iml
+
+target/*
+!target/quarkus-app/
+!target/quarkus-app/**
