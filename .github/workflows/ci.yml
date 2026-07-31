@@ -34,3 +34,10 @@ jobs:
 
       - name: Build
         run: ./mvnw --batch-mode --no-transfer-progress verify
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f src/main/docker/Dockerfile.jvm \
+            -t commerce-integration-hub/integration-core:ci \
+            .
