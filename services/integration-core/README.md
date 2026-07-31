@@ -77,6 +77,19 @@ docker run --rm \
   commerce-integration-hub/integration-core:dev
 ```
 
+CI publishes images to GitHub Container Registry:
+
+```text
+ghcr.io/pietrorussod/commerce-integration-hub/integration-core:latest
+ghcr.io/pietrorussod/commerce-integration-hub/integration-core:v<version>
+```
+
+Publishing rules:
+
+- pull requests build the image but do not push it;
+- pushes to `main` publish `latest`;
+- Git tags matching `v*` publish the corresponding version tag.
+
 ## Format
 
 ```bash
