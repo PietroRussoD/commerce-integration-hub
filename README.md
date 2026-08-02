@@ -7,7 +7,7 @@ systems.
 
 The repository currently contains the Kotlin Integration Core baseline, its
 initial order domain and receive-order use case, and a PostgreSQL schema managed
-with Flyway.
+with Flyway and accessed through a jOOQ repository adapter.
 
 The current baseline establishes:
 
@@ -20,9 +20,8 @@ The current baseline establishes:
 - generated and committed OpenAPI files;
 - PostgreSQL integration tests backed by Quarkus Dev Services.
 
-The PostgreSQL repository adapter, HTTP order ingestion, messaging, search,
-external connectors, and user interfaces will be added as separate executable
-increments.
+HTTP order ingestion, messaging, search, external connectors, and user
+interfaces will be added as separate executable increments.
 
 ## Repository structure
 
