@@ -3,15 +3,15 @@
 The Integration Core will own the canonical order model and reliable ingestion
 workflow.
 
-The current increment contains the Quarkus/Kotlin baseline, a technical service
-metadata endpoint, automated tests, health checks, Swagger UI, and generated
-OpenAPI files.
-It deliberately has no order domain, database schema, or messaging components
-yet.
+The current increment contains the Quarkus/Kotlin baseline, the initial order
+domain and use case, PostgreSQL schema management with Flyway, automated tests,
+health checks, Swagger UI, and generated OpenAPI files.
+It deliberately has no messaging or search components yet.
 
 ## Prerequisites
 
 - Java 21 or newer
+- Docker for development and integration tests
 
 ## Build
 
@@ -74,8 +74,15 @@ Run it locally:
 docker run --rm \
   --name integration-core \
   -p 8080:8080 \
+  -e DB_JDBC_URL=jdbc:postgresql://host.docker.internal:5432/integration_hub \
+  -e DB_USERNAME=integration_hub \
+  -e DB_PASSWORD=change-me \
   commerce-integration-hub/integration-core:dev
 ```
+
+The production profile requires an accessible PostgreSQL database through
+`DB_JDBC_URL`, `DB_USERNAME`, and `DB_PASSWORD`. Development mode and tests use
+a PostgreSQL Dev Service managed by Quarkus.
 
 CI publishes images to GitHub Container Registry:
 
