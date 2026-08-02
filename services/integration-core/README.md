@@ -4,8 +4,9 @@ The Integration Core will own the canonical order model and reliable ingestion
 workflow.
 
 The current increment contains the Quarkus/Kotlin baseline, the initial order
-domain and use case, PostgreSQL schema management with Flyway, automated tests,
-health checks, Swagger UI, and generated OpenAPI files.
+domain and use case, PostgreSQL schema management with Flyway, a jOOQ repository
+adapter, automated tests, health checks, Swagger UI, and generated OpenAPI
+files.
 It deliberately has no messaging or search components yet.
 
 ## Prerequisites

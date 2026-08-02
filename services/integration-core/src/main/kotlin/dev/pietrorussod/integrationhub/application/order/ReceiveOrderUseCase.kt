@@ -16,14 +16,6 @@ class ReceiveOrderUseCase(
         val sourceSystem = SourceSystem.from(command.sourceSystem)
         val externalOrderId = ExternalOrderId.from(command.externalOrderId)
 
-        val existingOrder = orderRepository.findBySourceIdentity(sourceSystem, externalOrderId)
-        if (existingOrder != null) {
-            return ReceiveOrderResult(
-                order = existingOrder,
-                outcome = ReceiveOrderOutcome.ALREADY_RECEIVED,
-            )
-        }
-
         val order =
             Order.receive(
                 id = OrderId(generateOrderId()),
@@ -32,11 +24,16 @@ class ReceiveOrderUseCase(
                 receivedAt = clock.instant(),
             )
 
-        orderRepository.save(order)
+        val insertResult = orderRepository.insertIfAbsent(order)
 
         return ReceiveOrderResult(
-            order = order,
-            outcome = ReceiveOrderOutcome.CREATED,
+            order = insertResult.order,
+            outcome =
+                if (insertResult.inserted) {
+                    ReceiveOrderOutcome.CREATED
+                } else {
+                    ReceiveOrderOutcome.ALREADY_RECEIVED
+                },
         )
     }
 }

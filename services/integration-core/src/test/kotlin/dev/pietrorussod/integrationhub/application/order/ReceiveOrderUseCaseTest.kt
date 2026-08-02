@@ -59,8 +59,18 @@ class ReceiveOrderUseCaseTest {
     private class InMemoryOrderRepository : OrderRepository {
         val savedOrders = mutableListOf<Order>()
 
-        override fun save(order: Order) {
+        override fun insertIfAbsent(order: Order): OrderInsertResult {
+            val existingOrder =
+                findBySourceIdentity(
+                    order.sourceSystem,
+                    order.externalOrderId,
+                )
+            if (existingOrder != null) {
+                return OrderInsertResult(existingOrder, inserted = false)
+            }
+
             savedOrders.add(order)
+            return OrderInsertResult(order, inserted = true)
         }
 
         override fun findBySourceIdentity(
