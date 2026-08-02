@@ -5,9 +5,9 @@ systems.
 
 ## Current status
 
-The repository currently contains the Kotlin Integration Core baseline with a
-technical service metadata endpoint, automated tests, generated OpenAPI
-files, and Swagger UI.
+The repository currently contains the Kotlin Integration Core baseline, its
+initial order domain and receive-order use case, and a PostgreSQL schema managed
+with Flyway.
 
 The current baseline establishes:
 
@@ -17,10 +17,12 @@ The current baseline establishes:
 - automated formatting checks;
 - GitHub Actions validation;
 - a first HTTP endpoint;
-- generated and committed OpenAPI files.
+- generated and committed OpenAPI files;
+- PostgreSQL integration tests backed by Quarkus Dev Services.
 
-Order ingestion, database persistence, messaging, search, external connectors,
-and user interfaces will be added as separate executable increments.
+The PostgreSQL repository adapter, HTTP order ingestion, messaging, search,
+external connectors, and user interfaces will be added as separate executable
+increments.
 
 ## Repository structure
 
