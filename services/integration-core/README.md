@@ -19,7 +19,8 @@ It deliberately has no messaging or search components yet.
 ./mvnw verify
 ```
 
-Running `clean verify` also regenerates the committed OpenAPI files:
+Running `clean verify` also regenerates the jOOQ database sources and the
+committed OpenAPI files:
 
 ```bash
 ./mvnw clean verify
@@ -29,6 +30,11 @@ Generated OpenAPI files:
 
 - [OpenAPI YAML](src/main/resources/META-INF/integration-core.yaml)
 - [OpenAPI JSON](src/main/resources/META-INF/integration-core.json)
+
+jOOQ derives Kotlin table and record classes from the ordered Flyway migrations
+under `src/main/resources/db/migration`. It writes them to
+`target/generated-sources/jooq`; generated database sources are build artifacts
+and are not committed.
 
 ## Run
 
