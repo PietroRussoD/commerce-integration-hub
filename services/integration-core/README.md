@@ -9,6 +9,40 @@ adapter, automated tests, health checks, Swagger UI, and generated OpenAPI
 files.
 It deliberately has no messaging or search components yet.
 
+## Architecture
+
+The service uses a lightweight hexagonal architecture. Packages reflect actual
+responsibilities rather than a fixed number of layers:
+
+```text
+dev.pietrorussod.integrationhub/
+  api/                         HTTP resources and transport DTOs
+  application/order/           use cases, commands, results, and outbound ports
+  domain/order/                entities, value objects, and business invariants
+  infrastructure/persistence/  PostgreSQL adapters
+    jooq/                       jOOQ repository and record mapping
+```
+
+Dependencies point inward:
+
+```text
+api ----------------> application ----------------> domain
+infrastructure -----> application and domain
+domain ------------> Kotlin and Java standard libraries only
+```
+
+The domain does not import Quarkus, jOOQ, Flyway, or transport classes.
+Application code defines the `OrderRepository` port because persistence is a
+real I/O boundary. `JooqOrderRepository` implements that port and contains the
+current transactional database operation. Framework-free domain and application
+tests use direct construction or an in-memory repository; PostgreSQL behavior is
+verified separately through Quarkus integration tests.
+
+jOOQ-generated sources live under `target/generated-sources/jooq` and are not
+committed. New packages and ports are added only when an implemented behavior
+creates a concrete boundary; the project deliberately avoids placeholder layers
+and `Service`/`ServiceImpl` pairs.
+
 ## Monetary policy
 
 The current order-item domain model supports `EUR`, `GBP`, and `USD`. A unit
