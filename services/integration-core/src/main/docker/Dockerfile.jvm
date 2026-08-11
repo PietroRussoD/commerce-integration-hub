@@ -13,4 +13,4 @@ USER 1001
 
 ENV JAVA_OPTS="-Dquarkus.http.host=0.0.0.0"
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /work/quarkus-run.jar"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /work/quarkus-run.jar"]

@@ -6,10 +6,17 @@ import org.junit.jupiter.api.Test
 
 class SourceSystemTest {
     @Test
-    fun `trims valid source system`() {
-        val sourceSystem = SourceSystem.from(" marketplace-a ")
+    fun `creates a source system without changing it`() {
+        val sourceSystem = SourceSystem.from("Marketplace-A")
 
-        assertEquals("marketplace-a", sourceSystem.value)
+        assertEquals("Marketplace-A", sourceSystem.value)
+    }
+
+    @Test
+    fun `rejects source system with surrounding whitespace`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            SourceSystem.from(" marketplace-a ")
+        }
     }
 
     @Test

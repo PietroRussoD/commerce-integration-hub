@@ -1,18 +1,23 @@
 # Integration Core
 
-The Integration Core will own the canonical order model and reliable ingestion
+The Integration Core owns the canonical order model and reliable ingestion
 workflow.
 
 The current increment contains the Quarkus/Kotlin baseline, the initial order
-domain and use case, PostgreSQL schema management with Flyway, a jOOQ repository
-adapter, automated tests, health checks, Swagger UI, and generated OpenAPI
-files.
+aggregate and use case, PostgreSQL schema management with Flyway, a jOOQ
+repository adapter, automated tests, health checks, Swagger UI, and generated
+OpenAPI files.
 It deliberately has no messaging or search components yet.
 
 The PostgreSQL schema currently contains `orders` and `order_items`. The order
 repository persists and reloads the complete aggregate, including its calculated
 total, in a single transaction. PostgreSQL tests verify item constraints,
 relationships, and rollback behavior.
+
+Duplicate source identities currently return the persisted order regardless of
+the new payload contents. Canonical payload fingerprinting will distinguish an
+equivalent replay from a conflicting payload before HTTP ingestion is exposed;
+until then, `ALREADY_RECEIVED` is deliberately not the final idempotency contract.
 
 ## Architecture
 

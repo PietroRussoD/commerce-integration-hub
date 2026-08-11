@@ -131,6 +131,36 @@ class JooqOrderRepositoryTest {
         )
     }
 
+    @Test
+    fun `rejects a persisted total that does not match the items`() {
+        val order = order(id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
+        repository.insertIfAbsent(order)
+        dslContext
+            .update(ORDERS)
+            .set(ORDERS.TOTAL_AMOUNT, BigDecimal("40.00"))
+            .where(ORDERS.ID.eq(order.id.value))
+            .execute()
+
+        assertThrows(IllegalArgumentException::class.java) {
+            repository.findBySourceIdentity(order.sourceSystem, order.externalOrderId)
+        }
+    }
+
+    @Test
+    fun `rejects a persisted line amount that does not match quantity and unit price`() {
+        val order = order(id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
+        repository.insertIfAbsent(order)
+        dslContext
+            .update(ORDER_ITEMS)
+            .set(ORDER_ITEMS.LINE_AMOUNT, BigDecimal("40.00"))
+            .where(ORDER_ITEMS.ORDER_ID.eq(order.id.value))
+            .execute()
+
+        assertThrows(IllegalArgumentException::class.java) {
+            repository.findBySourceIdentity(order.sourceSystem, order.externalOrderId)
+        }
+    }
+
     private fun order(
         id: String,
         externalOrderId: String = "order-1001",

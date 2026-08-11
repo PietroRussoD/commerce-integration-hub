@@ -5,9 +5,10 @@ systems.
 
 ## Current status
 
-The repository currently contains the Kotlin Integration Core baseline, its
-initial currency-aware order domain and receive-order use case, and a PostgreSQL
-schema managed with Flyway and accessed through a jOOQ repository adapter.
+The repository currently contains the Kotlin Integration Core baseline, a
+currency-aware order aggregate and receive-order use case, and a PostgreSQL
+schema managed with Flyway and accessed through a jOOQ repository adapter. The
+repository persists order headers, items, and calculated totals atomically.
 
 The current baseline establishes:
 
