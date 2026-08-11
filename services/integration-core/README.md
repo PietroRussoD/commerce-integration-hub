@@ -9,6 +9,11 @@ adapter, automated tests, health checks, Swagger UI, and generated OpenAPI
 files.
 It deliberately has no messaging or search components yet.
 
+The PostgreSQL schema currently contains `orders` and `order_items`. Item
+constraints and relationships are verified against PostgreSQL, but the order
+repository does not persist items yet; that mapping belongs to the next
+executable increment.
+
 ## Architecture
 
 The service uses a lightweight hexagonal architecture. Packages reflect actual
