@@ -6,10 +6,17 @@ import org.junit.jupiter.api.Test
 
 class ExternalOrderIdTest {
     @Test
-    fun `trims valid external order id`() {
-        val externalOrderId = ExternalOrderId.from(" external-123 ")
+    fun `creates an external order id without changing it`() {
+        val externalOrderId = ExternalOrderId.from("External-123")
 
-        assertEquals("external-123", externalOrderId.value)
+        assertEquals("External-123", externalOrderId.value)
+    }
+
+    @Test
+    fun `rejects external order id with surrounding whitespace`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            ExternalOrderId.from(" external-123 ")
+        }
     }
 
     @Test

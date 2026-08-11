@@ -61,6 +61,39 @@ class OrderTest {
         }
     }
 
+    @Test
+    fun `rejects an item with a different currency`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            receiveOrder(listOf(item(position = 0, currency = Currency.USD)))
+        }
+    }
+
+    @Test
+    fun `rejects duplicate item ids`() {
+        val itemId = UUID.nameUUIDFromBytes("duplicate-item".toByteArray())
+
+        assertThrows(IllegalArgumentException::class.java) {
+            receiveOrder(
+                listOf(
+                    item(position = 0, id = itemId),
+                    item(position = 1, id = itemId),
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `rejects duplicate external line ids`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            receiveOrder(
+                listOf(
+                    item(position = 0, externalLineId = "line-1"),
+                    item(position = 1, externalLineId = "line-1"),
+                ),
+            )
+        }
+    }
+
     private fun receiveOrder(items: List<OrderItem>): Order =
         Order.receive(
             id = OrderId(UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f52")),
@@ -75,14 +108,17 @@ class OrderTest {
         position: Int,
         unitPrice: String = "10.00",
         quantity: String = "1",
+        id: UUID = UUID.nameUUIDFromBytes("item-$position".toByteArray()),
+        externalLineId: String = "line-$position",
+        currency: Currency = Currency.EUR,
     ): OrderItem =
         OrderItem.create(
-            id = UUID.nameUUIDFromBytes("item-$position".toByteArray()),
-            externalLineId = "line-$position",
+            id = id,
+            externalLineId = externalLineId,
             sku = "SKU-$position",
             description = null,
             quantity = BigDecimal(quantity),
-            unitPrice = Money.of(BigDecimal(unitPrice), Currency.EUR),
+            unitPrice = Money.of(BigDecimal(unitPrice), currency),
             position = position,
         )
 }

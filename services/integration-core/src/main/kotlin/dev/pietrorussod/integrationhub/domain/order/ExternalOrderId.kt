@@ -6,10 +6,12 @@ value class ExternalOrderId private constructor(
 ) {
     companion object {
         fun from(value: String): ExternalOrderId {
-            val normalized = value.trim()
-            require(normalized.isNotEmpty()) { "External order id must not be blank" }
-            require(normalized.length <= 128) { "External order id must be at most 128 characters" }
-            return ExternalOrderId(normalized)
+            require(value.isNotBlank()) { "External order id must not be blank" }
+            require(value == value.trim()) {
+                "External order id must not have leading or trailing whitespace"
+            }
+            require(value.length <= 128) { "External order id must be at most 128 characters" }
+            return ExternalOrderId(value)
         }
     }
 }

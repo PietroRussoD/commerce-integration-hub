@@ -6,10 +6,12 @@ value class SourceSystem private constructor(
 ) {
     companion object {
         fun from(value: String): SourceSystem {
-            val normalized = value.trim()
-            require(normalized.isNotEmpty()) { "Source system must not be blank" }
-            require(normalized.length <= 64) { "Source system must be at most 64 characters" }
-            return SourceSystem(normalized)
+            require(value.isNotBlank()) { "Source system must not be blank" }
+            require(value == value.trim()) {
+                "Source system must not have leading or trailing whitespace"
+            }
+            require(value.length <= 64) { "Source system must be at most 64 characters" }
+            return SourceSystem(value)
         }
     }
 }
