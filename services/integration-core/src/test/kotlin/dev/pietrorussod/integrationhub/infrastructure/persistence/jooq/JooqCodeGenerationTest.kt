@@ -12,10 +12,12 @@ class JooqCodeGenerationTest {
     fun `generates order table metadata from Flyway migrations`() {
         assertEquals("orders", ORDERS.name)
         assertEquals(UUID::class.java, ORDERS.ID.dataType.type)
+        assertEquals(String::class.java, ORDERS.CURRENCY.dataType.type)
+        assertFalse(ORDERS.CURRENCY.dataType.nullable())
         assertEquals(OffsetDateTime::class.java, ORDERS.RECEIVED_AT.dataType.type)
         assertFalse(ORDERS.ID.dataType.nullable())
         assertEquals("pk_orders", ORDERS.primaryKey.name)
         assertEquals(listOf("uk_orders_source_identity"), ORDERS.uniqueKeys.map { it.name })
-        assertEquals(listOf("ck_orders_status"), ORDERS.checks.map { it.name })
+        assertEquals(setOf("ck_orders_currency", "ck_orders_status"), ORDERS.checks.map { it.name }.toSet())
     }
 }

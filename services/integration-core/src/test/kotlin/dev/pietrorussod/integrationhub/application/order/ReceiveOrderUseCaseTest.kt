@@ -1,10 +1,13 @@
 package dev.pietrorussod.integrationhub.application.order
 
+import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
 import dev.pietrorussod.integrationhub.domain.order.Order
 import dev.pietrorussod.integrationhub.domain.order.OrderStatus
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.time.Clock
 import java.time.Instant
@@ -25,6 +28,7 @@ class ReceiveOrderUseCaseTest {
                 ReceiveOrderCommand(
                     sourceSystem = "marketplace-a",
                     externalOrderId = "order-1001",
+                    currency = "EUR",
                 ),
             )
 
@@ -32,6 +36,7 @@ class ReceiveOrderUseCaseTest {
         assertEquals(fixedOrderId, result.order.id.value)
         assertEquals("marketplace-a", result.order.sourceSystem.value)
         assertEquals("order-1001", result.order.externalOrderId.value)
+        assertEquals(Currency.EUR, result.order.currency)
         assertEquals(OrderStatus.RECEIVED, result.order.status)
         assertEquals(fixedClock.instant(), result.order.receivedAt)
         assertEquals(result.order, repository.savedOrders.single())
@@ -45,6 +50,7 @@ class ReceiveOrderUseCaseTest {
             ReceiveOrderCommand(
                 sourceSystem = "marketplace-a",
                 externalOrderId = "order-1001",
+                currency = "EUR",
             )
 
         val firstResult = useCase.receive(command)
@@ -54,6 +60,24 @@ class ReceiveOrderUseCaseTest {
         assertEquals(ReceiveOrderOutcome.ALREADY_RECEIVED, secondResult.outcome)
         assertEquals(firstResult.order, secondResult.order)
         assertEquals(1, repository.savedOrders.size)
+    }
+
+    @Test
+    fun `rejects an unsupported currency before saving the order`() {
+        val repository = InMemoryOrderRepository()
+        val useCase = ReceiveOrderUseCase(repository, fixedClock) { fixedOrderId }
+
+        assertThrows(IllegalArgumentException::class.java) {
+            useCase.receive(
+                ReceiveOrderCommand(
+                    sourceSystem = "marketplace-a",
+                    externalOrderId = "order-1001",
+                    currency = "CHF",
+                ),
+            )
+        }
+
+        assertTrue(repository.savedOrders.isEmpty())
     }
 
     private class InMemoryOrderRepository : OrderRepository {

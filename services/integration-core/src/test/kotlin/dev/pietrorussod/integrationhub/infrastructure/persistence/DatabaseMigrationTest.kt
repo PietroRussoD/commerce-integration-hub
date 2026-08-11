@@ -57,25 +57,49 @@ class DatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun `rejects an unsupported currency`() {
+        dataSource.connection.use { connection ->
+            connection.autoCommit = false
+
+            val exception =
+                assertThrows(SQLException::class.java) {
+                    insertOrder(
+                        connection,
+                        UUID.randomUUID(),
+                        "migration-test-${UUID.randomUUID()}",
+                        "external-${UUID.randomUUID()}",
+                        "RECEIVED",
+                        "CHF",
+                    )
+                }
+
+            assertEquals(CHECK_VIOLATION, exception.sqlState)
+            connection.rollback()
+        }
+    }
+
     private fun insertOrder(
         connection: Connection,
         id: UUID,
         sourceSystem: String,
         externalOrderId: String,
         status: String,
+        currency: String = "EUR",
     ) {
         connection
             .prepareStatement(
                 """
-                INSERT INTO orders (id, source_system, external_order_id, status, received_at)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO orders (id, source_system, external_order_id, status, currency, received_at)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """.trimIndent(),
             ).use { statement ->
                 statement.setObject(1, id)
                 statement.setString(2, sourceSystem)
                 statement.setString(3, externalOrderId)
                 statement.setString(4, status)
-                statement.setObject(5, OffsetDateTime.now(ZoneOffset.UTC))
+                statement.setString(5, currency)
+                statement.setObject(6, OffsetDateTime.now(ZoneOffset.UTC))
                 statement.executeUpdate()
             }
     }
