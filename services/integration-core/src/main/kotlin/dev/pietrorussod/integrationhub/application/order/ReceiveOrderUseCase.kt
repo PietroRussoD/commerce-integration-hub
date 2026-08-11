@@ -1,5 +1,6 @@
 package dev.pietrorussod.integrationhub.application.order
 
+import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
 import dev.pietrorussod.integrationhub.domain.order.Order
 import dev.pietrorussod.integrationhub.domain.order.OrderId
@@ -15,12 +16,14 @@ class ReceiveOrderUseCase(
     fun receive(command: ReceiveOrderCommand): ReceiveOrderResult {
         val sourceSystem = SourceSystem.from(command.sourceSystem)
         val externalOrderId = ExternalOrderId.from(command.externalOrderId)
+        val currency = Currency.from(command.currency)
 
         val order =
             Order.receive(
                 id = OrderId(generateOrderId()),
                 sourceSystem = sourceSystem,
                 externalOrderId = externalOrderId,
+                currency = currency,
                 receivedAt = clock.instant(),
             )
 

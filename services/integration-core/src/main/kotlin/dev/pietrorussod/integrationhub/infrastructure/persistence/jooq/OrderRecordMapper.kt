@@ -1,5 +1,6 @@
 package dev.pietrorussod.integrationhub.infrastructure.persistence.jooq
 
+import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
 import dev.pietrorussod.integrationhub.domain.order.Order
 import dev.pietrorussod.integrationhub.domain.order.OrderId
@@ -17,6 +18,10 @@ internal fun OrdersRecord.toDomain(): Order =
         externalOrderId =
             ExternalOrderId.from(
                 requireNotNull(externalOrderId) { "Persisted external order id must not be null" },
+            ),
+        currency =
+            Currency.from(
+                requireNotNull(currency) { "Persisted currency must not be null" },
             ),
         status =
             OrderStatus.valueOf(

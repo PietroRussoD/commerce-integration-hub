@@ -18,12 +18,14 @@ class OrderTest {
                 id = orderId,
                 sourceSystem = sourceSystem,
                 externalOrderId = externalOrderId,
+                currency = Currency.EUR,
                 receivedAt = receivedAt,
             )
 
         assertEquals(orderId, order.id)
         assertEquals(sourceSystem, order.sourceSystem)
         assertEquals(externalOrderId, order.externalOrderId)
+        assertEquals(Currency.EUR, order.currency)
         assertEquals(OrderStatus.RECEIVED, order.status)
         assertEquals(receivedAt, order.receivedAt)
     }

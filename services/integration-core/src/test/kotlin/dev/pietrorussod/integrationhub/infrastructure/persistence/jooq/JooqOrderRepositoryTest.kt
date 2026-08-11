@@ -2,6 +2,7 @@ package dev.pietrorussod.integrationhub.infrastructure.persistence.jooq
 
 import dev.pietrorussod.integrationhub.application.order.OrderInsertResult
 import dev.pietrorussod.integrationhub.application.order.OrderRepository
+import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
 import dev.pietrorussod.integrationhub.domain.order.Order
 import dev.pietrorussod.integrationhub.domain.order.OrderId
@@ -98,6 +99,7 @@ class JooqOrderRepositoryTest {
             id = OrderId(UUID.fromString(id)),
             sourceSystem = SourceSystem.from("marketplace-a"),
             externalOrderId = ExternalOrderId.from("order-1001"),
+            currency = Currency.EUR,
             receivedAt = Instant.parse("2026-08-02T06:30:00Z"),
         )
 }

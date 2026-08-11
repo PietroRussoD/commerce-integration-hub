@@ -17,6 +17,10 @@ The line amount is calculated as `quantity * unitPrice` and rounded to the
 currency minor unit using `HALF_UP`; callers cannot supply a separate line
 amount.
 
+The receive-order use case validates the command's canonical uppercase currency
+code. The order owns that currency and the repository persists it in PostgreSQL,
+where a check constraint provides a final consistency guard.
+
 The service keeps each order in its original currency and does not perform
 foreign-exchange conversion. Order-level total validation will be added when
 order items are connected to the persisted order aggregate.

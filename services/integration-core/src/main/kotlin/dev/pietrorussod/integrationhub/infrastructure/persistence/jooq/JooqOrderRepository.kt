@@ -26,6 +26,7 @@ class JooqOrderRepository
                     .set(ORDERS.ID, order.id.value)
                     .set(ORDERS.SOURCE_SYSTEM, order.sourceSystem.value)
                     .set(ORDERS.EXTERNAL_ORDER_ID, order.externalOrderId.value)
+                    .set(ORDERS.CURRENCY, order.currency.name)
                     .set(ORDERS.STATUS, order.status.name)
                     .set(ORDERS.RECEIVED_AT, order.receivedAt.atOffset(ZoneOffset.UTC))
                     .onConflict(ORDERS.SOURCE_SYSTEM, ORDERS.EXTERNAL_ORDER_ID)
