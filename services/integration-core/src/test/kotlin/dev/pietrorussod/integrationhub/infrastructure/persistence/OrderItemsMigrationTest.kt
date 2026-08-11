@@ -131,8 +131,8 @@ class OrderItemsMigrationTest {
         connection
             .prepareStatement(
                 """
-                INSERT INTO orders (id, source_system, external_order_id, status, currency, received_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO orders (id, source_system, external_order_id, status, currency, total_amount, received_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """.trimIndent(),
             ).use { statement ->
                 statement.setObject(1, orderId)
@@ -140,7 +140,8 @@ class OrderItemsMigrationTest {
                 statement.setString(3, "external-${UUID.randomUUID()}")
                 statement.setString(4, "RECEIVED")
                 statement.setString(5, "EUR")
-                statement.setObject(6, OffsetDateTime.now(ZoneOffset.UTC))
+                statement.setBigDecimal(6, BigDecimal.ZERO)
+                statement.setObject(7, OffsetDateTime.now(ZoneOffset.UTC))
                 statement.executeUpdate()
             }
         return orderId

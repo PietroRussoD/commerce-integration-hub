@@ -9,10 +9,10 @@ adapter, automated tests, health checks, Swagger UI, and generated OpenAPI
 files.
 It deliberately has no messaging or search components yet.
 
-The PostgreSQL schema currently contains `orders` and `order_items`. Item
-constraints and relationships are verified against PostgreSQL, but the order
-repository does not persist items yet; that mapping belongs to the next
-executable increment.
+The PostgreSQL schema currently contains `orders` and `order_items`. The order
+repository persists and reloads the complete aggregate, including its calculated
+total, in a single transaction. PostgreSQL tests verify item constraints,
+relationships, and rollback behavior.
 
 ## Architecture
 
@@ -60,9 +60,10 @@ The receive-order use case validates the command's canonical uppercase currency
 code. The order owns that currency and the repository persists it in PostgreSQL,
 where a check constraint provides a final consistency guard.
 
-The service keeps each order in its original currency and does not perform
-foreign-exchange conversion. Order-level total validation will be added when
-order items are connected to the persisted order aggregate.
+The order total is the sum of the already rounded line amounts. Both the
+calculated line amounts and total are persisted, then revalidated when the
+aggregate is restored. The service keeps each order in its original currency
+and does not perform foreign-exchange conversion.
 
 ## Prerequisites
 
