@@ -9,6 +9,18 @@ adapter, automated tests, health checks, Swagger UI, and generated OpenAPI
 files.
 It deliberately has no messaging or search components yet.
 
+## Monetary policy
+
+The current order-item domain model supports `EUR`, `GBP`, and `USD`. A unit
+price carries its currency explicitly and may have up to four fractional digits.
+The line amount is calculated as `quantity * unitPrice` and rounded to the
+currency minor unit using `HALF_UP`; callers cannot supply a separate line
+amount.
+
+The service keeps each order in its original currency and does not perform
+foreign-exchange conversion. Order-level total validation will be added when
+order items are connected to the persisted order aggregate.
+
 ## Prerequisites
 
 - Java 21 or newer
