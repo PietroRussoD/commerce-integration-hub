@@ -6,6 +6,7 @@ import jakarta.inject.Inject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
 import java.sql.Connection
 import java.sql.SQLException
 import java.time.OffsetDateTime
@@ -79,6 +80,28 @@ class DatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun `rejects a negative order total`() {
+        dataSource.connection.use { connection ->
+            connection.autoCommit = false
+
+            val exception =
+                assertThrows(SQLException::class.java) {
+                    insertOrder(
+                        connection,
+                        UUID.randomUUID(),
+                        "migration-test-${UUID.randomUUID()}",
+                        "external-${UUID.randomUUID()}",
+                        "RECEIVED",
+                        totalAmount = BigDecimal("-0.01"),
+                    )
+                }
+
+            assertEquals(CHECK_VIOLATION, exception.sqlState)
+            connection.rollback()
+        }
+    }
+
     private fun insertOrder(
         connection: Connection,
         id: UUID,
@@ -86,12 +109,13 @@ class DatabaseMigrationTest {
         externalOrderId: String,
         status: String,
         currency: String = "EUR",
+        totalAmount: BigDecimal = BigDecimal.ZERO,
     ) {
         connection
             .prepareStatement(
                 """
-                INSERT INTO orders (id, source_system, external_order_id, status, currency, received_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO orders (id, source_system, external_order_id, status, currency, total_amount, received_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """.trimIndent(),
             ).use { statement ->
                 statement.setObject(1, id)
@@ -99,7 +123,8 @@ class DatabaseMigrationTest {
                 statement.setString(3, externalOrderId)
                 statement.setString(4, status)
                 statement.setString(5, currency)
-                statement.setObject(6, OffsetDateTime.now(ZoneOffset.UTC))
+                statement.setBigDecimal(6, totalAmount)
+                statement.setObject(7, OffsetDateTime.now(ZoneOffset.UTC))
                 statement.executeUpdate()
             }
     }

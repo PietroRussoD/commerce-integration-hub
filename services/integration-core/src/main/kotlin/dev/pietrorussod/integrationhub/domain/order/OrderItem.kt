@@ -47,8 +47,9 @@ data class OrderItem private constructor(
             require(unitPrice.amount >= BigDecimal.ZERO) { "Unit price must not be negative" }
             require(position >= 0) { "Position must not be negative" }
 
+            val normalizedQuantity = quantity.stripTrailingZeros()
             val roundedLineAmount =
-                quantity
+                normalizedQuantity
                     .multiply(unitPrice.amount)
                     .setScale(unitPrice.currency.minorUnitDigits, RoundingMode.HALF_UP)
             require(integerDigits(roundedLineAmount) <= MAX_LINE_AMOUNT_INTEGER_DIGITS) {
@@ -61,7 +62,7 @@ data class OrderItem private constructor(
                 externalLineId = externalLineId,
                 sku = sku,
                 description = description,
-                quantity = quantity,
+                quantity = normalizedQuantity,
                 unitPrice = unitPrice,
                 lineAmount = lineAmount,
                 position = position,

@@ -39,6 +39,13 @@ class OrderItemTest {
     }
 
     @Test
+    fun `normalizes insignificant quantity zeros`() {
+        val item = orderItem(quantity = "2.0000")
+
+        assertEquals(BigDecimal("2"), item.quantity)
+    }
+
+    @Test
     fun `rejects a non-positive quantity`() {
         assertThrows(IllegalArgumentException::class.java) {
             orderItem(quantity = "0")

@@ -4,18 +4,24 @@ import dev.pietrorussod.integrationhub.application.order.OrderInsertResult
 import dev.pietrorussod.integrationhub.application.order.OrderRepository
 import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
+import dev.pietrorussod.integrationhub.domain.order.Money
 import dev.pietrorussod.integrationhub.domain.order.Order
 import dev.pietrorussod.integrationhub.domain.order.OrderId
+import dev.pietrorussod.integrationhub.domain.order.OrderItem
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
+import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.OrderItems.Companion.ORDER_ITEMS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.Orders.Companion.ORDERS
 import io.quarkus.test.junit.QuarkusTest
 import jakarta.inject.Inject
 import org.jooq.DSLContext
+import org.jooq.exception.DataAccessException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.Callable
@@ -63,6 +69,7 @@ class JooqOrderRepositoryTest {
         assertFalse(duplicateResult.inserted)
         assertEquals(firstOrder, duplicateResult.order)
         assertEquals(1, dslContext.fetchCount(ORDERS))
+        assertEquals(1, dslContext.fetchCount(ORDER_ITEMS))
     }
 
     @Test
@@ -89,17 +96,63 @@ class JooqOrderRepositoryTest {
             assertEquals(1, results.count { it.inserted })
             assertEquals(1, results.map { it.order.id }.distinct().size)
             assertEquals(1, dslContext.fetchCount(ORDERS))
+            assertEquals(1, dslContext.fetchCount(ORDER_ITEMS))
         } finally {
             executor.shutdownNow()
         }
     }
 
-    private fun order(id: String): Order =
+    @Test
+    fun `rolls back the order when an item insert fails`() {
+        val sharedItemId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f54")
+        val firstOrder =
+            order(
+                id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f52",
+                itemId = sharedItemId,
+            )
+        val secondOrder =
+            order(
+                id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f53",
+                externalOrderId = "order-1002",
+                itemId = sharedItemId,
+            )
+
+        repository.insertIfAbsent(firstOrder)
+
+        assertThrows(DataAccessException::class.java) {
+            repository.insertIfAbsent(secondOrder)
+        }
+
+        assertEquals(1, dslContext.fetchCount(ORDERS))
+        assertEquals(1, dslContext.fetchCount(ORDER_ITEMS))
+        assertEquals(
+            null,
+            repository.findBySourceIdentity(secondOrder.sourceSystem, secondOrder.externalOrderId),
+        )
+    }
+
+    private fun order(
+        id: String,
+        externalOrderId: String = "order-1001",
+        itemId: UUID = UUID.nameUUIDFromBytes("item-$id".toByteArray()),
+    ): Order =
         Order.receive(
             id = OrderId(UUID.fromString(id)),
             sourceSystem = SourceSystem.from("marketplace-a"),
-            externalOrderId = ExternalOrderId.from("order-1001"),
+            externalOrderId = ExternalOrderId.from(externalOrderId),
             currency = Currency.EUR,
+            items =
+                listOf(
+                    OrderItem.create(
+                        id = itemId,
+                        externalLineId = "line-1",
+                        sku = "SKU-BOOK-1",
+                        description = "First item",
+                        quantity = BigDecimal("2"),
+                        unitPrice = Money.of(BigDecimal("19.99"), Currency.EUR),
+                        position = 0,
+                    ),
+                ),
             receivedAt = Instant.parse("2026-08-02T06:30:00Z"),
         )
 }
