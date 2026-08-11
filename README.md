@@ -6,8 +6,8 @@ systems.
 ## Current status
 
 The repository currently contains the Kotlin Integration Core baseline, its
-initial order domain and receive-order use case, and a PostgreSQL schema managed
-with Flyway and accessed through a jOOQ repository adapter.
+initial currency-aware order domain and receive-order use case, and a PostgreSQL
+schema managed with Flyway and accessed through a jOOQ repository adapter.
 
 The current baseline establishes:
 
@@ -16,7 +16,7 @@ The current baseline establishes:
 - a reproducible Maven Wrapper;
 - automated formatting checks;
 - GitHub Actions validation;
-- a first HTTP endpoint;
+- an informational HTTP endpoint;
 - generated and committed OpenAPI files;
 - PostgreSQL integration tests backed by Quarkus Dev Services.
 
@@ -38,4 +38,4 @@ cd services/integration-core
 ```
 
 See [Integration Core](services/integration-core/README.md) for service-level
-details.
+architecture and operational details.
