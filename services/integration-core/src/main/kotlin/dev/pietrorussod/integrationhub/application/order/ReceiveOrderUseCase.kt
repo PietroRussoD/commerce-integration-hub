@@ -40,6 +40,7 @@ class ReceiveOrderUseCase(
                 externalOrderId = externalOrderId,
                 currency = currency,
                 items = items,
+                declaredTotalAmount = Money.of(command.declaredTotalAmount, currency),
                 receivedAt = clock.instant(),
             )
 

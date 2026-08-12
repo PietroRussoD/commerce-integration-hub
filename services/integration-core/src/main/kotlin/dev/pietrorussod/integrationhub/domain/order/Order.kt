@@ -23,10 +23,12 @@ data class Order private constructor(
             externalOrderId: ExternalOrderId,
             currency: Currency,
             items: List<OrderItem>,
+            declaredTotalAmount: Money,
             receivedAt: Instant,
         ): Order {
             val validatedItems = validateItems(currency, items)
             val totalAmount = calculateTotal(currency, validatedItems)
+            validateDeclaredTotal(currency, declaredTotalAmount, totalAmount)
 
             return Order(
                 id = id,
@@ -101,6 +103,25 @@ data class Order private constructor(
                 "Order total exceeds the supported precision"
             }
             return Money.of(amount, currency)
+        }
+
+        private fun validateDeclaredTotal(
+            currency: Currency,
+            declaredTotalAmount: Money,
+            calculatedTotalAmount: Money,
+        ) {
+            require(declaredTotalAmount.currency == currency) {
+                "Declared total currency must match order currency"
+            }
+            require(declaredTotalAmount.amount >= BigDecimal.ZERO) {
+                "Declared total amount must not be negative"
+            }
+            require(declaredTotalAmount.amount.scale().coerceAtLeast(0) <= currency.minorUnitDigits) {
+                "Declared total amount must have at most ${currency.minorUnitDigits} fractional digits"
+            }
+            require(declaredTotalAmount == calculatedTotalAmount) {
+                "Declared total amount must match the calculated order total"
+            }
         }
     }
 }

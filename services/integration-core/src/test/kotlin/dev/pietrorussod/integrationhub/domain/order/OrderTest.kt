@@ -23,6 +23,7 @@ class OrderTest {
                 externalOrderId = externalOrderId,
                 currency = Currency.EUR,
                 items = items,
+                declaredTotalAmount = Money.of(BigDecimal("39.98"), Currency.EUR),
                 receivedAt = receivedAt,
             )
 
@@ -94,13 +95,67 @@ class OrderTest {
         }
     }
 
-    private fun receiveOrder(items: List<OrderItem>): Order =
+    @Test
+    fun `rejects a declared total that differs from the rounded line total`() {
+        val items =
+            listOf(
+                item(position = 0, unitPrice = "0.335"),
+                item(position = 1, unitPrice = "0.335"),
+            )
+
+        assertThrows(IllegalArgumentException::class.java) {
+            receiveOrder(
+                items = items,
+                declaredTotalAmount = Money.of(BigDecimal("0.67"), Currency.EUR),
+            )
+        }
+    }
+
+    @Test
+    fun `rejects a declared total with more than the currency fractional digits`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            receiveOrder(
+                items = listOf(item(position = 0)),
+                declaredTotalAmount = Money.of(BigDecimal("10.001"), Currency.EUR),
+            )
+        }
+    }
+
+    @Test
+    fun `rejects a negative declared total`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            receiveOrder(
+                items = listOf(item(position = 0)),
+                declaredTotalAmount = Money.of(BigDecimal("-10.00"), Currency.EUR),
+            )
+        }
+    }
+
+    @Test
+    fun `rejects a declared total with a different currency`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            receiveOrder(
+                items = listOf(item(position = 0)),
+                declaredTotalAmount = Money.of(BigDecimal("10.00"), Currency.USD),
+            )
+        }
+    }
+
+    private fun receiveOrder(
+        items: List<OrderItem>,
+        declaredTotalAmount: Money =
+            Money.of(
+                items.fold(BigDecimal.ZERO) { total, item -> total.add(item.lineAmount.amount) },
+                Currency.EUR,
+            ),
+    ): Order =
         Order.receive(
             id = OrderId(UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f52")),
             sourceSystem = SourceSystem.from("marketplace-a"),
             externalOrderId = ExternalOrderId.from("order-1001"),
             currency = Currency.EUR,
             items = items,
+            declaredTotalAmount = declaredTotalAmount,
             receivedAt = Instant.parse("2026-07-31T06:30:00Z"),
         )
 
