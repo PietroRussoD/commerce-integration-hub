@@ -8,10 +8,9 @@ receive-order use case, and transactional PostgreSQL persistence through Flyway
 and jOOQ. It includes automated tests, health checks, Swagger UI, and committed
 OpenAPI files. Messaging and search are not implemented yet.
 
-Duplicate source identities currently return the persisted order regardless of
-the new payload. The service calculates a canonical payload fingerprint, but
-does not persist or compare it yet. Until then, `ALREADY_RECEIVED` is not the
-final idempotency contract.
+The service persists a canonical payload fingerprint with each order. Reusing a
+source identity returns `ALREADY_RECEIVED` for equivalent content and
+`PAYLOAD_CONFLICT` when the payload differs.
 
 ## Architecture
 

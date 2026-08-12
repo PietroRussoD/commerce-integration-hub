@@ -12,6 +12,7 @@ import java.util.UUID
 
 class ReceiveOrderUseCase(
     private val orderRepository: OrderRepository,
+    private val payloadFingerprinter: CanonicalOrderPayloadFingerprinter,
     private val clock: Clock,
     private val generateOrderId: () -> UUID,
     private val generateOrderItemId: () -> UUID,
@@ -44,15 +45,16 @@ class ReceiveOrderUseCase(
                 receivedAt = clock.instant(),
             )
 
-        val insertResult = orderRepository.insertIfAbsent(order)
+        val payloadFingerprint = payloadFingerprinter.fingerprint(order)
+        val insertResult = orderRepository.insertIfAbsent(order, payloadFingerprint)
 
         return ReceiveOrderResult(
             order = insertResult.order,
             outcome =
-                if (insertResult.inserted) {
-                    ReceiveOrderOutcome.CREATED
-                } else {
-                    ReceiveOrderOutcome.ALREADY_RECEIVED
+                when (insertResult.outcome) {
+                    OrderInsertOutcome.INSERTED -> ReceiveOrderOutcome.CREATED
+                    OrderInsertOutcome.EQUIVALENT_REPLAY -> ReceiveOrderOutcome.ALREADY_RECEIVED
+                    OrderInsertOutcome.PAYLOAD_CONFLICT -> ReceiveOrderOutcome.PAYLOAD_CONFLICT
                 },
         )
     }

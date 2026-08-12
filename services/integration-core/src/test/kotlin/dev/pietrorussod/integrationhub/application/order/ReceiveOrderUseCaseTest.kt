@@ -4,6 +4,7 @@ import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
 import dev.pietrorussod.integrationhub.domain.order.Order
 import dev.pietrorussod.integrationhub.domain.order.OrderStatus
+import dev.pietrorussod.integrationhub.domain.order.PayloadFingerprint
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -19,11 +20,12 @@ class ReceiveOrderUseCaseTest {
     private val fixedClock = Clock.fixed(Instant.parse("2026-08-01T07:30:00Z"), ZoneOffset.UTC)
     private val fixedOrderId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
     private val fixedItemId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f53")
+    private val fingerprinter = CanonicalOrderPayloadFingerprinter()
 
     @Test
     fun `creates an order for a new source identity`() {
         val repository = InMemoryOrderRepository()
-        val useCase = ReceiveOrderUseCase(repository, fixedClock, { fixedOrderId }) { fixedItemId }
+        val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
 
         val result =
             useCase.receive(
@@ -56,7 +58,7 @@ class ReceiveOrderUseCaseTest {
     @Test
     fun `returns the existing order when the same source identity is received again`() {
         val repository = InMemoryOrderRepository()
-        val useCase = ReceiveOrderUseCase(repository, fixedClock, { fixedOrderId }) { fixedItemId }
+        val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
         val command =
             ReceiveOrderCommand(
                 sourceSystem = "marketplace-a",
@@ -76,9 +78,32 @@ class ReceiveOrderUseCaseTest {
     }
 
     @Test
+    fun `reports a conflict when the same source identity has different content`() {
+        val repository = InMemoryOrderRepository()
+        val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
+        val original =
+            ReceiveOrderCommand(
+                sourceSystem = "marketplace-a",
+                externalOrderId = "order-1001",
+                currency = "EUR",
+                declaredTotalAmount = BigDecimal("39.98"),
+                items = listOf(itemCommand()),
+            )
+        val changed = original.copy(items = listOf(itemCommand(description = "Changed item")))
+
+        val firstResult = useCase.receive(original)
+        val conflictResult = useCase.receive(changed)
+
+        assertEquals(ReceiveOrderOutcome.CREATED, firstResult.outcome)
+        assertEquals(ReceiveOrderOutcome.PAYLOAD_CONFLICT, conflictResult.outcome)
+        assertEquals(firstResult.order, conflictResult.order)
+        assertEquals(1, repository.savedOrders.size)
+    }
+
+    @Test
     fun `rejects an unsupported currency before saving the order`() {
         val repository = InMemoryOrderRepository()
-        val useCase = ReceiveOrderUseCase(repository, fixedClock, { fixedOrderId }) { fixedItemId }
+        val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
 
         assertThrows(IllegalArgumentException::class.java) {
             useCase.receive(
@@ -98,7 +123,7 @@ class ReceiveOrderUseCaseTest {
     @Test
     fun `rejects an order without items before saving it`() {
         val repository = InMemoryOrderRepository()
-        val useCase = ReceiveOrderUseCase(repository, fixedClock, { fixedOrderId }) { fixedItemId }
+        val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
 
         assertThrows(IllegalArgumentException::class.java) {
             useCase.receive(
@@ -118,7 +143,7 @@ class ReceiveOrderUseCaseTest {
     @Test
     fun `rejects a declared total that differs from the calculated total before saving`() {
         val repository = InMemoryOrderRepository()
-        val useCase = ReceiveOrderUseCase(repository, fixedClock, { fixedOrderId }) { fixedItemId }
+        val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
 
         assertThrows(IllegalArgumentException::class.java) {
             useCase.receive(
@@ -135,30 +160,41 @@ class ReceiveOrderUseCaseTest {
         assertTrue(repository.savedOrders.isEmpty())
     }
 
-    private fun itemCommand() =
+    private fun itemCommand(description: String = "First item") =
         ReceiveOrderItemCommand(
             externalLineId = "line-1",
             sku = "SKU-BOOK-1",
-            description = "First item",
+            description = description,
             quantity = BigDecimal("2"),
             unitPrice = BigDecimal("19.99"),
         )
 
     private class InMemoryOrderRepository : OrderRepository {
         val savedOrders = mutableListOf<Order>()
+        private val savedFingerprints = mutableMapOf<UUID, PayloadFingerprint>()
 
-        override fun insertIfAbsent(order: Order): OrderInsertResult {
+        override fun insertIfAbsent(
+            order: Order,
+            payloadFingerprint: PayloadFingerprint,
+        ): OrderInsertResult {
             val existingOrder =
                 findBySourceIdentity(
                     order.sourceSystem,
                     order.externalOrderId,
                 )
             if (existingOrder != null) {
-                return OrderInsertResult(existingOrder, inserted = false)
+                val outcome =
+                    if (savedFingerprints.getValue(existingOrder.id.value) == payloadFingerprint) {
+                        OrderInsertOutcome.EQUIVALENT_REPLAY
+                    } else {
+                        OrderInsertOutcome.PAYLOAD_CONFLICT
+                    }
+                return OrderInsertResult(existingOrder, outcome)
             }
 
             savedOrders.add(order)
-            return OrderInsertResult(order, inserted = true)
+            savedFingerprints[order.id.value] = payloadFingerprint
+            return OrderInsertResult(order, OrderInsertOutcome.INSERTED)
         }
 
         override fun findBySourceIdentity(
