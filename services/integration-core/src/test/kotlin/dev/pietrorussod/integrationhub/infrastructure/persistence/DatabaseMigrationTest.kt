@@ -102,6 +102,50 @@ class DatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun `rejects an invalid payload fingerprint`() {
+        dataSource.connection.use { connection ->
+            connection.autoCommit = false
+
+            val exception =
+                assertThrows(SQLException::class.java) {
+                    insertOrder(
+                        connection,
+                        UUID.randomUUID(),
+                        "migration-test-${UUID.randomUUID()}",
+                        "external-${UUID.randomUUID()}",
+                        "RECEIVED",
+                        payloadFingerprint = "invalid",
+                    )
+                }
+
+            assertEquals(CHECK_VIOLATION, exception.sqlState)
+            connection.rollback()
+        }
+    }
+
+    @Test
+    fun `rejects a non-positive fingerprint version`() {
+        dataSource.connection.use { connection ->
+            connection.autoCommit = false
+
+            val exception =
+                assertThrows(SQLException::class.java) {
+                    insertOrder(
+                        connection,
+                        UUID.randomUUID(),
+                        "migration-test-${UUID.randomUUID()}",
+                        "external-${UUID.randomUUID()}",
+                        "RECEIVED",
+                        payloadFingerprintVersion = 0,
+                    )
+                }
+
+            assertEquals(CHECK_VIOLATION, exception.sqlState)
+            connection.rollback()
+        }
+    }
+
     private fun insertOrder(
         connection: Connection,
         id: UUID,
@@ -110,12 +154,17 @@ class DatabaseMigrationTest {
         status: String,
         currency: String = "EUR",
         totalAmount: BigDecimal = BigDecimal.ZERO,
+        payloadFingerprint: String = "a".repeat(64),
+        payloadFingerprintVersion: Short = 1,
     ) {
         connection
             .prepareStatement(
                 """
-                INSERT INTO orders (id, source_system, external_order_id, status, currency, total_amount, received_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO orders (
+                    id, source_system, external_order_id, status, currency, total_amount,
+                    payload_fingerprint, payload_fingerprint_version, received_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """.trimIndent(),
             ).use { statement ->
                 statement.setObject(1, id)
@@ -124,7 +173,9 @@ class DatabaseMigrationTest {
                 statement.setString(4, status)
                 statement.setString(5, currency)
                 statement.setBigDecimal(6, totalAmount)
-                statement.setObject(7, OffsetDateTime.now(ZoneOffset.UTC))
+                statement.setString(7, payloadFingerprint)
+                statement.setShort(8, payloadFingerprintVersion)
+                statement.setObject(9, OffsetDateTime.now(ZoneOffset.UTC))
                 statement.executeUpdate()
             }
     }

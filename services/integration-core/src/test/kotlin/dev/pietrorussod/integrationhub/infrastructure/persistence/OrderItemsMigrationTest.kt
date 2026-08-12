@@ -131,8 +131,11 @@ class OrderItemsMigrationTest {
         connection
             .prepareStatement(
                 """
-                INSERT INTO orders (id, source_system, external_order_id, status, currency, total_amount, received_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO orders (
+                    id, source_system, external_order_id, status, currency, total_amount,
+                    payload_fingerprint, payload_fingerprint_version, received_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """.trimIndent(),
             ).use { statement ->
                 statement.setObject(1, orderId)
@@ -141,7 +144,9 @@ class OrderItemsMigrationTest {
                 statement.setString(4, "RECEIVED")
                 statement.setString(5, "EUR")
                 statement.setBigDecimal(6, BigDecimal.ZERO)
-                statement.setObject(7, OffsetDateTime.now(ZoneOffset.UTC))
+                statement.setString(7, "a".repeat(64))
+                statement.setShort(8, 1)
+                statement.setObject(9, OffsetDateTime.now(ZoneOffset.UTC))
                 statement.executeUpdate()
             }
         return orderId

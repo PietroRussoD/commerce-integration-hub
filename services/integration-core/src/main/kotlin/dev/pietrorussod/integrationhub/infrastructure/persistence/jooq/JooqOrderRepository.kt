@@ -1,10 +1,12 @@
 package dev.pietrorussod.integrationhub.infrastructure.persistence.jooq
 
+import dev.pietrorussod.integrationhub.application.order.OrderInsertOutcome
 import dev.pietrorussod.integrationhub.application.order.OrderInsertResult
 import dev.pietrorussod.integrationhub.application.order.OrderRepository
 import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
 import dev.pietrorussod.integrationhub.domain.order.Order
+import dev.pietrorussod.integrationhub.domain.order.PayloadFingerprint
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.OrderItems.Companion.ORDER_ITEMS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.Orders.Companion.ORDERS
@@ -21,7 +23,10 @@ class JooqOrderRepository
         private val dslContext: DSLContext,
     ) : OrderRepository {
         @Transactional
-        override fun insertIfAbsent(order: Order): OrderInsertResult {
+        override fun insertIfAbsent(
+            order: Order,
+            payloadFingerprint: PayloadFingerprint,
+        ): OrderInsertResult {
             val insertedRows =
                 dslContext
                     .insertInto(ORDERS)
@@ -30,6 +35,8 @@ class JooqOrderRepository
                     .set(ORDERS.EXTERNAL_ORDER_ID, order.externalOrderId.value)
                     .set(ORDERS.CURRENCY, order.currency.name)
                     .set(ORDERS.TOTAL_AMOUNT, order.totalAmount.amount)
+                    .set(ORDERS.PAYLOAD_FINGERPRINT, payloadFingerprint.value)
+                    .set(ORDERS.PAYLOAD_FINGERPRINT_VERSION, payloadFingerprint.canonicalizationVersion)
                     .set(ORDERS.STATUS, order.status.name)
                     .set(ORDERS.RECEIVED_AT, order.receivedAt.atOffset(ZoneOffset.UTC))
                     .onConflict(ORDERS.SOURCE_SYSTEM, ORDERS.EXTERNAL_ORDER_ID)
@@ -38,23 +45,35 @@ class JooqOrderRepository
 
             if (insertedRows == 1) {
                 insertItems(order)
-                return OrderInsertResult(order, inserted = true)
+                return OrderInsertResult(order, OrderInsertOutcome.INSERTED)
             }
 
-            val existingOrder =
+            val existing =
                 requireNotNull(
-                    findBySourceIdentity(order.sourceSystem, order.externalOrderId),
+                    findStoredOrderBySourceIdentity(order.sourceSystem, order.externalOrderId),
                 ) {
                     "Order must exist after a source identity conflict"
                 }
 
-            return OrderInsertResult(existingOrder, inserted = false)
+            val outcome =
+                if (existing.payloadFingerprint == payloadFingerprint) {
+                    OrderInsertOutcome.EQUIVALENT_REPLAY
+                } else {
+                    OrderInsertOutcome.PAYLOAD_CONFLICT
+                }
+
+            return OrderInsertResult(existing.order, outcome)
         }
 
         override fun findBySourceIdentity(
             sourceSystem: SourceSystem,
             externalOrderId: ExternalOrderId,
-        ): Order? {
+        ): Order? = findStoredOrderBySourceIdentity(sourceSystem, externalOrderId)?.order
+
+        private fun findStoredOrderBySourceIdentity(
+            sourceSystem: SourceSystem,
+            externalOrderId: ExternalOrderId,
+        ): StoredOrder? {
             val orderRecord =
                 dslContext
                     .selectFrom(ORDERS)
@@ -78,7 +97,14 @@ class JooqOrderRepository
                     .fetch()
                     .map { it.toDomain(currency) }
 
-            return orderRecord.toDomain(currency, items)
+            return StoredOrder(
+                order = orderRecord.toDomain(currency, items),
+                payloadFingerprint =
+                    PayloadFingerprint(
+                        value = requireNotNull(orderRecord.payloadFingerprint),
+                        canonicalizationVersion = requireNotNull(orderRecord.payloadFingerprintVersion),
+                    ),
+            )
         }
 
         private fun insertItems(order: Order) {
@@ -99,4 +125,9 @@ class JooqOrderRepository
 
             dslContext.batch(statements).execute()
         }
+
+        private data class StoredOrder(
+            val order: Order,
+            val payloadFingerprint: PayloadFingerprint,
+        )
     }

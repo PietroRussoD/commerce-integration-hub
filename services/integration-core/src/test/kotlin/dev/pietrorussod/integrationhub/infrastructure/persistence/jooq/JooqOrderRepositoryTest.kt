@@ -1,5 +1,7 @@
 package dev.pietrorussod.integrationhub.infrastructure.persistence.jooq
 
+import dev.pietrorussod.integrationhub.application.order.CanonicalOrderPayloadFingerprinter
+import dev.pietrorussod.integrationhub.application.order.OrderInsertOutcome
 import dev.pietrorussod.integrationhub.application.order.OrderInsertResult
 import dev.pietrorussod.integrationhub.application.order.OrderRepository
 import dev.pietrorussod.integrationhub.domain.order.Currency
@@ -16,7 +18,6 @@ import jakarta.inject.Inject
 import org.jooq.DSLContext
 import org.jooq.exception.DataAccessException
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -31,6 +32,8 @@ import java.util.concurrent.TimeUnit
 
 @QuarkusTest
 class JooqOrderRepositoryTest {
+    private val fingerprinter = CanonicalOrderPayloadFingerprinter()
+
     @Inject
     lateinit var repository: OrderRepository
 
@@ -45,17 +48,21 @@ class JooqOrderRepositoryTest {
     @Test
     fun `inserts and finds an order`() {
         val order = order(id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
+        val payloadFingerprint = fingerprinter.fingerprint(order)
 
-        val insertResult = repository.insertIfAbsent(order)
+        val insertResult = repository.insertIfAbsent(order, payloadFingerprint)
         val persistedOrder =
             repository.findBySourceIdentity(
                 order.sourceSystem,
                 order.externalOrderId,
             )
+        val orderRecord = dslContext.selectFrom(ORDERS).fetchSingle()
 
-        assertTrue(insertResult.inserted)
+        assertEquals(OrderInsertOutcome.INSERTED, insertResult.outcome)
         assertEquals(order, insertResult.order)
         assertEquals(order, persistedOrder)
+        assertEquals(payloadFingerprint.value, orderRecord.payloadFingerprint)
+        assertEquals(payloadFingerprint.canonicalizationVersion, orderRecord.payloadFingerprintVersion)
     }
 
     @Test
@@ -63,11 +70,29 @@ class JooqOrderRepositoryTest {
         val firstOrder = order(id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
         val duplicateOrder = order(id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f53")
 
-        repository.insertIfAbsent(firstOrder)
-        val duplicateResult = repository.insertIfAbsent(duplicateOrder)
+        insert(firstOrder)
+        val duplicateResult = insert(duplicateOrder)
 
-        assertFalse(duplicateResult.inserted)
+        assertEquals(OrderInsertOutcome.EQUIVALENT_REPLAY, duplicateResult.outcome)
         assertEquals(firstOrder, duplicateResult.order)
+        assertEquals(1, dslContext.fetchCount(ORDERS))
+        assertEquals(1, dslContext.fetchCount(ORDER_ITEMS))
+    }
+
+    @Test
+    fun `reports a payload conflict for a duplicate source identity with different content`() {
+        val firstOrder = order(id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
+        val conflictingOrder =
+            order(
+                id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f53",
+                description = "Changed item",
+            )
+
+        insert(firstOrder)
+        val conflictResult = insert(conflictingOrder)
+
+        assertEquals(OrderInsertOutcome.PAYLOAD_CONFLICT, conflictResult.outcome)
+        assertEquals(firstOrder, conflictResult.order)
         assertEquals(1, dslContext.fetchCount(ORDERS))
         assertEquals(1, dslContext.fetchCount(ORDER_ITEMS))
     }
@@ -85,7 +110,7 @@ class JooqOrderRepositoryTest {
                     executor.submit(
                         Callable<OrderInsertResult> {
                             start.await()
-                            repository.insertIfAbsent(candidate)
+                            insert(candidate)
                         },
                     )
                 }
@@ -93,7 +118,8 @@ class JooqOrderRepositoryTest {
             start.countDown()
             val results = futures.map { it.get(10, TimeUnit.SECONDS) }
 
-            assertEquals(1, results.count { it.inserted })
+            assertEquals(1, results.count { it.outcome == OrderInsertOutcome.INSERTED })
+            assertEquals(1, results.count { it.outcome == OrderInsertOutcome.EQUIVALENT_REPLAY })
             assertEquals(1, results.map { it.order.id }.distinct().size)
             assertEquals(1, dslContext.fetchCount(ORDERS))
             assertEquals(1, dslContext.fetchCount(ORDER_ITEMS))
@@ -117,10 +143,10 @@ class JooqOrderRepositoryTest {
                 itemId = sharedItemId,
             )
 
-        repository.insertIfAbsent(firstOrder)
+        insert(firstOrder)
 
         assertThrows(DataAccessException::class.java) {
-            repository.insertIfAbsent(secondOrder)
+            insert(secondOrder)
         }
 
         assertEquals(1, dslContext.fetchCount(ORDERS))
@@ -134,7 +160,7 @@ class JooqOrderRepositoryTest {
     @Test
     fun `rejects a persisted total that does not match the items`() {
         val order = order(id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
-        repository.insertIfAbsent(order)
+        insert(order)
         dslContext
             .update(ORDERS)
             .set(ORDERS.TOTAL_AMOUNT, BigDecimal("40.00"))
@@ -149,7 +175,7 @@ class JooqOrderRepositoryTest {
     @Test
     fun `rejects a persisted line amount that does not match quantity and unit price`() {
         val order = order(id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
-        repository.insertIfAbsent(order)
+        insert(order)
         dslContext
             .update(ORDER_ITEMS)
             .set(ORDER_ITEMS.LINE_AMOUNT, BigDecimal("40.00"))
@@ -165,6 +191,7 @@ class JooqOrderRepositoryTest {
         id: String,
         externalOrderId: String = "order-1001",
         itemId: UUID = UUID.nameUUIDFromBytes("item-$id".toByteArray()),
+        description: String = "First item",
     ): Order =
         Order.receive(
             id = OrderId(UUID.fromString(id)),
@@ -177,7 +204,7 @@ class JooqOrderRepositoryTest {
                         id = itemId,
                         externalLineId = "line-1",
                         sku = "SKU-BOOK-1",
-                        description = "First item",
+                        description = description,
                         quantity = BigDecimal("2"),
                         unitPrice = Money.of(BigDecimal("19.99"), Currency.EUR),
                         position = 0,
@@ -186,4 +213,6 @@ class JooqOrderRepositoryTest {
             declaredTotalAmount = Money.of(BigDecimal("39.98"), Currency.EUR),
             receivedAt = Instant.parse("2026-08-02T06:30:00Z"),
         )
+
+    private fun insert(order: Order): OrderInsertResult = repository.insertIfAbsent(order, fingerprinter.fingerprint(order))
 }
