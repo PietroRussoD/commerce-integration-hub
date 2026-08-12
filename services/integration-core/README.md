@@ -3,21 +3,15 @@
 The Integration Core owns the canonical order model and reliable ingestion
 workflow.
 
-The current increment contains the Quarkus/Kotlin baseline, the initial order
-aggregate and use case, PostgreSQL schema management with Flyway, a jOOQ
-repository adapter, automated tests, health checks, Swagger UI, and generated
-OpenAPI files.
-It deliberately has no messaging or search components yet.
-
-The PostgreSQL schema currently contains `orders` and `order_items`. The order
-repository persists and reloads the complete aggregate, including its calculated
-total, in a single transaction. PostgreSQL tests verify item constraints,
-relationships, and rollback behavior.
+The current increment implements a currency-aware order aggregate, its
+receive-order use case, and transactional PostgreSQL persistence through Flyway
+and jOOQ. It includes automated tests, health checks, Swagger UI, and committed
+OpenAPI files. Messaging and search are not implemented yet.
 
 Duplicate source identities currently return the persisted order regardless of
-the new payload contents. Canonical payload fingerprinting will distinguish an
-equivalent replay from a conflicting payload before HTTP ingestion is exposed;
-until then, `ALREADY_RECEIVED` is deliberately not the final idempotency contract.
+the new payload. The service calculates a canonical payload fingerprint, but
+does not persist or compare it yet. Until then, `ALREADY_RECEIVED` is not the
+final idempotency contract.
 
 ## Architecture
 
@@ -41,54 +35,36 @@ infrastructure -----> application and domain
 domain ------------> Kotlin and Java standard libraries only
 ```
 
-The domain does not import Quarkus, jOOQ, Flyway, or transport classes.
-Application code defines the `OrderRepository` port because persistence is a
-real I/O boundary. `JooqOrderRepository` implements that port and contains the
-current transactional database operation. Framework-free domain and application
-tests use direct construction or an in-memory repository; PostgreSQL behavior is
-verified separately through Quarkus integration tests.
+The domain has no framework or transport dependencies. The application layer
+defines the `OrderRepository` port; `JooqOrderRepository` implements it and owns
+the transactional database operation. Domain and application tests remain
+framework-free, while PostgreSQL behavior is covered by integration tests.
 
-jOOQ-generated sources live under `target/generated-sources/jooq` and are not
-committed. New packages and ports are added only when an implemented behavior
-creates a concrete boundary; the project deliberately avoids placeholder layers
-and `Service`/`ServiceImpl` pairs.
+New packages and ports are introduced only for concrete boundaries. jOOQ sources
+are generated under `target/generated-sources/jooq` and are not committed.
 
 ## Monetary policy
 
-The current order-item domain model supports `EUR`, `GBP`, and `USD`. A unit
-price carries its currency explicitly and may have up to four fractional digits.
-The line amount is calculated as `quantity * unitPrice` and rounded to the
-currency minor unit using `HALF_UP`; callers cannot supply a separate line
-amount.
-
-The receive-order use case validates the command's canonical uppercase currency
-code. The order owns that currency and the repository persists it in PostgreSQL,
-where a check constraint provides a final consistency guard.
-
-The order total is the sum of the already rounded line amounts. Both the
-calculated line amounts and total are persisted, then revalidated when the
-aggregate is restored. The service keeps each order in its original currency
-and does not perform foreign-exchange conversion.
-
-Every receive-order command also supplies a declared total. The aggregate
-requires it to be non-negative, use the order currency, fit that currency's
-fractional digits, and exactly match the calculated total after normalization.
-Only the calculated canonical total is persisted; the caller cannot override
-it.
+- Supported currencies: `EUR`, `GBP`, and `USD`.
+- Unit prices carry their currency and support up to four fractional digits.
+- Line amounts are `quantity * unitPrice`, rounded to the currency minor unit
+  with `HALF_UP`.
+- The order total is the sum of the rounded line amounts.
+- The declared total must be non-negative, use the order currency, fit its minor
+  unit, and equal the calculated total.
+- Calculated amounts are persisted and revalidated when restored.
+- Orders remain in their original currency; there is no FX conversion.
 
 ## Payload fingerprinting
 
-Canonical payload version 1 hashes validated order content with SHA-256. The
-representation includes currency, calculated total, item count, and each item's
-external line ID, SKU, description, quantity, and unit price in meaningful item
-order. It excludes source identity, internal IDs, status, and server-generated
-timestamps; source identity is compared separately.
+Version 1 hashes validated order content with SHA-256. It includes currency,
+calculated total, item count, and each item's external line ID, SKU, description,
+quantity, and unit price in meaningful order. Source identity, internal IDs,
+status, and server-generated timestamps are excluded.
 
-The representation uses a fixed binary field order. Strings are UTF-8 encoded
-and prefixed by a four-byte length, nullable fields have an explicit presence
-byte, decimals use their normalized plain representation, and the version is
-embedded in the hashed bytes. A golden-hash test prevents accidental changes to
-the version 1 format.
+The binary representation has a fixed field order, embeds its version, uses
+length-prefixed UTF-8 strings, marks nullable values explicitly, and normalizes
+decimals. A golden-hash test guards against accidental format changes.
 
 ## Prerequisites
 
@@ -101,8 +77,7 @@ the version 1 format.
 ./mvnw verify
 ```
 
-Running `clean verify` also regenerates the jOOQ database sources and the
-committed OpenAPI files:
+Use `clean verify` to regenerate jOOQ sources and the committed OpenAPI files:
 
 ```bash
 ./mvnw clean verify
@@ -114,9 +89,7 @@ Generated OpenAPI files:
 - [OpenAPI JSON](src/main/resources/META-INF/integration-core.json)
 
 jOOQ derives Kotlin table and record classes from the ordered Flyway migrations
-under `src/main/resources/db/migration`. It writes them to
-`target/generated-sources/jooq`; generated database sources are build artifacts
-and are not committed.
+under `src/main/resources/db/migration`.
 
 ## Run
 
