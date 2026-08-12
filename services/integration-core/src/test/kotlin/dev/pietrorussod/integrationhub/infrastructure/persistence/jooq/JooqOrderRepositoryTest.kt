@@ -183,6 +183,7 @@ class JooqOrderRepositoryTest {
                         position = 0,
                     ),
                 ),
+            declaredTotalAmount = Money.of(BigDecimal("39.98"), Currency.EUR),
             receivedAt = Instant.parse("2026-08-02T06:30:00Z"),
         )
 }

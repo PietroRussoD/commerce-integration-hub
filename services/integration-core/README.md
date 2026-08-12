@@ -70,6 +70,12 @@ calculated line amounts and total are persisted, then revalidated when the
 aggregate is restored. The service keeps each order in its original currency
 and does not perform foreign-exchange conversion.
 
+Every receive-order command also supplies a declared total. The aggregate
+requires it to be non-negative, use the order currency, fit that currency's
+fractional digits, and exactly match the calculated total after normalization.
+Only the calculated canonical total is persisted; the caller cannot override
+it.
+
 ## Prerequisites
 
 - Java 21 or newer

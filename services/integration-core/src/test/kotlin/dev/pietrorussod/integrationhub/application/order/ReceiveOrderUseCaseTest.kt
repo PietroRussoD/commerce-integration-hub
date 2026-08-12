@@ -31,6 +31,7 @@ class ReceiveOrderUseCaseTest {
                     sourceSystem = "marketplace-a",
                     externalOrderId = "order-1001",
                     currency = "EUR",
+                    declaredTotalAmount = BigDecimal("39.98"),
                     items = listOf(itemCommand()),
                 ),
             )
@@ -61,6 +62,7 @@ class ReceiveOrderUseCaseTest {
                 sourceSystem = "marketplace-a",
                 externalOrderId = "order-1001",
                 currency = "EUR",
+                declaredTotalAmount = BigDecimal("39.98"),
                 items = listOf(itemCommand()),
             )
 
@@ -84,6 +86,7 @@ class ReceiveOrderUseCaseTest {
                     sourceSystem = "marketplace-a",
                     externalOrderId = "order-1001",
                     currency = "CHF",
+                    declaredTotalAmount = BigDecimal("39.98"),
                     items = listOf(itemCommand()),
                 ),
             )
@@ -103,7 +106,28 @@ class ReceiveOrderUseCaseTest {
                     sourceSystem = "marketplace-a",
                     externalOrderId = "order-1001",
                     currency = "EUR",
+                    declaredTotalAmount = BigDecimal.ZERO,
                     items = emptyList(),
+                ),
+            )
+        }
+
+        assertTrue(repository.savedOrders.isEmpty())
+    }
+
+    @Test
+    fun `rejects a declared total that differs from the calculated total before saving`() {
+        val repository = InMemoryOrderRepository()
+        val useCase = ReceiveOrderUseCase(repository, fixedClock, { fixedOrderId }) { fixedItemId }
+
+        assertThrows(IllegalArgumentException::class.java) {
+            useCase.receive(
+                ReceiveOrderCommand(
+                    sourceSystem = "marketplace-a",
+                    externalOrderId = "order-1001",
+                    currency = "EUR",
+                    declaredTotalAmount = BigDecimal("39.97"),
+                    items = listOf(itemCommand()),
                 ),
             )
         }
