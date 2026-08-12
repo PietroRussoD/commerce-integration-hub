@@ -76,6 +76,20 @@ fractional digits, and exactly match the calculated total after normalization.
 Only the calculated canonical total is persisted; the caller cannot override
 it.
 
+## Payload fingerprinting
+
+Canonical payload version 1 hashes validated order content with SHA-256. The
+representation includes currency, calculated total, item count, and each item's
+external line ID, SKU, description, quantity, and unit price in meaningful item
+order. It excludes source identity, internal IDs, status, and server-generated
+timestamps; source identity is compared separately.
+
+The representation uses a fixed binary field order. Strings are UTF-8 encoded
+and prefixed by a four-byte length, nullable fields have an explicit presence
+byte, decimals use their normalized plain representation, and the version is
+embedded in the hashed bytes. A golden-hash test prevents accidental changes to
+the version 1 format.
+
 ## Prerequisites
 
 - Java 21 or newer
