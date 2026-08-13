@@ -105,7 +105,7 @@ class ReceiveOrderUseCaseTest {
         val repository = InMemoryOrderRepository()
         val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
 
-        assertThrows(IllegalArgumentException::class.java) {
+        assertThrows(InvalidReceiveOrderCommandException::class.java) {
             useCase.receive(
                 ReceiveOrderCommand(
                     sourceSystem = "marketplace-a",
@@ -125,7 +125,7 @@ class ReceiveOrderUseCaseTest {
         val repository = InMemoryOrderRepository()
         val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
 
-        assertThrows(IllegalArgumentException::class.java) {
+        assertThrows(InvalidReceiveOrderCommandException::class.java) {
             useCase.receive(
                 ReceiveOrderCommand(
                     sourceSystem = "marketplace-a",
@@ -145,7 +145,7 @@ class ReceiveOrderUseCaseTest {
         val repository = InMemoryOrderRepository()
         val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
 
-        assertThrows(IllegalArgumentException::class.java) {
+        assertThrows(InvalidReceiveOrderCommandException::class.java) {
             useCase.receive(
                 ReceiveOrderCommand(
                     sourceSystem = "marketplace-a",

@@ -2,6 +2,161 @@
 openapi: 3.1.0
 components:
   schemas:
+    Instant:
+      type: string
+      format: date-time
+      examples:
+      - 2022-03-10T16:15:50Z
+    OrderItemResponse:
+      type: object
+      required:
+      - externalLineId
+      - sku
+      - description
+      - quantity
+      - unitPrice
+      - lineAmount
+      properties:
+        externalLineId:
+          type:
+          - string
+          - "null"
+        sku:
+          type: string
+        description:
+          type:
+          - string
+          - "null"
+        quantity:
+          type: string
+        unitPrice:
+          type: string
+        lineAmount:
+          type: string
+    OrderResponse:
+      type: object
+      required:
+      - id
+      - sourceSystem
+      - externalId
+      - currency
+      - totalAmount
+      - status
+      - receivedAt
+      - items
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        sourceSystem:
+          type: string
+        externalId:
+          type: string
+        currency:
+          type: string
+        totalAmount:
+          type: string
+        status:
+          type: string
+        receivedAt:
+          $ref: "#/components/schemas/Instant"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemResponse"
+    ProblemDetails:
+      type: object
+      required:
+      - type
+      - title
+      - status
+      - detail
+      - instance
+      - code
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProblemFieldError"
+    ProblemFieldError:
+      type: object
+      required:
+      - field
+      - message
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+    ReceiveOrderItemRequest:
+      type: object
+      properties:
+        externalLineId:
+          type:
+          - string
+          - "null"
+          minLength: 1
+          maxLength: 150
+        sku:
+          type: string
+          pattern: \S
+          maxLength: 100
+        description:
+          type:
+          - string
+          - "null"
+          maxLength: 500
+        quantity:
+          type: string
+          pattern: "(?:0|[1-9][0-9]{0,14})(?:\\.[0-9]{1,4})?"
+        unitPrice:
+          type: string
+          pattern: "(?:0|[1-9][0-9]{0,14})(?:\\.[0-9]{1,4})?"
+      required:
+      - sku
+      - quantity
+      - unitPrice
+    ReceiveOrderRequest:
+      type: object
+      required:
+      - sourceSystem
+      - externalId
+      - currency
+      - declaredTotalAmount
+      - items
+      properties:
+        sourceSystem:
+          type: string
+          pattern: \S
+          maxLength: 64
+        externalId:
+          type: string
+          pattern: \S
+          maxLength: 128
+        currency:
+          type: string
+          pattern: EUR|GBP|USD
+        declaredTotalAmount:
+          type: string
+          pattern: "(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReceiveOrderItemRequest"
+          minItems: 1
+          maxItems: 500
     ServiceInfoResponse:
       type: object
       required:
@@ -15,6 +170,10 @@ components:
           type: string
         version:
           type: string
+    UUID:
+      type: string
+      format: uuid
+      pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
 paths:
   /api/service-info:
     get:
@@ -29,6 +188,43 @@ paths:
       summary: Get Service Info
       tags:
       - Service Info Resource
+  /api/v1/orders:
+    post:
+      summary: Receive an order
+      operationId: receive
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReceiveOrderRequest"
+        required: true
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+        "200":
+          description: Equivalent order replay
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+        "400":
+          description: Invalid order request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "409":
+          description: Source identity already exists with different content
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+      tags:
+      - Order Resource
 info:
   title: Commerce Integration Hub API
   version: 0.1.0-SNAPSHOT
