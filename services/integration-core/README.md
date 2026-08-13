@@ -84,6 +84,10 @@ Run the complete build, including `*IT` tests with Quarkus and PostgreSQL:
 ./mvnw verify
 ```
 
+The combined unit and integration test coverage report is generated at
+`target/site/jacoco/index.html`. jOOQ-generated classes are excluded; no coverage
+threshold is enforced yet.
+
 Use `clean verify` to regenerate jOOQ sources and the committed OpenAPI files:
 
 ```bash
