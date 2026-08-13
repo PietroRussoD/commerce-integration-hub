@@ -31,7 +31,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 @QuarkusTest
-class JooqOrderRepositoryTest {
+class JooqOrderRepositoryIT {
     private val fingerprinter = CanonicalOrderPayloadFingerprinter()
 
     @Inject

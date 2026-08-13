@@ -72,6 +72,14 @@ decimals. A golden-hash test guards against accidental format changes.
 
 ## Build
 
+Run the fast, framework-free unit tests:
+
+```bash
+./mvnw test
+```
+
+Run the complete build, including `*IT` tests with Quarkus and PostgreSQL:
+
 ```bash
 ./mvnw verify
 ```

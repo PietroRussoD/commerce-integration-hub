@@ -11,7 +11,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 @QuarkusTest
-class OrderResourceTest {
+class OrderResourceIT {
     @Inject
     lateinit var dslContext: DSLContext
 

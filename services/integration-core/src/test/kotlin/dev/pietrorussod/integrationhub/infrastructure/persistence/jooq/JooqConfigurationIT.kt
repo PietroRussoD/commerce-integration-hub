@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 @QuarkusTest
-class JooqConfigurationTest {
+class JooqConfigurationIT {
     @Inject
     lateinit var dslContext: DSLContext
 
