@@ -43,4 +43,5 @@ cd services/integration-core
 ```
 
 See [Integration Core](services/integration-core/README.md) for service-level
-architecture and operational details.
+architecture and operational details. The current PostgreSQL structure is shown
+in the [relational data model](docs/data-model.md).
