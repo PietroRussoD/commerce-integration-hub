@@ -9,6 +9,17 @@ erDiagram
     orders ||--o{ integration_events : records
     orders ||..o{ outbox_events : "logical aggregate reference"
 
+    source_credentials {
+        varchar key_id PK
+        varchar source_system
+        char secret_mac
+        smallint pepper_version
+        varchar status
+        timestamptz created_at
+        timestamptz expires_at
+        timestamptz revoked_at
+    }
+
     orders {
         uuid id PK
         varchar source_system
@@ -73,3 +84,7 @@ key. The two unique constraints on `order_items` combine `order_id` with
 `outbox_events.aggregate_id` is deliberately a logical reference rather than a
 foreign key because the outbox is structured to carry events for different
 aggregate types. The current schema restricts `aggregate_type` to `ORDER`.
+
+`source_credentials` stores an HMAC of each secret, never the plaintext API key.
+Its `source_system` value will become the authenticated source identity when the
+HTTP authentication increment is connected.
