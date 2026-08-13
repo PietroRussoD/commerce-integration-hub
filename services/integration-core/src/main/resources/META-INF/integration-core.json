@@ -214,14 +214,14 @@
         "summary" : "Receive an order",
         "operationId" : "receiveOrder",
         "requestBody" : {
+          "required" : true,
           "content" : {
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/ReceiveOrderRequest"
               }
             }
-          },
-          "required" : true
+          }
         },
         "responses" : {
           "201" : {
