@@ -6,7 +6,7 @@ import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 
 @QuarkusTest
-class HealthEndpointTest {
+class HealthEndpointIT {
     @Test
     fun `reports live status`() {
         given()

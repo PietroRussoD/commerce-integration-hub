@@ -7,7 +7,7 @@ import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 
 @QuarkusTest
-class ServiceInfoResourceTest {
+class ServiceInfoResourceIT {
     @field:ConfigProperty(name = "quarkus.application.name")
     lateinit var applicationName: String
 

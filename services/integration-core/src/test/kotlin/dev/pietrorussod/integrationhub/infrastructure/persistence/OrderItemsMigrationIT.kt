@@ -15,7 +15,7 @@ import java.time.ZoneOffset
 import java.util.UUID
 
 @QuarkusTest
-class OrderItemsMigrationTest {
+class OrderItemsMigrationIT {
     @Inject
     lateinit var dataSource: AgroalDataSource
 
