@@ -86,7 +86,9 @@ Run the complete build, including `*IT` tests with Quarkus and PostgreSQL:
 
 The combined unit and integration test coverage report is generated at
 `target/site/jacoco/index.html`. jOOQ-generated classes are excluded; no coverage
-threshold is enforced yet.
+threshold is enforced yet. CI uploads the same report as the
+`integration-core-coverage` artifact on the
+[GitHub Actions run](https://github.com/PietroRussoD/commerce-integration-hub/actions/workflows/ci.yml).
 
 Use `clean verify` to regenerate jOOQ sources and the committed OpenAPI files:
 
