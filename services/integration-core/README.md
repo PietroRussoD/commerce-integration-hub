@@ -73,7 +73,8 @@ A first ingestion stores one `ORDER_RECEIVED` timeline entry and one pending
 `OrderReceived` version 1 outbox event. Equivalent or conflicting replays do not
 create additional events. PostgreSQL integration tests verify atomic rollback
 when the outbox insert fails. Publication is intentionally deferred to a later
-increment.
+increment. See the repository [relational data model](../../docs/data-model.md)
+for the implemented tables and relationships.
 
 ## Prerequisites
 
