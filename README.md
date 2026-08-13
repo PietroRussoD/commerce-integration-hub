@@ -9,7 +9,8 @@ The repository currently contains the Kotlin Integration Core baseline, a
 currency-aware order aggregate, HTTP ingestion and retrieval, and a PostgreSQL
 schema managed with Flyway and accessed through a jOOQ repository adapter. The
 repository persists complete orders and classifies equivalent and conflicting
-replays using a versioned canonical payload fingerprint.
+replays using a versioned canonical payload fingerprint. New orders, timeline
+events, and pending outbox events are committed atomically.
 
 The current baseline establishes:
 
@@ -24,8 +25,8 @@ The current baseline establishes:
 - separate unit and integration-test execution with combined coverage reporting;
 - PostgreSQL integration tests backed by Quarkus Dev Services.
 
-Authentication, transactional outbox persistence, messaging, search, external
-connectors, and user interfaces will be added as separate executable increments.
+Authentication, outbox publishing, messaging, search, external connectors, and
+user interfaces will be added as separate executable increments.
 
 ## Repository structure
 

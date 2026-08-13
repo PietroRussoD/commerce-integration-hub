@@ -16,6 +16,8 @@ class ReceiveOrderUseCase(
     private val clock: Clock,
     private val generateOrderId: () -> UUID,
     private val generateOrderItemId: () -> UUID,
+    private val generateEventId: () -> UUID,
+    private val generateCorrelationId: () -> UUID,
 ) {
     fun receive(command: ReceiveOrderCommand): ReceiveOrderResult {
         val order =
@@ -26,7 +28,14 @@ class ReceiveOrderUseCase(
             }
 
         val payloadFingerprint = payloadFingerprinter.fingerprint(order)
-        val insertResult = orderRepository.insertIfAbsent(order, payloadFingerprint)
+        val event =
+            OrderReceivedEvent(
+                id = generateEventId(),
+                correlationId = generateCorrelationId(),
+                order = order,
+                occurredAt = order.receivedAt,
+            )
+        val insertResult = orderRepository.insertIfAbsent(event, payloadFingerprint)
 
         return ReceiveOrderResult(
             order = insertResult.order,
