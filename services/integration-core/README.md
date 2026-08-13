@@ -3,10 +3,10 @@
 The Integration Core owns the canonical order model and reliable ingestion
 workflow.
 
-The current increment implements a currency-aware order aggregate, its
-receive-order use case, and transactional PostgreSQL persistence through Flyway
+The current increment implements a currency-aware order aggregate, HTTP order
+ingestion and retrieval, and transactional PostgreSQL persistence through Flyway
 and jOOQ. It includes automated tests, health checks, Swagger UI, and committed
-OpenAPI files. Messaging and search are not implemented yet.
+OpenAPI files. Authentication, messaging, and search are not implemented yet.
 
 The service persists a canonical payload fingerprint with each order. Reusing a
 source identity returns `ALREADY_RECEIVED` for equivalent content and

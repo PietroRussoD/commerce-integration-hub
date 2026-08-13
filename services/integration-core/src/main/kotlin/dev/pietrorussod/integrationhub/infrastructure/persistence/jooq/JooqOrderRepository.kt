@@ -6,10 +6,12 @@ import dev.pietrorussod.integrationhub.application.order.OrderRepository
 import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
 import dev.pietrorussod.integrationhub.domain.order.Order
+import dev.pietrorussod.integrationhub.domain.order.OrderId
 import dev.pietrorussod.integrationhub.domain.order.PayloadFingerprint
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.OrderItems.Companion.ORDER_ITEMS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.Orders.Companion.ORDERS
+import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.records.OrdersRecord
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
@@ -70,6 +72,16 @@ class JooqOrderRepository
             externalOrderId: ExternalOrderId,
         ): Order? = findStoredOrderBySourceIdentity(sourceSystem, externalOrderId)?.order
 
+        override fun findById(orderId: OrderId): Order? {
+            val orderRecord =
+                dslContext
+                    .selectFrom(ORDERS)
+                    .where(ORDERS.ID.eq(orderId.value))
+                    .fetchOne()
+
+            return orderRecord?.toStoredOrder()?.order
+        }
+
         private fun findStoredOrderBySourceIdentity(
             sourceSystem: SourceSystem,
             externalOrderId: ExternalOrderId,
@@ -81,28 +93,28 @@ class JooqOrderRepository
                     .and(ORDERS.EXTERNAL_ORDER_ID.eq(externalOrderId.value))
                     .fetchOne()
 
-            if (orderRecord == null) {
-                return null
-            }
+            return orderRecord?.toStoredOrder()
+        }
 
+        private fun OrdersRecord.toStoredOrder(): StoredOrder {
             val currency =
                 Currency.from(
-                    requireNotNull(orderRecord.currency) { "Persisted currency must not be null" },
+                    requireNotNull(currency) { "Persisted currency must not be null" },
                 )
             val items =
                 dslContext
                     .selectFrom(ORDER_ITEMS)
-                    .where(ORDER_ITEMS.ORDER_ID.eq(orderRecord.id))
+                    .where(ORDER_ITEMS.ORDER_ID.eq(id))
                     .orderBy(ORDER_ITEMS.POSITION)
                     .fetch()
                     .map { it.toDomain(currency) }
 
             return StoredOrder(
-                order = orderRecord.toDomain(currency, items),
+                order = toDomain(currency, items),
                 payloadFingerprint =
                     PayloadFingerprint(
-                        value = requireNotNull(orderRecord.payloadFingerprint),
-                        canonicalizationVersion = requireNotNull(orderRecord.payloadFingerprintVersion),
+                        value = requireNotNull(payloadFingerprint),
+                        canonicalizationVersion = requireNotNull(payloadFingerprintVersion),
                     ),
             )
         }

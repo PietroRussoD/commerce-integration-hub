@@ -61,6 +61,47 @@ class OrderResourceIT {
     }
 
     @Test
+    fun `gets a created order by id`() {
+        val createdOrder =
+            given()
+                .contentType("application/json")
+                .body(validOrderRequest())
+                .post("/api/v1/orders")
+        val orderId = createdOrder.jsonPath().getString("id")
+
+        given()
+            .`when`()
+            .get("/api/v1/orders/$orderId")
+            .then()
+            .statusCode(200)
+            .body("id", equalTo(orderId))
+            .body("sourceSystem", equalTo("MARKETPLACE_A"))
+            .body("items[0].sku", equalTo("SKU-BOOK-1"))
+    }
+
+    @Test
+    fun `returns not found for an unknown order id`() {
+        given()
+            .`when`()
+            .get("/api/v1/orders/018f38c2-1b95-7cc4-bb89-72d26a6f9f99")
+            .then()
+            .statusCode(404)
+            .contentType("application/problem+json")
+            .body("code", equalTo("ORDER_NOT_FOUND"))
+    }
+
+    @Test
+    fun `rejects a malformed order id`() {
+        given()
+            .`when`()
+            .get("/api/v1/orders/not-a-uuid")
+            .then()
+            .statusCode(400)
+            .contentType("application/problem+json")
+            .body("code", equalTo("INVALID_ORDER_ID"))
+    }
+
+    @Test
     fun `reports a conflict for the same source identity with different content`() {
         given()
             .contentType("application/json")

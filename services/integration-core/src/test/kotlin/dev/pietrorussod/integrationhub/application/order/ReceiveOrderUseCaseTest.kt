@@ -3,6 +3,7 @@ package dev.pietrorussod.integrationhub.application.order
 import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
 import dev.pietrorussod.integrationhub.domain.order.Order
+import dev.pietrorussod.integrationhub.domain.order.OrderId
 import dev.pietrorussod.integrationhub.domain.order.OrderStatus
 import dev.pietrorussod.integrationhub.domain.order.PayloadFingerprint
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
@@ -204,5 +205,7 @@ class ReceiveOrderUseCaseTest {
             savedOrders.firstOrNull {
                 it.sourceSystem == sourceSystem && it.externalOrderId == externalOrderId
             }
+
+        override fun findById(orderId: OrderId): Order? = savedOrders.firstOrNull { it.id == orderId }
     }
 }
