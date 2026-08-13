@@ -147,6 +147,76 @@ class OrderResourceIT {
             .body("errors[0].field", equalTo("currency"))
     }
 
+    @Test
+    fun `returns problem details for malformed JSON`() {
+        given()
+            .contentType("application/json")
+            .body("{broken")
+            .`when`()
+            .post("/api/v1/orders")
+            .then()
+            .statusCode(400)
+            .contentType("application/problem+json")
+            .body("code", equalTo("INVALID_JSON_BODY"))
+    }
+
+    @Test
+    fun `returns problem details for an unknown request field`() {
+        val requestWithUnknownField = validOrderRequest().replaceFirst("{", "{\"unexpected\": true,")
+
+        given()
+            .contentType("application/json")
+            .body(requestWithUnknownField)
+            .`when`()
+            .post("/api/v1/orders")
+            .then()
+            .statusCode(400)
+            .contentType("application/problem+json")
+            .body("code", equalTo("INVALID_JSON_BODY"))
+    }
+
+    @Test
+    fun `returns problem details for a missing required request field`() {
+        val requestWithoutCurrency = validOrderRequest().replace("\"currency\": \"EUR\",", "")
+
+        given()
+            .contentType("application/json")
+            .body(requestWithoutCurrency)
+            .`when`()
+            .post("/api/v1/orders")
+            .then()
+            .statusCode(400)
+            .contentType("application/problem+json")
+            .body("code", equalTo("REQUEST_VALIDATION_FAILED"))
+            .body("errors[0].field", equalTo("currency"))
+    }
+
+    @Test
+    fun `returns problem details for an empty request body`() {
+        given()
+            .contentType("application/json")
+            .body("")
+            .`when`()
+            .post("/api/v1/orders")
+            .then()
+            .statusCode(400)
+            .contentType("application/problem+json")
+            .body("code", equalTo("INVALID_JSON_BODY"))
+    }
+
+    @Test
+    fun `returns problem details for an unsupported media type`() {
+        given()
+            .contentType("text/plain")
+            .body(validOrderRequest())
+            .`when`()
+            .post("/api/v1/orders")
+            .then()
+            .statusCode(415)
+            .contentType("application/problem+json")
+            .body("code", equalTo("UNSUPPORTED_MEDIA_TYPE"))
+    }
+
     private fun validOrderRequest(
         currency: String = "EUR",
         declaredTotal: String = "39.98",

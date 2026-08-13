@@ -7,18 +7,18 @@ import java.math.BigDecimal
 
 fun ReceiveOrderRequest.toCommand(): ReceiveOrderCommand =
     ReceiveOrderCommand(
-        sourceSystem = sourceSystem,
-        externalOrderId = externalId,
-        currency = currency,
-        declaredTotalAmount = BigDecimal(declaredTotalAmount),
+        sourceSystem = requireNotNull(sourceSystem),
+        externalOrderId = requireNotNull(externalId),
+        currency = requireNotNull(currency),
+        declaredTotalAmount = BigDecimal(requireNotNull(declaredTotalAmount)),
         items =
-            items.map { item ->
+            requireNotNull(items).map { item ->
                 ReceiveOrderItemCommand(
                     externalLineId = item.externalLineId,
-                    sku = item.sku,
+                    sku = requireNotNull(item.sku),
                     description = item.description,
-                    quantity = BigDecimal(item.quantity),
-                    unitPrice = BigDecimal(item.unitPrice),
+                    quantity = BigDecimal(requireNotNull(item.quantity)),
+                    unitPrice = BigDecimal(requireNotNull(item.unitPrice)),
                 )
             },
     )

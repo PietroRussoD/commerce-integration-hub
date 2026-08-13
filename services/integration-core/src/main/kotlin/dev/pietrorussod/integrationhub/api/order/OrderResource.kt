@@ -2,6 +2,7 @@ package dev.pietrorussod.integrationhub.api.order
 
 import dev.pietrorussod.integrationhub.api.problem.PROBLEM_JSON
 import dev.pietrorussod.integrationhub.api.problem.ProblemDetails
+import dev.pietrorussod.integrationhub.api.problem.invalidJsonBody
 import dev.pietrorussod.integrationhub.api.problem.toResponse
 import dev.pietrorussod.integrationhub.application.order.GetOrderUseCase
 import dev.pietrorussod.integrationhub.application.order.ReceiveOrderOutcome
@@ -21,6 +22,7 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType
 import org.eclipse.microprofile.openapi.annotations.media.Content
 import org.eclipse.microprofile.openapi.annotations.media.Schema
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
 import java.net.URI
@@ -58,8 +60,13 @@ class OrderResource(
         ),
     )
     fun receive(
-        @Valid request: ReceiveOrderRequest,
+        @RequestBody(required = true)
+        @Valid request: ReceiveOrderRequest?,
     ): Response {
+        if (request == null) {
+            return invalidJsonBody("/api/v1/orders")
+        }
+
         val result = receiveOrderUseCase.receive(request.toCommand())
         val location = URI.create("/api/v1/orders/${result.order.id.value}")
 
