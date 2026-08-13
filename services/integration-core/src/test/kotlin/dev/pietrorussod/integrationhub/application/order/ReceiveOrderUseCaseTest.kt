@@ -21,12 +21,14 @@ class ReceiveOrderUseCaseTest {
     private val fixedClock = Clock.fixed(Instant.parse("2026-08-01T07:30:00Z"), ZoneOffset.UTC)
     private val fixedOrderId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
     private val fixedItemId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f53")
+    private val fixedEventId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f54")
+    private val fixedCorrelationId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f55")
     private val fingerprinter = CanonicalOrderPayloadFingerprinter()
 
     @Test
     fun `creates an order for a new source identity`() {
         val repository = InMemoryOrderRepository()
-        val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
+        val useCase = useCase(repository)
 
         val result =
             useCase.receive(
@@ -54,12 +56,21 @@ class ReceiveOrderUseCaseTest {
         assertEquals(BigDecimal("39.98"), result.order.totalAmount.amount)
         assertEquals(fixedClock.instant(), result.order.receivedAt)
         assertEquals(result.order, repository.savedOrders.single())
+        assertEquals(
+            OrderReceivedEvent(
+                id = fixedEventId,
+                correlationId = fixedCorrelationId,
+                order = result.order,
+                occurredAt = fixedClock.instant(),
+            ),
+            repository.savedEvents.single(),
+        )
     }
 
     @Test
     fun `returns the existing order when the same source identity is received again`() {
         val repository = InMemoryOrderRepository()
-        val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
+        val useCase = useCase(repository)
         val command =
             ReceiveOrderCommand(
                 sourceSystem = "marketplace-a",
@@ -76,12 +87,13 @@ class ReceiveOrderUseCaseTest {
         assertEquals(ReceiveOrderOutcome.ALREADY_RECEIVED, secondResult.outcome)
         assertEquals(firstResult.order, secondResult.order)
         assertEquals(1, repository.savedOrders.size)
+        assertEquals(1, repository.savedEvents.size)
     }
 
     @Test
     fun `reports a conflict when the same source identity has different content`() {
         val repository = InMemoryOrderRepository()
-        val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
+        val useCase = useCase(repository)
         val original =
             ReceiveOrderCommand(
                 sourceSystem = "marketplace-a",
@@ -99,12 +111,13 @@ class ReceiveOrderUseCaseTest {
         assertEquals(ReceiveOrderOutcome.PAYLOAD_CONFLICT, conflictResult.outcome)
         assertEquals(firstResult.order, conflictResult.order)
         assertEquals(1, repository.savedOrders.size)
+        assertEquals(1, repository.savedEvents.size)
     }
 
     @Test
     fun `rejects an unsupported currency before saving the order`() {
         val repository = InMemoryOrderRepository()
-        val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
+        val useCase = useCase(repository)
 
         assertThrows(InvalidReceiveOrderCommandException::class.java) {
             useCase.receive(
@@ -124,7 +137,7 @@ class ReceiveOrderUseCaseTest {
     @Test
     fun `rejects an order without items before saving it`() {
         val repository = InMemoryOrderRepository()
-        val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
+        val useCase = useCase(repository)
 
         assertThrows(InvalidReceiveOrderCommandException::class.java) {
             useCase.receive(
@@ -144,7 +157,7 @@ class ReceiveOrderUseCaseTest {
     @Test
     fun `rejects a declared total that differs from the calculated total before saving`() {
         val repository = InMemoryOrderRepository()
-        val useCase = ReceiveOrderUseCase(repository, fingerprinter, fixedClock, { fixedOrderId }) { fixedItemId }
+        val useCase = useCase(repository)
 
         assertThrows(InvalidReceiveOrderCommandException::class.java) {
             useCase.receive(
@@ -170,14 +183,27 @@ class ReceiveOrderUseCaseTest {
             unitPrice = BigDecimal("19.99"),
         )
 
+    private fun useCase(repository: OrderRepository): ReceiveOrderUseCase =
+        ReceiveOrderUseCase(
+            orderRepository = repository,
+            payloadFingerprinter = fingerprinter,
+            clock = fixedClock,
+            generateOrderId = { fixedOrderId },
+            generateOrderItemId = { fixedItemId },
+            generateEventId = { fixedEventId },
+            generateCorrelationId = { fixedCorrelationId },
+        )
+
     private class InMemoryOrderRepository : OrderRepository {
         val savedOrders = mutableListOf<Order>()
+        val savedEvents = mutableListOf<OrderReceivedEvent>()
         private val savedFingerprints = mutableMapOf<UUID, PayloadFingerprint>()
 
         override fun insertIfAbsent(
-            order: Order,
+            event: OrderReceivedEvent,
             payloadFingerprint: PayloadFingerprint,
         ): OrderInsertResult {
+            val order = event.order
             val existingOrder =
                 findBySourceIdentity(
                     order.sourceSystem,
@@ -194,6 +220,7 @@ class ReceiveOrderUseCaseTest {
             }
 
             savedOrders.add(order)
+            savedEvents.add(event)
             savedFingerprints[order.id.value] = payloadFingerprint
             return OrderInsertResult(order, OrderInsertOutcome.INSERTED)
         }

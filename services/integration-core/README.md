@@ -5,8 +5,10 @@ workflow.
 
 The current increment implements a currency-aware order aggregate, HTTP order
 ingestion and retrieval, and transactional PostgreSQL persistence through Flyway
-and jOOQ. It includes automated tests, health checks, Swagger UI, and committed
-OpenAPI files. Authentication, messaging, and search are not implemented yet.
+and jOOQ. A new order, its timeline event, and a versioned pending outbox event
+are committed atomically. It includes automated tests, health checks, Swagger
+UI, and committed OpenAPI files. Authentication, outbox publishing, messaging,
+and search are not implemented yet.
 
 The service persists a canonical payload fingerprint with each order. Reusing a
 source identity returns `ALREADY_RECEIVED` for equivalent content and
@@ -64,6 +66,14 @@ status, and server-generated timestamps are excluded.
 The binary representation has a fixed field order, embeds its version, uses
 length-prefixed UTF-8 strings, marks nullable values explicitly, and normalizes
 decimals. A golden-hash test guards against accidental format changes.
+
+## Event persistence
+
+A first ingestion stores one `ORDER_RECEIVED` timeline entry and one pending
+`OrderReceived` version 1 outbox event. Equivalent or conflicting replays do not
+create additional events. PostgreSQL integration tests verify atomic rollback
+when the outbox insert fails. Publication is intentionally deferred to a later
+increment.
 
 ## Prerequisites
 

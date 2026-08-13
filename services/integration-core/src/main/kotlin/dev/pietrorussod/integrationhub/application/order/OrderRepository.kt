@@ -8,7 +8,7 @@ import dev.pietrorussod.integrationhub.domain.order.SourceSystem
 
 interface OrderRepository {
     fun insertIfAbsent(
-        order: Order,
+        event: OrderReceivedEvent,
         payloadFingerprint: PayloadFingerprint,
     ): OrderInsertResult
 

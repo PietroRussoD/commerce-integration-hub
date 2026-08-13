@@ -1,7 +1,9 @@
 package dev.pietrorussod.integrationhub.infrastructure.persistence.jooq
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import dev.pietrorussod.integrationhub.application.order.OrderInsertOutcome
 import dev.pietrorussod.integrationhub.application.order.OrderInsertResult
+import dev.pietrorussod.integrationhub.application.order.OrderReceivedEvent
 import dev.pietrorussod.integrationhub.application.order.OrderRepository
 import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
@@ -9,26 +11,35 @@ import dev.pietrorussod.integrationhub.domain.order.Order
 import dev.pietrorussod.integrationhub.domain.order.OrderId
 import dev.pietrorussod.integrationhub.domain.order.PayloadFingerprint
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
+import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.IntegrationEvents.Companion.INTEGRATION_EVENTS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.OrderItems.Companion.ORDER_ITEMS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.Orders.Companion.ORDERS
+import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.OutboxEvents.Companion.OUTBOX_EVENTS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.records.OrdersRecord
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import org.jooq.DSLContext
+import org.jooq.JSON
+import java.math.BigDecimal
+import java.time.Instant
 import java.time.ZoneOffset
+import java.util.UUID
 
 @ApplicationScoped
 class JooqOrderRepository
     @Inject
     constructor(
         private val dslContext: DSLContext,
+        private val objectMapper: ObjectMapper,
     ) : OrderRepository {
         @Transactional
         override fun insertIfAbsent(
-            order: Order,
+            event: OrderReceivedEvent,
             payloadFingerprint: PayloadFingerprint,
         ): OrderInsertResult {
+            val order = event.order
+            val outboxPayload = serializeOutboxPayload(event)
             val insertedRows =
                 dslContext
                     .insertInto(ORDERS)
@@ -47,6 +58,8 @@ class JooqOrderRepository
 
             if (insertedRows == 1) {
                 insertItems(order)
+                insertIntegrationEvent(event)
+                insertOutboxEvent(event, outboxPayload)
                 return OrderInsertResult(order, OrderInsertOutcome.INSERTED)
             }
 
@@ -138,8 +151,94 @@ class JooqOrderRepository
             dslContext.batch(statements).execute()
         }
 
+        private fun insertIntegrationEvent(event: OrderReceivedEvent) {
+            dslContext
+                .insertInto(INTEGRATION_EVENTS)
+                .set(INTEGRATION_EVENTS.ID, event.id)
+                .set(INTEGRATION_EVENTS.ORDER_ID, event.order.id.value)
+                .set(INTEGRATION_EVENTS.EVENT_TYPE, ORDER_RECEIVED_TIMELINE_EVENT)
+                .set(INTEGRATION_EVENTS.TO_STATUS, event.order.status.name)
+                .set(INTEGRATION_EVENTS.CORRELATION_ID, event.correlationId)
+                .set(INTEGRATION_EVENTS.OCCURRED_AT, event.occurredAt.atOffset(ZoneOffset.UTC))
+                .execute()
+        }
+
+        private fun insertOutboxEvent(
+            event: OrderReceivedEvent,
+            payload: JSON,
+        ) {
+            dslContext
+                .insertInto(OUTBOX_EVENTS)
+                .set(OUTBOX_EVENTS.ID, event.id)
+                .set(OUTBOX_EVENTS.AGGREGATE_TYPE, ORDER_AGGREGATE_TYPE)
+                .set(OUTBOX_EVENTS.AGGREGATE_ID, event.order.id.value)
+                .set(OUTBOX_EVENTS.EVENT_TYPE, ORDER_RECEIVED_OUTBOX_EVENT)
+                .set(OUTBOX_EVENTS.EVENT_VERSION, ORDER_RECEIVED_EVENT_VERSION)
+                .set(OUTBOX_EVENTS.PAYLOAD, payload)
+                .set(OUTBOX_EVENTS.CORRELATION_ID, event.correlationId)
+                .set(OUTBOX_EVENTS.CREATED_AT, event.occurredAt.atOffset(ZoneOffset.UTC))
+                .set(OUTBOX_EVENTS.STATUS, PENDING_OUTBOX_STATUS)
+                .set(OUTBOX_EVENTS.NEXT_ATTEMPT_AT, event.occurredAt.atOffset(ZoneOffset.UTC))
+                .execute()
+        }
+
+        private fun serializeOutboxPayload(event: OrderReceivedEvent): JSON =
+            JSON.valueOf(objectMapper.writeValueAsString(event.toPayload()))
+
+        private fun OrderReceivedEvent.toPayload(): OrderReceivedPayload =
+            OrderReceivedPayload(
+                orderId = order.id.value,
+                sourceSystem = order.sourceSystem.value,
+                externalOrderId = order.externalOrderId.value,
+                currency = order.currency.name,
+                totalAmount = order.totalAmount.amount,
+                status = order.status.name,
+                receivedAt = order.receivedAt,
+                items =
+                    order.items.map { item ->
+                        OrderReceivedItemPayload(
+                            externalLineId = item.externalLineId,
+                            sku = item.sku,
+                            description = item.description,
+                            quantity = item.quantity,
+                            unitPrice = item.unitPrice.amount,
+                            lineAmount = item.lineAmount.amount,
+                            position = item.position,
+                        )
+                    },
+            )
+
         private data class StoredOrder(
             val order: Order,
             val payloadFingerprint: PayloadFingerprint,
         )
+
+        private data class OrderReceivedPayload(
+            val orderId: UUID,
+            val sourceSystem: String,
+            val externalOrderId: String,
+            val currency: String,
+            val totalAmount: BigDecimal,
+            val status: String,
+            val receivedAt: Instant,
+            val items: List<OrderReceivedItemPayload>,
+        )
+
+        private data class OrderReceivedItemPayload(
+            val externalLineId: String?,
+            val sku: String,
+            val description: String?,
+            val quantity: BigDecimal,
+            val unitPrice: BigDecimal,
+            val lineAmount: BigDecimal,
+            val position: Int,
+        )
+
+        private companion object {
+            const val ORDER_AGGREGATE_TYPE = "ORDER"
+            const val ORDER_RECEIVED_TIMELINE_EVENT = "ORDER_RECEIVED"
+            const val ORDER_RECEIVED_OUTBOX_EVENT = "OrderReceived"
+            const val ORDER_RECEIVED_EVENT_VERSION = 1
+            const val PENDING_OUTBOX_STATUS = "PENDING"
+        }
     }

@@ -23,5 +23,7 @@ class OrderApplicationConfiguration {
             clock = Clock.systemUTC(),
             generateOrderId = UUID::randomUUID,
             generateOrderItemId = UUID::randomUUID,
+            generateEventId = UUID::randomUUID,
+            generateCorrelationId = UUID::randomUUID,
         )
 }

@@ -1,6 +1,7 @@
 package dev.pietrorussod.integrationhub.api.order
 
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.Orders.Companion.ORDERS
+import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.OutboxEvents.Companion.OUTBOX_EVENTS
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.RestAssured.given
 import jakarta.inject.Inject
@@ -17,6 +18,7 @@ class OrderResourceIT {
 
     @BeforeEach
     fun deleteOrders() {
+        dslContext.deleteFrom(OUTBOX_EVENTS).execute()
         dslContext.deleteFrom(ORDERS).execute()
     }
 
