@@ -4,10 +4,14 @@ import dev.pietrorussod.integrationhub.api.problem.PROBLEM_JSON
 import dev.pietrorussod.integrationhub.api.problem.ProblemDetails
 import dev.pietrorussod.integrationhub.api.problem.invalidJsonBody
 import dev.pietrorussod.integrationhub.api.problem.toResponse
+import dev.pietrorussod.integrationhub.api.security.SOURCE_API_KEY_HEADER
+import dev.pietrorussod.integrationhub.api.security.SOURCE_API_KEY_SECURITY_SCHEME
+import dev.pietrorussod.integrationhub.api.security.SourceAuthenticated
 import dev.pietrorussod.integrationhub.application.order.GetOrderUseCase
 import dev.pietrorussod.integrationhub.application.order.ReceiveOrderOutcome
 import dev.pietrorussod.integrationhub.application.order.ReceiveOrderUseCase
 import dev.pietrorussod.integrationhub.domain.order.OrderId
+import dev.pietrorussod.integrationhub.domain.order.SourceSystem
 import jakarta.validation.Valid
 import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.GET
@@ -15,27 +19,42 @@ import jakarta.ws.rs.POST
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
+import jakarta.ws.rs.core.Context
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
+import jakarta.ws.rs.core.SecurityContext
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType
+import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeIn
+import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType
 import org.eclipse.microprofile.openapi.annotations.media.Content
 import org.eclipse.microprofile.openapi.annotations.media.Schema
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
+import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme
 import java.net.URI
 import java.util.UUID
 
 @Path("/api/v1/orders")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@SecurityScheme(
+    securitySchemeName = SOURCE_API_KEY_SECURITY_SCHEME,
+    type = SecuritySchemeType.APIKEY,
+    apiKeyName = SOURCE_API_KEY_HEADER,
+    `in` = SecuritySchemeIn.HEADER,
+    description = "Source credential formatted as <key_id>.<secret>",
+)
 class OrderResource(
     private val receiveOrderUseCase: ReceiveOrderUseCase,
     private val getOrderUseCase: GetOrderUseCase,
 ) {
     @POST
+    @SourceAuthenticated
+    @SecurityRequirement(name = SOURCE_API_KEY_SECURITY_SCHEME)
     @Operation(operationId = "receiveOrder", summary = "Receive an order")
     @APIResponses(
         APIResponse(
@@ -58,8 +77,14 @@ class OrderResource(
             description = "Source identity already exists with different content",
             content = [Content(mediaType = PROBLEM_JSON, schema = Schema(implementation = ProblemDetails::class))],
         ),
+        APIResponse(
+            responseCode = "401",
+            description = "Missing or invalid source API key",
+            content = [Content(mediaType = PROBLEM_JSON, schema = Schema(implementation = ProblemDetails::class))],
+        ),
     )
     fun receive(
+        @Context securityContext: SecurityContext,
         @RequestBody(required = true)
         @Valid request: ReceiveOrderRequest?,
     ): Response {
@@ -67,7 +92,8 @@ class OrderResource(
             return invalidJsonBody("/api/v1/orders")
         }
 
-        val result = receiveOrderUseCase.receive(request.toCommand())
+        val sourceSystem = SourceSystem.from(securityContext.userPrincipal.name)
+        val result = receiveOrderUseCase.receive(request.toCommand(sourceSystem))
         val location = URI.create("/api/v1/orders/${result.order.id.value}")
 
         return when (result.outcome) {

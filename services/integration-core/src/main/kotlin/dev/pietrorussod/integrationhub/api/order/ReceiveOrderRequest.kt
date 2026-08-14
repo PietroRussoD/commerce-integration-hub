@@ -10,10 +10,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema
 
 data class ReceiveOrderRequest(
     @field:NotBlank
-    @field:Size(max = 64)
-    @field:Schema(type = SchemaType.STRING, nullable = false)
-    val sourceSystem: String?,
-    @field:NotBlank
     @field:Size(max = 128)
     @field:Schema(type = SchemaType.STRING, nullable = false)
     val externalId: String?,
