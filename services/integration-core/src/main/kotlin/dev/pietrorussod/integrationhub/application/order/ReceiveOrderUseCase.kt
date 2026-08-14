@@ -17,7 +17,6 @@ class ReceiveOrderUseCase(
     private val generateOrderId: () -> UUID,
     private val generateOrderItemId: () -> UUID,
     private val generateEventId: () -> UUID,
-    private val generateCorrelationId: () -> UUID,
 ) {
     fun receive(command: ReceiveOrderCommand): ReceiveOrderResult {
         val order =
@@ -31,7 +30,7 @@ class ReceiveOrderUseCase(
         val event =
             OrderReceivedEvent(
                 id = generateEventId(),
-                correlationId = generateCorrelationId(),
+                correlationId = command.correlationId,
                 order = order,
                 occurredAt = order.receivedAt,
             )

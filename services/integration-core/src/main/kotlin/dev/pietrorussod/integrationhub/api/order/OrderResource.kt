@@ -1,5 +1,6 @@
 package dev.pietrorussod.integrationhub.api.order
 
+import dev.pietrorussod.integrationhub.api.correlation.CORRELATION_ID_HEADER
 import dev.pietrorussod.integrationhub.api.problem.PROBLEM_JSON
 import dev.pietrorussod.integrationhub.api.problem.ProblemDetails
 import dev.pietrorussod.integrationhub.api.problem.invalidJsonBody
@@ -19,11 +20,13 @@ import jakarta.ws.rs.POST
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
+import jakarta.ws.rs.container.ContainerRequestContext
 import jakarta.ws.rs.core.Context
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.core.SecurityContext
 import org.eclipse.microprofile.openapi.annotations.Operation
+import org.eclipse.microprofile.openapi.annotations.enums.ParameterIn
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType
 import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeIn
 import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType
@@ -56,6 +59,12 @@ class OrderResource(
     @SourceAuthenticated
     @SecurityRequirement(name = SOURCE_API_KEY_SECURITY_SCHEME)
     @Operation(operationId = "receiveOrder", summary = "Receive an order")
+    @Parameter(
+        name = CORRELATION_ID_HEADER,
+        description = "Optional request correlation UUID; invalid values are replaced",
+        `in` = ParameterIn.HEADER,
+        schema = Schema(type = SchemaType.STRING, format = "uuid"),
+    )
     @APIResponses(
         APIResponse(
             responseCode = "201",
@@ -84,6 +93,7 @@ class OrderResource(
         ),
     )
     fun receive(
+        @Context requestContext: ContainerRequestContext,
         @Context securityContext: SecurityContext,
         @RequestBody(required = true)
         @Valid request: ReceiveOrderRequest?,
@@ -93,7 +103,7 @@ class OrderResource(
         }
 
         val sourceSystem = SourceSystem.from(securityContext.userPrincipal.name)
-        val result = receiveOrderUseCase.receive(request.toCommand(sourceSystem))
+        val result = receiveOrderUseCase.receive(request.toCommand(sourceSystem, requestContext))
         val location = URI.create("/api/v1/orders/${result.order.id.value}")
 
         return when (result.outcome) {

@@ -34,6 +34,7 @@ class ReceiveOrderUseCaseTest {
             useCase.receive(
                 ReceiveOrderCommand(
                     sourceSystem = "marketplace-a",
+                    correlationId = fixedCorrelationId,
                     externalOrderId = "order-1001",
                     currency = "EUR",
                     declaredTotalAmount = BigDecimal("39.98"),
@@ -74,6 +75,7 @@ class ReceiveOrderUseCaseTest {
         val command =
             ReceiveOrderCommand(
                 sourceSystem = "marketplace-a",
+                correlationId = fixedCorrelationId,
                 externalOrderId = "order-1001",
                 currency = "EUR",
                 declaredTotalAmount = BigDecimal("39.98"),
@@ -97,6 +99,7 @@ class ReceiveOrderUseCaseTest {
         val original =
             ReceiveOrderCommand(
                 sourceSystem = "marketplace-a",
+                correlationId = fixedCorrelationId,
                 externalOrderId = "order-1001",
                 currency = "EUR",
                 declaredTotalAmount = BigDecimal("39.98"),
@@ -123,6 +126,7 @@ class ReceiveOrderUseCaseTest {
             useCase.receive(
                 ReceiveOrderCommand(
                     sourceSystem = "marketplace-a",
+                    correlationId = fixedCorrelationId,
                     externalOrderId = "order-1001",
                     currency = "CHF",
                     declaredTotalAmount = BigDecimal("39.98"),
@@ -143,6 +147,7 @@ class ReceiveOrderUseCaseTest {
             useCase.receive(
                 ReceiveOrderCommand(
                     sourceSystem = "marketplace-a",
+                    correlationId = fixedCorrelationId,
                     externalOrderId = "order-1001",
                     currency = "EUR",
                     declaredTotalAmount = BigDecimal.ZERO,
@@ -163,6 +168,7 @@ class ReceiveOrderUseCaseTest {
             useCase.receive(
                 ReceiveOrderCommand(
                     sourceSystem = "marketplace-a",
+                    correlationId = fixedCorrelationId,
                     externalOrderId = "order-1001",
                     currency = "EUR",
                     declaredTotalAmount = BigDecimal("39.97"),
@@ -191,7 +197,6 @@ class ReceiveOrderUseCaseTest {
             generateOrderId = { fixedOrderId },
             generateOrderItemId = { fixedItemId },
             generateEventId = { fixedEventId },
-            generateCorrelationId = { fixedCorrelationId },
         )
 
     private class InMemoryOrderRepository : OrderRepository {

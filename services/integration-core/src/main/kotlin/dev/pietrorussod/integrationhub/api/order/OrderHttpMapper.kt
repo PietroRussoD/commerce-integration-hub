@@ -1,14 +1,20 @@
 package dev.pietrorussod.integrationhub.api.order
 
+import dev.pietrorussod.integrationhub.api.correlation.correlationId
 import dev.pietrorussod.integrationhub.application.order.ReceiveOrderCommand
 import dev.pietrorussod.integrationhub.application.order.ReceiveOrderItemCommand
 import dev.pietrorussod.integrationhub.domain.order.Order
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
+import jakarta.ws.rs.container.ContainerRequestContext
 import java.math.BigDecimal
 
-fun ReceiveOrderRequest.toCommand(sourceSystem: SourceSystem): ReceiveOrderCommand =
+fun ReceiveOrderRequest.toCommand(
+    sourceSystem: SourceSystem,
+    requestContext: ContainerRequestContext,
+): ReceiveOrderCommand =
     ReceiveOrderCommand(
         sourceSystem = sourceSystem.value,
+        correlationId = requestContext.correlationId(),
         externalOrderId = requireNotNull(externalId),
         currency = requireNotNull(currency),
         declaredTotalAmount = BigDecimal(requireNotNull(declaredTotalAmount)),

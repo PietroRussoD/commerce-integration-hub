@@ -13,7 +13,8 @@ versioned pepper configuration and CDI composition are also implemented. Source
 API-key authentication protects order ingestion, and the source identity is
 derived from the stored credential rather than the request body. Order reads
 are authenticated and constrained to that same source. Outbox publishing,
-messaging, and search are not implemented yet.
+messaging, and search are not implemented yet. HTTP correlation IDs are returned
+on success and error responses and are persisted with ingestion events.
 
 The service persists a canonical payload fingerprint with each order. Reusing a
 source identity returns `ALREADY_RECEIVED` for equivalent content and
@@ -27,6 +28,7 @@ responsibilities rather than a fixed number of layers:
 ```text
 dev.pietrorussod.integrationhub/
   api/                         HTTP resources and transport DTOs
+    correlation/               request correlation boundary
     security/                  source API-key HTTP boundary
   application/authentication/ source authentication use case and ports
   application/order/           use cases, commands, results, and outbound ports
@@ -110,6 +112,19 @@ referencing an absent version produces an operational error when used.
 Production deployments must inject peppers through their secret-management
 boundary rather than repository configuration. Order ingestion expects the
 credential in the `X-Source-API-Key` header.
+
+## Correlation IDs
+
+Clients may send a canonical UUID in `X-Correlation-ID`. The service preserves a
+valid value; a missing, malformed, or non-canonical value is replaced with a new
+UUID rather than propagated. Every JAX-RS response includes the effective
+correlation ID, including authentication, validation, and unsupported-media-type
+errors.
+
+Order ingestion passes the effective ID explicitly into the application command
+and persists it on the atomic timeline and outbox records. Structured logging,
+W3C trace-context propagation, and broker headers belong to later observability
+and messaging increments.
 
 ## Build
 

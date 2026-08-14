@@ -1,6 +1,8 @@
 package dev.pietrorussod.integrationhub.api.order
 
+import dev.pietrorussod.integrationhub.api.correlation.CORRELATION_ID_HEADER
 import dev.pietrorussod.integrationhub.api.security.SOURCE_API_KEY_HEADER
+import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.IntegrationEvents.Companion.INTEGRATION_EVENTS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.Orders.Companion.ORDERS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.OutboxEvents.Companion.OUTBOX_EVENTS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.SourceCredentials.Companion.SOURCE_CREDENTIALS
@@ -11,12 +13,14 @@ import jakarta.inject.Inject
 import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.matchesPattern
 import org.jooq.DSLContext
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.HexFormat
+import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -37,6 +41,7 @@ class OrderResourceIT {
     @Test
     fun `creates an order`() {
         authenticatedRequest()
+            .header(CORRELATION_ID_HEADER, TEST_CORRELATION_ID)
             .contentType("application/json")
             .body(validOrderRequest())
             .`when`()
@@ -45,12 +50,17 @@ class OrderResourceIT {
             .statusCode(201)
             .header("Location", matchesPattern(".*/api/v1/orders/[0-9a-f-]+"))
             .header("Idempotent-Replay", equalTo("false"))
+            .header(CORRELATION_ID_HEADER, equalTo(TEST_CORRELATION_ID))
             .body("sourceSystem", equalTo("MARKETPLACE_A"))
             .body("externalId", equalTo("ORDER-2026-00042"))
             .body("currency", equalTo("EUR"))
             .body("totalAmount", equalTo("39.98"))
             .body("status", equalTo("RECEIVED"))
             .body("items[0].lineAmount", equalTo("39.98"))
+
+        val expectedCorrelationId = UUID.fromString(TEST_CORRELATION_ID)
+        assertEquals(expectedCorrelationId, dslContext.selectFrom(INTEGRATION_EVENTS).fetchSingle().correlationId)
+        assertEquals(expectedCorrelationId, dslContext.selectFrom(OUTBOX_EVENTS).fetchSingle().correlationId)
     }
 
     @Test
@@ -234,6 +244,7 @@ class OrderResourceIT {
     @Test
     fun `rejects a missing source API key before reading the request body`() {
         given()
+            .header(CORRELATION_ID_HEADER, "untrusted-value")
             .contentType("application/json")
             .body("{broken")
             .`when`()
@@ -241,6 +252,7 @@ class OrderResourceIT {
             .then()
             .statusCode(401)
             .header("WWW-Authenticate", equalTo("SourceApiKey"))
+            .header(CORRELATION_ID_HEADER, matchesPattern(CANONICAL_UUID_PATTERN))
             .contentType("application/problem+json")
             .body("code", equalTo("SOURCE_AUTHENTICATION_REQUIRED"))
     }
@@ -354,6 +366,8 @@ class OrderResourceIT {
         const val TEST_SECRET = "sssssssssssssssssssssssssssssssssssssssssss"
         const val OTHER_KEY_ID = "test-key-id-0002"
         const val OTHER_SECRET = "ttttttttttttttttttttttttttttttttttttttttttt"
+        const val TEST_CORRELATION_ID = "018f38c2-1b95-7cc4-bb89-72d26a6f9f55"
+        const val CANONICAL_UUID_PATTERN = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
         val TEST_PEPPER = ByteArray(32)
     }
 }
