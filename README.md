@@ -23,10 +23,12 @@ The current baseline establishes:
   Details responses;
 - generated and committed OpenAPI files;
 - separate unit and integration-test execution with combined coverage reporting;
-- PostgreSQL integration tests backed by Quarkus Dev Services.
+- PostgreSQL integration tests backed by Quarkus Dev Services;
+- source-credential persistence and verification, with HTTP enforcement still
+  pending.
 
-Authentication, outbox publishing, messaging, search, external connectors, and
-user interfaces will be added as separate executable increments.
+HTTP authentication enforcement, outbox publishing, messaging, search, external
+connectors, and user interfaces will be added as separate executable increments.
 
 ## Repository structure
 
@@ -44,4 +46,6 @@ cd services/integration-core
 
 See [Integration Core](services/integration-core/README.md) for service-level
 architecture and operational details. The current PostgreSQL structure is shown
-in the [relational data model](docs/data-model.md).
+in the [relational data model](docs/data-model.md). Significant design choices
+are recorded as short decision documents, starting with
+[source API-key authentication](docs/decisions/0001-source-api-key-authentication.md).
