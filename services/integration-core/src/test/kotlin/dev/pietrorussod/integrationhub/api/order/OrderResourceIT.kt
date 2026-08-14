@@ -30,7 +30,8 @@ class OrderResourceIT {
         dslContext.deleteFrom(OUTBOX_EVENTS).execute()
         dslContext.deleteFrom(ORDERS).execute()
         dslContext.deleteFrom(SOURCE_CREDENTIALS).execute()
-        insertSourceCredential()
+        insertSourceCredential(TEST_KEY_ID, TEST_SECRET, "MARKETPLACE_A")
+        insertSourceCredential(OTHER_KEY_ID, OTHER_SECRET, "MARKETPLACE_B")
     }
 
     @Test
@@ -82,7 +83,7 @@ class OrderResourceIT {
                 .post("/api/v1/orders")
         val orderId = createdOrder.jsonPath().getString("id")
 
-        given()
+        authenticatedRequest()
             .`when`()
             .get("/api/v1/orders/$orderId")
             .then()
@@ -94,7 +95,7 @@ class OrderResourceIT {
 
     @Test
     fun `returns not found for an unknown order id`() {
-        given()
+        authenticatedRequest()
             .`when`()
             .get("/api/v1/orders/018f38c2-1b95-7cc4-bb89-72d26a6f9f99")
             .then()
@@ -105,7 +106,7 @@ class OrderResourceIT {
 
     @Test
     fun `rejects a malformed order id`() {
-        given()
+        authenticatedRequest()
             .`when`()
             .get("/api/v1/orders/not-a-uuid")
             .then()
@@ -273,17 +274,52 @@ class OrderResourceIT {
             .body("code", equalTo("INVALID_JSON_BODY"))
     }
 
+    @Test
+    fun `does not expose an order to another authenticated source`() {
+        val createdOrder =
+            authenticatedRequest()
+                .contentType("application/json")
+                .body(validOrderRequest())
+                .post("/api/v1/orders")
+        val orderId = createdOrder.jsonPath().getString("id")
+
+        otherSourceAuthenticatedRequest()
+            .`when`()
+            .get("/api/v1/orders/$orderId")
+            .then()
+            .statusCode(404)
+            .contentType("application/problem+json")
+            .body("code", equalTo("ORDER_NOT_FOUND"))
+    }
+
+    @Test
+    fun `rejects an unauthenticated order read`() {
+        given()
+            .`when`()
+            .get("/api/v1/orders/018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
+            .then()
+            .statusCode(401)
+            .body("code", equalTo("SOURCE_AUTHENTICATION_REQUIRED"))
+    }
+
     private fun authenticatedRequest(): RequestSpecification = given().header(SOURCE_API_KEY_HEADER, "$TEST_KEY_ID.$TEST_SECRET")
 
-    private fun insertSourceCredential() {
+    private fun otherSourceAuthenticatedRequest(): RequestSpecification =
+        given().header(SOURCE_API_KEY_HEADER, "$OTHER_KEY_ID.$OTHER_SECRET")
+
+    private fun insertSourceCredential(
+        keyId: String,
+        secret: String,
+        sourceSystem: String,
+    ) {
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(TEST_PEPPER, "HmacSHA256"))
-        val secretMac = HexFormat.of().formatHex(mac.doFinal(TEST_SECRET.toByteArray(StandardCharsets.UTF_8)))
+        val secretMac = HexFormat.of().formatHex(mac.doFinal(secret.toByteArray(StandardCharsets.UTF_8)))
 
         dslContext
             .insertInto(SOURCE_CREDENTIALS)
-            .set(SOURCE_CREDENTIALS.KEY_ID, TEST_KEY_ID)
-            .set(SOURCE_CREDENTIALS.SOURCE_SYSTEM, "MARKETPLACE_A")
+            .set(SOURCE_CREDENTIALS.KEY_ID, keyId)
+            .set(SOURCE_CREDENTIALS.SOURCE_SYSTEM, sourceSystem)
             .set(SOURCE_CREDENTIALS.SECRET_MAC, secretMac)
             .set(SOURCE_CREDENTIALS.PEPPER_VERSION, 1)
             .set(SOURCE_CREDENTIALS.STATUS, "ACTIVE")
@@ -316,6 +352,8 @@ class OrderResourceIT {
     private companion object {
         const val TEST_KEY_ID = "test-key-id-0001"
         const val TEST_SECRET = "sssssssssssssssssssssssssssssssssssssssssss"
+        const val OTHER_KEY_ID = "test-key-id-0002"
+        const val OTHER_SECRET = "ttttttttttttttttttttttttttttttttttttttttttt"
         val TEST_PEPPER = ByteArray(32)
     }
 }

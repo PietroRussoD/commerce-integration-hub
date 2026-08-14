@@ -11,8 +11,9 @@ UI, and committed OpenAPI files. Source-credential persistence and application
 verification are implemented and connected through a jOOQ lookup adapter;
 versioned pepper configuration and CDI composition are also implemented. Source
 API-key authentication protects order ingestion, and the source identity is
-derived from the stored credential rather than the request body. Source-owned
-reads, outbox publishing, messaging, and search are not implemented yet.
+derived from the stored credential rather than the request body. Order reads
+are authenticated and constrained to that same source. Outbox publishing,
+messaging, and search are not implemented yet.
 
 The service persists a canonical payload fingerprint with each order. Reusing a
 source identity returns `ALREADY_RECEIVED` for equivalent content and
