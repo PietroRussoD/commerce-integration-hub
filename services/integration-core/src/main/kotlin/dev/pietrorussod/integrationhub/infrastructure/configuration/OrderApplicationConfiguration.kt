@@ -24,6 +24,5 @@ class OrderApplicationConfiguration {
             generateOrderId = UUID::randomUUID,
             generateOrderItemId = UUID::randomUUID,
             generateEventId = UUID::randomUUID,
-            generateCorrelationId = UUID::randomUUID,
         )
 }

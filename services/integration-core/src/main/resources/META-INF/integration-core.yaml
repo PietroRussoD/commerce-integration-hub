@@ -193,6 +193,13 @@ paths:
     post:
       summary: Receive an order
       operationId: receiveOrder
+      parameters:
+      - description: Optional request correlation UUID; invalid values are replaced
+        in: header
+        name: X-Correlation-ID
+        schema:
+          format: uuid
+          type: string
       requestBody:
         required: true
         content:
