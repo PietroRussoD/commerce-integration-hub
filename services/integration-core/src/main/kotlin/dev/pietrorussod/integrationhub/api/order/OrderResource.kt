@@ -121,6 +121,8 @@ class OrderResource(
 
     @GET
     @Path("/{orderId}")
+    @SourceAuthenticated
+    @SecurityRequirement(name = SOURCE_API_KEY_SECURITY_SCHEME)
     @Operation(operationId = "getOrder", summary = "Get an order")
     @APIResponses(
         APIResponse(
@@ -138,8 +140,14 @@ class OrderResource(
             description = "Order not found",
             content = [Content(mediaType = PROBLEM_JSON, schema = Schema(implementation = ProblemDetails::class))],
         ),
+        APIResponse(
+            responseCode = "401",
+            description = "Missing or invalid source API key",
+            content = [Content(mediaType = PROBLEM_JSON, schema = Schema(implementation = ProblemDetails::class))],
+        ),
     )
     fun get(
+        @Context securityContext: SecurityContext,
         @Parameter(
             description = "Canonical order UUID",
             schema = Schema(type = SchemaType.STRING, format = "uuid"),
@@ -147,7 +155,8 @@ class OrderResource(
         @PathParam("orderId") rawOrderId: String,
     ): Response {
         val orderId = parseOrderId(rawOrderId) ?: return invalidOrderId(rawOrderId)
-        val order = getOrderUseCase.get(orderId) ?: return orderNotFound(rawOrderId)
+        val sourceSystem = SourceSystem.from(securityContext.userPrincipal.name)
+        val order = getOrderUseCase.get(orderId, sourceSystem) ?: return orderNotFound(rawOrderId)
 
         return Response.ok(order.toResponse()).build()
     }

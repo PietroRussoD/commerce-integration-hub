@@ -328,8 +328,21 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "Missing or invalid source API key",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
+        "security" : [ {
+          "sourceApiKey" : [ ]
+        } ],
         "tags" : [ "Order Resource" ]
       }
     }

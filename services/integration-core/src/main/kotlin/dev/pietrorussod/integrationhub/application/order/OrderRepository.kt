@@ -17,5 +17,8 @@ interface OrderRepository {
         externalOrderId: ExternalOrderId,
     ): Order?
 
-    fun findById(orderId: OrderId): Order?
+    fun findByIdForSource(
+        orderId: OrderId,
+        sourceSystem: SourceSystem,
+    ): Order?
 }

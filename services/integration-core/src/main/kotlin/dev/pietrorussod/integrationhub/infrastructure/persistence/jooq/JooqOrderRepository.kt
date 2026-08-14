@@ -85,11 +85,15 @@ class JooqOrderRepository
             externalOrderId: ExternalOrderId,
         ): Order? = findStoredOrderBySourceIdentity(sourceSystem, externalOrderId)?.order
 
-        override fun findById(orderId: OrderId): Order? {
+        override fun findByIdForSource(
+            orderId: OrderId,
+            sourceSystem: SourceSystem,
+        ): Order? {
             val orderRecord =
                 dslContext
                     .selectFrom(ORDERS)
                     .where(ORDERS.ID.eq(orderId.value))
+                    .and(ORDERS.SOURCE_SYSTEM.eq(sourceSystem.value))
                     .fetchOne()
 
             return orderRecord?.toStoredOrder()?.order

@@ -71,7 +71,11 @@ class JooqOrderRepositoryIT {
         assertEquals(OrderInsertOutcome.INSERTED, insertResult.outcome)
         assertEquals(order, insertResult.order)
         assertEquals(order, persistedOrder)
-        assertEquals(order, repository.findById(order.id))
+        assertEquals(order, repository.findByIdForSource(order.id, order.sourceSystem))
+        assertEquals(
+            null,
+            repository.findByIdForSource(order.id, SourceSystem.from("marketplace-b")),
+        )
         assertEquals(payloadFingerprint.value, orderRecord.payloadFingerprint)
         assertEquals(payloadFingerprint.canonicalizationVersion, orderRecord.payloadFingerprintVersion)
         assertEquals(1, dslContext.fetchCount(INTEGRATION_EVENTS))
@@ -93,7 +97,10 @@ class JooqOrderRepositoryIT {
     fun `returns null when an order id does not exist`() {
         val missingOrderId = OrderId(UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f99"))
 
-        assertEquals(null, repository.findById(missingOrderId))
+        assertEquals(
+            null,
+            repository.findByIdForSource(missingOrderId, SourceSystem.from("marketplace-a")),
+        )
     }
 
     @Test
@@ -237,7 +244,7 @@ class JooqOrderRepositoryIT {
         assertEquals(1, dslContext.fetchCount(ORDER_ITEMS))
         assertEquals(1, dslContext.fetchCount(INTEGRATION_EVENTS))
         assertEquals(2, dslContext.fetchCount(OUTBOX_EVENTS))
-        assertEquals(null, repository.findById(rejectedOrder.id))
+        assertEquals(null, repository.findByIdForSource(rejectedOrder.id, rejectedOrder.sourceSystem))
     }
 
     @Test

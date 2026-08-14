@@ -83,8 +83,8 @@ sequenceDiagram
     end
 ```
 
-The complete flow shown above is implemented for order ingestion. Source-owned
-read authorization is a separate increment.
+The complete flow shown above is implemented for order ingestion. Order reads
+use the same authenticated identity and include it in the repository query.
 
 ## Alternatives
 
@@ -114,5 +114,5 @@ repository configuration.
 
 The credential schema, jOOQ lookup adapter, versioned pepper configuration, CDI
 composition, application verification, and ingestion HTTP enforcement are
-implemented. Source-owned read authorization and administrative provisioning
-are separate increments.
+implemented. Source-owned read authorization is also implemented;
+administrative provisioning remains a separate increment.

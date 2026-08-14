@@ -233,6 +233,9 @@ class ReceiveOrderUseCaseTest {
                 it.sourceSystem == sourceSystem && it.externalOrderId == externalOrderId
             }
 
-        override fun findById(orderId: OrderId): Order? = savedOrders.firstOrNull { it.id == orderId }
+        override fun findByIdForSource(
+            orderId: OrderId,
+            sourceSystem: SourceSystem,
+        ): Order? = savedOrders.firstOrNull { it.id == orderId && it.sourceSystem == sourceSystem }
     }
 }
