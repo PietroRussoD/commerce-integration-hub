@@ -70,10 +70,11 @@ rate limiting are required at the HTTP boundary.
 
 A database disclosure alone does not expose immediately usable secrets because
 the pepper is stored separately. Disclosure of both credential rows and their
-pepper requires rotation of every affected credential. Neither API keys nor
-pepper material may appear in logs, fixtures, telemetry, or repository
-configuration.
+pepper requires rotation of every affected credential. Production API keys and
+deployment pepper material must not appear in logs, fixtures, telemetry, or
+repository configuration.
 
-The credential schema, jOOQ lookup adapter, and application verification are
-implemented. Pepper configuration, HTTP enforcement, source-owned read
-authorization, and administrative provisioning are separate increments.
+The credential schema, jOOQ lookup adapter, versioned pepper configuration, CDI
+composition, and application verification are implemented. HTTP enforcement,
+source-owned read authorization, and administrative provisioning are separate
+increments.

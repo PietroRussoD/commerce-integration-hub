@@ -9,8 +9,8 @@ and jOOQ. A new order, its timeline event, and a versioned pending outbox event
 are committed atomically. It includes automated tests, health checks, Swagger
 UI, and committed OpenAPI files. Source-credential persistence and application
 verification are implemented and connected through a jOOQ lookup adapter;
-pepper configuration and HTTP enforcement are not. Outbox publishing, messaging,
-and search are also not implemented yet.
+versioned pepper configuration and CDI composition are also implemented. HTTP
+enforcement, outbox publishing, messaging, and search are not implemented yet.
 
 The service persists a canonical payload fingerprint with each order. Reusing a
 source identity returns `ALREADY_RECEIVED` for equivalent content and
@@ -87,6 +87,24 @@ for the implemented tables and relationships.
 
 - Java 21 or newer
 - Docker for development and integration tests
+
+## Source credential peppers
+
+Source credential peppers are supplied through
+`INTEGRATION_HUB_SECURITY_SOURCE_CREDENTIAL_PEPPERS` as comma-separated
+`<version>:<pepper>` entries. Each pepper is at least 32 random bytes encoded as
+canonical unpadded Base64URL. For example, generate a local version 1 pepper
+without writing it to the repository:
+
+```bash
+PEPPER="$(openssl rand -base64 32 | tr '/+' '_-' | tr -d '=')"
+export INTEGRATION_HUB_SECURITY_SOURCE_CREDENTIAL_PEPPERS="1:$PEPPER"
+```
+
+An empty configuration is allowed while HTTP authentication is not enforced. A
+stored credential referencing an absent version produces an operational error.
+Production deployments must inject peppers through their secret-management
+boundary rather than repository configuration.
 
 ## Build
 
