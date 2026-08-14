@@ -83,9 +83,8 @@ sequenceDiagram
     end
 ```
 
-The credential lookup, pepper resolution, HMAC verification, and application
-authentication shown above are implemented. The HTTP boundary and its call to
-the order use case describe the next implementation increment.
+The complete flow shown above is implemented for order ingestion. Source-owned
+read authorization is a separate increment.
 
 ## Alternatives
 
@@ -114,6 +113,6 @@ deployment pepper material must not appear in logs, fixtures, telemetry, or
 repository configuration.
 
 The credential schema, jOOQ lookup adapter, versioned pepper configuration, CDI
-composition, and application verification are implemented. HTTP enforcement,
-source-owned read authorization, and administrative provisioning are separate
-increments.
+composition, application verification, and ingestion HTTP enforcement are
+implemented. Source-owned read authorization and administrative provisioning
+are separate increments.

@@ -1,15 +1,24 @@
 package dev.pietrorussod.integrationhub.api.order
 
+import dev.pietrorussod.integrationhub.api.security.SOURCE_API_KEY_HEADER
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.Orders.Companion.ORDERS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.OutboxEvents.Companion.OUTBOX_EVENTS
+import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.SourceCredentials.Companion.SOURCE_CREDENTIALS
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.RestAssured.given
+import io.restassured.specification.RequestSpecification
 import jakarta.inject.Inject
 import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.matchesPattern
 import org.jooq.DSLContext
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.nio.charset.StandardCharsets
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
+import java.util.HexFormat
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
 @QuarkusTest
 class OrderResourceIT {
@@ -17,14 +26,16 @@ class OrderResourceIT {
     lateinit var dslContext: DSLContext
 
     @BeforeEach
-    fun deleteOrders() {
+    fun prepareDatabase() {
         dslContext.deleteFrom(OUTBOX_EVENTS).execute()
         dslContext.deleteFrom(ORDERS).execute()
+        dslContext.deleteFrom(SOURCE_CREDENTIALS).execute()
+        insertSourceCredential()
     }
 
     @Test
     fun `creates an order`() {
-        given()
+        authenticatedRequest()
             .contentType("application/json")
             .body(validOrderRequest())
             .`when`()
@@ -44,14 +55,14 @@ class OrderResourceIT {
     @Test
     fun `returns the existing order for an equivalent replay`() {
         val firstResponse =
-            given()
+            authenticatedRequest()
                 .contentType("application/json")
                 .body(validOrderRequest())
                 .post("/api/v1/orders")
 
         val orderId = firstResponse.jsonPath().getString("id")
 
-        given()
+        authenticatedRequest()
             .contentType("application/json")
             .body(validOrderRequest())
             .`when`()
@@ -65,7 +76,7 @@ class OrderResourceIT {
     @Test
     fun `gets a created order by id`() {
         val createdOrder =
-            given()
+            authenticatedRequest()
                 .contentType("application/json")
                 .body(validOrderRequest())
                 .post("/api/v1/orders")
@@ -105,12 +116,12 @@ class OrderResourceIT {
 
     @Test
     fun `reports a conflict for the same source identity with different content`() {
-        given()
+        authenticatedRequest()
             .contentType("application/json")
             .body(validOrderRequest())
             .post("/api/v1/orders")
 
-        given()
+        authenticatedRequest()
             .contentType("application/json")
             .body(validOrderRequest(description = "Changed item"))
             .`when`()
@@ -123,7 +134,7 @@ class OrderResourceIT {
 
     @Test
     fun `returns problem details for a domain validation error`() {
-        given()
+        authenticatedRequest()
             .contentType("application/json")
             .body(validOrderRequest(declaredTotal = "39.97"))
             .`when`()
@@ -137,7 +148,7 @@ class OrderResourceIT {
 
     @Test
     fun `returns field errors for request validation failures`() {
-        given()
+        authenticatedRequest()
             .contentType("application/json")
             .body(validOrderRequest(currency = "CHF"))
             .`when`()
@@ -151,7 +162,7 @@ class OrderResourceIT {
 
     @Test
     fun `returns problem details for malformed JSON`() {
-        given()
+        authenticatedRequest()
             .contentType("application/json")
             .body("{broken")
             .`when`()
@@ -166,7 +177,7 @@ class OrderResourceIT {
     fun `returns problem details for an unknown request field`() {
         val requestWithUnknownField = validOrderRequest().replaceFirst("{", "{\"unexpected\": true,")
 
-        given()
+        authenticatedRequest()
             .contentType("application/json")
             .body(requestWithUnknownField)
             .`when`()
@@ -181,7 +192,7 @@ class OrderResourceIT {
     fun `returns problem details for a missing required request field`() {
         val requestWithoutCurrency = validOrderRequest().replace("\"currency\": \"EUR\",", "")
 
-        given()
+        authenticatedRequest()
             .contentType("application/json")
             .body(requestWithoutCurrency)
             .`when`()
@@ -195,7 +206,7 @@ class OrderResourceIT {
 
     @Test
     fun `returns problem details for an empty request body`() {
-        given()
+        authenticatedRequest()
             .contentType("application/json")
             .body("")
             .`when`()
@@ -208,7 +219,7 @@ class OrderResourceIT {
 
     @Test
     fun `returns problem details for an unsupported media type`() {
-        given()
+        authenticatedRequest()
             .contentType("text/plain")
             .body(validOrderRequest())
             .`when`()
@@ -219,6 +230,67 @@ class OrderResourceIT {
             .body("code", equalTo("UNSUPPORTED_MEDIA_TYPE"))
     }
 
+    @Test
+    fun `rejects a missing source API key before reading the request body`() {
+        given()
+            .contentType("application/json")
+            .body("{broken")
+            .`when`()
+            .post("/api/v1/orders")
+            .then()
+            .statusCode(401)
+            .header("WWW-Authenticate", equalTo("SourceApiKey"))
+            .contentType("application/problem+json")
+            .body("code", equalTo("SOURCE_AUTHENTICATION_REQUIRED"))
+    }
+
+    @Test
+    fun `rejects an incorrect source API key with the generic authentication response`() {
+        given()
+            .header(SOURCE_API_KEY_HEADER, "$TEST_KEY_ID.${"x".repeat(43)}")
+            .contentType("application/json")
+            .body(validOrderRequest())
+            .`when`()
+            .post("/api/v1/orders")
+            .then()
+            .statusCode(401)
+            .contentType("application/problem+json")
+            .body("code", equalTo("SOURCE_AUTHENTICATION_REQUIRED"))
+    }
+
+    @Test
+    fun `rejects a client supplied source system`() {
+        val requestWithSourceSystem = validOrderRequest().replaceFirst("{", "{\"sourceSystem\": \"OTHER\",")
+
+        authenticatedRequest()
+            .contentType("application/json")
+            .body(requestWithSourceSystem)
+            .`when`()
+            .post("/api/v1/orders")
+            .then()
+            .statusCode(400)
+            .contentType("application/problem+json")
+            .body("code", equalTo("INVALID_JSON_BODY"))
+    }
+
+    private fun authenticatedRequest(): RequestSpecification = given().header(SOURCE_API_KEY_HEADER, "$TEST_KEY_ID.$TEST_SECRET")
+
+    private fun insertSourceCredential() {
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(TEST_PEPPER, "HmacSHA256"))
+        val secretMac = HexFormat.of().formatHex(mac.doFinal(TEST_SECRET.toByteArray(StandardCharsets.UTF_8)))
+
+        dslContext
+            .insertInto(SOURCE_CREDENTIALS)
+            .set(SOURCE_CREDENTIALS.KEY_ID, TEST_KEY_ID)
+            .set(SOURCE_CREDENTIALS.SOURCE_SYSTEM, "MARKETPLACE_A")
+            .set(SOURCE_CREDENTIALS.SECRET_MAC, secretMac)
+            .set(SOURCE_CREDENTIALS.PEPPER_VERSION, 1)
+            .set(SOURCE_CREDENTIALS.STATUS, "ACTIVE")
+            .set(SOURCE_CREDENTIALS.CREATED_AT, OffsetDateTime.of(2026, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC))
+            .execute()
+    }
+
     private fun validOrderRequest(
         currency: String = "EUR",
         declaredTotal: String = "39.98",
@@ -226,7 +298,6 @@ class OrderResourceIT {
     ): String =
         """
         {
-          "sourceSystem": "MARKETPLACE_A",
           "externalId": "ORDER-2026-00042",
           "currency": "$currency",
           "declaredTotalAmount": "$declaredTotal",
@@ -241,4 +312,10 @@ class OrderResourceIT {
           ]
         }
         """.trimIndent()
+
+    private companion object {
+        const val TEST_KEY_ID = "test-key-id-0001"
+        const val TEST_SECRET = "sssssssssssssssssssssssssssssssssssssssssss"
+        val TEST_PEPPER = ByteArray(32)
+    }
 }

@@ -6,7 +6,7 @@ import dev.pietrorussod.integrationhub.infrastructure.security.SourceCredentialP
 import io.quarkus.test.junit.QuarkusTest
 import jakarta.inject.Inject
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 
 @QuarkusTest
@@ -18,8 +18,8 @@ class AuthenticationApplicationConfigurationIT {
     lateinit var pepperProvider: SourceCredentialPepperProvider
 
     @Test
-    fun `composes authentication without requiring a development pepper`() {
+    fun `composes authentication with the test pepper provider`() {
         assertEquals(SourceAuthenticationResult.Rejected, authenticateSourceUseCase.authenticate(null))
-        assertNull(pepperProvider.findByVersion(1))
+        assertNotNull(pepperProvider.findByVersion(1))
     }
 }

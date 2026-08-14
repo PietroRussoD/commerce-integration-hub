@@ -9,8 +9,10 @@ and jOOQ. A new order, its timeline event, and a versioned pending outbox event
 are committed atomically. It includes automated tests, health checks, Swagger
 UI, and committed OpenAPI files. Source-credential persistence and application
 verification are implemented and connected through a jOOQ lookup adapter;
-versioned pepper configuration and CDI composition are also implemented. HTTP
-enforcement, outbox publishing, messaging, and search are not implemented yet.
+versioned pepper configuration and CDI composition are also implemented. Source
+API-key authentication protects order ingestion, and the source identity is
+derived from the stored credential rather than the request body. Source-owned
+reads, outbox publishing, messaging, and search are not implemented yet.
 
 The service persists a canonical payload fingerprint with each order. Reusing a
 source identity returns `ALREADY_RECEIVED` for equivalent content and
@@ -24,6 +26,7 @@ responsibilities rather than a fixed number of layers:
 ```text
 dev.pietrorussod.integrationhub/
   api/                         HTTP resources and transport DTOs
+    security/                  source API-key HTTP boundary
   application/authentication/ source authentication use case and ports
   application/order/           use cases, commands, results, and outbound ports
   domain/order/                entities, value objects, and business invariants
@@ -101,10 +104,11 @@ PEPPER="$(openssl rand -base64 32 | tr '/+' '_-' | tr -d '=')"
 export INTEGRATION_HUB_SECURITY_SOURCE_CREDENTIAL_PEPPERS="1:$PEPPER"
 ```
 
-An empty configuration is allowed while HTTP authentication is not enforced. A
-stored credential referencing an absent version produces an operational error.
+An empty configuration allows the service to start, but a stored credential
+referencing an absent version produces an operational error when used.
 Production deployments must inject peppers through their secret-management
-boundary rather than repository configuration.
+boundary rather than repository configuration. Order ingestion expects the
+credential in the `X-Source-API-Key` header.
 
 ## Build
 

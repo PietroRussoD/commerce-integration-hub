@@ -137,13 +137,8 @@
       },
       "ReceiveOrderRequest" : {
         "type" : "object",
-        "required" : [ "sourceSystem", "externalId", "currency", "declaredTotalAmount", "items" ],
+        "required" : [ "externalId", "currency", "declaredTotalAmount", "items" ],
         "properties" : {
-          "sourceSystem" : {
-            "type" : "string",
-            "pattern" : "\\S",
-            "maxLength" : 64
-          },
           "externalId" : {
             "type" : "string",
             "pattern" : "\\S",
@@ -186,6 +181,14 @@
         "type" : "string",
         "format" : "uuid",
         "pattern" : "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+      }
+    },
+    "securitySchemes" : {
+      "sourceApiKey" : {
+        "type" : "apiKey",
+        "description" : "Source credential formatted as <key_id>.<secret>",
+        "name" : "X-Source-API-Key",
+        "in" : "header"
       }
     }
   },
@@ -263,8 +266,21 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "Missing or invalid source API key",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
+        "security" : [ {
+          "sourceApiKey" : [ ]
+        } ],
         "tags" : [ "Order Resource" ]
       }
     },

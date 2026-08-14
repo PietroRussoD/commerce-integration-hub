@@ -3,11 +3,12 @@ package dev.pietrorussod.integrationhub.api.order
 import dev.pietrorussod.integrationhub.application.order.ReceiveOrderCommand
 import dev.pietrorussod.integrationhub.application.order.ReceiveOrderItemCommand
 import dev.pietrorussod.integrationhub.domain.order.Order
+import dev.pietrorussod.integrationhub.domain.order.SourceSystem
 import java.math.BigDecimal
 
-fun ReceiveOrderRequest.toCommand(): ReceiveOrderCommand =
+fun ReceiveOrderRequest.toCommand(sourceSystem: SourceSystem): ReceiveOrderCommand =
     ReceiveOrderCommand(
-        sourceSystem = requireNotNull(sourceSystem),
+        sourceSystem = sourceSystem.value,
         externalOrderId = requireNotNull(externalId),
         currency = requireNotNull(currency),
         declaredTotalAmount = BigDecimal(requireNotNull(declaredTotalAmount)),
