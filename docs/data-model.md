@@ -89,4 +89,5 @@ aggregate types. The current schema restricts `aggregate_type` to `ORDER`.
 lowercase HMAC-SHA-256 MAC, and the pepper version needed for verification. Its
 constraints keep status, expiry, and revocation timestamps consistent. See
 [ADR 0001](decisions/0001-source-api-key-authentication.md) for the authentication
-and rotation decision. HTTP endpoints are not connected to it yet.
+and rotation decision. Order endpoints authenticate against these credentials
+and use the resulting source identity to constrain order access.
