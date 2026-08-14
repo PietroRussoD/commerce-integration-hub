@@ -1,0 +1,16 @@
+# Architecture Decisions
+
+Architecture Decision Records capture significant choices that are costly or
+risky to change. Their numbering records documentation order, not importance or
+implementation chronology.
+
+- [ADR 0001](0001-source-api-key-authentication.md): structured source
+  API-key authentication.
+- [ADR 0002](0002-sql-first-postgresql-persistence.md): SQL-first PostgreSQL
+  persistence.
+- [ADR 0003](0003-idempotent-order-ingestion.md): payload-aware idempotent
+  order ingestion.
+- [ADR 0004](0004-transactional-outbox.md): transactional outbox persistence.
+
+Accepted records are not edited to hide a later change of direction. A new ADR
+supersedes the earlier decision and links back to it.

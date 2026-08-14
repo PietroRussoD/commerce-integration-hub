@@ -85,12 +85,8 @@ key. The two unique constraints on `order_items` combine `order_id` with
 foreign key because the outbox is structured to carry events for different
 aggregate types. The current schema restricts `aggregate_type` to `ORDER`.
 
-`source_credentials` stores an HMAC of each secret, never the plaintext API key.
-Clients present `<key_id>.<secret>`; the application computes
-HMAC-SHA-256 with the configured pepper as the key and the presented secret as
-the message, then compares the result in constant time. Expiry is exclusive: a
-credential is invalid at `expires_at`. A missing pepper version is an operational
-configuration error, not an authentication rejection.
-
-The authentication use case resolves `source_system` from a valid credential.
-HTTP endpoints are not connected to it yet.
+`source_credentials` stores a credential identifier, its source identity, a
+lowercase HMAC-SHA-256 MAC, and the pepper version needed for verification. Its
+constraints keep status, expiry, and revocation timestamps consistent. See
+[ADR 0001](decisions/0001-source-api-key-authentication.md) for the authentication
+and rotation decision. HTTP endpoints are not connected to it yet.

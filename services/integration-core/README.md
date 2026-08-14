@@ -7,8 +7,9 @@ The current increment implements a currency-aware order aggregate, HTTP order
 ingestion and retrieval, and transactional PostgreSQL persistence through Flyway
 and jOOQ. A new order, its timeline event, and a versioned pending outbox event
 are committed atomically. It includes automated tests, health checks, Swagger
-UI, and committed OpenAPI files. Authentication, outbox publishing, messaging,
-and search are not implemented yet.
+UI, and committed OpenAPI files. Source-credential persistence and application
+verification are implemented; their persistence adapter and HTTP enforcement
+are not. Outbox publishing, messaging, and search are also not implemented yet.
 
 The service persists a canonical payload fingerprint with each order. Reusing a
 source identity returns `ALREADY_RECEIVED` for equivalent content and
@@ -22,10 +23,12 @@ responsibilities rather than a fixed number of layers:
 ```text
 dev.pietrorussod.integrationhub/
   api/                         HTTP resources and transport DTOs
+  application/authentication/ source authentication use case and ports
   application/order/           use cases, commands, results, and outbound ports
   domain/order/                entities, value objects, and business invariants
   infrastructure/persistence/  PostgreSQL adapters
     jooq/                       jOOQ repository and record mapping
+  infrastructure/security/     credential MAC verification
 ```
 
 Dependencies point inward:
@@ -43,6 +46,9 @@ framework-free, while PostgreSQL behavior is covered by integration tests.
 
 New packages and ports are introduced only for concrete boundaries. jOOQ sources
 are generated under `target/generated-sources/jooq` and are not committed.
+
+Significant choices and their alternatives are recorded in the repository
+[architecture decision log](../../docs/decisions/README.md).
 
 ## Monetary policy
 

@@ -10,22 +10,35 @@ requests. It needs efficient lookup, source isolation, revocation, expiry, and
 credential rotation without introducing an identity provider into the first
 release.
 
+This decision covers source-system authentication only. Login, user management,
+token issuance, and operator authorization are outside its scope.
+
 ## Decision
 
 Sources present `X-Source-API-Key: <key_id>.<secret>`:
 
 - `key_id` is a non-secret indexed lookup handle;
-- `secret` is 32 random bytes encoded as 43 characters of unpadded Base64URL;
+- `key_id` and the 32-byte secret are generated with a cryptographically secure
+  random number generator;
+- `secret` is encoded as 43 characters of unpadded Base64URL and disclosed only
+  during provisioning;
 - PostgreSQL stores the source identity and HMAC-SHA-256 of the secret, never the
   plaintext secret;
 - HMAC uses the versioned deployment pepper as its key and the exact presented
   secret as its message;
-- pepper material is supplied outside PostgreSQL and source control;
+- each pepper contains at least 32 random bytes and is supplied outside
+  PostgreSQL and source control;
 - MACs are compared in constant time before checking active and expiry state;
 - the authenticated source identity comes from the credential row, not request
   content;
 - malformed, unknown, expired, revoked, and incorrect credentials produce the
   same authentication rejection.
+
+Constant-time behavior applies to the fixed-length MAC comparison. An unknown
+key ID terminates after its indexed lookup and is not guaranteed to have the same
+latency as a known key. This is accepted because key IDs are non-secret,
+high-entropy handles; the HTTP boundary must still return a generic response and
+apply rate limiting.
 
 Rotation creates another credential row. The previous row may remain active for
 a bounded transition and is then revoked. A referenced pepper version that is
@@ -55,5 +68,12 @@ manage, rotate, and retain required pepper versions securely. API keys remain
 bearer credentials, so TLS, header redaction, bounded failure telemetry, and
 rate limiting are required at the HTTP boundary.
 
+A database disclosure alone does not expose immediately usable secrets because
+the pepper is stored separately. Disclosure of both credential rows and their
+pepper requires rotation of every affected credential. Neither API keys nor
+pepper material may appear in logs, fixtures, telemetry, or repository
+configuration.
+
 The credential schema and application verification are implemented. HTTP
-enforcement and source-owned read authorization are separate increments.
+enforcement, source-owned read authorization, and administrative provisioning
+are separate increments.
