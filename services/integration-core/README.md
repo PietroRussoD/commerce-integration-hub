@@ -8,8 +8,9 @@ ingestion and retrieval, and transactional PostgreSQL persistence through Flyway
 and jOOQ. A new order, its timeline event, and a versioned pending outbox event
 are committed atomically. It includes automated tests, health checks, Swagger
 UI, and committed OpenAPI files. Source-credential persistence and application
-verification are implemented; their persistence adapter and HTTP enforcement
-are not. Outbox publishing, messaging, and search are also not implemented yet.
+verification are implemented and connected through a jOOQ lookup adapter;
+pepper configuration and HTTP enforcement are not. Outbox publishing, messaging,
+and search are also not implemented yet.
 
 The service persists a canonical payload fingerprint with each order. Reusing a
 source identity returns `ALREADY_RECEIVED` for equivalent content and
