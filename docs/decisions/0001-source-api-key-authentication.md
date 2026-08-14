@@ -48,6 +48,45 @@ Operator endpoints will use externally issued JWTs because they require user
 identity and roles. OAuth 2.0 Client Credentials remains a possible production
 evolution for source authentication.
 
+## Authentication Flow
+
+```mermaid
+sequenceDiagram
+    participant Source as External source
+    participant HTTP as HTTP boundary
+    participant Auth as AuthenticateSourceUseCase
+    participant Repo as Credential repository
+    participant DB as PostgreSQL
+    participant Verifier as HMAC verifier
+    participant Peppers as Pepper provider
+    participant Orders as Order use case
+
+    Source->>HTTP: Request with X-Source-API-Key
+    HTTP->>Auth: Authenticate presented API key
+    Auth->>Repo: Find credential by key ID
+    Repo->>DB: Indexed credential lookup
+    DB-->>Repo: Credential and source identity
+    Repo-->>Auth: Credential
+    Auth->>Verifier: Verify presented secret
+    Verifier->>Peppers: Load pepper by version
+    Peppers-->>Verifier: HMAC key
+    Verifier-->>Auth: Match result
+
+    alt Active, unexpired, and matching credential
+        Auth-->>HTTP: Authenticated source identity
+        HTTP->>Orders: Execute as authenticated source
+        Orders-->>HTTP: Result
+        HTTP-->>Source: API response
+    else Invalid credential
+        Auth-->>HTTP: Rejected
+        HTTP-->>Source: Generic authentication failure
+    end
+```
+
+The credential lookup, pepper resolution, HMAC verification, and application
+authentication shown above are implemented. The HTTP boundary and its call to
+the order use case describe the next implementation increment.
+
 ## Alternatives
 
 - **Plaintext secrets:** rejected because a database disclosure would expose
