@@ -122,9 +122,16 @@ correlation ID, including authentication, validation, and unsupported-media-type
 errors.
 
 Order ingestion passes the effective ID explicitly into the application command
-and persists it on the atomic timeline and outbox records. Structured logging,
-W3C trace-context propagation, and broker headers belong to later observability
-and messaging increments.
+and persists it on the atomic timeline and outbox records. The request filter
+also exposes it through the logging MDC. Each completed HTTP request records the
+method, path, status, and duration without query parameters or request content.
+The MDC is cleared after the response to prevent context leaking between
+requests.
+
+Development and test profiles use human-readable logs with the complete MDC.
+Production emits JSON, making the value searchable as `mdc.correlationId` in log
+platforms. W3C trace-context propagation and broker headers belong to later
+observability and messaging increments.
 
 ## Build
 

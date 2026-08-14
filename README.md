@@ -24,11 +24,11 @@ The current baseline establishes:
 - generated and committed OpenAPI files;
 - separate unit and integration-test execution with combined coverage reporting;
 - PostgreSQL integration tests backed by Quarkus Dev Services;
-- source-credential persistence and verification, with HTTP enforcement still
-  pending.
+- source API-key authentication with source-owned order access;
+- correlation IDs propagated through HTTP, persistence, and structured logs.
 
-HTTP authentication enforcement, outbox publishing, messaging, search, external
-connectors, and user interfaces will be added as separate executable increments.
+Outbox publishing, messaging, search, external connectors, and user interfaces
+will be added as separate executable increments.
 
 ## Repository structure
 
