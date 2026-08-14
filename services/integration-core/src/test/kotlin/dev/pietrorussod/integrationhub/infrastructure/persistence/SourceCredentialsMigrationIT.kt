@@ -10,12 +10,13 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.OffsetDateTime
-import java.time.ZoneOffset
 
 @QuarkusTest
 class SourceCredentialsMigrationIT {
     @Inject
     lateinit var dslContext: DSLContext
+
+    private val fixedCreatedAt = OffsetDateTime.parse("2026-08-14T06:02:44.321914Z")
 
     @BeforeEach
     fun deleteCredentials() {
@@ -24,9 +25,7 @@ class SourceCredentialsMigrationIT {
 
     @Test
     fun `stores an active source credential without a plaintext secret`() {
-        val createdAt = OffsetDateTime.now(ZoneOffset.UTC)
-
-        insertCredential(createdAt = createdAt)
+        insertCredential()
 
         val credential = dslContext.selectFrom(SOURCE_CREDENTIALS).fetchSingle()
         assertEquals("marketplace-a", credential.sourceSystem)
@@ -72,39 +71,32 @@ class SourceCredentialsMigrationIT {
 
     @Test
     fun `rejects a revocation time for an active credential`() {
-        val createdAt = OffsetDateTime.now(ZoneOffset.UTC)
-
         assertThrows(DataAccessException::class.java) {
             insertCredential(
-                createdAt = createdAt,
-                revokedAt = createdAt,
+                revokedAt = fixedCreatedAt,
             )
         }
     }
 
     @Test
     fun `stores a revoked credential with a valid revocation time`() {
-        val createdAt = OffsetDateTime.now(ZoneOffset.UTC)
+        val revokedAt = fixedCreatedAt.plusSeconds(1)
 
         insertCredential(
             status = "REVOKED",
-            createdAt = createdAt,
-            revokedAt = createdAt.plusSeconds(1),
+            revokedAt = revokedAt,
         )
 
         val credential = dslContext.selectFrom(SOURCE_CREDENTIALS).fetchSingle()
         assertEquals("REVOKED", credential.status)
-        assertEquals(createdAt.plusSeconds(1).toInstant(), credential.revokedAt?.toInstant())
+        assertEquals(revokedAt.toInstant(), credential.revokedAt?.toInstant())
     }
 
     @Test
     fun `rejects an expiry before credential creation`() {
-        val createdAt = OffsetDateTime.now(ZoneOffset.UTC)
-
         assertThrows(DataAccessException::class.java) {
             insertCredential(
-                createdAt = createdAt,
-                expiresAt = createdAt.minusSeconds(1),
+                expiresAt = fixedCreatedAt.minusSeconds(1),
             )
         }
     }
@@ -115,7 +107,7 @@ class SourceCredentialsMigrationIT {
         secretMac: String = "a".repeat(64),
         pepperVersion: Short = 1,
         status: String = "ACTIVE",
-        createdAt: OffsetDateTime = OffsetDateTime.now(ZoneOffset.UTC),
+        createdAt: OffsetDateTime = fixedCreatedAt,
         expiresAt: OffsetDateTime? = null,
         revokedAt: OffsetDateTime? = null,
     ) {
