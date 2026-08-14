@@ -115,4 +115,5 @@ repository configuration.
 The credential schema, jOOQ lookup adapter, versioned pepper configuration, CDI
 composition, application verification, and ingestion HTTP enforcement are
 implemented. Source-owned read authorization is also implemented;
-administrative provisioning remains a separate increment.
+provisioning and revocation use a separate administrative CLI rather than a
+public HTTP endpoint.

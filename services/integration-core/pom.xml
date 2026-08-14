@@ -12,6 +12,7 @@
     <properties>
         <compiler-plugin.version>3.15.0</compiler-plugin.version>
         <failsafe-plugin.version>3.5.6</failsafe-plugin.version>
+        <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
         <jacoco.version>0.8.14</jacoco.version>
         <jooq.version>3.19.22</jooq.version>
         <kotlin.version>2.3.10</kotlin.version>
@@ -290,6 +291,19 @@
                         <goals>
                             <goal>check</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${exec-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>source-credentials</id>
+                        <configuration>
+                            <mainClass>dev.pietrorussod.integrationhub.infrastructure.provisioning.SourceCredentialAdminCommand</mainClass>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
