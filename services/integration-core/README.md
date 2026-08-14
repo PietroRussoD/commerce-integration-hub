@@ -123,10 +123,11 @@ errors.
 
 Order ingestion passes the effective ID explicitly into the application command
 and persists it on the atomic timeline and outbox records. The request filter
-also exposes it through the logging MDC. Each completed HTTP request records the
-method, path, status, and duration without query parameters or request content.
-The MDC is cleared after the response to prevent context leaking between
-requests.
+also exposes it through the logging MDC. Each completed application API request
+records the method, path, status, and duration without query parameters or
+request content. Quarkus-managed operational endpoints such as `/health` do not
+pass through this JAX-RS filter. The MDC is cleared after the response to prevent
+context leaking between requests.
 
 Development and test profiles use human-readable logs with the complete MDC.
 Production emits JSON, making the value searchable as `mdc.correlationId` in log
