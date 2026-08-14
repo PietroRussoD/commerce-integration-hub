@@ -35,6 +35,7 @@ dev.pietrorussod.integrationhub/
   domain/order/                entities, value objects, and business invariants
   infrastructure/persistence/  PostgreSQL adapters
     jooq/                       jOOQ repository and record mapping
+  infrastructure/provisioning/ source credential administrative CLI
   infrastructure/security/     credential MAC verification
 ```
 
@@ -112,6 +113,35 @@ referencing an absent version produces an operational error when used.
 Production deployments must inject peppers through their secret-management
 boundary rather than repository configuration. Order ingestion expects the
 credential in the `X-Source-API-Key` header.
+
+After Flyway has initialized the target database, provision a source credential
+with the administrative CLI:
+
+```bash
+export DB_JDBC_URL="jdbc:postgresql://localhost:5432/integration_hub"
+export DB_USERNAME="integration_hub"
+export DB_PASSWORD="change-me"
+export INTEGRATION_HUB_SECURITY_SOURCE_CREDENTIAL_PEPPERS="1:$PEPPER"
+
+./mvnw compile exec:java@source-credentials \
+  -Dexec.args="provision MARKETPLACE_A 1"
+```
+
+The command prints the complete API key once and stores only its HMAC. To rotate
+a credential, provision the replacement, update the source client, and then
+revoke the previous key ID:
+
+```bash
+./mvnw compile exec:java@source-credentials \
+  -Dexec.args="revoke <key-id>"
+```
+
+The overlap between provisioning and revocation is intentional: it permits a
+client migration without downtime. When rotating the pepper too, configure both
+pepper versions in the service before provisioning against the new version.
+Remove the old pepper only after every credential that references it has been
+revoked. Do not pass production peppers or API keys as command-line arguments,
+commit them, or retain them in terminal transcripts.
 
 ## Correlation IDs
 
