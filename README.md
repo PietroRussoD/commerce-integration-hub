@@ -62,5 +62,7 @@ credentials in `compose.yaml` are deliberately restricted to local development.
 
 See [Integration Core](services/integration-core/README.md) for service-level
 architecture and operational details. The current PostgreSQL structure is shown
-in the [relational data model](docs/data-model.md). Significant design choices
-are recorded in the [architecture decision log](docs/decisions/README.md).
+in the [relational data model](docs/data-model.md), while the implemented request
+flows are captured in the [ingestion sequence diagrams](docs/ingestion-sequences.md).
+Significant design choices are recorded in the
+[architecture decision log](docs/decisions/README.md).

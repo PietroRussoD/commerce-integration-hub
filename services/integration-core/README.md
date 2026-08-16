@@ -88,7 +88,9 @@ A first ingestion stores one `ORDER_RECEIVED` timeline entry and one pending
 create additional events. PostgreSQL integration tests verify atomic rollback
 when the outbox insert fails. Publication is intentionally deferred to a later
 increment. See the repository [relational data model](../../docs/data-model.md)
-for the implemented tables and relationships.
+for the implemented tables and relationships and the
+[ingestion sequence diagrams](../../docs/ingestion-sequences.md) for the runtime
+flow.
 
 ## Prerequisites
 
