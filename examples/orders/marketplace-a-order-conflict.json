@@ -1,0 +1,14 @@
+{
+  "externalId": "ORDER-DEMO-0001",
+  "currency": "EUR",
+  "declaredTotalAmount": "39.98",
+  "items": [
+    {
+      "externalLineId": "1",
+      "sku": "SKU-BOOK-1",
+      "description": "Changed architecture handbook",
+      "quantity": "2",
+      "unitPrice": "19.99"
+    }
+  ]
+}

@@ -230,7 +230,10 @@ cd services/integration-core
 ./mvnw package -DskipTests
 cd ../..
 docker compose up --build --wait
+docker compose ps
 ```
+
+Both services must report `healthy` before continuing.
 
 Provision a credential using the same local-only database credentials and
 pepper configured in `compose.yaml`:
@@ -260,10 +263,20 @@ curl --include \
   http://localhost:8080/api/v1/orders
 ```
 
-The first submission returns `201 Created`. Repeating the same command returns
-`200 OK` and the same canonical order because the payload is equivalent. Change
-the description while keeping `externalId` unchanged to observe a `409
-Conflict` without a partial write.
+On a clean database, the first submission returns `201 Created`. Repeating the
+same command returns `200 OK` and the same canonical order because the payload
+is equivalent. Submit the conflicting example, which preserves `externalId` but
+changes the description:
+
+```bash
+curl --include \
+  --header "Content-Type: application/json" \
+  --header "X-Source-API-Key: $SOURCE_API_KEY" \
+  --data @examples/orders/marketplace-a-order-conflict.json \
+  http://localhost:8080/api/v1/orders
+```
+
+The service returns `409 Conflict` without a partial write.
 
 Stop the services while retaining PostgreSQL data with `docker compose down`.
 Use `docker compose down --volumes` when a clean demo database is required.
