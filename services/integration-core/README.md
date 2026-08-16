@@ -93,7 +93,8 @@ for the implemented tables and relationships.
 ## Prerequisites
 
 - Java 21 or newer
-- Docker for development and integration tests
+- Docker with the Compose plugin for development, integration tests, and the
+  local demo
 
 ## Source credential peppers
 
@@ -218,6 +219,54 @@ http://localhost:8080/health
 http://localhost:8080/health/live
 http://localhost:8080/health/ready
 ```
+
+## Local demo
+
+From the repository root, build the service and wait for both Compose services
+to become healthy:
+
+```bash
+cd services/integration-core
+./mvnw package -DskipTests
+cd ../..
+docker compose up --build --wait
+```
+
+Provision a credential using the same local-only database credentials and
+pepper configured in `compose.yaml`:
+
+```bash
+cd services/integration-core
+export DB_JDBC_URL="jdbc:postgresql://localhost:5433/integration_hub"
+export DB_USERNAME="integration_hub"
+export DB_PASSWORD="local-development-only"
+export INTEGRATION_HUB_SECURITY_SOURCE_CREDENTIAL_PEPPERS="1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+./mvnw compile exec:java@source-credentials \
+  -Dexec.args="provision MARKETPLACE_A 1"
+```
+
+Copy the one-time `apiKey` value printed by the command and submit the example
+order from the repository root:
+
+```bash
+export SOURCE_API_KEY="<generated-api-key>"
+cd ../..
+
+curl --include \
+  --header "Content-Type: application/json" \
+  --header "X-Source-API-Key: $SOURCE_API_KEY" \
+  --data @examples/orders/marketplace-a-order.json \
+  http://localhost:8080/api/v1/orders
+```
+
+The first submission returns `201 Created`. Repeating the same command returns
+`200 OK` and the same canonical order because the payload is equivalent. Change
+the description while keeping `externalId` unchanged to observe a `409
+Conflict` without a partial write.
+
+Stop the services while retaining PostgreSQL data with `docker compose down`.
+Use `docker compose down --volumes` when a clean demo database is required.
 
 ## Container Image
 
