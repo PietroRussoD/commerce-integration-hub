@@ -45,6 +45,21 @@ cd services/integration-core
 ./mvnw verify
 ```
 
+## Local demo
+
+Build the service and start it with PostgreSQL:
+
+```bash
+cd services/integration-core
+./mvnw package -DskipTests
+cd ../..
+docker compose up --build --wait
+```
+
+Then follow the [local demo](services/integration-core/README.md#local-demo) to
+provision a source credential and exercise reliable order ingestion. The
+credentials in `compose.yaml` are deliberately restricted to local development.
+
 See [Integration Core](services/integration-core/README.md) for service-level
 architecture and operational details. The current PostgreSQL structure is shown
 in the [relational data model](docs/data-model.md). Significant design choices
