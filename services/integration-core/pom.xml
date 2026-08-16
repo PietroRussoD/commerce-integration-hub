@@ -11,6 +11,7 @@
 
     <properties>
         <compiler-plugin.version>3.15.0</compiler-plugin.version>
+        <cyclonedx-maven-plugin.version>2.9.3</cyclonedx-maven-plugin.version>
         <failsafe-plugin.version>3.5.6</failsafe-plugin.version>
         <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
         <jacoco.version>0.8.14</jacoco.version>
@@ -261,6 +262,35 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
+                <version>${cyclonedx-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>generate-sbom</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>makeBom</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <projectType>application</projectType>
+                    <schemaVersion>1.6</schemaVersion>
+                    <includeBomSerialNumber>false</includeBomSerialNumber>
+                    <includeCompileScope>true</includeCompileScope>
+                    <includeProvidedScope>false</includeProvidedScope>
+                    <includeRuntimeScope>true</includeRuntimeScope>
+                    <includeSystemScope>false</includeSystemScope>
+                    <includeTestScope>false</includeTestScope>
+                    <outputFormat>json</outputFormat>
+                    <outputName>integration-core.cdx</outputName>
+                    <outputDirectory>${project.build.directory}/sbom</outputDirectory>
+                    <skipAttach>true</skipAttach>
+                    <skipNotDeployed>false</skipNotDeployed>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>

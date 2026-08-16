@@ -187,6 +187,26 @@ threshold is enforced yet. CI uploads the same report as the
 `integration-core-coverage` artifact on the
 [GitHub Actions run](https://github.com/PietroRussoD/commerce-integration-hub/actions/workflows/ci.yml).
 
+A software bill of materials (SBOM) is a machine-readable inventory of an
+application's direct and transitive components. CycloneDX defines the inventory
+format; vulnerability scanners can consume it, but generating an SBOM is not
+itself a security scan and does not affect the running application.
+
+Every `package` or `verify` build generates a CycloneDX 1.6 JSON SBOM at
+`target/sbom/integration-core.cdx.json`. It includes compile and runtime
+dependencies but excludes test and provided dependencies. CI uploads it as the
+`integration-core-sbom` artifact with 14-day retention; generated SBOMs are not
+committed.
+
+Inspect the generated inventory locally with:
+
+```bash
+jq . target/sbom/integration-core.cdx.json
+```
+
+In GitHub, open a completed CI workflow run and download
+`integration-core-sbom` from its **Artifacts** section.
+
 Use `clean verify` to regenerate jOOQ sources and the committed OpenAPI files:
 
 ```bash
