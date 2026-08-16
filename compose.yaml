@@ -1,0 +1,42 @@
+name: commerce-integration-hub
+
+services:
+  postgres:
+    image: postgres:18.3
+    environment:
+      POSTGRES_DB: integration_hub
+      POSTGRES_USER: integration_hub
+      POSTGRES_PASSWORD: local-development-only
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - integration-hub-postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U integration_hub -d integration_hub"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  integration-core:
+    build:
+      context: services/integration-core
+      dockerfile: src/main/docker/Dockerfile.jvm
+    environment:
+      DB_JDBC_URL: jdbc:postgresql://postgres:5432/integration_hub
+      DB_USERNAME: integration_hub
+      DB_PASSWORD: local-development-only
+      INTEGRATION_HUB_SECURITY_SOURCE_CREDENTIAL_PEPPERS: "1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    ports:
+      - "${INTEGRATION_CORE_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health/ready"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
+volumes:
+  integration-hub-postgres:
