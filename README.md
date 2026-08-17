@@ -65,9 +65,10 @@ docker run --rm \
 
 The final container vulnerability gate is documented in the
 [Integration Core container section](services/integration-core/README.md#container-image).
-Dependabot checks Maven, GitHub Actions, and Docker dependencies weekly. Minor
-and patch updates are grouped, while major updates remain isolated for manual
-review; updates are never merged automatically.
+Dependabot checks Maven dependencies, GitHub Actions, the service Dockerfile,
+and Docker Compose images weekly. Minor and patch updates are grouped, while
+major updates remain isolated for manual review; updates are never merged
+automatically.
 
 ## Local demo
 
