@@ -320,6 +320,20 @@ docker build \
   .
 ```
 
+CI scans this image with Trivy before registry publication and fails on any
+`HIGH` or `CRITICAL` operating-system or application-library vulnerability.
+Run the equivalent check locally with Docker:
+
+```bash
+docker run --rm \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  aquasec/trivy:0.74.0 image \
+  --scanners vuln \
+  --severity HIGH,CRITICAL \
+  --exit-code 1 \
+  commerce-integration-hub/integration-core:dev
+```
+
 Run it locally:
 
 ```bash
