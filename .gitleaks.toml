@@ -1,0 +1,12 @@
+title = "Commerce Integration Hub Gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "RFC 4231 HMAC-SHA-256 test vector"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "match"
+regexes = ['''b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7''']
+paths = ['''(^|/)services/integration-core/src/test/kotlin/dev/pietrorussod/integrationhub/infrastructure/security/HmacSha256SourceCredentialSecretVerifierTest\.kt$''']
