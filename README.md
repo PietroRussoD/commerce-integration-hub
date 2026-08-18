@@ -91,3 +91,8 @@ in the [relational data model](docs/data-model.md), while the implemented reques
 flows are captured in the [ingestion sequence diagrams](docs/ingestion-sequences.md).
 Significant design choices are recorded in the
 [architecture decision log](docs/decisions/README.md).
+
+The precise boundary of the current implementation is documented in
+[current limitations](docs/limitations.md). The delivered behavior and its
+verification evidence are summarized in the
+[`v0.1.0` release notes](docs/releases/v0.1.0.md).
