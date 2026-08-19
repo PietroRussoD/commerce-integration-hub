@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional
 import org.jooq.DSLContext
 import java.time.Instant
 import java.time.ZoneOffset
+import java.util.UUID
 
 @ApplicationScoped
 class JooqOutboxEventRepository
@@ -19,6 +20,7 @@ class JooqOutboxEventRepository
     ) : OutboxEventRepository {
         @Transactional
         override fun claimPending(
+            claimId: UUID,
             workerId: String,
             claimedAt: Instant,
             batchSize: Int,
@@ -46,6 +48,7 @@ class JooqOutboxEventRepository
             dslContext
                 .update(OUTBOX_EVENTS)
                 .set(OUTBOX_EVENTS.STATUS, PUBLISHING_STATUS)
+                .set(OUTBOX_EVENTS.CLAIM_ID, claimId)
                 .set(OUTBOX_EVENTS.CLAIMED_BY, workerId)
                 .set(OUTBOX_EVENTS.CLAIMED_AT, claimTime)
                 .set(
@@ -67,9 +70,99 @@ class JooqOutboxEventRepository
             }
         }
 
+        @Transactional
+        override fun markPublished(
+            eventId: UUID,
+            claimId: UUID,
+            workerId: String,
+            publishedAt: Instant,
+        ): Boolean =
+            dslContext
+                .update(OUTBOX_EVENTS)
+                .set(OUTBOX_EVENTS.STATUS, PUBLISHED_STATUS)
+                .set(OUTBOX_EVENTS.PUBLISHED_AT, publishedAt.atOffset(ZoneOffset.UTC))
+                .setNull(OUTBOX_EVENTS.CLAIM_ID)
+                .setNull(OUTBOX_EVENTS.CLAIMED_BY)
+                .setNull(OUTBOX_EVENTS.CLAIMED_AT)
+                .setNull(OUTBOX_EVENTS.LAST_ERROR_CODE)
+                .setNull(OUTBOX_EVENTS.LAST_ERROR_MESSAGE)
+                .where(ownedClaimCondition(eventId, claimId, workerId))
+                .execute() == 1
+
+        @Transactional
+        override fun rescheduleAfterFailure(
+            eventId: UUID,
+            claimId: UUID,
+            workerId: String,
+            nextAttemptAt: Instant,
+            errorCode: String,
+            safeErrorMessage: String,
+        ): Boolean =
+            dslContext
+                .update(OUTBOX_EVENTS)
+                .set(OUTBOX_EVENTS.STATUS, PENDING_STATUS)
+                .set(OUTBOX_EVENTS.NEXT_ATTEMPT_AT, nextAttemptAt.atOffset(ZoneOffset.UTC))
+                .set(OUTBOX_EVENTS.LAST_ERROR_CODE, errorCode)
+                .set(OUTBOX_EVENTS.LAST_ERROR_MESSAGE, safeErrorMessage)
+                .setNull(OUTBOX_EVENTS.CLAIM_ID)
+                .setNull(OUTBOX_EVENTS.CLAIMED_BY)
+                .setNull(OUTBOX_EVENTS.CLAIMED_AT)
+                .where(ownedClaimCondition(eventId, claimId, workerId))
+                .execute() == 1
+
+        @Transactional
+        override fun recoverExpiredClaims(
+            expiredBefore: Instant,
+            recoveredAt: Instant,
+            batchSize: Int,
+        ): List<UUID> {
+            val expiredIds =
+                dslContext
+                    .select(OUTBOX_EVENTS.ID)
+                    .from(OUTBOX_EVENTS)
+                    .where(OUTBOX_EVENTS.STATUS.eq(PUBLISHING_STATUS))
+                    .and(OUTBOX_EVENTS.CLAIMED_AT.le(expiredBefore.atOffset(ZoneOffset.UTC)))
+                    .orderBy(OUTBOX_EVENTS.CLAIMED_AT, OUTBOX_EVENTS.ID)
+                    .limit(batchSize)
+                    .forUpdate()
+                    .skipLocked()
+                    .fetch(OUTBOX_EVENTS.ID)
+                    .map(::requireNotNull)
+
+            if (expiredIds.isEmpty()) {
+                return emptyList()
+            }
+
+            dslContext
+                .update(OUTBOX_EVENTS)
+                .set(OUTBOX_EVENTS.STATUS, PENDING_STATUS)
+                .set(OUTBOX_EVENTS.NEXT_ATTEMPT_AT, recoveredAt.atOffset(ZoneOffset.UTC))
+                .set(OUTBOX_EVENTS.LAST_ERROR_CODE, EXPIRED_CLAIM_ERROR_CODE)
+                .set(OUTBOX_EVENTS.LAST_ERROR_MESSAGE, EXPIRED_CLAIM_ERROR_MESSAGE)
+                .setNull(OUTBOX_EVENTS.CLAIM_ID)
+                .setNull(OUTBOX_EVENTS.CLAIMED_BY)
+                .setNull(OUTBOX_EVENTS.CLAIMED_AT)
+                .where(OUTBOX_EVENTS.ID.`in`(expiredIds))
+                .execute()
+
+            return expiredIds
+        }
+
+        private fun ownedClaimCondition(
+            eventId: UUID,
+            claimId: UUID,
+            workerId: String,
+        ) = OUTBOX_EVENTS.ID
+            .eq(eventId)
+            .and(OUTBOX_EVENTS.STATUS.eq(PUBLISHING_STATUS))
+            .and(OUTBOX_EVENTS.CLAIM_ID.eq(claimId))
+            .and(OUTBOX_EVENTS.CLAIMED_BY.eq(workerId))
+
         private fun OutboxEventsRecord.toClaimedEvent(): ClaimedOutboxEvent =
             ClaimedOutboxEvent(
                 id = requireNotNull(id),
+                claimId = requireNotNull(claimId),
+                workerId = requireNotNull(claimedBy),
                 aggregateType = requireNotNull(aggregateType),
                 aggregateId = requireNotNull(aggregateId),
                 eventType = requireNotNull(eventType),
@@ -83,5 +176,8 @@ class JooqOutboxEventRepository
         private companion object {
             const val PENDING_STATUS = "PENDING"
             const val PUBLISHING_STATUS = "PUBLISHING"
+            const val PUBLISHED_STATUS = "PUBLISHED"
+            const val EXPIRED_CLAIM_ERROR_CODE = "CLAIM_EXPIRED"
+            const val EXPIRED_CLAIM_ERROR_MESSAGE = "Publisher claim expired before completion"
         }
     }

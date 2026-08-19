@@ -26,6 +26,8 @@ class JooqEventStorageCodeGenerationTest {
         assertEquals(UUID::class.java, OUTBOX_EVENTS.ID.dataType.type)
         assertEquals(JSON::class.java, OUTBOX_EVENTS.PAYLOAD.dataType.type)
         assertFalse(OUTBOX_EVENTS.NEXT_ATTEMPT_AT.dataType.nullable())
+        assertEquals(UUID::class.java, OUTBOX_EVENTS.CLAIM_ID.dataType.type)
+        assertTrue(OUTBOX_EVENTS.CLAIM_ID.dataType.nullable())
         assertTrue(OUTBOX_EVENTS.CLAIMED_AT.dataType.nullable())
         assertEquals("pk_outbox_events", OUTBOX_EVENTS.primaryKey.name)
     }

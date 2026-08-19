@@ -10,6 +10,7 @@ import org.jooq.JSON
 import org.jooq.exception.DataAccessException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
@@ -83,6 +84,25 @@ class EventStorageMigrationIT {
                 .set(OUTBOX_EVENTS.NEXT_ATTEMPT_AT, occurredAt)
                 .execute()
         }
+    }
+
+    @Test
+    fun `creates the expired claim recovery index`() {
+        val indexDefinition =
+            requireNotNull(
+                dslContext.fetchOne(
+                    """
+                    SELECT indexdef
+                    FROM pg_indexes
+                    WHERE schemaname = 'public'
+                      AND indexname = 'outbox_events_expired_claim_idx'
+                    """.trimIndent(),
+                ),
+            ).get("indexdef", String::class.java)
+
+        assertTrue(requireNotNull(indexDefinition).contains("(claimed_at, id)"))
+        assertTrue(indexDefinition.contains("status"))
+        assertTrue(indexDefinition.contains("PUBLISHING"))
     }
 
     private fun insertOrder(): UUID {
