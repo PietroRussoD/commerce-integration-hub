@@ -105,6 +105,46 @@ class EventStorageMigrationIT {
         assertTrue(indexDefinition.contains("PUBLISHING"))
     }
 
+    @Test
+    fun `rejects inconsistent terminal outbox failure state`() {
+        val eventId = insertPendingOutbox(insertOrder())
+        val failedAt = OffsetDateTime.now(ZoneOffset.UTC)
+
+        assertThrows(DataAccessException::class.java) {
+            dslContext
+                .update(OUTBOX_EVENTS)
+                .set(OUTBOX_EVENTS.STATUS, "FAILED")
+                .where(OUTBOX_EVENTS.ID.eq(eventId))
+                .execute()
+        }
+        assertThrows(DataAccessException::class.java) {
+            dslContext
+                .update(OUTBOX_EVENTS)
+                .set(OUTBOX_EVENTS.FAILED_AT, failedAt)
+                .where(OUTBOX_EVENTS.ID.eq(eventId))
+                .execute()
+        }
+    }
+
+    private fun insertPendingOutbox(orderId: UUID): UUID {
+        val eventId = UUID.randomUUID()
+        val occurredAt = OffsetDateTime.now(ZoneOffset.UTC)
+        dslContext
+            .insertInto(OUTBOX_EVENTS)
+            .set(OUTBOX_EVENTS.ID, eventId)
+            .set(OUTBOX_EVENTS.AGGREGATE_TYPE, "ORDER")
+            .set(OUTBOX_EVENTS.AGGREGATE_ID, orderId)
+            .set(OUTBOX_EVENTS.EVENT_TYPE, "OrderReceived")
+            .set(OUTBOX_EVENTS.EVENT_VERSION, 1)
+            .set(OUTBOX_EVENTS.PAYLOAD, JSON.valueOf("{}"))
+            .set(OUTBOX_EVENTS.CORRELATION_ID, UUID.randomUUID())
+            .set(OUTBOX_EVENTS.CREATED_AT, occurredAt)
+            .set(OUTBOX_EVENTS.STATUS, "PENDING")
+            .set(OUTBOX_EVENTS.NEXT_ATTEMPT_AT, occurredAt)
+            .execute()
+        return eventId
+    }
+
     private fun insertOrder(): UUID {
         val orderId = UUID.randomUUID()
         dslContext

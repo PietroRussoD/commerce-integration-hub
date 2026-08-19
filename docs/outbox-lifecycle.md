@@ -13,12 +13,14 @@ stateDiagram-v2
     PUBLISHING --> PUBLISHED: Exact claim confirmed
     PUBLISHING --> PENDING: Safe failure rescheduled
     PUBLISHING --> PENDING: Expired claim recovered
+    PUBLISHING --> FAILED: Permanent or exhausted failure
     PUBLISHED --> [*]
+    FAILED --> [*]
 ```
 
-Every transition out of `PUBLISHING` must match the event ID, worker ID, and
-random claim ID. The claim ID changes on every claim attempt and fences late
-results from older attempts.
+Completion, rescheduling, and terminal failure must match the event ID, worker
+ID, and random claim ID. The claim ID changes on every attempt and fences late
+results. Recovery instead selects only claims older than the configured timeout.
 
 ## Concurrent claim
 
@@ -61,14 +63,28 @@ sequenceDiagram
         Broker-->>Worker: Acknowledged
         Worker->>Repository: markPublished(event, claim, worker, time)
         Repository->>Database: UPDATE exact owned claim to PUBLISHED
-    else Classified safe failure
-        Broker-->>Worker: Failure
+    else Retryable failure with attempts remaining
+        Broker-->>Worker: Retryable failure
         Worker->>Repository: reschedule(event, claim, worker, retry time, safe error)
         Repository->>Database: UPDATE exact owned claim to PENDING
+    else Permanent or exhausted failure
+        Broker-->>Worker: Terminal failure
+        Worker->>Repository: markFailed(event, claim, worker, time, safe error)
+        Repository->>Database: UPDATE exact owned claim to FAILED
     end
 ```
 
-The repository rejects both transitions if ownership has changed.
+The repository rejects all three owned transitions if ownership has changed.
+
+## Retry policy
+
+The application policy uses bounded exponential backoff with equal jitter. The
+delay limit doubles after each failed attempt up to a configured maximum, while
+the actual delay is sampled between 50% and 100% of that limit. Once the maximum
+attempt count is reached, the decision is `Exhausted` rather than another retry.
+
+The policy and terminal transition are implemented, but the publisher
+orchestrator and production configuration are not connected yet.
 
 ## Expiry and ambiguous publication
 

@@ -111,6 +111,27 @@ class JooqOutboxEventRepository
                 .execute() == 1
 
         @Transactional
+        override fun markFailed(
+            eventId: UUID,
+            claimId: UUID,
+            workerId: String,
+            failedAt: Instant,
+            errorCode: String,
+            safeErrorMessage: String,
+        ): Boolean =
+            dslContext
+                .update(OUTBOX_EVENTS)
+                .set(OUTBOX_EVENTS.STATUS, FAILED_STATUS)
+                .set(OUTBOX_EVENTS.FAILED_AT, failedAt.atOffset(ZoneOffset.UTC))
+                .set(OUTBOX_EVENTS.LAST_ERROR_CODE, errorCode)
+                .set(OUTBOX_EVENTS.LAST_ERROR_MESSAGE, safeErrorMessage)
+                .setNull(OUTBOX_EVENTS.CLAIM_ID)
+                .setNull(OUTBOX_EVENTS.CLAIMED_BY)
+                .setNull(OUTBOX_EVENTS.CLAIMED_AT)
+                .where(ownedClaimCondition(eventId, claimId, workerId))
+                .execute() == 1
+
+        @Transactional
         override fun recoverExpiredClaims(
             expiredBefore: Instant,
             recoveredAt: Instant,
@@ -177,6 +198,7 @@ class JooqOutboxEventRepository
             const val PENDING_STATUS = "PENDING"
             const val PUBLISHING_STATUS = "PUBLISHING"
             const val PUBLISHED_STATUS = "PUBLISHED"
+            const val FAILED_STATUS = "FAILED"
             const val EXPIRED_CLAIM_ERROR_CODE = "CLAIM_EXPIRED"
             const val EXPIRED_CLAIM_ERROR_MESSAGE = "Publisher claim expired before completion"
         }

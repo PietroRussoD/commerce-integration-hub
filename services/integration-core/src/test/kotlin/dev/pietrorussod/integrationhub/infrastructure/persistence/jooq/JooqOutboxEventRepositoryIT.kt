@@ -196,6 +196,45 @@ class JooqOutboxEventRepositoryIT {
     }
 
     @Test
+    fun `marks only the exact owned claim as terminally failed`() {
+        val eventId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f61")
+        val claimId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f70")
+        val failedAt = now.plusSeconds(1)
+        insertEvent(eventId, createdAt = now.minusSeconds(10), nextAttemptAt = now.minusSeconds(1))
+        repository.claimPending(claimId, "publisher-1", now, batchSize = 1)
+
+        assertFalse(
+            repository.markFailed(
+                eventId,
+                claimId,
+                "publisher-2",
+                failedAt,
+                "INVALID_EVENT_PAYLOAD",
+                "Event payload cannot be published",
+            ),
+        )
+        assertTrue(
+            repository.markFailed(
+                eventId,
+                claimId,
+                "publisher-1",
+                failedAt,
+                "INVALID_EVENT_PAYLOAD",
+                "Event payload cannot be published",
+            ),
+        )
+
+        val record = dslContext.selectFrom(OUTBOX_EVENTS).where(OUTBOX_EVENTS.ID.eq(eventId)).fetchSingle()
+        assertEquals("FAILED", record.status)
+        assertEquals(failedAt, record.failedAt?.toInstant())
+        assertEquals("INVALID_EVENT_PAYLOAD", record.lastErrorCode)
+        assertEquals("Event payload cannot be published", record.lastErrorMessage)
+        assertEquals(null, record.claimId)
+        assertEquals(null, record.claimedBy)
+        assertEquals(null, record.claimedAt)
+    }
+
+    @Test
     fun `recovers expired claims and fences a late completion`() {
         val expiredId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f61")
         val freshId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f62")

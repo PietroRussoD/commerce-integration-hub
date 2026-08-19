@@ -71,6 +71,26 @@ class OutboxClaimLifecycleUseCaseTest {
     }
 
     @Test
+    fun `fails the exact claim with a safe terminal failure`() {
+        val useCase = FailOutboxEventUseCase(repository, Clock.fixed(now, ZoneOffset.UTC))
+
+        assertTrue(
+            useCase.fail(
+                event = event,
+                errorCode = "INVALID_EVENT_PAYLOAD",
+                safeErrorMessage = "Event payload cannot be published",
+            ),
+        )
+
+        assertEquals(event.id, repository.eventId)
+        assertEquals(event.claimId, repository.claimId)
+        assertEquals(event.workerId, repository.workerId)
+        assertEquals(now, repository.failedAt)
+        assertEquals("INVALID_EVENT_PAYLOAD", repository.errorCode)
+        assertEquals("Event payload cannot be published", repository.safeErrorMessage)
+    }
+
+    @Test
     fun `recovers claims older than the configured timeout`() {
         val recoveredId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f71")
         repository.recoveredIds = listOf(recoveredId)
@@ -120,6 +140,7 @@ class OutboxClaimLifecycleUseCaseTest {
         var claimId: UUID? = null
         var workerId: String? = null
         var publishedAt: Instant? = null
+        var failedAt: Instant? = null
         var nextAttemptAt: Instant? = null
         var errorCode: String? = null
         var safeErrorMessage: String? = null
@@ -160,6 +181,23 @@ class OutboxClaimLifecycleUseCaseTest {
             this.claimId = claimId
             this.workerId = workerId
             this.nextAttemptAt = nextAttemptAt
+            this.errorCode = errorCode
+            this.safeErrorMessage = safeErrorMessage
+            return true
+        }
+
+        override fun markFailed(
+            eventId: UUID,
+            claimId: UUID,
+            workerId: String,
+            failedAt: Instant,
+            errorCode: String,
+            safeErrorMessage: String,
+        ): Boolean {
+            this.eventId = eventId
+            this.claimId = claimId
+            this.workerId = workerId
+            this.failedAt = failedAt
             this.errorCode = errorCode
             this.safeErrorMessage = safeErrorMessage
             return true
