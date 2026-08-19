@@ -27,6 +27,15 @@ interface OutboxEventRepository {
         safeErrorMessage: String,
     ): Boolean
 
+    fun markFailed(
+        eventId: UUID,
+        claimId: UUID,
+        workerId: String,
+        failedAt: Instant,
+        errorCode: String,
+        safeErrorMessage: String,
+    ): Boolean
+
     fun recoverExpiredClaims(
         expiredBefore: Instant,
         recoveredAt: Instant,

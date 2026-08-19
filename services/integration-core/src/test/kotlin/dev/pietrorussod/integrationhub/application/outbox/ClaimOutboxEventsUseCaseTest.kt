@@ -82,6 +82,15 @@ class ClaimOutboxEventsUseCaseTest {
             safeErrorMessage: String,
         ): Boolean = error("Not used")
 
+        override fun markFailed(
+            eventId: UUID,
+            claimId: UUID,
+            workerId: String,
+            failedAt: Instant,
+            errorCode: String,
+            safeErrorMessage: String,
+        ): Boolean = error("Not used")
+
         override fun recoverExpiredClaims(
             expiredBefore: Instant,
             recoveredAt: Instant,

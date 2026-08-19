@@ -29,6 +29,7 @@ class JooqEventStorageCodeGenerationTest {
         assertEquals(UUID::class.java, OUTBOX_EVENTS.CLAIM_ID.dataType.type)
         assertTrue(OUTBOX_EVENTS.CLAIM_ID.dataType.nullable())
         assertTrue(OUTBOX_EVENTS.CLAIMED_AT.dataType.nullable())
+        assertTrue(OUTBOX_EVENTS.FAILED_AT.dataType.nullable())
         assertEquals("pk_outbox_events", OUTBOX_EVENTS.primaryKey.name)
     }
 }
