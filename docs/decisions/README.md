@@ -13,6 +13,8 @@ implementation chronology.
 - [ADR 0004](0004-transactional-outbox.md): transactional outbox persistence.
 - [ADR 0005](0005-short-lived-outbox-claims.md): short-lived publisher claims,
   fencing, and recovery.
+- [ADR 0006](0006-bounded-outbox-retries.md): bounded retries and terminal
+  publication failures.
 
 Accepted records are not edited to hide a later change of direction. A new ADR
 supersedes the earlier decision and links back to it.

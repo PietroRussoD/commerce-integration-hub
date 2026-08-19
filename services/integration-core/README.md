@@ -102,12 +102,15 @@ transaction commits before any future broker call. A successful claim changes
 the event to `PUBLISHING`, records worker, claim time, and a random fencing token,
 and increments the publication attempt count. Completion and retry require the
 exact token, preventing a late result from an older attempt from updating a
-newer claim. Recovery independently returns expired claims to `PENDING`.
+newer claim. Recovery independently returns expired claims to `PENDING`. A
+permanent or exhausted failure records safe diagnostics and moves the exact
+claim to terminal `FAILED` state.
 
 This boundary does not publish a message yet. Broker integration, publication
-orchestration, and retry-delay policy remain part of the `v0.2.0` increment. See
-the [outbox lifecycle diagrams](../../docs/outbox-lifecycle.md) for the
-implemented transitions and the at-least-once failure case.
+orchestration, and production retry configuration remain part of the `v0.2.0`
+increment. See the [outbox lifecycle diagrams](../../docs/outbox-lifecycle.md)
+for the implemented transitions, bounded retry policy, and at-least-once failure
+case.
 
 ## Prerequisites
 
