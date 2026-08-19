@@ -99,12 +99,15 @@ Development toward `v0.2.0` includes the first publisher boundary: a worker can
 atomically claim a bounded batch of due `PENDING` events. PostgreSQL row locks
 with `SKIP LOCKED` give concurrent workers disjoint batches, and the short claim
 transaction commits before any future broker call. A successful claim changes
-the event to `PUBLISHING`, records worker and claim time, and increments the
-publication attempt count.
+the event to `PUBLISHING`, records worker, claim time, and a random fencing token,
+and increments the publication attempt count. Completion and retry require the
+exact token, preventing a late result from an older attempt from updating a
+newer claim. Recovery independently returns expired claims to `PENDING`.
 
 This boundary does not publish a message yet. Broker integration, publication
-outcomes, retry scheduling, and expired-claim recovery remain part of the
-`v0.2.0` increment.
+orchestration, and retry-delay policy remain part of the `v0.2.0` increment. See
+the [outbox lifecycle diagrams](../../docs/outbox-lifecycle.md) for the
+implemented transitions and the at-least-once failure case.
 
 ## Prerequisites
 

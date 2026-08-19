@@ -66,6 +66,7 @@ erDiagram
         uuid correlation_id
         timestamptz created_at
         varchar status
+        uuid claim_id
         varchar claimed_by
         timestamptz claimed_at
         timestamptz next_attempt_at
