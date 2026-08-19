@@ -11,6 +11,8 @@ implementation chronology.
 - [ADR 0003](0003-idempotent-order-ingestion.md): payload-aware idempotent
   order ingestion.
 - [ADR 0004](0004-transactional-outbox.md): transactional outbox persistence.
+- [ADR 0005](0005-short-lived-outbox-claims.md): short-lived publisher claims,
+  fencing, and recovery.
 
 Accepted records are not edited to hide a later change of direction. A new ADR
 supersedes the earlier decision and links back to it.
