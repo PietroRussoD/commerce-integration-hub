@@ -32,6 +32,7 @@ dev.pietrorussod.integrationhub/
     security/                  source API-key HTTP boundary
   application/authentication/ source authentication use case and ports
   application/order/           use cases, commands, results, and outbound ports
+  application/outbox/          event claim use case, model, and persistence port
   domain/order/                entities, value objects, and business invariants
   infrastructure/persistence/  PostgreSQL adapters
     jooq/                       jOOQ repository and record mapping
@@ -91,6 +92,19 @@ increment. See the repository [relational data model](../../docs/data-model.md)
 for the implemented tables and relationships and the
 [ingestion sequence diagrams](../../docs/ingestion-sequences.md) for the runtime
 flow.
+
+## Outbox claiming
+
+Development toward `v0.2.0` includes the first publisher boundary: a worker can
+atomically claim a bounded batch of due `PENDING` events. PostgreSQL row locks
+with `SKIP LOCKED` give concurrent workers disjoint batches, and the short claim
+transaction commits before any future broker call. A successful claim changes
+the event to `PUBLISHING`, records worker and claim time, and increments the
+publication attempt count.
+
+This boundary does not publish a message yet. Broker integration, publication
+outcomes, retry scheduling, and expired-claim recovery remain part of the
+`v0.2.0` increment.
 
 ## Prerequisites
 
