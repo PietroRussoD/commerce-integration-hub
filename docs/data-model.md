@@ -71,6 +71,7 @@ erDiagram
         timestamptz claimed_at
         timestamptz next_attempt_at
         timestamptz published_at
+        timestamptz failed_at
         integer publish_attempts
         varchar last_error_code
         varchar last_error_message
@@ -85,6 +86,8 @@ key. The two unique constraints on `order_items` combine `order_id` with
 `outbox_events.aggregate_id` is deliberately a logical reference rather than a
 foreign key because the outbox is structured to carry events for different
 aggregate types. The current schema restricts `aggregate_type` to `ORDER`.
+Outbox claim fields are present only while an event is `PUBLISHING`. A terminal
+`FAILED` event requires `failed_at`, `last_error_code`, and a safe error message.
 
 `source_credentials` stores a credential identifier, its source identity, a
 lowercase HMAC-SHA-256 MAC, and the pepper version needed for verification. Its
