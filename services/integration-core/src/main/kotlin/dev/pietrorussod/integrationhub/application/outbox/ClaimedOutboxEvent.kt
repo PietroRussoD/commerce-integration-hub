@@ -5,6 +5,8 @@ import java.util.UUID
 
 data class ClaimedOutboxEvent(
     val id: UUID,
+    val claimId: UUID,
+    val workerId: String,
     val aggregateType: String,
     val aggregateId: UUID,
     val eventType: String,
