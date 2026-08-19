@@ -1,6 +1,7 @@
 package dev.pietrorussod.integrationhub.application.outbox
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.util.UUID
@@ -34,5 +35,23 @@ class OutboundIntegrationEventTest {
         assertEquals(claimedEvent.correlationId, outboundEvent.correlationId)
         assertEquals(claimedEvent.createdAt, outboundEvent.occurredAt)
         assertEquals(claimedEvent.payload, outboundEvent.payload)
+    }
+
+    @Test
+    fun `rejects unsafe publication failure details`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            PublicationOutcome.Failed(
+                kind = PublicationFailureKind.NON_RETRYABLE,
+                errorCode = "invalid-code",
+                safeErrorMessage = "Event payload cannot be published",
+            )
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            PublicationOutcome.Failed(
+                kind = PublicationFailureKind.NON_RETRYABLE,
+                errorCode = "INVALID_EVENT_PAYLOAD",
+                safeErrorMessage = " ",
+            )
+        }
     }
 }

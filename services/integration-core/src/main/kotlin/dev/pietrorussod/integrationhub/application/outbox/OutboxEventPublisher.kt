@@ -11,7 +11,11 @@ sealed interface PublicationOutcome {
         val kind: PublicationFailureKind,
         val errorCode: String,
         val safeErrorMessage: String,
-    ) : PublicationOutcome
+    ) : PublicationOutcome {
+        init {
+            OutboxPublicationFailurePolicy.validate(errorCode, safeErrorMessage)
+        }
+    }
 }
 
 enum class PublicationFailureKind {
