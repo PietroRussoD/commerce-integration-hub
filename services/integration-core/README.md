@@ -110,8 +110,9 @@ permanent or exhausted failure records safe diagnostics and moves the exact
 claim to terminal `FAILED` state.
 
 The Kafka adapter maps a claimed event to a structured JSON envelope, derives
-the aggregate key and routing headers, and waits for broker acknowledgement.
-Automatic claim scheduling and dispatch remain part of the `v0.2.0` increment.
+the aggregate key and routing headers, and waits for broker acknowledgement. CDI
+connects the batch dispatcher to the publisher and a configurable retry policy;
+automatic scheduling remains part of the `v0.2.0` increment.
 See the [outbox lifecycle diagrams](../../docs/outbox-lifecycle.md) for the
 implemented transitions, publication boundary, bounded retry policy, and
 at-least-once failure case.

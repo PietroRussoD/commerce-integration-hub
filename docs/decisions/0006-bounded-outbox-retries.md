@@ -41,5 +41,6 @@ them.
 
 Retries are bounded, spread over time, and deterministic in tests through an
 injectable jitter source. Terminal failures remain available for diagnosis and
-future audited replay. Production values, metrics, alerting, and orchestration
-still need to be connected before messages are published.
+future audited replay. Default retry values are configurable and connected
+through CDI. Metrics, alerting, and scheduled orchestration remain to be
+implemented.
