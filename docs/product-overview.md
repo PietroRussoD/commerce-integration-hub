@@ -112,7 +112,8 @@ projections.
 | Atomic order, timeline, and outbox persistence | Implemented |
 | Outbox claim, retry, recovery, and failure lifecycle | Implemented |
 | Kafka publisher adapter | Implemented and broker-tested |
-| Scheduled outbox dispatch and production retry configuration | Planned |
+| Configured outbox dispatch composition | Implemented |
+| Scheduled outbox dispatch | Planned |
 | Provider-specific Connector Gateway | Planned |
 | Processing consumer and event deduplication | Planned |
 | OpenSearch projection and operator UI | Planned |
