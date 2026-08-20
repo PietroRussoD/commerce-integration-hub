@@ -15,6 +15,8 @@ implementation chronology.
   fencing, and recovery.
 - [ADR 0006](0006-bounded-outbox-retries.md): bounded retries and terminal
   publication failures.
+- [ADR 0007](0007-structured-event-envelope.md): structured JSON events with
+  Kafka routing metadata derived from the same envelope.
 
 Accepted records are not edited to hide a later change of direction. A new ADR
 supersedes the earlier decision and links back to it.
