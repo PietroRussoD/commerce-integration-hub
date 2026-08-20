@@ -114,6 +114,7 @@ for deduplication before applying business effects or updating projections.
 | Kafka publisher adapter | Implemented and broker-tested |
 | Scheduled outbox dispatch | Implemented |
 | Scheduled expired-claim recovery | Implemented |
+| Health checks and Prometheus outbox metrics | Implemented |
 | Provider-specific Connector Gateway | Planned |
 | Processing consumer and event deduplication | Planned |
 | OpenSearch projection and operator UI | Planned |
