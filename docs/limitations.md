@@ -11,8 +11,9 @@ mistaken for available behavior.
   provider-specific normalization.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
-- The transactional outbox is persisted atomically with each new order, but no
-  publisher or message broker is connected. Retry processing, dead-letter
+- The transactional outbox is persisted atomically with each new order, and the
+  Kafka publisher adapter is broker-tested. No scheduler invokes the complete
+  claim-publish-transition cycle yet. Automated retry processing, dead-letter
   handling, and operator replay are therefore outside this release.
 
 ## API and Operations

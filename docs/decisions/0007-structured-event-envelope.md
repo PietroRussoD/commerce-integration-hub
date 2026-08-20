@@ -20,7 +20,7 @@ The authoritative representation is a versioned structured JSON envelope. It
 contains the stable event ID, event type and version, aggregate identity,
 correlation ID, occurrence time, and nested JSON payload.
 
-The Kafka adapter will derive selected transport metadata from that same
+The Kafka adapter derives selected transport metadata from that same
 envelope:
 
 - record key: `aggregateId`;
@@ -54,8 +54,8 @@ map it to CloudEvents without changing the domain event semantics.
 
 Messages remain portable and inspectable outside Kafka, while consumers retain
 cheap access to routing metadata. A small amount of metadata is duplicated, so
-serialization and consumer tests must detect divergence. The payload must be
-embedded as JSON rather than encoded as an escaped JSON string.
+mapping tests and a broker-backed integration test detect divergence. The
+payload is embedded as JSON rather than encoded as an escaped JSON string.
 
 ## References
 

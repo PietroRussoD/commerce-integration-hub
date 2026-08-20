@@ -1,8 +1,8 @@
 # Outbox Claim Lifecycle
 
-These diagrams describe the implemented PostgreSQL claim lifecycle. No broker
-adapter or scheduled publisher is connected yet; broker interactions are shown
-only to explain the transition contract and the resulting delivery guarantee.
+These diagrams describe the implemented PostgreSQL claim lifecycle and Kafka
+publication adapter. The scheduler that joins claiming, publication, and state
+transitions is not connected yet.
 
 ## State machine
 
@@ -54,7 +54,7 @@ The database transaction ends before any future broker call.
 sequenceDiagram
     autonumber
     participant Worker
-    participant Broker as Future broker adapter
+    participant Broker as Kafka publisher adapter
     participant Repository as jOOQ outbox repository
     participant Database as PostgreSQL
 
@@ -76,6 +76,42 @@ sequenceDiagram
 
 The repository rejects all three owned transitions if ownership has changed.
 
+## Kafka adapter boundary
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant UseCase as Publication use case
+    participant Publisher as Kafka publisher adapter
+    participant Mapper as Event and metadata mappers
+    participant Broker as Kafka / Redpanda
+
+    UseCase->>Publisher: publish(outbound event)
+    Publisher->>Mapper: Build JSON envelope, key, and headers
+    alt Invalid event payload
+        Mapper-->>Publisher: Validation failure
+        Publisher-->>UseCase: Non-retryable failure
+    else Valid event
+        Mapper-->>Publisher: Structured message
+        Publisher->>Broker: Send and wait for acknowledgement
+        alt Broker acknowledges
+            Broker-->>Publisher: Acknowledged
+            Publisher-->>UseCase: Acknowledged
+        else Timeout or transport failure
+            Broker-->>Publisher: Failure
+            Publisher-->>UseCase: Retryable failure
+        else Serialization failure
+            Broker-->>Publisher: Failure
+            Publisher-->>UseCase: Non-retryable failure
+        end
+    end
+```
+
+Kafka request, delivery, and adapter timeouts are 8, 10, and 12 seconds
+respectively. The standard component test uses the SmallRye in-memory connector;
+a dedicated integration test uses Redpanda through Kafka Dev Services to verify
+the real serialization and transport configuration.
+
 ## Retry policy
 
 The application policy uses bounded exponential backoff with equal jitter. The
@@ -92,7 +128,7 @@ orchestrator and production configuration are not connected yet.
 sequenceDiagram
     autonumber
     participant Old as Old attempt
-    participant Broker as Future broker
+    participant Broker as Kafka / Redpanda
     participant Recovery
     participant New as New attempt
     participant Database as PostgreSQL
