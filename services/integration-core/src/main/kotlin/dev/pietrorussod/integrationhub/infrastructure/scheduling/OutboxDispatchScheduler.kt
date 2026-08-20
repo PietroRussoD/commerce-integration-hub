@@ -1,6 +1,7 @@
 package dev.pietrorussod.integrationhub.infrastructure.scheduling
 
 import dev.pietrorussod.integrationhub.application.outbox.DispatchOutboxBatchUseCase
+import dev.pietrorussod.integrationhub.infrastructure.observability.OutboxMetrics
 import io.quarkus.scheduler.Scheduled
 import io.quarkus.scheduler.Scheduled.ConcurrentExecution.SKIP
 import jakarta.enterprise.context.ApplicationScoped
@@ -10,8 +11,9 @@ import org.jboss.logging.Logger
 @ApplicationScoped
 class OutboxDispatchScheduler(
     private val dispatchOutboxBatch: DispatchOutboxBatchUseCase,
-    @ConfigProperty(name = "integration-hub.outbox.worker-id") private val workerId: String,
-    @ConfigProperty(name = "integration-hub.outbox.dispatch.batch-size") private val batchSize: Int,
+    private val outboxMetrics: OutboxMetrics,
+    @param:ConfigProperty(name = "integration-hub.outbox.worker-id") private val workerId: String,
+    @param:ConfigProperty(name = "integration-hub.outbox.dispatch.batch-size") private val batchSize: Int,
 ) {
     private val logger = Logger.getLogger(OutboxDispatchScheduler::class.java)
 
@@ -22,6 +24,7 @@ class OutboxDispatchScheduler(
     )
     fun dispatchPendingEvents() {
         val result = dispatchOutboxBatch.dispatch(workerId, batchSize)
+        outboxMetrics.recordDispatch(result)
 
         if (result.claimedCount > 0) {
             logger.infof(
