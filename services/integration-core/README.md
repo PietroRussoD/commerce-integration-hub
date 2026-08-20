@@ -40,6 +40,7 @@ dev.pietrorussod.integrationhub/
   infrastructure/persistence/  PostgreSQL adapters
     jooq/                       jOOQ repository and record mapping
   infrastructure/messaging/    structured event and Kafka publisher adapters
+  infrastructure/observability/ operational metrics adapters
   infrastructure/provisioning/ source credential administrative CLI
   infrastructure/scheduling/   scheduled outbox dispatch adapter
   infrastructure/security/     credential MAC verification
@@ -145,6 +146,20 @@ A dedicated broker-backed integration test enables Kafka Dev Services and uses
 Redpanda to verify the actual serializer, topic, key, headers, and
 acknowledgement. Production obtains its broker address from
 `KAFKA_BOOTSTRAP_SERVERS`.
+
+## Observability
+
+Prometheus metrics are exposed at `/metrics`. The service reports cumulative
+outbox dispatch outcomes under `integration_hub_outbox_dispatch_events_total`,
+using the bounded `outcome` values `claimed`, `published`, `rescheduled`,
+`failed`, and `claim_lost`. Recovered expired claims are counted by
+`integration_hub_outbox_recovery_events_total`. Quarkus also records execution
+counts and durations for both scheduled jobs under `scheduled_methods_seconds`.
+
+Readiness checks the PostgreSQL connection and outgoing messaging channel;
+liveness reports whether the running process can continue serving. These
+signals complement each other: health indicates whether the instance should
+receive work, while metrics show how that work behaves over time.
 
 ## Prerequisites
 
@@ -294,12 +309,14 @@ Operational endpoints:
 http://localhost:8080/health
 http://localhost:8080/health/live
 http://localhost:8080/health/ready
+http://localhost:8080/metrics
 ```
 
 ## Local demo
 
-From the repository root, build the service and wait for both Compose services
-to become healthy:
+From the repository root, build the service and wait for PostgreSQL, Redpanda,
+and the Integration Core to become healthy. The one-shot `redpanda-init`
+service creates the three-partition topic and exits successfully:
 
 ```bash
 cd services/integration-core
@@ -309,7 +326,8 @@ docker compose up --build --wait
 docker compose ps
 ```
 
-Both services must report `healthy` before continuing.
+The three long-running services must report `healthy`, and `redpanda-init` must
+report `Exited (0)`, before continuing.
 
 Provision a credential using the same local-only database credentials and
 pepper configured in `compose.yaml`:
@@ -354,8 +372,29 @@ curl --include \
 
 The service returns `409 Conflict` without a partial write.
 
-Stop the services while retaining PostgreSQL data with `docker compose down`.
-Use `docker compose down --volumes` when a clean demo database is required.
+Inspect the published event from the local broker:
+
+```bash
+docker compose exec -T redpanda \
+  rpk topic consume integration.order.received.v1 \
+  --brokers redpanda:9092 \
+  --offset start \
+  --num 1 \
+  --format json
+```
+
+On a clean broker this returns the first submitted order as a structured JSON
+event, together with its Kafka key, headers, partition, and offset. Inspect
+health and operational metrics with:
+
+```bash
+curl http://localhost:8080/health/ready
+curl http://localhost:8080/metrics
+```
+
+Stop the services while retaining PostgreSQL and Redpanda data with
+`docker compose down`. Use `docker compose down --volumes` when a clean demo
+database and broker are required.
 
 ## Container Image
 

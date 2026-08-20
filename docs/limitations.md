@@ -23,8 +23,9 @@ mistaken for available behavior.
   management are not implemented.
 - Order access is restricted to the authenticated source. There is no operator
   search, cross-source administration, dashboard, or user interface.
-- Health checks, structured logs, and correlation IDs are available. Metrics,
-  distributed tracing, alerting rules, and production dashboards are not.
+- Health checks, structured logs, correlation IDs, Prometheus runtime metrics,
+  and bounded outbox outcome metrics are available. Distributed tracing,
+  alerting rules, and production dashboards are not.
 - Raw provider payloads are not retained by the canonical API.
 
 ## Deployment and Scale

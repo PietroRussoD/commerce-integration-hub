@@ -31,12 +31,14 @@ The current baseline establishes:
 - PostgreSQL integration tests backed by Quarkus Dev Services;
 - Kafka publication through a structured event envelope, verified against a
   real Redpanda broker in integration tests;
+- scheduled outbox dispatch and expired-claim recovery;
+- Prometheus metrics for outbox outcomes and scheduler execution;
 - source API-key authentication, administrative provisioning and revocation,
   with source-owned order access;
 - correlation IDs propagated through HTTP, persistence, and structured logs.
 
-Scheduled outbox dispatch, message consumption, search, external connectors,
-and user interfaces will be added as separate executable increments.
+Message consumption, search, external connectors, and user interfaces will be
+added as separate executable increments.
 
 ## Repository structure
 
@@ -77,7 +79,7 @@ automatically.
 
 ## Local demo
 
-Build the service and start it with PostgreSQL:
+Build the service and start it with PostgreSQL and Redpanda:
 
 ```bash
 cd services/integration-core
