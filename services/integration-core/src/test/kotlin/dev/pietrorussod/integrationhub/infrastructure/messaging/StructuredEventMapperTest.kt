@@ -10,36 +10,49 @@ import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.util.UUID
 
-class StructuredEventJsonSerializerTest {
-    private val objectMapper = ObjectMapper()
-    private val serializer = StructuredEventJsonSerializer(objectMapper)
+class StructuredEventMapperTest {
+    private val objectMapper = ObjectMapper().findAndRegisterModules()
+    private val mapper = StructuredEventMapper(objectMapper)
 
     @Test
-    fun `serializes a self-contained envelope with nested JSON payload`() {
-        val event = outboundEvent("{\"orderId\":\"order-123\",\"currency\":\"EUR\"}")
+    fun `maps a self-contained event with nested JSON payload`() {
+        val source = outboundEvent("{\"orderId\":\"order-123\",\"currency\":\"EUR\"}")
 
-        val serialized = serializer.serialize(event)
-        val envelope = objectMapper.readTree(serialized)
+        val event = mapper.map(source)
+
+        assertEquals(source.envelopeVersion, event.envelopeVersion)
+        assertEquals(source.eventId, event.eventId)
+        assertEquals(source.eventType, event.eventType)
+        assertEquals(source.eventVersion, event.eventVersion)
+        assertEquals(source.aggregateType, event.aggregateType)
+        assertEquals(source.aggregateId, event.aggregateId)
+        assertEquals(source.correlationId, event.correlationId)
+        assertEquals(source.occurredAt, event.occurredAt)
+        assertTrue(event.payload.isObject)
+        assertFalse(event.payload.isTextual)
+        assertEquals("order-123", event.payload["orderId"].textValue())
+    }
+
+    @Test
+    fun `keeps the expected contract when Jackson serializes the event`() {
+        val event = mapper.map(outboundEvent("{\"orderId\":\"order-123\"}"))
+
+        val envelope = objectMapper.readTree(objectMapper.writeValueAsBytes(event))
 
         assertEquals(9, envelope.size())
-        assertEquals(1, envelope["envelopeVersion"].intValue())
         assertEquals(event.eventId.toString(), envelope["eventId"].textValue())
-        assertEquals("OrderReceived", envelope["eventType"].textValue())
-        assertEquals(1, envelope["eventVersion"].intValue())
-        assertEquals("ORDER", envelope["aggregateType"].textValue())
         assertEquals(event.aggregateId.toString(), envelope["aggregateId"].textValue())
         assertEquals(event.correlationId.toString(), envelope["correlationId"].textValue())
         assertEquals(event.occurredAt.toString(), envelope["occurredAt"].textValue())
         assertTrue(envelope["payload"].isObject)
         assertFalse(envelope["payload"].isTextual)
-        assertEquals("order-123", envelope["payload"]["orderId"].textValue())
     }
 
     @Test
     fun `rejects malformed or non-object payloads`() {
         listOf("not-json", "null", "[]", "\"text\"").forEach { payload ->
             assertThrows(IllegalArgumentException::class.java) {
-                serializer.serialize(outboundEvent(payload))
+                mapper.map(outboundEvent(payload))
             }
         }
     }
