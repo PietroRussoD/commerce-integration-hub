@@ -4,6 +4,64 @@ These diagrams describe the implemented PostgreSQL claim lifecycle, Kafka
 publication adapter, scheduled dispatch cycle, and scheduled expired-claim
 recovery.
 
+## Runtime map
+
+Start here. The outbox flow has three entry points; the remaining classes are
+called from one of these paths.
+
+| Entry point | Trigger | Responsibility |
+| --- | --- | --- |
+| Order ingestion | `POST /api/v1/orders` | Commit the order and a `PENDING` event atomically |
+| Dispatch scheduler | Every second | Claim and publish up to five due events |
+| Recovery scheduler | Every 30 seconds | Return up to 100 claims older than two minutes to `PENDING` |
+
+```mermaid
+flowchart LR
+    HTTP[Order HTTP request] --> TX[Order transaction]
+    TX --> Pending[(PENDING)]
+
+    Dispatch[Dispatch scheduler] --> Claim[Claim due batch]
+    Pending --> Claim
+    Claim --> Publishing[(PUBLISHING)]
+    Publishing --> Kafka[Publish to Kafka]
+    Kafka -->|Acknowledged| Published[(PUBLISHED)]
+    Kafka -->|Retryable failure| Pending
+    Kafka -->|Permanent or exhausted| Failed[(FAILED)]
+
+    Recovery[Recovery scheduler] -->|Claim older than 2 minutes| Pending
+    Publishing -. inspected by .-> Recovery
+```
+
+The dispatch call tree is:
+
+```text
+OutboxDispatchScheduler
+  -> DispatchOutboxBatchUseCase
+     -> ClaimOutboxEventsUseCase
+        -> OutboxEventRepository.claimPending
+     -> PublishClaimedOutboxEventUseCase, once per claimed event
+        -> OutboxEventPublisher.publish
+        -> acknowledged: CompleteOutboxEventUseCase
+           -> OutboxEventRepository.markPublished
+        -> retryable: RescheduleOutboxEventUseCase
+           -> OutboxEventRepository.rescheduleAfterFailure
+        -> permanent or exhausted: FailOutboxEventUseCase
+           -> OutboxEventRepository.markFailed
+```
+
+The recovery call tree is independent:
+
+```text
+OutboxClaimRecoveryScheduler
+  -> RecoverExpiredOutboxClaimsUseCase
+     -> OutboxEventRepository.recoverExpiredClaims
+```
+
+The schedulers decide **when** to start. Application use cases decide **what**
+must happen. The Kafka publisher and jOOQ repository adapters decide **how** to
+communicate with external infrastructure. `OutboxApplicationConfiguration`
+assembles these dependencies through CDI; it does not execute the workflow.
+
 ## State machine
 
 ```mermaid
@@ -119,8 +177,9 @@ delay limit doubles after each failed attempt up to a configured maximum, while
 the actual delay is sampled between 50% and 100% of that limit. Once the maximum
 attempt count is reached, the decision is `Exhausted` rather than another retry.
 
-The policy and terminal transition are implemented, but the publisher
-orchestrator and production configuration are not connected yet.
+The policy, terminal transition, publisher orchestrator, and runtime
+configuration are connected. Metrics and alerting are separate operational
+increments.
 
 ## Expiry and ambiguous publication
 

@@ -121,8 +121,8 @@ provide an instance-specific value. A separate job runs every 30 seconds and
 recovers up to 100 claims older than two minutes. The claim timeout exceeds the
 five-event batch's 60-second publication timeout budget.
 See the [outbox lifecycle diagrams](../../docs/outbox-lifecycle.md) for the
-implemented transitions, publication boundary, bounded retry policy, and
-at-least-once failure case.
+runtime map, class call trees, implemented transitions, bounded retry policy,
+and at-least-once failure case.
 
 ## Kafka publication
 
