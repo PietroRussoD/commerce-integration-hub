@@ -3,6 +3,9 @@
 Reliable platform for ingesting, normalizing, and tracking orders from external
 systems.
 
+See the [product and integration overview](docs/product-overview.md) for the
+problem being solved, intended users, integration modes, and delivery roadmap.
+
 ## Current status
 
 The repository currently contains the Kotlin Integration Core baseline, a
