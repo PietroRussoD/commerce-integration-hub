@@ -46,39 +46,41 @@ class KafkaOutboxEventPublisher
                 emitter.sendMessage(message).await().atMost(publishTimeout)
                 PublicationOutcome.Acknowledged
             } catch (exception: Exception) {
-                classifyFailure(exception)
+                KafkaPublicationFailureClassifier.classify(exception)
             }
         }
-
-        private fun classifyFailure(exception: Exception): PublicationOutcome.Failed =
-            when {
-                exception.hasCause<SerializationException>() -> {
-                    PublicationOutcome.Failed(
-                        kind = PublicationFailureKind.NON_RETRYABLE,
-                        errorCode = "KAFKA_SERIALIZATION_FAILED",
-                        safeErrorMessage = "Outbound event could not be serialized",
-                    )
-                }
-
-                exception.hasCause<TimeoutException>() -> {
-                    retryableFailure("Kafka did not acknowledge the event in time")
-                }
-
-                else -> {
-                    retryableFailure("Kafka did not acknowledge the outbound event")
-                }
-            }
-
-        private fun retryableFailure(message: String): PublicationOutcome.Failed =
-            PublicationOutcome.Failed(
-                kind = PublicationFailureKind.RETRYABLE,
-                errorCode = "KAFKA_PUBLISH_FAILED",
-                safeErrorMessage = message,
-            )
-
-        private inline fun <reified T : Throwable> Throwable.hasCause(): Boolean = generateSequence(this) { it.cause }.any { it is T }
 
         private companion object {
             const val CHANNEL_NAME = "integration-events-out"
         }
     }
+
+internal object KafkaPublicationFailureClassifier {
+    fun classify(exception: Exception): PublicationOutcome.Failed =
+        when {
+            exception.hasCause<SerializationException>() -> {
+                PublicationOutcome.Failed(
+                    kind = PublicationFailureKind.NON_RETRYABLE,
+                    errorCode = "KAFKA_SERIALIZATION_FAILED",
+                    safeErrorMessage = "Outbound event could not be serialized",
+                )
+            }
+
+            exception.hasCause<TimeoutException>() -> {
+                retryableFailure("Kafka did not acknowledge the event in time")
+            }
+
+            else -> {
+                retryableFailure("Kafka did not acknowledge the outbound event")
+            }
+        }
+
+    private fun retryableFailure(message: String): PublicationOutcome.Failed =
+        PublicationOutcome.Failed(
+            kind = PublicationFailureKind.RETRYABLE,
+            errorCode = "KAFKA_PUBLISH_FAILED",
+            safeErrorMessage = message,
+        )
+
+    private inline fun <reified T : Throwable> Throwable.hasCause(): Boolean = generateSequence(this) { it.cause }.any { it is T }
+}
