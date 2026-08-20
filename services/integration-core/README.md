@@ -12,9 +12,11 @@ verification are implemented and connected through a jOOQ lookup adapter;
 versioned pepper configuration and CDI composition are also implemented. Source
 API-key authentication protects order ingestion, and the source identity is
 derived from the stored credential rather than the request body. Order reads
-are authenticated and constrained to that same source. Outbox publishing,
-messaging, and search are not implemented yet. HTTP correlation IDs are returned
-on success and error responses and are persisted with ingestion events.
+are authenticated and constrained to that same source. A Kafka adapter publishes
+structured outbox events and is verified against a real broker; automatic outbox
+dispatch, message consumption, and search are not implemented yet. HTTP
+correlation IDs are returned on success and error responses and are persisted
+with ingestion events.
 
 The service persists a canonical payload fingerprint with each order. Reusing a
 source identity returns `ALREADY_RECEIVED` for equivalent content and
@@ -36,6 +38,7 @@ dev.pietrorussod.integrationhub/
   domain/order/                entities, value objects, and business invariants
   infrastructure/persistence/  PostgreSQL adapters
     jooq/                       jOOQ repository and record mapping
+  infrastructure/messaging/    structured event and Kafka publisher adapters
   infrastructure/provisioning/ source credential administrative CLI
   infrastructure/security/     credential MAC verification
 ```
@@ -87,9 +90,9 @@ decimals. A golden-hash test guards against accidental format changes.
 A first ingestion stores one `ORDER_RECEIVED` timeline entry and one pending
 `OrderReceived` version 1 outbox event. Equivalent or conflicting replays do not
 create additional events. PostgreSQL integration tests verify atomic rollback
-when the outbox insert fails. Publication is intentionally deferred to a later
-increment. See the repository [relational data model](../../docs/data-model.md)
-for the implemented tables and relationships and the
+when the outbox insert fails. See the repository
+[relational data model](../../docs/data-model.md) for the implemented tables and
+relationships and the
 [ingestion sequence diagrams](../../docs/ingestion-sequences.md) for the runtime
 flow.
 
@@ -106,11 +109,34 @@ newer claim. Recovery independently returns expired claims to `PENDING`. A
 permanent or exhausted failure records safe diagnostics and moves the exact
 claim to terminal `FAILED` state.
 
-This boundary does not publish a message yet. Broker integration, publication
-orchestration, and production retry configuration remain part of the `v0.2.0`
-increment. See the [outbox lifecycle diagrams](../../docs/outbox-lifecycle.md)
-for the implemented transitions, bounded retry policy, and at-least-once failure
-case.
+The Kafka adapter maps a claimed event to a structured JSON envelope, derives
+the aggregate key and routing headers, and waits for broker acknowledgement.
+Automatic claim scheduling and dispatch remain part of the `v0.2.0` increment.
+See the [outbox lifecycle diagrams](../../docs/outbox-lifecycle.md) for the
+implemented transitions, publication boundary, bounded retry policy, and
+at-least-once failure case.
+
+## Kafka publication
+
+`OrderReceived` version 1 is published to `integration.order.received.v1`. The
+JSON value is authoritative, the Kafka key is `aggregateId`, and headers expose
+the stable event ID, event type and version, correlation ID, and content type.
+Worker identity, fencing tokens, and attempt counts remain internal.
+
+The producer uses `acks=all` and Kafka idempotence. This reduces duplicates from
+producer retries but does not make the database-to-broker boundary exactly once:
+a process can stop after broker acknowledgement and before marking the outbox
+row `PUBLISHED`. Consumers must deduplicate by stable event ID.
+
+Timeouts form an intentional hierarchy: an individual Kafka request has 8
+seconds, Kafka delivery has 10 seconds, and the adapter waits at most 12 seconds.
+The outer timeout must remain greater than the producer delivery timeout.
+
+Fast component integration tests replace the connector with SmallRye in-memory.
+A dedicated broker-backed integration test enables Kafka Dev Services and uses
+Redpanda to verify the actual serializer, topic, key, headers, and
+acknowledgement. Production obtains its broker address from
+`KAFKA_BOOTSTRAP_SERVERS`.
 
 ## Prerequisites
 

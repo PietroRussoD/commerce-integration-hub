@@ -86,9 +86,11 @@ gateway will own delivery state but will not mutate authoritative order state.
 
 ### Event Subscription
 
-Planned. The Integration Core will publish versioned canonical events through
-Kafka-compatible infrastructure. Consumers will use the stable event ID for
-deduplication before applying business effects or updating projections.
+In progress. The Integration Core has a broker-tested adapter for publishing
+versioned canonical events through Kafka-compatible infrastructure. Scheduled
+outbox dispatch and consumers are not connected yet. Consumers will use the
+stable event ID for deduplication before applying business effects or updating
+projections.
 
 ## Reliability Model
 
@@ -99,7 +101,7 @@ deduplication before applying business effects or updating projections.
 - Outbox workers use bounded concurrent claims and fencing tokens.
 - Retry decisions use bounded exponential backoff with equal jitter.
 - Permanent and exhausted publication failures have a durable terminal state.
-- Future broker delivery is at-least-once; consumers must be idempotent.
+- Broker delivery is at-least-once; consumers must be idempotent.
 
 ## Capability Status
 
@@ -109,8 +111,8 @@ deduplication before applying business effects or updating projections.
 | Source authentication and source-owned access | Implemented |
 | Atomic order, timeline, and outbox persistence | Implemented |
 | Outbox claim, retry, recovery, and failure lifecycle | Implemented |
-| Publisher orchestration and production retry configuration | In progress |
-| Kafka or Redpanda publication | Planned |
+| Kafka publisher adapter | Implemented and broker-tested |
+| Scheduled outbox dispatch and production retry configuration | Planned |
 | Provider-specific Connector Gateway | Planned |
 | Processing consumer and event deduplication | Planned |
 | OpenSearch projection and operator UI | Planned |
