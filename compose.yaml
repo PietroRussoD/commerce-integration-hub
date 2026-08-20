@@ -17,6 +17,44 @@ services:
       timeout: 5s
       retries: 15
 
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v26.2.1
+    command:
+      - redpanda
+      - start
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda:9092,external://localhost:19092
+      - --rpc-addr=redpanda:33145
+      - --advertise-rpc-addr=redpanda:33145
+      - --mode=dev-container
+      - --smp=1
+      - --default-log-level=info
+    ports:
+      - "${REDPANDA_KAFKA_PORT:-19092}:19092"
+      - "${REDPANDA_ADMIN_PORT:-19644}:9644"
+    volumes:
+      - integration-hub-redpanda:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  redpanda-init:
+    image: docker.redpanda.com/redpandadata/redpanda:v26.2.1
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - >
+        rpk topic create integration.order.received.v1
+        --brokers redpanda:9092 --partitions 3 --replicas 1
+        || rpk topic describe integration.order.received.v1
+        --brokers redpanda:9092 >/dev/null
+    depends_on:
+      redpanda:
+        condition: service_healthy
+
   integration-core:
     build:
       context: services/integration-core
@@ -25,12 +63,16 @@ services:
       DB_JDBC_URL: jdbc:postgresql://postgres:5432/integration_hub
       DB_USERNAME: integration_hub
       DB_PASSWORD: local-development-only
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      OUTBOX_WORKER_ID: integration-core-compose
       INTEGRATION_HUB_SECURITY_SOURCE_CREDENTIAL_PEPPERS: "1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
     ports:
       - "${INTEGRATION_CORE_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      redpanda-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health/ready"]
       interval: 2s
@@ -40,3 +82,4 @@ services:
 
 volumes:
   integration-hub-postgres:
+  integration-hub-redpanda:
