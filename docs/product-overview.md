@@ -87,10 +87,10 @@ gateway will own delivery state but will not mutate authoritative order state.
 ### Event Subscription
 
 In progress. The Integration Core has a broker-tested adapter for publishing
-versioned canonical events through Kafka-compatible infrastructure. Scheduled
-outbox dispatch and consumers are not connected yet. Consumers will use the
-stable event ID for deduplication before applying business effects or updating
-projections.
+versioned canonical events through Kafka-compatible infrastructure and a
+scheduled bounded-batch dispatcher. Expired-claim recovery and consumers are
+not scheduled or connected yet. Consumers will use the stable event ID for
+deduplication before applying business effects or updating projections.
 
 ## Reliability Model
 
@@ -112,8 +112,8 @@ projections.
 | Atomic order, timeline, and outbox persistence | Implemented |
 | Outbox claim, retry, recovery, and failure lifecycle | Implemented |
 | Kafka publisher adapter | Implemented and broker-tested |
-| Configured outbox dispatch composition | Implemented |
-| Scheduled outbox dispatch | Planned |
+| Scheduled outbox dispatch | Implemented |
+| Scheduled expired-claim recovery | Planned |
 | Provider-specific Connector Gateway | Planned |
 | Processing consumer and event deduplication | Planned |
 | OpenSearch projection and operator UI | Planned |

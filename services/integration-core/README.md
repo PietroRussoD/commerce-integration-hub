@@ -13,8 +13,9 @@ versioned pepper configuration and CDI composition are also implemented. Source
 API-key authentication protects order ingestion, and the source identity is
 derived from the stored credential rather than the request body. Order reads
 are authenticated and constrained to that same source. A Kafka adapter publishes
-structured outbox events and is verified against a real broker; automatic outbox
-dispatch, message consumption, and search are not implemented yet. HTTP
+structured outbox events and is verified against a real broker. A scheduled
+worker dispatches bounded outbox batches; automatic expired-claim recovery,
+message consumption, and search are not implemented yet. HTTP
 correlation IDs are returned on success and error responses and are persisted
 with ingestion events.
 
@@ -40,6 +41,7 @@ dev.pietrorussod.integrationhub/
     jooq/                       jOOQ repository and record mapping
   infrastructure/messaging/    structured event and Kafka publisher adapters
   infrastructure/provisioning/ source credential administrative CLI
+  infrastructure/scheduling/   scheduled outbox dispatch adapter
   infrastructure/security/     credential MAC verification
 ```
 
@@ -111,8 +113,12 @@ claim to terminal `FAILED` state.
 
 The Kafka adapter maps a claimed event to a structured JSON envelope, derives
 the aggregate key and routing headers, and waits for broker acknowledgement. CDI
-connects the batch dispatcher to the publisher and a configurable retry policy;
-automatic scheduling remains part of the `v0.2.0` increment.
+connects the batch dispatcher to the publisher and a configurable retry policy.
+A lightweight scheduler requests five events every second and skips overlapping
+runs within one service instance. `OUTBOX_WORKER_ID` can identify the running
+instance and defaults to `integration-core`; production deployments should
+provide an instance-specific value. Automatic expired-claim recovery remains
+part of the `v0.2.0` increment.
 See the [outbox lifecycle diagrams](../../docs/outbox-lifecycle.md) for the
 implemented transitions, publication boundary, bounded retry policy, and
 at-least-once failure case.

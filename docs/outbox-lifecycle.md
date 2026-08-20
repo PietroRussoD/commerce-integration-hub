@@ -1,8 +1,8 @@
 # Outbox Claim Lifecycle
 
-These diagrams describe the implemented PostgreSQL claim lifecycle and Kafka
-publication adapter. The scheduler that joins claiming, publication, and state
-transitions is not connected yet.
+These diagrams describe the implemented PostgreSQL claim lifecycle, Kafka
+publication adapter, and scheduled dispatch cycle. Expired-claim recovery is
+implemented as a use case but is not scheduled yet.
 
 ## State machine
 
