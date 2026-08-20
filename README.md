@@ -104,4 +104,5 @@ Significant design choices are recorded in the
 The precise boundary of the current implementation is documented in
 [current limitations](docs/limitations.md). The delivered behavior and its
 verification evidence are summarized in the
-[`v0.1.0` release notes](docs/releases/v0.1.0.md).
+[`v0.2.0` release notes](docs/releases/v0.2.0.md). The previous milestone is
+documented in the [`v0.1.0` release notes](docs/releases/v0.1.0.md).
