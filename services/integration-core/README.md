@@ -101,7 +101,7 @@ flow.
 
 ## Outbox claiming
 
-Development toward `v0.2.0` includes the first publisher boundary: a worker can
+`v0.2.0` implements the reliable publisher boundary: a worker can
 atomically claim a bounded batch of due `PENDING` events. PostgreSQL row locks
 with `SKIP LOCKED` give concurrent workers disjoint batches, and the short claim
 transaction commits before any future broker call. A successful claim changes
