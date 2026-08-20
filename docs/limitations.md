@@ -12,9 +12,9 @@ mistaken for available behavior.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the
-  scheduled claim-publish-transition cycle is broker-tested. Expired-claim
-  recovery is not scheduled yet. Dead-letter handling and operator replay are
-  outside this release.
+  scheduled claim-publish-transition and expired-claim recovery cycles are
+  implemented. Dead-letter handling and operator replay are outside this
+  release.
 
 ## API and Operations
 

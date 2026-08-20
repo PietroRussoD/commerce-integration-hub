@@ -44,6 +44,6 @@ is explicit and stale results are fenced, but broker delivery remains
 at-least-once. A recovered event may be published again, so every consumer must
 deduplicate by stable event ID before applying business effects.
 
-Broker integration and scheduling are separate implementation steps. This ADR
-defines the persistence lifecycle and does not claim that messages are already
-being published.
+Broker integration and scheduling remain separate from the persistence
+lifecycle. The dispatch and recovery schedulers apply this decision without
+holding database transactions open across broker calls.

@@ -1,8 +1,8 @@
 # Outbox Claim Lifecycle
 
 These diagrams describe the implemented PostgreSQL claim lifecycle, Kafka
-publication adapter, and scheduled dispatch cycle. Expired-claim recovery is
-implemented as a use case but is not scheduled yet.
+publication adapter, scheduled dispatch cycle, and scheduled expired-claim
+recovery.
 
 ## State machine
 
