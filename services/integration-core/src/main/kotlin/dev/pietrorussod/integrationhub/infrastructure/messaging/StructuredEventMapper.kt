@@ -8,25 +8,23 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 
 @ApplicationScoped
-class StructuredEventJsonSerializer
+class StructuredEventMapper
     @Inject
     constructor(
         private val objectMapper: ObjectMapper,
     ) {
-        fun serialize(event: OutboundIntegrationEvent): ByteArray {
-            val payload = parsePayload(event.payload)
-            val envelope = objectMapper.createObjectNode()
-            envelope.put("envelopeVersion", event.envelopeVersion)
-            envelope.put("eventId", event.eventId.toString())
-            envelope.put("eventType", event.eventType)
-            envelope.put("eventVersion", event.eventVersion)
-            envelope.put("aggregateType", event.aggregateType)
-            envelope.put("aggregateId", event.aggregateId.toString())
-            envelope.put("correlationId", event.correlationId.toString())
-            envelope.put("occurredAt", event.occurredAt.toString())
-            envelope.set<JsonNode>("payload", payload)
-            return objectMapper.writeValueAsBytes(envelope)
-        }
+        fun map(event: OutboundIntegrationEvent): StructuredEvent =
+            StructuredEvent(
+                envelopeVersion = event.envelopeVersion,
+                eventId = event.eventId,
+                eventType = event.eventType,
+                eventVersion = event.eventVersion,
+                aggregateType = event.aggregateType,
+                aggregateId = event.aggregateId,
+                correlationId = event.correlationId,
+                occurredAt = event.occurredAt,
+                payload = parsePayload(event.payload),
+            )
 
         private fun parsePayload(payload: String): JsonNode {
             val parsed =
