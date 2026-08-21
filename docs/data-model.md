@@ -76,6 +76,12 @@ erDiagram
         varchar last_error_code
         varchar last_error_message
     }
+
+    processed_messages {
+        varchar consumer_name PK
+        uuid event_id PK
+        timestamptz processed_at
+    }
 ```
 
 `orders.source_system` and `orders.external_order_id` form one composite unique
@@ -95,3 +101,10 @@ constraints keep status, expiry, and revocation timestamps consistent. See
 [ADR 0001](decisions/0001-source-api-key-authentication.md) for the authentication
 and rotation decision. Order endpoints authenticate against these credentials
 and use the resulting source identity to constrain order access.
+
+`processed_messages` is the consumer inbox. Its composite primary key allows
+independent consumers to process the same event while rejecting another effect
+for the same consumer and event ID. It has no foreign key to `outbox_events`
+because consumed events belong to the messaging boundary and may originate from
+another service. The table exists before the consumer adapter so its persistence
+contract can be implemented and tested independently.
