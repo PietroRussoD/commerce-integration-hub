@@ -12,6 +12,7 @@ import dev.pietrorussod.integrationhub.domain.order.Money
 import dev.pietrorussod.integrationhub.domain.order.Order
 import dev.pietrorussod.integrationhub.domain.order.OrderId
 import dev.pietrorussod.integrationhub.domain.order.OrderItem
+import dev.pietrorussod.integrationhub.domain.order.OrderStatus
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.IntegrationEvents.Companion.INTEGRATION_EVENTS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.OrderItems.Companion.ORDER_ITEMS
@@ -23,6 +24,7 @@ import org.jooq.DSLContext
 import org.jooq.JSON
 import org.jooq.exception.DataAccessException
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -71,6 +73,7 @@ class JooqOrderRepositoryIT {
         assertEquals(OrderInsertOutcome.INSERTED, insertResult.outcome)
         assertEquals(order, insertResult.order)
         assertEquals(order, persistedOrder)
+        assertEquals(order, repository.findById(order.id))
         assertEquals(order, repository.findByIdForSource(order.id, order.sourceSystem))
         assertEquals(
             null,
@@ -97,10 +100,37 @@ class JooqOrderRepositoryIT {
     fun `returns null when an order id does not exist`() {
         val missingOrderId = OrderId(UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f99"))
 
+        assertEquals(null, repository.findById(missingOrderId))
         assertEquals(
             null,
             repository.findByIdForSource(missingOrderId, SourceSystem.from("marketplace-a")),
         )
+    }
+
+    @Test
+    fun `updates an order status from the expected state`() {
+        val received = order(id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
+        insert(received)
+        val processing = received.startProcessing()
+
+        val updated = repository.updateStatus(processing, OrderStatus.RECEIVED)
+
+        assertTrue(updated)
+        assertEquals(processing, repository.findById(received.id))
+    }
+
+    @Test
+    fun `does not overwrite a concurrently changed order status`() {
+        val received = order(id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
+        insert(received)
+        val processing = received.startProcessing()
+        val ready = processing.markReady()
+        repository.updateStatus(processing, OrderStatus.RECEIVED)
+
+        val staleUpdate = repository.updateStatus(ready, OrderStatus.RECEIVED)
+
+        assertFalse(staleUpdate)
+        assertEquals(processing, repository.findById(received.id))
     }
 
     @Test

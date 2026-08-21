@@ -238,9 +238,27 @@ class ReceiveOrderUseCaseTest {
                 it.sourceSystem == sourceSystem && it.externalOrderId == externalOrderId
             }
 
+        override fun findById(orderId: OrderId): Order? = savedOrders.firstOrNull { it.id == orderId }
+
         override fun findByIdForSource(
             orderId: OrderId,
             sourceSystem: SourceSystem,
         ): Order? = savedOrders.firstOrNull { it.id == orderId && it.sourceSystem == sourceSystem }
+
+        override fun updateStatus(
+            order: Order,
+            expectedStatus: OrderStatus,
+        ): Boolean {
+            require(order.status != expectedStatus) {
+                "New order status must differ from the expected status"
+            }
+            val index = savedOrders.indexOfFirst { it.id == order.id && it.status == expectedStatus }
+            if (index < 0) {
+                return false
+            }
+
+            savedOrders[index] = order
+            return true
+        }
     }
 }
