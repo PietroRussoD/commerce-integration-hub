@@ -17,6 +17,8 @@ implementation chronology.
   publication failures.
 - [ADR 0007](0007-structured-event-envelope.md): structured JSON events with
   Kafka routing metadata derived from the same envelope.
+- [ADR 0008](0008-transactional-inbox-order-processing.md): transactional inbox
+  and atomic effects for idempotent order processing.
 
 Accepted records are not edited to hide a later change of direction. A new ADR
 supersedes the earlier decision and links back to it.
