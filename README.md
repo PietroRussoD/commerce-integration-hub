@@ -96,6 +96,8 @@ See [Integration Core](services/integration-core/README.md) for service-level
 architecture and operational details. The current PostgreSQL structure is shown
 in the [relational data model](docs/data-model.md), while the implemented request
 flows are captured in the [ingestion sequence diagrams](docs/ingestion-sequences.md).
+The currently supported domain transitions are shown in the
+[order lifecycle](docs/order-lifecycle.md).
 The developing publisher state machine is shown in the
 [outbox lifecycle diagrams](docs/outbox-lifecycle.md).
 Significant design choices are recorded in the
