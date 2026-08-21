@@ -9,6 +9,7 @@ import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
 import dev.pietrorussod.integrationhub.domain.order.Order
 import dev.pietrorussod.integrationhub.domain.order.OrderId
+import dev.pietrorussod.integrationhub.domain.order.OrderStatus
 import dev.pietrorussod.integrationhub.domain.order.PayloadFingerprint
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.IntegrationEvents.Companion.INTEGRATION_EVENTS
@@ -85,6 +86,14 @@ class JooqOrderRepository
             externalOrderId: ExternalOrderId,
         ): Order? = findStoredOrderBySourceIdentity(sourceSystem, externalOrderId)?.order
 
+        override fun findById(orderId: OrderId): Order? =
+            dslContext
+                .selectFrom(ORDERS)
+                .where(ORDERS.ID.eq(orderId.value))
+                .fetchOne()
+                ?.toStoredOrder()
+                ?.order
+
         override fun findByIdForSource(
             orderId: OrderId,
             sourceSystem: SourceSystem,
@@ -97,6 +106,22 @@ class JooqOrderRepository
                     .fetchOne()
 
             return orderRecord?.toStoredOrder()?.order
+        }
+
+        override fun updateStatus(
+            order: Order,
+            expectedStatus: OrderStatus,
+        ): Boolean {
+            require(order.status != expectedStatus) {
+                "New order status must differ from the expected status"
+            }
+
+            return dslContext
+                .update(ORDERS)
+                .set(ORDERS.STATUS, order.status.name)
+                .where(ORDERS.ID.eq(order.id.value))
+                .and(ORDERS.STATUS.eq(expectedStatus.name))
+                .execute() == 1
         }
 
         private fun findStoredOrderBySourceIdentity(
