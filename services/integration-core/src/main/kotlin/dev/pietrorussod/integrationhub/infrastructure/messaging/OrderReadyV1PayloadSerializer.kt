@@ -2,6 +2,7 @@ package dev.pietrorussod.integrationhub.infrastructure.messaging
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import dev.pietrorussod.integrationhub.application.processing.OrderReadyEvent
+import dev.pietrorussod.integrationhub.application.processing.OrderReadyPayloadSerializer
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import java.math.BigDecimal
@@ -13,8 +14,8 @@ class OrderReadyV1PayloadSerializer
     @Inject
     constructor(
         private val objectMapper: ObjectMapper,
-    ) {
-        fun serialize(event: OrderReadyEvent): String =
+    ) : OrderReadyPayloadSerializer {
+        override fun serialize(event: OrderReadyEvent): String =
             objectMapper.writeValueAsString(
                 OrderReadyV1Payload(
                     orderId = event.order.id.value,
