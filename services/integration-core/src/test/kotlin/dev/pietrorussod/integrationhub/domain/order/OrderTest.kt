@@ -38,6 +38,30 @@ class OrderTest {
     }
 
     @Test
+    fun `moves a received order through processing to ready`() {
+        val processingOrder = receiveOrder(listOf(item(position = 0))).startProcessing()
+
+        val readyOrder = processingOrder.markReady()
+
+        assertEquals(OrderStatus.PROCESSING, processingOrder.status)
+        assertEquals(OrderStatus.READY, readyOrder.status)
+    }
+
+    @Test
+    fun `rejects becoming ready before processing starts`() {
+        val receivedOrder = receiveOrder(listOf(item(position = 0)))
+
+        assertThrows(IllegalStateException::class.java) { receivedOrder.markReady() }
+    }
+
+    @Test
+    fun `rejects starting processing more than once`() {
+        val processingOrder = receiveOrder(listOf(item(position = 0))).startProcessing()
+
+        assertThrows(IllegalStateException::class.java) { processingOrder.startProcessing() }
+    }
+
+    @Test
     fun `calculates the total from rounded line amounts`() {
         val order =
             receiveOrder(

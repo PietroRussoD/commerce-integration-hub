@@ -14,6 +14,20 @@ data class Order private constructor(
     val status: OrderStatus,
     val receivedAt: Instant,
 ) {
+    fun startProcessing(): Order {
+        check(status == OrderStatus.RECEIVED) {
+            "Order processing can only start from RECEIVED status"
+        }
+        return copy(status = OrderStatus.PROCESSING)
+    }
+
+    fun markReady(): Order {
+        check(status == OrderStatus.PROCESSING) {
+            "An order can only become ready from PROCESSING status"
+        }
+        return copy(status = OrderStatus.READY)
+    }
+
     companion object {
         private const val MAX_TOTAL_INTEGER_DIGITS = 17
 

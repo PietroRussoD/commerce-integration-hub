@@ -65,6 +65,32 @@ class EventStorageMigrationIT {
     }
 
     @Test
+    fun `stores processing timeline transitions`() {
+        val orderId = insertOrder()
+        val correlationId = UUID.randomUUID()
+        val occurredAt = OffsetDateTime.now(ZoneOffset.UTC)
+
+        insertIntegrationEvent(
+            orderId = orderId,
+            eventType = "PROCESSING_STARTED",
+            fromStatus = "RECEIVED",
+            toStatus = "PROCESSING",
+            correlationId = correlationId,
+            occurredAt = occurredAt,
+        )
+        insertIntegrationEvent(
+            orderId = orderId,
+            eventType = "PROCESSING_SUCCEEDED",
+            fromStatus = "PROCESSING",
+            toStatus = "READY",
+            correlationId = correlationId,
+            occurredAt = occurredAt.plusSeconds(1),
+        )
+
+        assertEquals(2, dslContext.fetchCount(INTEGRATION_EVENTS))
+    }
+
+    @Test
     fun `rejects inconsistent outbox claim state`() {
         val orderId = insertOrder()
         val occurredAt = OffsetDateTime.now(ZoneOffset.UTC)
@@ -143,6 +169,26 @@ class EventStorageMigrationIT {
             .set(OUTBOX_EVENTS.NEXT_ATTEMPT_AT, occurredAt)
             .execute()
         return eventId
+    }
+
+    private fun insertIntegrationEvent(
+        orderId: UUID,
+        eventType: String,
+        fromStatus: String,
+        toStatus: String,
+        correlationId: UUID,
+        occurredAt: OffsetDateTime,
+    ) {
+        dslContext
+            .insertInto(INTEGRATION_EVENTS)
+            .set(INTEGRATION_EVENTS.ID, UUID.randomUUID())
+            .set(INTEGRATION_EVENTS.ORDER_ID, orderId)
+            .set(INTEGRATION_EVENTS.EVENT_TYPE, eventType)
+            .set(INTEGRATION_EVENTS.FROM_STATUS, fromStatus)
+            .set(INTEGRATION_EVENTS.TO_STATUS, toStatus)
+            .set(INTEGRATION_EVENTS.CORRELATION_ID, correlationId)
+            .set(INTEGRATION_EVENTS.OCCURRED_AT, occurredAt)
+            .execute()
     }
 
     private fun insertOrder(): UUID {

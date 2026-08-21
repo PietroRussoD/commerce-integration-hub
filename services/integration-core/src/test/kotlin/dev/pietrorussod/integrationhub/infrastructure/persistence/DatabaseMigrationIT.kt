@@ -59,6 +59,25 @@ class DatabaseMigrationIT {
     }
 
     @Test
+    fun `allows processing order statuses`() {
+        dataSource.connection.use { connection ->
+            connection.autoCommit = false
+
+            listOf("PROCESSING", "READY").forEach { status ->
+                insertOrder(
+                    connection,
+                    UUID.randomUUID(),
+                    "migration-test-${UUID.randomUUID()}",
+                    "external-${UUID.randomUUID()}",
+                    status,
+                )
+            }
+
+            connection.rollback()
+        }
+    }
+
+    @Test
     fun `rejects an unsupported currency`() {
         dataSource.connection.use { connection ->
             connection.autoCommit = false
