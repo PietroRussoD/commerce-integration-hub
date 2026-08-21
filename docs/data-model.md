@@ -7,6 +7,7 @@ Integration Core. Flyway migrations remain the authoritative schema definition.
 erDiagram
     orders ||--o{ order_items : contains
     orders ||--o{ integration_events : records
+    orders ||--o{ processing_attempts : attempts
     orders ||..o{ outbox_events : "logical aggregate reference"
 
     source_credentials {
@@ -82,6 +83,18 @@ erDiagram
         uuid event_id PK
         timestamptz processed_at
     }
+
+    processing_attempts {
+        uuid id PK
+        uuid order_id FK
+        integer attempt_number
+        varchar status
+        varchar trigger_type
+        varchar error_code
+        varchar error_message
+        timestamptz started_at
+        timestamptz completed_at
+    }
 ```
 
 `orders.source_system` and `orders.external_order_id` form one composite unique
@@ -108,3 +121,9 @@ for the same consumer and event ID. It has no foreign key to `outbox_events`
 because consumed events belong to the messaging boundary and may originate from
 another service. The table exists before the consumer adapter so its persistence
 contract can be implemented and tested independently.
+
+`processing_attempts` records technical executions separately from the business
+timeline. Attempt numbers are unique within an order, and a partial unique index
+allows at most one `STARTED` attempt per order. State constraints require
+successful and failed attempts to have a completion time, while only failed
+attempts may contain a non-blank safe error code and message.
