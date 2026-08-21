@@ -1,6 +1,17 @@
 package dev.pietrorussod.integrationhub.infrastructure.persistence.jooq
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import dev.pietrorussod.integrationhub.application.outbox.OutboxEventRepository
+import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEvent
+import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEventRepository
+import dev.pietrorussod.integrationhub.application.processing.OrderReadyEvent
+import dev.pietrorussod.integrationhub.domain.order.Currency
+import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
+import dev.pietrorussod.integrationhub.domain.order.Money
+import dev.pietrorussod.integrationhub.domain.order.Order
+import dev.pietrorussod.integrationhub.domain.order.OrderId
+import dev.pietrorussod.integrationhub.domain.order.OrderItem
+import dev.pietrorussod.integrationhub.domain.order.SourceSystem
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.OutboxEvents.Companion.OUTBOX_EVENTS
 import io.quarkus.test.junit.QuarkusTest
 import jakarta.inject.Inject
@@ -11,6 +22,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.UUID
@@ -22,9 +34,13 @@ import java.util.concurrent.TimeUnit
 @QuarkusTest
 class JooqOutboxEventRepositoryIT {
     private val now = Instant.parse("2026-08-19T08:00:00Z")
+    private val objectMapper = ObjectMapper()
 
     @Inject
     lateinit var repository: OutboxEventRepository
+
+    @Inject
+    lateinit var pendingEventRepository: PendingOutboxEventRepository
 
     @Inject
     lateinit var dslContext: DSLContext
@@ -32,6 +48,31 @@ class JooqOutboxEventRepositoryIT {
     @BeforeEach
     fun deleteOutboxEvents() {
         dslContext.deleteFrom(OUTBOX_EVENTS).execute()
+    }
+
+    @Test
+    fun `appends a pending OrderReady event`() {
+        val source = orderReadyEvent()
+        val payload = """{"orderId":"${source.order.id.value}","status":"READY"}"""
+        val event = PendingOutboxEvent.orderReady(source, payload)
+
+        pendingEventRepository.append(event)
+
+        val record = dslContext.selectFrom(OUTBOX_EVENTS).fetchSingle()
+        assertEquals(event.id, record.id)
+        assertEquals("ORDER", record.aggregateType)
+        assertEquals(event.aggregateId, record.aggregateId)
+        assertEquals("OrderReady", record.eventType)
+        assertEquals(1, record.eventVersion)
+        assertEquals(objectMapper.readTree(payload), objectMapper.readTree(record.payload?.data()))
+        assertEquals(event.correlationId, record.correlationId)
+        assertEquals(event.createdAt, record.createdAt?.toInstant())
+        assertEquals("PENDING", record.status)
+        assertEquals(event.createdAt, record.nextAttemptAt?.toInstant())
+        assertEquals(0, record.publishAttempts)
+        assertEquals(null, record.claimId)
+        assertEquals(null, record.claimedBy)
+        assertEquals(null, record.claimedAt)
     }
 
     @Test
@@ -325,6 +366,38 @@ class JooqOutboxEventRepositoryIT {
             .set(OUTBOX_EVENTS.PUBLISH_ATTEMPTS, 1)
             .where(OUTBOX_EVENTS.ID.eq(id))
             .execute()
+    }
+
+    private fun orderReadyEvent(): OrderReadyEvent {
+        val currency = Currency.EUR
+        val item =
+            OrderItem.create(
+                id = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f53"),
+                externalLineId = "line-1",
+                sku = "SKU-1",
+                description = "Test item",
+                quantity = BigDecimal.ONE,
+                unitPrice = Money.of(BigDecimal("19.99"), currency),
+                position = 0,
+            )
+        val order =
+            Order
+                .receive(
+                    id = OrderId(UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f52")),
+                    sourceSystem = SourceSystem.from("marketplace-a"),
+                    externalOrderId = ExternalOrderId.from("order-1001"),
+                    currency = currency,
+                    items = listOf(item),
+                    declaredTotalAmount = Money.of(BigDecimal("19.99"), currency),
+                    receivedAt = now.minusSeconds(2),
+                ).startProcessing()
+                .markReady()
+        return OrderReadyEvent(
+            id = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f54"),
+            correlationId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f55"),
+            order = order,
+            occurredAt = now,
+        )
     }
 
     private fun insertEvent(
