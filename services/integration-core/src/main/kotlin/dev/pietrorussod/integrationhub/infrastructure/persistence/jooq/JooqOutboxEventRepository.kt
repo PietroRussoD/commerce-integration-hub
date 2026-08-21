@@ -2,12 +2,15 @@ package dev.pietrorussod.integrationhub.infrastructure.persistence.jooq
 
 import dev.pietrorussod.integrationhub.application.outbox.ClaimedOutboxEvent
 import dev.pietrorussod.integrationhub.application.outbox.OutboxEventRepository
+import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEvent
+import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEventRepository
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.OutboxEvents.Companion.OUTBOX_EVENTS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.records.OutboxEventsRecord
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import org.jooq.DSLContext
+import org.jooq.JSON
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.UUID
@@ -17,7 +20,30 @@ class JooqOutboxEventRepository
     @Inject
     constructor(
         private val dslContext: DSLContext,
-    ) : OutboxEventRepository {
+    ) : OutboxEventRepository,
+        PendingOutboxEventRepository {
+        @Transactional
+        override fun append(event: PendingOutboxEvent) {
+            val insertedRows =
+                dslContext
+                    .insertInto(OUTBOX_EVENTS)
+                    .set(OUTBOX_EVENTS.ID, event.id)
+                    .set(OUTBOX_EVENTS.AGGREGATE_TYPE, event.aggregateType)
+                    .set(OUTBOX_EVENTS.AGGREGATE_ID, event.aggregateId)
+                    .set(OUTBOX_EVENTS.EVENT_TYPE, event.eventType)
+                    .set(OUTBOX_EVENTS.EVENT_VERSION, event.eventVersion)
+                    .set(OUTBOX_EVENTS.PAYLOAD, JSON.valueOf(event.payload))
+                    .set(OUTBOX_EVENTS.CORRELATION_ID, event.correlationId)
+                    .set(OUTBOX_EVENTS.CREATED_AT, event.createdAt.atOffset(ZoneOffset.UTC))
+                    .set(OUTBOX_EVENTS.STATUS, PENDING_STATUS)
+                    .set(OUTBOX_EVENTS.NEXT_ATTEMPT_AT, event.createdAt.atOffset(ZoneOffset.UTC))
+                    .execute()
+
+            check(insertedRows == 1) {
+                "Expected one pending outbox event insert, got $insertedRows"
+            }
+        }
+
         @Transactional
         override fun claimPending(
             claimId: UUID,
