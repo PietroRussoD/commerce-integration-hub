@@ -1,7 +1,7 @@
 package dev.pietrorussod.integrationhub.infrastructure.messaging
 
 import dev.pietrorussod.integrationhub.application.processing.OrderProcessingRejectedException
-import dev.pietrorussod.integrationhub.infrastructure.processing.TransactionalOrderReceivedProcessor
+import dev.pietrorussod.integrationhub.application.processing.OrderReceivedProcessor
 import io.smallrye.reactive.messaging.annotations.Blocking
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
@@ -15,7 +15,7 @@ class OrderReceivedKafkaConsumer
     @Inject
     constructor(
         private val messageMapper: OrderReceivedMessageMapper,
-        private val processor: TransactionalOrderReceivedProcessor,
+        private val processor: OrderReceivedProcessor,
     ) {
         @Incoming(CHANNEL_NAME)
         @Acknowledgment(Acknowledgment.Strategy.POST_PROCESSING)
