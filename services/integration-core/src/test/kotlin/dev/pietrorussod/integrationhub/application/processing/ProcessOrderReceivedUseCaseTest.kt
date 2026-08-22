@@ -40,6 +40,7 @@ class ProcessOrderReceivedUseCaseTest {
         val ids = generatedIds.iterator()
         val useCase =
             ProcessOrderReceivedUseCase(
+                processedMessageRepository = fixture,
                 orderRepository = fixture,
                 processingAttemptRepository = fixture,
                 orderTimelineRepository = fixture,
@@ -58,23 +59,66 @@ class ProcessOrderReceivedUseCaseTest {
                 ),
             )
 
-        assertEquals(OrderStatus.READY, result.status)
+        val processedResult = result as ProcessOrderReceivedResult.Processed
+        assertEquals(OrderStatus.READY, processedResult.order.status)
+        assertEquals("order-processor", fixture.recordedConsumerName)
+        assertEquals(processedAt, fixture.recordedAt)
         assertEquals(OrderStatus.READY, fixture.order.status)
         assertEquals(listOf(OrderStatus.RECEIVED, OrderStatus.PROCESSING), fixture.expectedStatuses)
-        assertEquals(generatedIds[0], fixture.createdAttempt.id)
-        assertEquals(ProcessingAttemptStatus.STARTED, fixture.createdAttempt.status)
-        assertEquals(ProcessingAttemptStatus.SUCCEEDED, fixture.completedAttempt.status)
-        assertEquals(processedAt, fixture.completedAttempt.completedAt)
+        assertEquals(generatedIds[0], fixture.createdAttempts.single().id)
+        assertEquals(ProcessingAttemptStatus.STARTED, fixture.createdAttempts.single().status)
+        assertEquals(ProcessingAttemptStatus.SUCCEEDED, fixture.completedAttempts.single().status)
+        assertEquals(processedAt, fixture.completedAttempts.single().completedAt)
         assertEquals(
             listOf(OrderTimelineEventType.PROCESSING_STARTED, OrderTimelineEventType.PROCESSING_SUCCEEDED),
             fixture.timelineEntries.map { it.eventType },
         )
         assertEquals(listOf(generatedIds[1], generatedIds[2]), fixture.timelineEntries.map { it.id })
-        assertEquals(generatedIds[3], fixture.pendingEvent.id)
-        assertEquals("OrderReady", fixture.pendingEvent.eventType)
-        assertEquals(1, fixture.pendingEvent.eventVersion)
-        assertEquals("{\"status\":\"READY\"}", fixture.pendingEvent.payload)
-        assertEquals(correlationId, fixture.pendingEvent.correlationId)
+        assertEquals(generatedIds[3], fixture.pendingEvents.single().id)
+        assertEquals("OrderReady", fixture.pendingEvents.single().eventType)
+        assertEquals(1, fixture.pendingEvents.single().eventVersion)
+        assertEquals("{\"status\":\"READY\"}", fixture.pendingEvents.single().payload)
+        assertEquals(correlationId, fixture.pendingEvents.single().correlationId)
+    }
+
+    @Test
+    fun `returns duplicate without applying processing effects`() {
+        val fixture = RecordingCollaborators(receivedOrder())
+        fixture.processedMessageOutcome = ProcessedMessageRecordOutcome.DUPLICATE
+        val useCase = useCase(fixture)
+        val eventId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f60")
+
+        val result =
+            useCase.process(
+                ProcessOrderReceivedCommand(
+                    eventId = eventId,
+                    orderId = orderId,
+                    correlationId = correlationId,
+                ),
+            )
+
+        assertEquals(ProcessOrderReceivedResult.Duplicate, result)
+        assertEquals("order-processor", fixture.recordedConsumerName)
+        assertEquals(eventId, fixture.recordedEventId)
+        assertEquals(0, fixture.findByIdCalls)
+        assertEquals(emptyList<OrderStatus>(), fixture.expectedStatuses)
+        assertEquals(emptyList<ProcessingAttempt>(), fixture.createdAttempts)
+        assertEquals(emptyList<OrderTimelineEntry>(), fixture.timelineEntries)
+        assertEquals(emptyList<PendingOutboxEvent>(), fixture.pendingEvents)
+    }
+
+    private fun useCase(fixture: RecordingCollaborators): ProcessOrderReceivedUseCase {
+        val ids = generatedIds.iterator()
+        return ProcessOrderReceivedUseCase(
+            processedMessageRepository = fixture,
+            orderRepository = fixture,
+            processingAttemptRepository = fixture,
+            orderTimelineRepository = fixture,
+            orderReadyPayloadSerializer = fixture,
+            pendingOutboxEventRepository = fixture,
+            clock = Clock.fixed(processedAt, ZoneOffset.UTC),
+            generateId = { ids.next() },
+        )
     }
 
     private fun receivedOrder(): Order {
@@ -103,17 +147,37 @@ class ProcessOrderReceivedUseCaseTest {
     private class RecordingCollaborators(
         var order: Order,
     ) : OrderRepository,
+        ProcessedMessageRepository,
         ProcessingAttemptRepository,
         OrderTimelineRepository,
         PendingOutboxEventRepository,
         OrderReadyPayloadSerializer {
         val expectedStatuses = mutableListOf<OrderStatus>()
         val timelineEntries = mutableListOf<OrderTimelineEntry>()
-        lateinit var createdAttempt: ProcessingAttempt
-        lateinit var completedAttempt: ProcessingAttempt
-        lateinit var pendingEvent: PendingOutboxEvent
+        val createdAttempts = mutableListOf<ProcessingAttempt>()
+        val completedAttempts = mutableListOf<ProcessingAttempt>()
+        val pendingEvents = mutableListOf<PendingOutboxEvent>()
+        var processedMessageOutcome = ProcessedMessageRecordOutcome.RECORDED
+        var recordedConsumerName: String? = null
+        var recordedEventId: UUID? = null
+        var recordedAt: Instant? = null
+        var findByIdCalls = 0
 
-        override fun findById(orderId: OrderId): Order? = order.takeIf { it.id == orderId }
+        override fun recordIfAbsent(
+            consumerName: String,
+            eventId: UUID,
+            processedAt: Instant,
+        ): ProcessedMessageRecordOutcome {
+            recordedConsumerName = consumerName
+            recordedEventId = eventId
+            recordedAt = processedAt
+            return processedMessageOutcome
+        }
+
+        override fun findById(orderId: OrderId): Order? {
+            findByIdCalls++
+            return order.takeIf { it.id == orderId }
+        }
 
         override fun updateStatus(
             order: Order,
@@ -126,11 +190,11 @@ class ProcessOrderReceivedUseCaseTest {
         }
 
         override fun create(attempt: ProcessingAttempt) {
-            createdAttempt = attempt
+            createdAttempts += attempt
         }
 
         override fun complete(attempt: ProcessingAttempt) {
-            completedAttempt = attempt
+            completedAttempts += attempt
         }
 
         override fun append(entry: OrderTimelineEntry) {
@@ -138,7 +202,7 @@ class ProcessOrderReceivedUseCaseTest {
         }
 
         override fun append(event: PendingOutboxEvent) {
-            pendingEvent = event
+            pendingEvents += event
         }
 
         override fun serialize(event: OrderReadyEvent): String = "{\"status\":\"READY\"}"
