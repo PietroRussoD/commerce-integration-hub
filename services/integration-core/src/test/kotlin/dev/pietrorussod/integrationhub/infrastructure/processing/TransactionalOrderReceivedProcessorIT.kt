@@ -83,6 +83,23 @@ class TransactionalOrderReceivedProcessorIT {
     }
 
     @Test
+    fun `does not repeat processing effects for a duplicate event`() {
+        insertReceivedOrder()
+        val command = command(orderId)
+
+        val firstResult = processor.process(command)
+        val duplicateResult = processor.process(command)
+
+        assertEquals(ProcessOrderReceivedResult.Processed::class, firstResult::class)
+        assertEquals(ProcessOrderReceivedResult.Duplicate, duplicateResult)
+        assertEquals(1, dslContext.fetchCount(PROCESSED_MESSAGES))
+        assertEquals(1, dslContext.fetchCount(PROCESSING_ATTEMPTS))
+        assertEquals(2, dslContext.fetchCount(INTEGRATION_EVENTS))
+        assertEquals(1, dslContext.fetchCount(OUTBOX_EVENTS))
+        assertEquals("READY", dslContext.selectFrom(ORDERS).fetchSingle().status)
+    }
+
+    @Test
     fun `rolls back the inbox marker when processing fails`() {
         val command = command(UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f99"))
 
