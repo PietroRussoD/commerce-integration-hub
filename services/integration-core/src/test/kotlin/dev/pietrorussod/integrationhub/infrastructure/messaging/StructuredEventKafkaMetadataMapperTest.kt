@@ -3,13 +3,18 @@ package dev.pietrorussod.integrationhub.infrastructure.messaging
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.kafka.common.header.Headers
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.util.UUID
 
 class StructuredEventKafkaMetadataMapperTest {
-    private val mapper = StructuredEventKafkaMetadataMapper()
+    private val mapper =
+        StructuredEventKafkaMetadataMapper(
+            orderReceivedTopic = "integration.order.received.v1",
+            orderReadyTopic = "integration.order.ready.v1",
+        )
 
     @Test
     fun `derives the record key and routing headers from the structured event`() {
@@ -17,6 +22,7 @@ class StructuredEventKafkaMetadataMapperTest {
 
         val metadata = mapper.map(event)
 
+        assertEquals("integration.order.received.v1", metadata.topic)
         assertEquals(event.aggregateId.toString(), metadata.key)
         assertEquals(5, metadata.headers.count())
         assertHeader(metadata.headers, "event-id", event.eventId.toString())
@@ -24,6 +30,22 @@ class StructuredEventKafkaMetadataMapperTest {
         assertHeader(metadata.headers, "event-version", event.eventVersion.toString())
         assertHeader(metadata.headers, "correlation-id", event.correlationId.toString())
         assertHeader(metadata.headers, "content-type", "application/json")
+    }
+
+    @Test
+    fun `routes OrderReady version 1 to its dedicated topic`() {
+        val metadata = mapper.map(structuredEvent().copy(eventType = "OrderReady"))
+
+        assertEquals("integration.order.ready.v1", metadata.topic)
+    }
+
+    @Test
+    fun `rejects an event without a configured route`() {
+        val event = structuredEvent().copy(eventVersion = 2)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            mapper.map(event)
+        }
     }
 
     private fun assertHeader(

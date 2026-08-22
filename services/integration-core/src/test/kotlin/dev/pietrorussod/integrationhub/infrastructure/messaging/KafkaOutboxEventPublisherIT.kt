@@ -75,6 +75,21 @@ class KafkaOutboxEventPublisherIT {
         assertEquals(0, connector.sink<StructuredEvent>("integration-events-out").received().size)
     }
 
+    @Test
+    fun `rejects an event without a configured Kafka route`() {
+        val outcome = publisher.publish(outboundEvent("{\"orderId\":\"order-123\"}").copy(eventVersion = 2))
+
+        assertEquals(
+            PublicationOutcome.Failed(
+                kind = PublicationFailureKind.NON_RETRYABLE,
+                errorCode = "UNSUPPORTED_EVENT_ROUTE",
+                safeErrorMessage = "Outbound event has no configured Kafka route",
+            ),
+            outcome,
+        )
+        assertEquals(0, connector.sink<StructuredEvent>("integration-events-out").received().size)
+    }
+
     private fun outboundEvent(payload: String): OutboundIntegrationEvent =
         OutboundIntegrationEvent(
             envelopeVersion = 1,
