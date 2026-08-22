@@ -88,6 +88,11 @@ cd ../..
 docker compose up --build --wait
 ```
 
+Redpanda Console is available at
+[http://localhost:8082](http://localhost:8082) for inspecting topics, records,
+consumer groups, and lag. Set `REDPANDA_CONSOLE_PORT` to expose it on a
+different local port.
+
 Then follow the [local demo](services/integration-core/README.md#local-demo) to
 provision a source credential and exercise reliable order ingestion. The
 credentials in `compose.yaml` are deliberately restricted to local development.

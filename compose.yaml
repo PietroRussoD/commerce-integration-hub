@@ -55,6 +55,18 @@ services:
       redpanda:
         condition: service_healthy
 
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:v3.10.0
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+      REDPANDA_ADMINAPI_ENABLED: "true"
+      REDPANDA_ADMINAPI_URLS: http://redpanda:9644
+    ports:
+      - "${REDPANDA_CONSOLE_PORT:-8082}:8080"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+
   integration-core:
     build:
       context: services/integration-core
