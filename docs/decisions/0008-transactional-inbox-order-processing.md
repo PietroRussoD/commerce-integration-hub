@@ -36,9 +36,9 @@ attempt, timeline entry, state transition, or outbox event. Inbox registration
 and every resulting effect share the same transaction, so a rollback cannot
 leave a processed marker without its effects.
 
-The initial increment implements only successful processing and duplicate
-delivery. Retryable and permanent processing failures, delayed retries, dead
-letters, and operator replay remain separate increments.
+At the time of acceptance, the initial increment implemented only successful
+processing and duplicate delivery. Retryable and permanent processing failures,
+dead letters, and operator replay remained separate increments.
 
 ## Alternatives
 
@@ -60,6 +60,13 @@ The database gains an inbox table and processing records, while old inbox rows
 require an explicit retention policy before they may be deleted.
 
 The consumer transaction may still commit before its Kafka offset. This can
-produce another delivery, but the duplicate becomes a no-op. Invalid or
-unsupported events need an explicit failure policy before the consumer is
-considered operationally complete.
+produce another delivery, but the duplicate becomes a no-op. At the time of
+acceptance, invalid and unsupported events still needed an explicit failure
+policy before the consumer could be considered operationally complete.
+
+## Follow-up
+
+[ADR 0009](0009-bounded-consumer-retries-and-dead-letter-routing.md) defines the
+subsequently implemented retry, permanent failure, and dead-letter policy. It
+complements this transaction and deduplication decision; audited operator replay
+remains future work.
