@@ -11,9 +11,12 @@ import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.QuarkusTestProfile
 import io.quarkus.test.junit.TestProfile
 import jakarta.inject.Inject
+import org.apache.kafka.clients.admin.Admin
+import org.apache.kafka.clients.admin.AdminClientConfig
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.StringSerializer
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.jooq.DSLContext
@@ -47,6 +50,9 @@ class OrderReceivedKafkaConsumerBrokerIT {
     @ConfigProperty(name = "mp.messaging.incoming.order-received-in.topic")
     lateinit var topic: String
 
+    @ConfigProperty(name = "mp.messaging.incoming.order-received-in.group.id")
+    lateinit var consumerGroupId: String
+
     @BeforeEach
     fun prepareOrder() {
         deleteData()
@@ -69,6 +75,27 @@ class OrderReceivedKafkaConsumerBrokerIT {
         assertEquals(1, dslContext.fetchCount(OUTBOX_EVENTS))
     }
 
+    @Test
+    fun `acknowledges a duplicate record without repeating processing effects`() {
+        val value = objectMapper.writeValueAsString(event())
+        val duplicateMetadata =
+            newProducer().use { producer ->
+                producer.send(ProducerRecord(topic, orderId.toString(), value)).get(10, TimeUnit.SECONDS)
+                producer.send(ProducerRecord(topic, orderId.toString(), value)).get(10, TimeUnit.SECONDS)
+            }
+
+        Admin.create(mapOf(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers)).use { admin ->
+            awaitCondition("Duplicate record was not acknowledged before the timeout", Duration.ofSeconds(15)) {
+                orderStatus() == "READY" && committedOffset(admin, duplicateMetadata) > duplicateMetadata.offset()
+            }
+        }
+
+        assertEquals(1, dslContext.fetchCount(PROCESSED_MESSAGES))
+        assertEquals(1, dslContext.fetchCount(PROCESSING_ATTEMPTS))
+        assertEquals(2, dslContext.fetchCount(INTEGRATION_EVENTS))
+        assertEquals(1, dslContext.fetchCount(OUTBOX_EVENTS))
+    }
+
     private fun newProducer(): KafkaProducer<String, String> {
         val properties =
             Properties().apply {
@@ -80,17 +107,40 @@ class OrderReceivedKafkaConsumerBrokerIT {
         return KafkaProducer(properties)
     }
 
-    private fun awaitProcessedOrder() {
-        val deadline = System.nanoTime() + Duration.ofSeconds(10).toNanos()
+    private fun awaitProcessedOrder() =
+        awaitCondition("Order was not processed before the timeout", Duration.ofSeconds(10)) {
+            orderStatus() == "READY"
+        }
+
+    private fun awaitCondition(
+        failureMessage: String,
+        timeout: Duration,
+        condition: () -> Boolean,
+    ) {
+        val deadline = System.nanoTime() + timeout.toNanos()
         while (System.nanoTime() < deadline) {
-            val status = dslContext.select(ORDERS.STATUS).from(ORDERS).fetchOne(ORDERS.STATUS)
-            if (status == "READY") {
+            if (condition()) {
                 return
             }
             Thread.sleep(50)
         }
-        throw AssertionError("Order was not processed before the timeout")
+        throw AssertionError(failureMessage)
     }
+
+    private fun orderStatus(): String? = dslContext.select(ORDERS.STATUS).from(ORDERS).fetchOne(ORDERS.STATUS)
+
+    private fun committedOffset(
+        admin: Admin,
+        metadata: org.apache.kafka.clients.producer.RecordMetadata,
+    ): Long =
+        runCatching {
+            val offsets =
+                admin
+                    .listConsumerGroupOffsets(consumerGroupId)
+                    .partitionsToOffsetAndMetadata()
+                    .get(2, TimeUnit.SECONDS)
+            offsets[TopicPartition(metadata.topic(), metadata.partition())]?.offset() ?: -1L
+        }.getOrDefault(-1L)
 
     private fun event(): StructuredEvent =
         StructuredEvent(
