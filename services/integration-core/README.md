@@ -316,18 +316,20 @@ http://localhost:8080/metrics
 
 From the repository root, build the service and wait for PostgreSQL, Redpanda,
 and the Integration Core to become healthy. The one-shot `redpanda-init`
-service creates the three-partition topic and exits successfully:
+service creates the three-partition `OrderReceived`, `OrderReady`, and
+dead-letter topics and exits successfully:
 
 ```bash
 cd services/integration-core
 ./mvnw package -DskipTests
 cd ../..
 docker compose up --build --wait
-docker compose ps
+docker compose ps --all
 ```
 
-The three long-running services must report `healthy`, and `redpanda-init` must
-report `Exited (0)`, before continuing.
+PostgreSQL, Redpanda, and Integration Core must report `healthy`, Redpanda
+Console must be running, and `redpanda-init` must report `Exited (0)` before
+continuing.
 
 Provision a credential using the same local-only database credentials and
 pepper configured in `compose.yaml`:
@@ -383,9 +385,21 @@ docker compose exec -T redpanda \
   --format json
 ```
 
-On a clean broker this returns the first submitted order as a structured JSON
-event, together with its Kafka key, headers, partition, and offset. Inspect
-health and operational metrics with:
+On a clean broker this returns the first submitted order as a structured
+`OrderReceived.v1` event, together with its Kafka key, headers, partition, and
+offset. The consumer processes it transactionally and the outbox dispatcher
+publishes the resulting `OrderReady.v1` event to its dedicated topic:
+
+```bash
+docker compose exec -T redpanda \
+  rpk topic consume integration.order.ready.v1 \
+  --brokers redpanda:9092 \
+  --offset start \
+  --num 1 \
+  --format json
+```
+
+Inspect health and operational metrics with:
 
 ```bash
 curl http://localhost:8080/health/ready

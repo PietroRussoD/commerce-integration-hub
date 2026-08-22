@@ -47,10 +47,15 @@ services:
     command:
       - -c
       - >
-        rpk topic create integration.order.received.v1
-        --brokers redpanda:9092 --partitions 3 --replicas 1
-        || rpk topic describe integration.order.received.v1
-        --brokers redpanda:9092 >/dev/null
+        for topic in
+        integration.order.received.v1
+        integration.order.ready.v1
+        integration.order.received.dlq.v1;
+        do
+          rpk topic create "$${topic}" --brokers redpanda:9092 --partitions 3 --replicas 1 ||
+          rpk topic describe "$${topic}" --brokers redpanda:9092 >/dev/null ||
+          exit 1;
+        done
     depends_on:
       redpanda:
         condition: service_healthy

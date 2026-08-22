@@ -32,13 +32,26 @@ class KafkaOutboxEventPublisherBrokerIT {
     @ConfigProperty(name = "kafka.bootstrap.servers")
     lateinit var bootstrapServers: String
 
-    @ConfigProperty(name = "mp.messaging.outgoing.integration-events-out.topic")
-    lateinit var topic: String
+    @ConfigProperty(name = "integration-hub.kafka.topics.order-received")
+    lateinit var orderReceivedTopic: String
+
+    @ConfigProperty(name = "integration-hub.kafka.topics.order-ready")
+    lateinit var orderReadyTopic: String
 
     @Test
-    fun `publishes a serialized event with its routing metadata to Kafka`() {
-        val event = outboundEvent()
+    fun `publishes OrderReceived version 1 to its dedicated topic`() {
+        assertPublished(outboundEvent(eventType = "OrderReceived"), orderReceivedTopic)
+    }
 
+    @Test
+    fun `publishes OrderReady version 1 to its dedicated topic`() {
+        assertPublished(outboundEvent(eventType = "OrderReady"), orderReadyTopic)
+    }
+
+    private fun assertPublished(
+        event: OutboundIntegrationEvent,
+        topic: String,
+    ) {
         newConsumer().use { consumer ->
             consumer.subscribe(listOf(topic))
 
@@ -72,11 +85,11 @@ class KafkaOutboxEventPublisherBrokerIT {
     private fun org.apache.kafka.clients.consumer.ConsumerRecord<String, String>.headerValue(name: String): String =
         String(headers().lastHeader(name).value(), StandardCharsets.UTF_8)
 
-    private fun outboundEvent(): OutboundIntegrationEvent =
+    private fun outboundEvent(eventType: String): OutboundIntegrationEvent =
         OutboundIntegrationEvent(
             envelopeVersion = 1,
             eventId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f61"),
-            eventType = "OrderReceived",
+            eventType = eventType,
             eventVersion = 1,
             aggregateType = "ORDER",
             aggregateId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f52"),
