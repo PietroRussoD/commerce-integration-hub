@@ -13,8 +13,9 @@ mistaken for available behavior.
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the
   scheduled claim-publish-transition and expired-claim recovery cycles are
-  implemented. Dead-letter handling and operator replay are outside this
-  release.
+  implemented. Invalid or retry-exhausted `OrderReceived.v1` deliveries are
+  routed to a Kafka dead-letter topic. Operator inspection and replay tooling
+  are outside this release.
 
 ## API and Operations
 
