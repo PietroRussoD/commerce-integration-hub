@@ -86,11 +86,11 @@ gateway will own delivery state but will not mutate authoritative order state.
 
 ### Event Subscription
 
-In progress. The Integration Core has a broker-tested adapter for publishing
-versioned canonical events through Kafka-compatible infrastructure and a
-scheduled bounded-batch dispatcher. A separate scheduled worker recovers
-expired claims. Consumers are not connected yet and will use the stable event ID
-for deduplication before applying business effects or updating projections.
+In progress. The Integration Core publishes versioned canonical events through
+Kafka-compatible infrastructure and processes `OrderReceived.v1` idempotently.
+The consumer records attempts and timeline entries transactionally, transitions
+successful orders to `READY`, and emits `OrderReady.v1`. Search projection and
+external subscribers remain planned.
 
 ## Reliability Model
 
@@ -116,7 +116,7 @@ for deduplication before applying business effects or updating projections.
 | Scheduled expired-claim recovery | Implemented |
 | Health checks and Prometheus outbox metrics | Implemented |
 | Provider-specific Connector Gateway | Planned |
-| Processing consumer and event deduplication | Planned |
+| Processing consumer and event deduplication | Implemented and broker-tested |
 | OpenSearch projection and operator UI | Planned |
 
 ## Non-goals

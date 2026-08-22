@@ -15,7 +15,9 @@ derived from the stored credential rather than the request body. Order reads
 are authenticated and constrained to that same source. A Kafka adapter publishes
 structured outbox events and is verified against a real broker. Scheduled
 workers dispatch bounded outbox batches and recover expired claims; message
-consumption and search are not implemented yet. HTTP
+consumption handles `OrderReceived.v1` idempotently, records processing
+attempts, transitions valid orders to `READY`, and emits `OrderReady.v1`.
+Search is not implemented yet. HTTP
 correlation IDs are returned on success and error responses and are persisted
 with ingestion events.
 
@@ -36,10 +38,11 @@ dev.pietrorussod.integrationhub/
   application/authentication/ source authentication use case and ports
   application/order/           use cases, commands, results, and outbound ports
   application/outbox/          event claim use case, model, and persistence port
+  application/processing/      order-processing use case, model, and ports
   domain/order/                entities, value objects, and business invariants
   infrastructure/persistence/  PostgreSQL adapters
     jooq/                       jOOQ repository and record mapping
-  infrastructure/messaging/    structured event and Kafka publisher adapters
+  infrastructure/messaging/    Kafka publisher and consumer adapters
   infrastructure/observability/ operational metrics adapters
   infrastructure/provisioning/ source credential administrative CLI
   infrastructure/scheduling/   scheduled outbox dispatch adapter
@@ -142,10 +145,10 @@ seconds, Kafka delivery has 10 seconds, and the adapter waits at most 12 seconds
 The outer timeout must remain greater than the producer delivery timeout.
 
 Fast component integration tests replace the connector with SmallRye in-memory.
-A dedicated broker-backed integration test enables Kafka Dev Services and uses
-Redpanda to verify the actual serializer, topic, key, headers, and
-acknowledgement. Production obtains its broker address from
-`KAFKA_BOOTSTRAP_SERVERS`.
+Broker-backed integration tests enable Kafka Dev Services and use Redpanda to
+verify publication metadata, consumer retry and dead-letter behavior, and the
+complete path from authenticated HTTP ingestion to `OrderReady.v1` publication.
+Production obtains its broker address from `KAFKA_BOOTSTRAP_SERVERS`.
 
 ## Observability
 
