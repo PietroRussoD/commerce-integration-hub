@@ -1,0 +1,27 @@
+package dev.pietrorussod.integrationhub.infrastructure.messaging
+
+import dev.pietrorussod.integrationhub.infrastructure.processing.TransactionalOrderReceivedProcessor
+import io.smallrye.reactive.messaging.annotations.Blocking
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment
+import org.eclipse.microprofile.reactive.messaging.Incoming
+
+@ApplicationScoped
+class OrderReceivedKafkaConsumer
+    @Inject
+    constructor(
+        private val messageMapper: OrderReceivedMessageMapper,
+        private val processor: TransactionalOrderReceivedProcessor,
+    ) {
+        @Incoming(CHANNEL_NAME)
+        @Acknowledgment(Acknowledgment.Strategy.POST_PROCESSING)
+        @Blocking
+        fun consume(event: StructuredEvent) {
+            processor.process(messageMapper.map(event))
+        }
+
+        private companion object {
+            const val CHANNEL_NAME = "order-received-in"
+        }
+    }
