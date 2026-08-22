@@ -25,7 +25,7 @@ class OrderReceivedMessageMapperTest {
 
     @Test
     fun `rejects an unsupported envelope version`() {
-        assertThrows(IllegalArgumentException::class.java) {
+        assertThrows(InvalidOrderReceivedEventException::class.java) {
             mapper.map(event(envelopeVersion = 2))
         }
     }
@@ -37,7 +37,7 @@ class OrderReceivedMessageMapperTest {
             eventVersion(2),
             aggregateType("CUSTOMER"),
         ).forEach { event ->
-            assertThrows(IllegalArgumentException::class.java) { mapper.map(event) }
+            assertThrows(InvalidOrderReceivedEventException::class.java) { mapper.map(event) }
         }
     }
 
@@ -45,7 +45,7 @@ class OrderReceivedMessageMapperTest {
     fun `rejects an aggregate ID that differs from the payload order ID`() {
         val differentOrderId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f53")
 
-        assertThrows(IllegalArgumentException::class.java) {
+        assertThrows(InvalidOrderReceivedEventException::class.java) {
             mapper.map(event(payloadOrderId = differentOrderId))
         }
     }
@@ -57,7 +57,7 @@ class OrderReceivedMessageMapperTest {
             objectMapper.createObjectNode(),
             objectMapper.createObjectNode().put("orderId", "not-a-uuid"),
         ).forEach { payload ->
-            assertThrows(IllegalArgumentException::class.java) {
+            assertThrows(InvalidOrderReceivedEventException::class.java) {
                 mapper.map(event().copy(payload = payload))
             }
         }
