@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import dev.pietrorussod.integrationhub.application.processing.ProcessOrderReceivedCommand
 import dev.pietrorussod.integrationhub.application.processing.ProcessOrderReceivedResult
 import dev.pietrorussod.integrationhub.domain.order.OrderId
+import dev.pietrorussod.integrationhub.infrastructure.messaging.OrderReceivedKafkaConsumer
+import dev.pietrorussod.integrationhub.infrastructure.messaging.StructuredEvent
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.IntegrationEvents.Companion.INTEGRATION_EVENTS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.OrderItems.Companion.ORDER_ITEMS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.Orders.Companion.ORDERS
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
+import java.time.Instant
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -31,6 +34,9 @@ class TransactionalOrderReceivedProcessorIT {
 
     @Inject
     lateinit var processor: TransactionalOrderReceivedProcessor
+
+    @Inject
+    lateinit var consumer: OrderReceivedKafkaConsumer
 
     @Inject
     lateinit var dslContext: DSLContext
@@ -100,6 +106,17 @@ class TransactionalOrderReceivedProcessorIT {
     }
 
     @Test
+    fun `maps and processes an incoming OrderReceived event`() {
+        insertReceivedOrder()
+
+        consumer.consume(event())
+
+        assertEquals("READY", dslContext.selectFrom(ORDERS).fetchSingle().status)
+        assertEquals(1, dslContext.fetchCount(PROCESSED_MESSAGES))
+        assertEquals(1, dslContext.fetchCount(OUTBOX_EVENTS))
+    }
+
+    @Test
     fun `rolls back the inbox marker when processing fails`() {
         val command = command(UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f99"))
 
@@ -115,6 +132,19 @@ class TransactionalOrderReceivedProcessorIT {
             eventId = eventId,
             orderId = OrderId(orderId),
             correlationId = correlationId,
+        )
+
+    private fun event(): StructuredEvent =
+        StructuredEvent(
+            envelopeVersion = 1,
+            eventId = eventId,
+            eventType = "OrderReceived",
+            eventVersion = 1,
+            aggregateType = "ORDER",
+            aggregateId = orderId,
+            correlationId = correlationId,
+            occurredAt = Instant.parse("2026-08-22T08:01:00Z"),
+            payload = objectMapper.createObjectNode().put("orderId", orderId.toString()),
         )
 
     private fun insertReceivedOrder() {
