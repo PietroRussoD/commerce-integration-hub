@@ -9,6 +9,7 @@ import java.time.Clock
 import java.util.UUID
 
 class ProcessOrderReceivedUseCase(
+    private val processedMessageRepository: ProcessedMessageRepository,
     private val orderRepository: OrderRepository,
     private val processingAttemptRepository: ProcessingAttemptRepository,
     private val orderTimelineRepository: OrderTimelineRepository,
@@ -17,12 +18,22 @@ class ProcessOrderReceivedUseCase(
     private val clock: Clock,
     private val generateId: () -> UUID,
 ) {
-    fun process(command: ProcessOrderReceivedCommand): Order {
+    fun process(command: ProcessOrderReceivedCommand): ProcessOrderReceivedResult {
+        val startedAt = clock.instant()
+        val inboxOutcome =
+            processedMessageRepository.recordIfAbsent(
+                consumerName = CONSUMER_NAME,
+                eventId = command.eventId,
+                processedAt = startedAt,
+            )
+        if (inboxOutcome == ProcessedMessageRecordOutcome.DUPLICATE) {
+            return ProcessOrderReceivedResult.Duplicate
+        }
+
         val receivedOrder =
             requireNotNull(orderRepository.findById(command.orderId)) {
                 "Order ${command.orderId.value} was not found"
             }
-        val startedAt = clock.instant()
         val processingOrder = receivedOrder.startProcessing()
         val attempt =
             ProcessingAttempt.start(
@@ -75,6 +86,10 @@ class ProcessOrderReceivedUseCase(
             ),
         )
 
-        return readyOrder
+        return ProcessOrderReceivedResult.Processed(readyOrder)
+    }
+
+    private companion object {
+        const val CONSUMER_NAME = "order-processor"
     }
 }
