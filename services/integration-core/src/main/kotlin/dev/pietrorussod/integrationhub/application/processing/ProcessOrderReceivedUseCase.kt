@@ -31,9 +31,11 @@ class ProcessOrderReceivedUseCase(
         }
 
         val receivedOrder =
-            requireNotNull(orderRepository.findById(command.orderId)) {
-                "Order ${command.orderId.value} was not found"
-            }
+            orderRepository.findById(command.orderId)
+                ?: throw OrderNotFoundForProcessingException(command.orderId)
+        if (receivedOrder.status != OrderStatus.RECEIVED) {
+            throw OrderProcessingStateConflictException(command.orderId, OrderStatus.RECEIVED)
+        }
         val processingOrder = receivedOrder.startProcessing()
         val attempt =
             ProcessingAttempt.start(
@@ -45,8 +47,8 @@ class ProcessOrderReceivedUseCase(
             )
 
         processingAttemptRepository.create(attempt)
-        check(orderRepository.updateStatus(processingOrder, OrderStatus.RECEIVED)) {
-            "Order ${command.orderId.value} is no longer in RECEIVED status"
+        if (!orderRepository.updateStatus(processingOrder, OrderStatus.RECEIVED)) {
+            throw OrderProcessingStateConflictException(command.orderId, OrderStatus.RECEIVED)
         }
         orderTimelineRepository.append(
             OrderTimelineEntry.processingStarted(
@@ -59,8 +61,8 @@ class ProcessOrderReceivedUseCase(
 
         val completedAt = clock.instant()
         val readyOrder = processingOrder.markReady()
-        check(orderRepository.updateStatus(readyOrder, OrderStatus.PROCESSING)) {
-            "Order ${command.orderId.value} is no longer in PROCESSING status"
+        if (!orderRepository.updateStatus(readyOrder, OrderStatus.PROCESSING)) {
+            throw OrderProcessingStateConflictException(command.orderId, OrderStatus.PROCESSING)
         }
         orderTimelineRepository.append(
             OrderTimelineEntry.processingSucceeded(

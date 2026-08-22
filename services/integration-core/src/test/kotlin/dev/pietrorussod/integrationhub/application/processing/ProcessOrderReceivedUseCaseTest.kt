@@ -15,6 +15,7 @@ import dev.pietrorussod.integrationhub.domain.order.OrderStatus
 import dev.pietrorussod.integrationhub.domain.order.PayloadFingerprint
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.time.Clock
@@ -107,6 +108,38 @@ class ProcessOrderReceivedUseCaseTest {
         assertEquals(emptyList<PendingOutboxEvent>(), fixture.pendingEvents)
     }
 
+    @Test
+    fun `rejects an event for an unknown order`() {
+        val fixture = RecordingCollaborators(receivedOrder())
+        val unknownOrderId = OrderId(UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f99"))
+
+        assertThrows(OrderNotFoundForProcessingException::class.java) {
+            useCase(fixture).process(command(unknownOrderId))
+        }
+    }
+
+    @Test
+    fun `rejects concurrent state changes with the expected status`() {
+        listOf(OrderStatus.RECEIVED, OrderStatus.PROCESSING).forEach { rejectedStatus ->
+            val fixture = RecordingCollaborators(receivedOrder())
+            fixture.rejectedExpectedStatus = rejectedStatus
+
+            val exception =
+                assertThrows(OrderProcessingStateConflictException::class.java) {
+                    useCase(fixture).process(command())
+                }
+
+            assertEquals(rejectedStatus, exception.expectedStatus)
+        }
+    }
+
+    private fun command(orderId: OrderId = this.orderId): ProcessOrderReceivedCommand =
+        ProcessOrderReceivedCommand(
+            eventId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f60"),
+            orderId = orderId,
+            correlationId = correlationId,
+        )
+
     private fun useCase(fixture: RecordingCollaborators): ProcessOrderReceivedUseCase {
         val ids = generatedIds.iterator()
         return ProcessOrderReceivedUseCase(
@@ -162,6 +195,7 @@ class ProcessOrderReceivedUseCaseTest {
         var recordedEventId: UUID? = null
         var recordedAt: Instant? = null
         var findByIdCalls = 0
+        var rejectedExpectedStatus: OrderStatus? = null
 
         override fun recordIfAbsent(
             consumerName: String,
@@ -183,6 +217,7 @@ class ProcessOrderReceivedUseCaseTest {
             order: Order,
             expectedStatus: OrderStatus,
         ): Boolean {
+            if (expectedStatus == rejectedExpectedStatus) return false
             if (this.order.id != order.id || this.order.status != expectedStatus) return false
             expectedStatuses += expectedStatus
             this.order = order
