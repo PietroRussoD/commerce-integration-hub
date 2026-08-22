@@ -41,8 +41,19 @@ class KafkaOutboxEventPublisher
                     )
                 }
 
+            val metadata =
+                try {
+                    metadataMapper.map(structuredEvent)
+                } catch (_: IllegalArgumentException) {
+                    return PublicationOutcome.Failed(
+                        kind = PublicationFailureKind.NON_RETRYABLE,
+                        errorCode = "UNSUPPORTED_EVENT_ROUTE",
+                        safeErrorMessage = "Outbound event has no configured Kafka route",
+                    )
+                }
+
             return try {
-                val message = Message.of(structuredEvent).addMetadata(metadataMapper.map(structuredEvent))
+                val message = Message.of(structuredEvent).addMetadata(metadata)
                 emitter.sendMessage(message).await().atMost(publishTimeout)
                 PublicationOutcome.Acknowledged
             } catch (exception: Exception) {
