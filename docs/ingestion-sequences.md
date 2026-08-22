@@ -41,8 +41,9 @@ sequenceDiagram
     Correlation-->>Source: Response with X-Correlation-ID
 ```
 
-The pending outbox row records publication intent only. Broker publication is
-not part of the current release.
+The pending outbox row records publication intent only; it does not publish to
+the broker inside the HTTP transaction. Scheduled asynchronous publication is
+described by the [outbox lifecycle](outbox-lifecycle.md).
 
 ## Duplicate source identity
 

@@ -19,6 +19,9 @@ implementation chronology.
   Kafka routing metadata derived from the same envelope.
 - [ADR 0008](0008-transactional-inbox-order-processing.md): transactional inbox
   and atomic effects for idempotent order processing.
+- [ADR 0009](0009-bounded-consumer-retries-and-dead-letter-routing.md): bounded
+  consumer retries, permanent failure classification, and dead-letter routing.
 
-Accepted records are not edited to hide a later change of direction. A new ADR
-supersedes the earlier decision and links back to it.
+Accepted records are not edited to hide a later change of direction. Later
+extensions or replacements are recorded in a new ADR and linked to the earlier
+decision.
