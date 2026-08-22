@@ -13,10 +13,14 @@ import io.quarkus.test.junit.TestProfile
 import jakarta.inject.Inject
 import org.apache.kafka.clients.admin.Admin
 import org.apache.kafka.clients.admin.AdminClientConfig
+import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.jooq.DSLContext
@@ -24,6 +28,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -52,6 +57,9 @@ class OrderReceivedKafkaConsumerBrokerIT {
 
     @ConfigProperty(name = "mp.messaging.incoming.order-received-in.group.id")
     lateinit var consumerGroupId: String
+
+    @ConfigProperty(name = "mp.messaging.incoming.order-received-in.dead-letter-queue.topic")
+    lateinit var deadLetterTopic: String
 
     @BeforeEach
     fun prepareOrder() {
@@ -96,6 +104,57 @@ class OrderReceivedKafkaConsumerBrokerIT {
         assertEquals(1, dslContext.fetchCount(OUTBOX_EVENTS))
     }
 
+    @Test
+    fun `routes a permanently invalid event to the dead letter topic`() {
+        newConsumer().use { consumer ->
+            consumer.subscribe(listOf(deadLetterTopic))
+            val invalidEvent = event().copy(eventType = "OrderReady")
+
+            newProducer().use { producer ->
+                val record = ProducerRecord(topic, orderId.toString(), objectMapper.writeValueAsString(invalidEvent))
+                producer.send(record).get(10, TimeUnit.SECONDS)
+            }
+
+            val deadLetterRecord =
+                awaitDeadLetter(consumer) { record ->
+                    runCatching { objectMapper.readTree(record.value())["eventType"].textValue() == "OrderReady" }
+                        .getOrDefault(false)
+                }
+            val value = objectMapper.readTree(deadLetterRecord.value())
+            assertEquals(eventId.toString(), value["eventId"].textValue())
+            assertEquals("OrderReady", value["eventType"].textValue())
+        }
+
+        assertEquals("RECEIVED", orderStatus())
+        assertEquals(0, dslContext.fetchCount(PROCESSED_MESSAGES))
+        assertEquals(0, dslContext.fetchCount(PROCESSING_ATTEMPTS))
+        assertEquals(0, dslContext.fetchCount(OUTBOX_EVENTS))
+    }
+
+    @Test
+    fun `routes malformed JSON to the dead letter topic`() {
+        newConsumer().use { consumer ->
+            consumer.subscribe(listOf(deadLetterTopic))
+
+            newProducer().use { producer ->
+                producer
+                    .send(ProducerRecord(topic, orderId.toString(), "{not-json"))
+                    .get(10, TimeUnit.SECONDS)
+            }
+
+            val deadLetterRecord =
+                awaitDeadLetter(consumer) { record ->
+                    record.headerValue("deserialization-failure-topic") != null
+                }
+            assertEquals(topic, deadLetterRecord.headerValue("deserialization-failure-topic"))
+        }
+
+        assertEquals("RECEIVED", orderStatus())
+        assertEquals(0, dslContext.fetchCount(PROCESSED_MESSAGES))
+        assertEquals(0, dslContext.fetchCount(PROCESSING_ATTEMPTS))
+        assertEquals(0, dslContext.fetchCount(OUTBOX_EVENTS))
+    }
+
     private fun newProducer(): KafkaProducer<String, String> {
         val properties =
             Properties().apply {
@@ -106,6 +165,37 @@ class OrderReceivedKafkaConsumerBrokerIT {
             }
         return KafkaProducer(properties)
     }
+
+    private fun newConsumer(): KafkaConsumer<String, String> {
+        val properties =
+            Properties().apply {
+                put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
+                put(ConsumerConfig.GROUP_ID_CONFIG, "integration-core-dlq-test-${UUID.randomUUID()}")
+                put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
+                put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false)
+                put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer::class.java)
+                put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer::class.java)
+            }
+        return KafkaConsumer(properties)
+    }
+
+    private fun awaitDeadLetter(
+        consumer: KafkaConsumer<String, String>,
+        predicate: (ConsumerRecord<String, String>) -> Boolean,
+    ): ConsumerRecord<String, String> {
+        val deadline = System.nanoTime() + Duration.ofSeconds(15).toNanos()
+        while (System.nanoTime() < deadline) {
+            consumer
+                .poll(Duration.ofMillis(250))
+                .records(deadLetterTopic)
+                .firstOrNull(predicate)
+                ?.let { return it }
+        }
+        throw AssertionError("Expected dead letter record was not received before the timeout")
+    }
+
+    private fun ConsumerRecord<String, String>.headerValue(name: String): String? =
+        headers().lastHeader(name)?.let { String(it.value(), StandardCharsets.UTF_8) }
 
     private fun awaitProcessedOrder() =
         awaitCondition("Order was not processed before the timeout", Duration.ofSeconds(10)) {
@@ -198,5 +288,7 @@ class OrderReceivedKafkaConsumerBrokerTestProfile : QuarkusTestProfile {
             "quarkus.kafka.devservices.enabled" to "true",
             "mp.messaging.incoming.order-received-in.connector" to "smallrye-kafka",
             "mp.messaging.incoming.order-received-in.topic" to "integration.order.received.consumer-test.v1",
+            "mp.messaging.incoming.order-received-in.dead-letter-queue.topic" to
+                "integration.order.received.consumer-test.dlq.v1",
         )
 }
