@@ -1,6 +1,7 @@
 package dev.pietrorussod.integrationhub.infrastructure.processing
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import dev.pietrorussod.integrationhub.application.processing.OrderNotFoundForProcessingException
 import dev.pietrorussod.integrationhub.application.processing.ProcessOrderReceivedCommand
 import dev.pietrorussod.integrationhub.application.processing.ProcessOrderReceivedResult
 import dev.pietrorussod.integrationhub.domain.order.OrderId
@@ -120,7 +121,7 @@ class TransactionalOrderReceivedProcessorIT {
     fun `rolls back the inbox marker when processing fails`() {
         val command = command(UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f99"))
 
-        assertThrows(IllegalArgumentException::class.java) {
+        assertThrows(OrderNotFoundForProcessingException::class.java) {
             processor.process(command)
         }
 
