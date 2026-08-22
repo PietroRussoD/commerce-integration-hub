@@ -299,5 +299,8 @@ class OrderReceivedKafkaConsumerBrokerTestProfile : QuarkusTestProfile {
             "mp.messaging.incoming.order-received-in.topic" to "integration.order.received.consumer-test.v1",
             "mp.messaging.incoming.order-received-in.dead-letter-queue.topic" to
                 "integration.order.received.consumer-test.dlq.v1",
+            "mp.messaging.outgoing.integration-events-out.connector" to "smallrye-kafka",
+            "integration-hub.kafka.topics.order-received" to "integration.order.received.consumer-test.v1",
+            "integration-hub.kafka.topics.order-ready" to "integration.order.ready.consumer-test.v1",
         )
 }
