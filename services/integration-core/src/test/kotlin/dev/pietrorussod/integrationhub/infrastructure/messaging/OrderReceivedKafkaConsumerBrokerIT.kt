@@ -242,7 +242,16 @@ class OrderReceivedKafkaConsumerBrokerIT {
             aggregateId = orderId,
             correlationId = correlationId,
             occurredAt = Instant.parse("2026-08-22T08:01:00Z"),
-            payload = objectMapper.createObjectNode().put("orderId", orderId.toString()),
+            payload =
+                objectMapper.createObjectNode().apply {
+                    put("orderId", orderId.toString())
+                    put("sourceSystem", "marketplace-a")
+                    put("externalOrderId", "order-1001")
+                    put("currency", "EUR")
+                    put("totalAmount", 19.99)
+                    put("status", "RECEIVED")
+                    putArray("items").addObject().put("sku", "SKU-1").put("quantity", 1)
+                },
         )
 
     private fun deleteData() {

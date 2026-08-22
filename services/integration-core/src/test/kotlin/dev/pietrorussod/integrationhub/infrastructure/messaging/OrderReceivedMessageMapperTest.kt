@@ -9,7 +9,7 @@ import java.util.UUID
 
 class OrderReceivedMessageMapperTest {
     private val objectMapper = ObjectMapper().findAndRegisterModules()
-    private val mapper = OrderReceivedMessageMapper(objectMapper)
+    private val mapper = OrderReceivedMessageMapper()
     private val orderId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
 
     @Test
@@ -21,6 +21,28 @@ class OrderReceivedMessageMapperTest {
         assertEquals(event.eventId, command.eventId)
         assertEquals(orderId, command.orderId.value)
         assertEquals(event.correlationId, command.correlationId)
+    }
+
+    @Test
+    fun `maps the complete canonical payload produced by ingestion`() {
+        val payload =
+            objectMapper.readTree(
+                """
+                {
+                  "orderId": "$orderId",
+                  "sourceSystem": "MARKETPLACE_A",
+                  "externalOrderId": "ORDER-1",
+                  "currency": "EUR",
+                  "totalAmount": 19.99,
+                  "status": "RECEIVED",
+                  "items": [{"sku": "SKU-1", "quantity": 1, "unitPrice": 19.99}]
+                }
+                """.trimIndent(),
+            )
+
+        val command = mapper.map(event().copy(payload = payload))
+
+        assertEquals(orderId, command.orderId.value)
     }
 
     @Test

@@ -1,68 +1,64 @@
 package dev.pietrorussod.integrationhub.infrastructure.messaging
 
-import com.fasterxml.jackson.core.JsonProcessingException
-import com.fasterxml.jackson.databind.ObjectMapper
 import dev.pietrorussod.integrationhub.application.processing.ProcessOrderReceivedCommand
 import dev.pietrorussod.integrationhub.domain.order.OrderId
 import jakarta.enterprise.context.ApplicationScoped
-import jakarta.inject.Inject
 import java.util.UUID
 
 @ApplicationScoped
-class OrderReceivedMessageMapper
-    @Inject
-    constructor(
-        private val objectMapper: ObjectMapper,
-    ) {
-        fun map(event: StructuredEvent): ProcessOrderReceivedCommand {
-            validate(event.envelopeVersion == SUPPORTED_ENVELOPE_VERSION) {
-                "Unsupported event envelope version: ${event.envelopeVersion}"
-            }
-            validate(event.eventType == SUPPORTED_EVENT_TYPE) { "Unsupported event type: ${event.eventType}" }
-            validate(event.eventVersion == SUPPORTED_EVENT_VERSION) {
-                "Unsupported OrderReceived event version: ${event.eventVersion}"
-            }
-            validate(event.aggregateType == SUPPORTED_AGGREGATE_TYPE) {
-                "Unsupported aggregate type: ${event.aggregateType}"
-            }
-            validate(event.payload.isObject) { "OrderReceived payload must be a JSON object" }
+class OrderReceivedMessageMapper {
+    fun map(event: StructuredEvent): ProcessOrderReceivedCommand {
+        validate(event.envelopeVersion == SUPPORTED_ENVELOPE_VERSION) {
+            "Unsupported event envelope version: ${event.envelopeVersion}"
+        }
+        validate(event.eventType == SUPPORTED_EVENT_TYPE) { "Unsupported event type: ${event.eventType}" }
+        validate(event.eventVersion == SUPPORTED_EVENT_VERSION) {
+            "Unsupported OrderReceived event version: ${event.eventVersion}"
+        }
+        validate(event.aggregateType == SUPPORTED_AGGREGATE_TYPE) {
+            "Unsupported aggregate type: ${event.aggregateType}"
+        }
+        validate(event.payload.isObject) { "OrderReceived payload must be a JSON object" }
 
-            val payload = parsePayload(event)
-            validate(event.aggregateId == payload.orderId) {
-                "Event aggregate ID must match the payload order ID"
-            }
-
-            return ProcessOrderReceivedCommand(
-                eventId = event.eventId,
-                orderId = OrderId(event.aggregateId),
-                correlationId = event.correlationId,
-            )
+        val payloadOrderId = parseOrderId(event)
+        validate(event.aggregateId == payloadOrderId) {
+            "Event aggregate ID must match the payload order ID"
         }
 
-        private fun parsePayload(event: StructuredEvent): OrderReceivedPayload =
-            try {
-                objectMapper.treeToValue(event.payload, OrderReceivedPayload::class.java)
-            } catch (exception: JsonProcessingException) {
-                throw InvalidOrderReceivedEventException("OrderReceived payload is invalid", exception)
-            }
-
-        private fun validate(
-            condition: Boolean,
-            message: () -> String,
-        ) {
-            if (!condition) {
-                throw InvalidOrderReceivedEventException(message())
-            }
-        }
-
-        private data class OrderReceivedPayload(
-            val orderId: UUID,
+        return ProcessOrderReceivedCommand(
+            eventId = event.eventId,
+            orderId = OrderId(event.aggregateId),
+            correlationId = event.correlationId,
         )
+    }
 
-        private companion object {
-            const val SUPPORTED_ENVELOPE_VERSION = 1
-            const val SUPPORTED_EVENT_TYPE = "OrderReceived"
-            const val SUPPORTED_EVENT_VERSION = 1
-            const val SUPPORTED_AGGREGATE_TYPE = "ORDER"
+    private fun parseOrderId(event: StructuredEvent): UUID {
+        val orderIdNode = event.payload["orderId"]
+        validate(orderIdNode?.isTextual == true) { "OrderReceived payload orderId must be a UUID string" }
+        val value = orderIdNode.textValue()
+        val orderId =
+            try {
+                UUID.fromString(value)
+            } catch (exception: IllegalArgumentException) {
+                throw InvalidOrderReceivedEventException("OrderReceived payload orderId is invalid", exception)
+            }
+        validate(orderId.toString() == value) { "OrderReceived payload orderId must be canonical" }
+        return orderId
+    }
+
+    private fun validate(
+        condition: Boolean,
+        message: () -> String,
+    ) {
+        if (!condition) {
+            throw InvalidOrderReceivedEventException(message())
         }
     }
+
+    private companion object {
+        const val SUPPORTED_ENVELOPE_VERSION = 1
+        const val SUPPORTED_EVENT_TYPE = "OrderReceived"
+        const val SUPPORTED_EVENT_VERSION = 1
+        const val SUPPORTED_AGGREGATE_TYPE = "ORDER"
+    }
+}
