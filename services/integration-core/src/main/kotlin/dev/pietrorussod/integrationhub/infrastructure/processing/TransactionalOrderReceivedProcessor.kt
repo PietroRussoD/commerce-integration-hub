@@ -1,5 +1,6 @@
 package dev.pietrorussod.integrationhub.infrastructure.processing
 
+import dev.pietrorussod.integrationhub.application.processing.OrderReceivedProcessor
 import dev.pietrorussod.integrationhub.application.processing.ProcessOrderReceivedCommand
 import dev.pietrorussod.integrationhub.application.processing.ProcessOrderReceivedResult
 import dev.pietrorussod.integrationhub.application.processing.ProcessOrderReceivedUseCase
@@ -12,7 +13,7 @@ class TransactionalOrderReceivedProcessor
     @Inject
     constructor(
         private val delegate: ProcessOrderReceivedUseCase,
-    ) {
+    ) : OrderReceivedProcessor {
         @Transactional
-        fun process(command: ProcessOrderReceivedCommand): ProcessOrderReceivedResult = delegate.process(command)
+        override fun process(command: ProcessOrderReceivedCommand): ProcessOrderReceivedResult = delegate.process(command)
     }
