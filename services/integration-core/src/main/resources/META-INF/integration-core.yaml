@@ -284,5 +284,5 @@ paths:
       - Order Resource
 info:
   title: Commerce Integration Hub API
-  version: 0.3.0
+  version: 0.4.0-SNAPSHOT
   description: Reliable commerce order ingestion and integration API.
