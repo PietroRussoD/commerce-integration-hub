@@ -10,7 +10,9 @@ than checkout, payment, or inventory features.
 The platform is designed to make duplicate deliveries, ambiguous timeouts,
 temporary outages, and permanent failures explicit and recoverable. Operators
 can eventually follow an order across ingestion, asynchronous processing,
-search projections, and controlled retries.
+search projections, and controlled retries. The next increment focuses on a
+read-only operator view backed by the authoritative PostgreSQL state, plus a
+controlled simulator for demonstrating ingestion and idempotency.
 
 ## Problem
 
@@ -48,6 +50,7 @@ flowchart LR
     Processor[Processing consumer]
     Search[(OpenSearch)]
     UI[Operator UI]
+    Simulator[Demo simulator]
 
     Source -->|Canonical HTTP today| Core
     Source -.->|Webhook or polling| Gateway
@@ -58,6 +61,8 @@ flowchart LR
     Processor -.-> Database
     Processor -.-> Search
     Search -.-> UI
+    UI -.->|Demo commands| Simulator
+    Simulator -.->|Canonical HTTP command| Core
 ```
 
 Solid connections are available in the current repository. Dashed connections
@@ -76,6 +81,18 @@ classifies repeated submissions as equivalent or conflicting.
 The committed OpenAPI contract documents `POST /api/v1/orders` and
 `GET /api/v1/orders/{id}`. Optional correlation IDs are propagated through HTTP,
 persistence, and structured logs.
+
+### Operator API and demo console
+
+Planned next. The Integration Core will expose read-only operator endpoints for
+order search, detail inspection, timeline entries, processing attempts, and
+published events. A React and TypeScript console will use those endpoints and
+include a demo simulator for sending valid, duplicate, and invalid canonical
+orders in a controlled local environment.
+
+The simulator is a portfolio and development tool, not a production
+administration surface. Production replay, manual retries, and mutation of
+integration state remain separate audited capabilities.
 
 ### Provider-specific Connector Gateway
 
@@ -115,9 +132,11 @@ external subscribers remain planned.
 | Scheduled outbox dispatch | Implemented |
 | Scheduled expired-claim recovery | Implemented |
 | Health checks and Prometheus outbox metrics | Implemented |
-| Provider-specific Connector Gateway | Planned |
 | Processing consumer and event deduplication | Implemented and broker-tested |
-| OpenSearch projection and operator UI | Planned |
+| Operator read API | Planned next |
+| Operator console and demo simulator | Planned next |
+| Provider-specific Connector Gateway | Planned |
+| OpenSearch projection | Planned |
 
 ## Non-goals
 
