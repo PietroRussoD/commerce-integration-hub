@@ -41,8 +41,9 @@ The current baseline establishes:
   with source-owned order access;
 - correlation IDs propagated through HTTP, persistence, and structured logs.
 
-Search, external connectors, and user interfaces will be added as separate
-executable increments.
+The next executable increment is a read-only operator API, followed by an operator
+console with a demo simulation panel. Search projections and external connector
+gateways remain separate later increments.
 
 ## Repository structure
 
