@@ -10,9 +10,10 @@ than checkout, payment, or inventory features.
 The platform is designed to make duplicate deliveries, ambiguous timeouts,
 temporary outages, and permanent failures explicit and recoverable. Operators
 can eventually follow an order across ingestion, asynchronous processing,
-search projections, and controlled retries. The next increment focuses on a
-read-only operator view backed by the authoritative PostgreSQL state, plus a
-controlled simulator for demonstrating ingestion and idempotency.
+search projections, and controlled retries. The current operator API exposes a
+read-only order summary view backed by the authoritative PostgreSQL state. The
+next increment expands that view with order detail data and a controlled
+simulator for demonstrating ingestion and idempotency.
 
 ## Problem
 
@@ -84,11 +85,14 @@ persistence, and structured logs.
 
 ### Operator API and demo console
 
-Planned next. The Integration Core will expose read-only operator endpoints for
-order search, detail inspection, timeline entries, processing attempts, and
-published events. A React and TypeScript console will use those endpoints and
-include a demo simulator for sending valid, duplicate, and invalid canonical
-orders in a controlled local environment.
+Partially available. The Integration Core exposes a read-only operator endpoint
+for paginated order summaries. Detail inspection, full timeline entries,
+processing attempts, published events, and the React and TypeScript console are
+planned next.
+
+The future console will use those endpoints and include a demo simulator for
+sending valid, duplicate, and invalid canonical orders in a controlled local
+environment.
 
 The simulator is a portfolio and development tool, not a production
 administration surface. Production replay, manual retries, and mutation of
@@ -133,7 +137,8 @@ external subscribers remain planned.
 | Scheduled expired-claim recovery | Implemented |
 | Health checks and Prometheus outbox metrics | Implemented |
 | Processing consumer and event deduplication | Implemented and broker-tested |
-| Operator read API | Planned next |
+| Operator order summary API | Implemented |
+| Operator detail API | Planned next |
 | Operator console and demo simulator | Planned next |
 | Provider-specific Connector Gateway | Planned |
 | OpenSearch projection | Planned |

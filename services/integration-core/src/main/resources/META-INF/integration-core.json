@@ -7,6 +7,68 @@
         "format" : "date-time",
         "examples" : [ "2022-03-10T16:15:50Z" ]
       },
+      "OperatorOrderListResponse" : {
+        "type" : "object",
+        "required" : [ "items", "limit", "offset", "total" ],
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OperatorOrderSummaryResponse"
+            }
+          },
+          "limit" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "offset" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "OperatorOrderSummaryResponse" : {
+        "type" : "object",
+        "required" : [ "id", "sourceSystem", "externalOrderId", "status", "currency", "totalAmount", "receivedAt", "lastEventAt", "processingAttempts" ],
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "sourceSystem" : {
+            "type" : "string"
+          },
+          "externalOrderId" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "totalAmount" : {
+            "type" : "string"
+          },
+          "receivedAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "lastEventAt" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/Instant"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "processingAttempts" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
       "OrderItemResponse" : {
         "type" : "object",
         "required" : [ "externalLineId", "sku", "description", "quantity", "unitPrice", "lineAmount" ],
@@ -210,6 +272,62 @@
         },
         "summary" : "Get Service Info",
         "tags" : [ "Service Info Resource" ]
+      }
+    },
+    "/api/v1/operator/orders" : {
+      "get" : {
+        "summary" : "List orders for operator inspection",
+        "operationId" : "listOperatorOrders",
+        "parameters" : [ {
+          "description" : "Maximum number of items to return",
+          "schema" : {
+            "type" : "integer",
+            "default" : 25
+          },
+          "name" : "limit",
+          "in" : "query",
+          "required" : true
+        }, {
+          "description" : "Number of items to skip",
+          "schema" : {
+            "type" : "integer",
+            "default" : 0
+          },
+          "name" : "offset",
+          "in" : "query",
+          "required" : true
+        }, {
+          "description" : "Optional order status filter",
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "type" : [ "string", "null" ]
+          },
+          "required" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Orders listed",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OperatorOrderListResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid operator order query",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Operator Order Resource" ]
       }
     },
     "/api/v1/orders" : {
