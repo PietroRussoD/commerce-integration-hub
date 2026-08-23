@@ -22,8 +22,10 @@ mistaken for available behavior.
 - Authentication uses per-source API keys intended for machine-to-machine
   ingestion. User login, OAuth 2.0, JWT-protected operational APIs, and role
   management are not implemented.
-- Order access is restricted to the authenticated source. There is no operator
-  search, cross-source administration, dashboard, or user interface.
+- Source order access is restricted to the authenticated source. The operator
+  API currently exposes only paginated read-only order summaries. Operator
+  detail views, cross-source administration, dashboard, user interface, and
+  authenticated operator roles are not implemented.
 - Health checks, structured logs, correlation IDs, Prometheus runtime metrics,
   and bounded outbox outcome metrics are available. Distributed tracing,
   alerting rules, and production dashboards are not.
