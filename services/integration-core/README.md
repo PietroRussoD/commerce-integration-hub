@@ -166,7 +166,7 @@ receive work, while metrics show how that work behaves over time.
 
 ## Prerequisites
 
-- Java 21 or newer
+- Java 25 or newer
 - Docker with the Compose plugin for development, integration tests, and the
   local demo
 
