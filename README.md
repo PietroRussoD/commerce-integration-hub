@@ -8,12 +8,13 @@ problem being solved, intended users, integration modes, and delivery roadmap.
 
 ## Current status
 
-The repository currently contains the Kotlin Integration Core baseline, a
-currency-aware order aggregate, HTTP ingestion and retrieval, and a PostgreSQL
-schema managed with Flyway and accessed through a jOOQ repository adapter. The
-repository persists complete orders and classifies equivalent and conflicting
-replays using a versioned canonical payload fingerprint. New orders, timeline
-events, and pending outbox events are committed atomically.
+The repository currently contains the Kotlin Integration Core and the React and
+TypeScript operator-console foundation. The backend owns a currency-aware order
+aggregate, HTTP ingestion and retrieval, and a PostgreSQL schema managed with
+Flyway and accessed through a jOOQ repository adapter. It persists complete
+orders and classifies equivalent and conflicting replays using a versioned
+canonical payload fingerprint. New orders, timeline events, and pending outbox
+events are committed atomically.
 
 The current baseline establishes:
 
@@ -40,15 +41,19 @@ The current baseline establishes:
 - Prometheus metrics for outbox outcomes and scheduler execution;
 - source API-key authentication, administrative provisioning and revocation,
   with source-owned order access;
-- correlation IDs propagated through HTTP, persistence, and structured logs.
+- correlation IDs propagated through HTTP, persistence, and structured logs;
+- a React and TypeScript operator-console foundation with generated API types,
+  routing, tests, and CI validation.
 
-The next executable increment adds an operator console with a demo simulation
-panel. Search projections and external connector gateways remain separate later
-increments.
+The next executable increment connects the operator order list to the existing
+read API. The demo simulation panel follows as a separate increment. Search
+projections and external connector gateways remain later increments.
 
 ## Repository structure
 
 ```text
+apps/
+  operator-console/  React and TypeScript operational UI
 services/
   integration-core/  Kotlin/Quarkus authoritative order service
 ```
@@ -58,6 +63,15 @@ services/
 ```bash
 cd services/integration-core
 ./mvnw verify
+```
+
+Validate the operator console:
+
+```bash
+cd apps/operator-console
+npm ci
+npm run check:api
+npm run check
 ```
 
 ## Security verification
