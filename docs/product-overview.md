@@ -87,8 +87,8 @@ persistence, and structured logs.
 
 Partially available. The Integration Core exposes read-only operator endpoints
 for paginated order summaries and order details with line items, timeline
-entries, and processing attempts. Published events and the React and TypeScript
-console are planned next.
+entries, and processing attempts. The React and TypeScript console foundation
+is implemented; functional order views and published events are planned next.
 
 The future console will use those endpoints and include a demo simulator for
 sending valid, duplicate, and invalid canonical orders in a controlled local
@@ -139,7 +139,7 @@ external subscribers remain planned.
 | Processing consumer and event deduplication | Implemented and broker-tested |
 | Operator order summary API | Implemented |
 | Operator detail API | Implemented |
-| Operator console and demo simulator | Planned next |
+| Operator console and demo simulator | Foundation in progress |
 | Provider-specific Connector Gateway | Planned |
 | OpenSearch projection | Planned |
 

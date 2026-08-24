@@ -17,6 +17,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  operator-console:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/operator-console
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/operator-console/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify generated API types
+        run: npm run check:api
+
+      - name: Check operator console
+        run: npm run check
+
   integration-core:
     runs-on: ubuntu-latest
     defaults:

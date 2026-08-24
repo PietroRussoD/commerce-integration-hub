@@ -24,8 +24,9 @@ mistaken for available behavior.
   management are not implemented.
 - Source order access is restricted to the authenticated source. The operator
   API exposes read-only summaries and details across sources. Cross-source
-  administration, dashboard, user interface, and authenticated operator roles
-  are not implemented.
+  administration, functional dashboards, and authenticated operator roles are
+  not implemented. The operator console currently provides only its application
+  shell and typed API boundary.
 - Health checks, structured logs, correlation IDs, Prometheus runtime metrics,
   and bounded outbox outcome metrics are available. Distributed tracing,
   alerting rules, and production dashboards are not.
