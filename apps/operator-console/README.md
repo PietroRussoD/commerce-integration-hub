@@ -1,9 +1,9 @@
 # Operator Console
 
 React and TypeScript console for inspecting Commerce Integration Hub operations.
-The current increment provides the application shell, routing, generated API
-types, and a tested HTTP client. Functional order views and the demo simulator
-are added as separate increments.
+The current increment provides the application shell, a paginated order summary
+view with status filtering, generated API types, and a tested HTTP client. The
+order detail view and demo simulator are separate increments.
 
 ## Prerequisites
 

@@ -2,14 +2,19 @@ import { render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { expect, test } from "vitest";
 
+import { AppProviders } from "./AppProviders";
 import { appRoutes } from "./router";
 
-test("renders the orders route inside the operator shell", async () => {
-  const router = createMemoryRouter(appRoutes, { initialEntries: ["/orders"] });
+test("renders navigation inside the operator shell", async () => {
+  const router = createMemoryRouter(appRoutes, { initialEntries: ["/simulator"] });
 
-  render(<RouterProvider router={router} />);
+  render(
+    <AppProviders>
+      <RouterProvider router={router} />
+    </AppProviders>,
+  );
 
-  expect(await screen.findByRole("heading", { name: "Orders" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Orders" })).toHaveAttribute("aria-current", "page");
-  expect(screen.getByRole("link", { name: "Simulator" })).toHaveAttribute("href", "/simulator");
+  expect(await screen.findByRole("heading", { name: "Simulator" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Orders" })).toHaveAttribute("href", "/orders");
+  expect(screen.getByRole("link", { name: "Simulator" })).toHaveAttribute("aria-current", "page");
 });
