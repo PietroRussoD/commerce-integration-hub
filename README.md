@@ -17,7 +17,7 @@ events, and pending outbox events are committed atomically.
 
 The current baseline establishes:
 
-- a Java 21 compilation target;
+- a Java 25 LTS compilation target;
 - Kotlin and Quarkus LTS;
 - a reproducible Maven Wrapper;
 - automated formatting checks;
@@ -80,8 +80,9 @@ The final container vulnerability gate is documented in the
 [Integration Core container section](services/integration-core/README.md#container-image).
 Dependabot checks Maven dependencies, GitHub Actions, the service Dockerfile,
 and Docker Compose images weekly. Minor and patch updates are grouped, while
-major updates remain isolated for manual review; updates are never merged
-automatically.
+major updates remain isolated for manual review. Java runtime major updates are
+ignored so that LTS migrations remain coordinated across compilation, CI, and
+the container image. Updates are never merged automatically.
 
 ## Local demo
 
