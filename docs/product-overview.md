@@ -10,10 +10,10 @@ than checkout, payment, or inventory features.
 The platform is designed to make duplicate deliveries, ambiguous timeouts,
 temporary outages, and permanent failures explicit and recoverable. Operators
 can eventually follow an order across ingestion, asynchronous processing,
-search projections, and controlled retries. The current operator API exposes a
-read-only order summary view backed by the authoritative PostgreSQL state. The
-next increment expands that view with order detail data and a controlled
-simulator for demonstrating ingestion and idempotency.
+search projections, and controlled retries. The current operator API exposes
+read-only order summary and detail views backed by the authoritative PostgreSQL
+state. The next increment adds a controlled simulator for demonstrating
+ingestion and idempotency.
 
 ## Problem
 
@@ -85,10 +85,10 @@ persistence, and structured logs.
 
 ### Operator API and demo console
 
-Partially available. The Integration Core exposes a read-only operator endpoint
-for paginated order summaries. Detail inspection, full timeline entries,
-processing attempts, published events, and the React and TypeScript console are
-planned next.
+Partially available. The Integration Core exposes read-only operator endpoints
+for paginated order summaries and order details with line items, timeline
+entries, and processing attempts. Published events and the React and TypeScript
+console are planned next.
 
 The future console will use those endpoints and include a demo simulator for
 sending valid, duplicate, and invalid canonical orders in a controlled local
@@ -138,7 +138,7 @@ external subscribers remain planned.
 | Health checks and Prometheus outbox metrics | Implemented |
 | Processing consumer and event deduplication | Implemented and broker-tested |
 | Operator order summary API | Implemented |
-| Operator detail API | Planned next |
+| Operator detail API | Implemented |
 | Operator console and demo simulator | Planned next |
 | Provider-specific Connector Gateway | Planned |
 | OpenSearch projection | Planned |
