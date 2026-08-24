@@ -12,8 +12,8 @@ temporary outages, and permanent failures explicit and recoverable. Operators
 can eventually follow an order across ingestion, asynchronous processing,
 search projections, and controlled retries. The current operator API exposes
 read-only order summary and detail views backed by the authoritative PostgreSQL
-state. The next increment adds a controlled simulator for demonstrating
-ingestion and idempotency.
+state. The console exposes the paginated summary view; order detail and a
+controlled ingestion simulator are the next UI increments.
 
 ## Problem
 
@@ -87,8 +87,9 @@ persistence, and structured logs.
 
 Partially available. The Integration Core exposes read-only operator endpoints
 for paginated order summaries and order details with line items, timeline
-entries, and processing attempts. The React and TypeScript console foundation
-is implemented; functional order views and published events are planned next.
+entries, and processing attempts. The React and TypeScript console implements
+the paginated order summary view with status filtering. The detail view and
+published-event inspection are planned next.
 
 The future console will use those endpoints and include a demo simulator for
 sending valid, duplicate, and invalid canonical orders in a controlled local
@@ -139,7 +140,7 @@ external subscribers remain planned.
 | Processing consumer and event deduplication | Implemented and broker-tested |
 | Operator order summary API | Implemented |
 | Operator detail API | Implemented |
-| Operator console and demo simulator | Foundation in progress |
+| Operator console and demo simulator | Order summary view implemented; detail and simulator planned |
 | Provider-specific Connector Gateway | Planned |
 | OpenSearch projection | Planned |
 

@@ -9,7 +9,7 @@ problem being solved, intended users, integration modes, and delivery roadmap.
 ## Current status
 
 The repository currently contains the Kotlin Integration Core and the React and
-TypeScript operator-console foundation. The backend owns a currency-aware order
+TypeScript operator console. The backend owns a currency-aware order
 aggregate, HTTP ingestion and retrieval, and a PostgreSQL schema managed with
 Flyway and accessed through a jOOQ repository adapter. It persists complete
 orders and classifies equivalent and conflicting replays using a versioned
@@ -42,12 +42,12 @@ The current baseline establishes:
 - source API-key authentication, administrative provisioning and revocation,
   with source-owned order access;
 - correlation IDs propagated through HTTP, persistence, and structured logs;
-- a React and TypeScript operator-console foundation with generated API types,
-  routing, tests, and CI validation.
+- a React and TypeScript operator console with a paginated, filterable order
+  summary view, generated API types, routing, tests, and CI validation.
 
-The next executable increment connects the operator order list to the existing
-read API. The demo simulation panel follows as a separate increment. Search
-projections and external connector gateways remain later increments.
+The next executable increment adds the operator order detail view. The demo
+simulation panel follows as a separate increment. Search projections and
+external connector gateways remain later increments.
 
 ## Repository structure
 
