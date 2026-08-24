@@ -35,16 +35,16 @@ The current baseline establishes:
   transactional order processing;
 - a broker-backed end-to-end test from authenticated HTTP ingestion to the
   `OrderReady.v1` event;
-- a read-only operator order summary endpoint backed by PostgreSQL;
+- read-only operator order summary and detail endpoints backed by PostgreSQL;
 - scheduled outbox dispatch and expired-claim recovery;
 - Prometheus metrics for outbox outcomes and scheduler execution;
 - source API-key authentication, administrative provisioning and revocation,
   with source-owned order access;
 - correlation IDs propagated through HTTP, persistence, and structured logs.
 
-The next executable increment expands the operator API with order detail data,
-then adds an operator console with a demo simulation panel. Search projections
-and external connector gateways remain separate later increments.
+The next executable increment adds an operator console with a demo simulation
+panel. Search projections and external connector gateways remain separate later
+increments.
 
 ## Repository structure
 

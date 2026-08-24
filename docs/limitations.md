@@ -14,8 +14,8 @@ mistaken for available behavior.
 - The transactional outbox is persisted atomically with each new order, and the
   scheduled claim-publish-transition and expired-claim recovery cycles are
   implemented. Invalid or retry-exhausted `OrderReceived.v1` deliveries are
-  routed to a Kafka dead-letter topic. Operator inspection and replay tooling
-  are outside this release.
+  routed to a Kafka dead-letter topic. Operator replay tooling is outside this
+  release.
 
 ## API and Operations
 
@@ -23,9 +23,9 @@ mistaken for available behavior.
   ingestion. User login, OAuth 2.0, JWT-protected operational APIs, and role
   management are not implemented.
 - Source order access is restricted to the authenticated source. The operator
-  API currently exposes only paginated read-only order summaries. Operator
-  detail views, cross-source administration, dashboard, user interface, and
-  authenticated operator roles are not implemented.
+  API exposes read-only summaries and details across sources. Cross-source
+  administration, dashboard, user interface, and authenticated operator roles
+  are not implemented.
 - Health checks, structured logs, correlation IDs, Prometheus runtime metrics,
   and bounded outbox outcome metrics are available. Distributed tracing,
   alerting rules, and production dashboards are not.

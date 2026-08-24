@@ -17,9 +17,10 @@ structured outbox events and is verified against a real broker. Scheduled
 workers dispatch bounded outbox batches and recover expired claims; message
 consumption handles `OrderReceived.v1` idempotently, records processing
 attempts, transitions valid orders to `READY`, and emits `OrderReady.v1`.
-Search is not implemented yet. HTTP
-correlation IDs are returned on success and error responses and are persisted
-with ingestion events.
+Read-only operator endpoints expose paginated summaries and order details with
+line items, timeline entries, and processing attempts. Search is not implemented
+yet. HTTP correlation IDs are returned on success and error responses and are
+persisted with ingestion events.
 
 The service persists a canonical payload fingerprint with each order. Reusing a
 source identity returns `ALREADY_RECEIVED` for equivalent content and
@@ -34,9 +35,11 @@ responsibilities rather than a fixed number of layers:
 dev.pietrorussod.integrationhub/
   api/                         HTTP resources and transport DTOs
     correlation/               request correlation boundary
+    operator/                  operator read API
     security/                  source API-key HTTP boundary
   application/authentication/ source authentication use case and ports
   application/order/           use cases, commands, results, and outbound ports
+  application/operator/        operator read models, use cases, and port
   application/outbox/          event claim use case, model, and persistence port
   application/processing/      order-processing use case, model, and ports
   domain/order/                entities, value objects, and business invariants
