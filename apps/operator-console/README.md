@@ -8,6 +8,7 @@ order detail view and demo simulator are separate increments.
 ## Prerequisites
 
 - Node.js 24 or newer, below Node.js 27
+- pnpm 11.23.0
 - A current Integration Core OpenAPI document
 
 ## Development
@@ -15,8 +16,8 @@ order detail view and demo simulator are separate increments.
 Install dependencies and start Vite:
 
 ```bash
-npm ci
-npm run dev
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
 Requests under `/api` are proxied to `http://localhost:8080`. Override the
@@ -25,8 +26,8 @@ backend during development with `VITE_INTEGRATION_CORE_PROXY_TARGET`.
 Run the complete local quality gate:
 
 ```bash
-npm run check:api
-npm run check
+pnpm check:api
+pnpm check
 ```
 
 ## API types
@@ -36,7 +37,7 @@ Integration Core OpenAPI document and is also committed. Regenerate it after an
 API contract change:
 
 ```bash
-npm run generate:api
+pnpm generate:api
 ```
 
 Application code accesses the backend through `src/api/integrationCoreClient.ts`

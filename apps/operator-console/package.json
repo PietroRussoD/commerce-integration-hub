@@ -2,6 +2,7 @@
   "name": "@commerce-integration-hub/operator-console",
   "private": true,
   "version": "0.4.0-SNAPSHOT",
+  "packageManager": "pnpm@11.23.0",
   "type": "module",
   "engines": {
     "node": ">=24 <27"
@@ -10,11 +11,11 @@
     "dev": "vite",
     "build": "vite build",
     "generate:api": "openapi-typescript ../../services/integration-core/src/main/resources/META-INF/integration-core.yaml -o src/api/generated/integration-core.ts",
-    "check:api": "npm run generate:api && git diff --exit-code -- src/api/generated/integration-core.ts",
+    "check:api": "pnpm generate:api && git diff --exit-code -- src/api/generated/integration-core.ts",
     "lint": "eslint .",
     "test": "vitest run",
     "type-check": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
-    "check": "npm run lint && npm run type-check && npm run test && npm run build"
+    "check": "pnpm lint && pnpm type-check && pnpm test && pnpm build"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.3",

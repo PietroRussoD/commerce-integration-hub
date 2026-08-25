@@ -69,9 +69,9 @@ Validate the operator console:
 
 ```bash
 cd apps/operator-console
-npm ci
-npm run check:api
-npm run check
+pnpm install --frozen-lockfile
+pnpm check:api
+pnpm check
 ```
 
 ## Security verification
