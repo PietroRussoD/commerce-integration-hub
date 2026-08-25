@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, RefreshCw, TriangleAlert } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 import { listOperatorOrders, type ListOperatorOrdersParameters, type OperatorOrderPage } from "../../api/integrationCoreClient";
 
@@ -120,9 +121,14 @@ function OrdersTable({ page }: { page: OperatorOrderPage }) {
         </thead>
         <tbody className="divide-y divide-zinc-100">
           {page.items.map((order) => (
-            <tr key={order.id} className="hover:bg-zinc-50">
+            <tr key={order.id} className="group hover:bg-zinc-50">
               <td className="px-4 py-3.5">
-                <p className="font-medium text-zinc-950">{order.externalOrderId}</p>
+                <Link
+                  to={`/orders/${order.id}`}
+                  className="font-medium text-zinc-950 underline-offset-4 group-hover:text-emerald-800 group-hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+                >
+                  {order.externalOrderId}
+                </Link>
                 <p className="mt-0.5 font-mono text-xs text-zinc-400">{shortenId(order.id)}</p>
               </td>
               <td className="px-4 py-3.5 text-zinc-600">{formatLabel(order.sourceSystem)}</td>
