@@ -46,6 +46,15 @@ jobs:
       - name: Check operator console
         run: pnpm check
 
+      - name: Upload operator console coverage
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: operator-console-coverage
+          path: apps/operator-console/coverage
+          if-no-files-found: warn
+          retention-days: 14
+
   integration-core:
     runs-on: ubuntu-latest
     defaults:

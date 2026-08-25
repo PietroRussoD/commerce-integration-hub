@@ -43,7 +43,8 @@ The current baseline establishes:
   with source-owned order access;
 - correlation IDs propagated through HTTP, persistence, and structured logs;
 - a React and TypeScript operator console with a paginated, filterable order
-  summary view, generated API types, routing, tests, and CI validation.
+  summary view, generated API types, routing, tests, enforced coverage, and CI
+  validation.
 
 The next executable increment adds the operator order detail view. The demo
 simulation panel follows as a separate increment. Search projections and
