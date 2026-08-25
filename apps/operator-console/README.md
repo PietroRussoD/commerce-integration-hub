@@ -30,6 +30,11 @@ pnpm check:api
 pnpm check
 ```
 
+`pnpm check` enforces the configured Vitest coverage thresholds. Open the local
+HTML report at `coverage/index.html`. CI retains the same report for 14 days as
+the `operator-console-coverage` artifact, including when a later test or
+coverage gate fails.
+
 ## API types
 
 `src/api/generated/integration-core.ts` is generated from the committed

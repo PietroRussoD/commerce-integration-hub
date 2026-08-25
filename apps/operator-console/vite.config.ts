@@ -15,5 +15,18 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json-summary", "html"],
+      reportsDirectory: "./coverage",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/api/generated/**", "src/main.tsx", "src/test/**", "**/*.test.{ts,tsx}"],
+      thresholds: {
+        statements: 80,
+        branches: 80,
+        functions: 75,
+        lines: 80,
+      },
+    },
   },
 });
