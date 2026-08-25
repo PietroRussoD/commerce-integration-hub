@@ -61,6 +61,49 @@ test("renders the empty item state", async () => {
   expect(await screen.findByText("No order items")).toBeInTheDocument();
 });
 
+test("renders timeline events in API order", async () => {
+  getOperatorOrderMock.mockResolvedValue({
+    ...orderDetail,
+    timeline: [
+      {
+        id: "018f38c2-1b95-7cc4-bb89-72d26a6f9001",
+        eventType: "ORDER_RECEIVED",
+        fromStatus: null,
+        toStatus: "RECEIVED",
+        message: "Canonical order accepted",
+        correlationId: "018f38c2-1b95-7cc4-bb89-72d26a6f9101",
+        occurredAt: "2026-08-21T08:00:00Z",
+      },
+      {
+        id: "018f38c2-1b95-7cc4-bb89-72d26a6f9002",
+        eventType: "PROCESSING_STARTED",
+        fromStatus: "RECEIVED",
+        toStatus: "PROCESSING",
+        message: null,
+        correlationId: "018f38c2-1b95-7cc4-bb89-72d26a6f9102",
+        occurredAt: "2026-08-21T08:00:01Z",
+      },
+    ],
+  });
+
+  renderOrderDetailPage();
+
+  const events = await screen.findAllByRole("listitem");
+  expect(events).toHaveLength(2);
+  expect(events[0]).toHaveTextContent("Order Received");
+  expect(events[0]).toHaveTextContent("Entered Received");
+  expect(events[1]).toHaveTextContent("Processing Started");
+  expect(events[1]).toHaveTextContent("Received to Processing");
+});
+
+test("renders the empty timeline state", async () => {
+  getOperatorOrderMock.mockResolvedValue(orderDetail);
+
+  renderOrderDetailPage();
+
+  expect(await screen.findByText("No timeline events")).toBeInTheDocument();
+});
+
 test("renders an actionable error state", async () => {
   getOperatorOrderMock.mockRejectedValue(new Error("service unavailable"));
 
