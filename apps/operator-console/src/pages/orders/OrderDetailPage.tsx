@@ -34,7 +34,72 @@ export function OrderDetailPage() {
       <div className="mt-5">
         {query.isPending ? <OrderDetailLoading /> : null}
         {query.isError ? <OrderDetailError onRetry={() => void query.refetch()} /> : null}
-        {query.data !== undefined ? <OrderSummary order={query.data} /> : null}
+        {query.data !== undefined ? (
+          <div className="space-y-6">
+            <OrderSummary order={query.data} />
+            <OrderItems items={query.data.items} currency={query.data.currency} />
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function OrderItems({ items, currency }: { items: OperatorOrderDetail["items"]; currency: string }) {
+  return (
+    <section aria-labelledby="order-items-heading">
+      <div className="mb-3 flex items-baseline justify-between gap-4">
+        <h2 id="order-items-heading" className="text-lg font-semibold">
+          Order items
+        </h2>
+        <span className="text-sm tabular-nums text-zinc-500">{items.length}</span>
+      </div>
+
+      <div className="overflow-hidden rounded-md border border-zinc-200 bg-white">
+        {items.length === 0 ? (
+          <p className="px-6 py-10 text-center text-sm text-zinc-500">No order items</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+              <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-600">
+                <tr>
+                  <th scope="col" className="px-4 py-3">
+                    Line
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    SKU
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Description
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right">
+                    Quantity
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right">
+                    Unit price
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right">
+                    Line total
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {items.map((item) => (
+                  <tr key={`${item.position}-${item.sku}`}>
+                    <td className="px-4 py-3.5 font-mono text-xs text-zinc-500">{item.externalLineId ?? "-"}</td>
+                    <td className="px-4 py-3.5 font-medium text-zinc-950">{item.sku}</td>
+                    <td className="max-w-72 truncate px-4 py-3.5 text-zinc-600" title={item.description ?? undefined}>
+                      {item.description ?? "-"}
+                    </td>
+                    <td className="px-4 py-3.5 text-right tabular-nums">{item.quantity}</td>
+                    <td className="px-4 py-3.5 text-right tabular-nums">{formatMoney(item.unitPrice, currency)}</td>
+                    <td className="px-4 py-3.5 text-right font-medium tabular-nums">{formatMoney(item.lineAmount, currency)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </section>
   );
