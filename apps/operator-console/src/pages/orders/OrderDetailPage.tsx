@@ -38,8 +38,48 @@ export function OrderDetailPage() {
           <div className="space-y-6">
             <OrderSummary order={query.data} />
             <OrderItems items={query.data.items} currency={query.data.currency} />
+            <OrderTimeline entries={query.data.timeline} />
           </div>
         ) : null}
+      </div>
+    </section>
+  );
+}
+
+function OrderTimeline({ entries }: { entries: OperatorOrderDetail["timeline"] }) {
+  return (
+    <section aria-labelledby="order-timeline-heading">
+      <div className="mb-3 flex items-baseline justify-between gap-4">
+        <h2 id="order-timeline-heading" className="text-lg font-semibold">
+          Timeline
+        </h2>
+        <span className="text-sm tabular-nums text-zinc-500">{entries.length}</span>
+      </div>
+
+      <div className="overflow-hidden rounded-md border border-zinc-200 bg-white">
+        {entries.length === 0 ? (
+          <p className="px-6 py-10 text-center text-sm text-zinc-500">No timeline events</p>
+        ) : (
+          <ol aria-label="Order timeline events" className="divide-y divide-zinc-100">
+            {entries.map((entry) => {
+              const transition = formatTransition(entry.fromStatus, entry.toStatus);
+
+              return (
+                <li key={entry.id} className="px-4 py-4">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+                    <h3 className="text-sm font-semibold text-zinc-950">{formatLabel(entry.eventType)}</h3>
+                    <time dateTime={entry.occurredAt} className="whitespace-nowrap text-xs text-zinc-500">
+                      {dateTimeFormatter.format(new Date(entry.occurredAt))}
+                    </time>
+                  </div>
+                  {transition !== undefined ? <p className="mt-2 text-sm font-medium text-zinc-700">{transition}</p> : null}
+                  {entry.message !== null ? <p className="mt-1 text-sm text-zinc-600">{entry.message}</p> : null}
+                  <p className="mt-2 break-all font-mono text-xs text-zinc-400">Correlation {entry.correlationId}</p>
+                </li>
+              );
+            })}
+          </ol>
+        )}
       </div>
     </section>
   );
@@ -167,4 +207,17 @@ function formatMoney(amount: string, currency: string): string {
     style: "currency",
     currency,
   }).format(Number(amount));
+}
+
+function formatTransition(fromStatus: string | null, toStatus: string | null): string | undefined {
+  if (fromStatus !== null && toStatus !== null) {
+    return `${formatLabel(fromStatus)} to ${formatLabel(toStatus)}`;
+  }
+  if (toStatus !== null) {
+    return `Entered ${formatLabel(toStatus)}`;
+  }
+  if (fromStatus !== null) {
+    return `Left ${formatLabel(fromStatus)}`;
+  }
+  return undefined;
 }
