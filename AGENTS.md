@@ -37,5 +37,12 @@ Run from `services/integration-core`:
 ./mvnw verify
 ```
 
+Run from `apps/operator-console`:
+
+```bash
+pnpm check:api
+pnpm check
+```
+
 Before committing, review the complete diff for secrets, proprietary data,
 generated artifacts, and documentation that claims unimplemented behavior.

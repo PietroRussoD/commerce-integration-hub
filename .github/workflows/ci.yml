@@ -27,21 +27,24 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6.0.2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6.4.0
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@v2.0.2
         with:
-          node-version: "24"
-          cache: npm
-          cache-dependency-path: apps/operator-console/package-lock.json
+          version: 11.23.0
+          runtime: node@24
+          cache: true
+          cache-dependency-path: apps/operator-console/pnpm-lock.yaml
+          package-json-file: apps/operator-console/package.json
+          install: false
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Verify generated API types
-        run: npm run check:api
+        run: pnpm check:api
 
       - name: Check operator console
-        run: npm run check
+        run: pnpm check
 
   integration-core:
     runs-on: ubuntu-latest
