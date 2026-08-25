@@ -91,7 +91,12 @@ services:
       redpanda-init:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health/ready"]
+      test:
+        - CMD-SHELL
+        - >-
+          bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080;
+          printf "GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3;
+          grep -q "HTTP/1.1 200" <&3'
       interval: 2s
       timeout: 5s
       retries: 30
