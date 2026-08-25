@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, type RouteObject } from "react-router-dom";
 
 import { AppShell } from "./AppShell";
+import { OrderDetailPage } from "../pages/orders/OrderDetailPage";
 import { OrdersPage } from "../pages/orders/OrdersPage";
 import { SimulatorPage } from "../pages/simulator/SimulatorPage";
 
@@ -10,6 +11,7 @@ export const appRoutes: RouteObject[] = [
     children: [
       { index: true, element: <Navigate to="/orders" replace /> },
       { path: "/orders", element: <OrdersPage /> },
+      { path: "/orders/:orderId", element: <OrderDetailPage /> },
       { path: "/simulator", element: <SimulatorPage /> },
     ],
   },

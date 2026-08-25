@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { type ReactNode } from "react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { listOperatorOrders } from "../../api/integrationCoreClient";
@@ -40,6 +41,10 @@ test("renders operator order summaries returned by the API", async () => {
   renderOrdersPage();
 
   expect(await screen.findByText("ORDER-42")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "ORDER-42" })).toHaveAttribute(
+    "href",
+    "/orders/018f38c2-1b95-7cc4-bb89-72d26a6f9f88",
+  );
   expect(screen.getByText("Marketplace A")).toBeInTheDocument();
   expect(screen.getByRole("row", { name: /ORDER-42.*Ready/i })).toBeInTheDocument();
   expect(screen.getByText("1-1 of 1")).toBeInTheDocument();
@@ -85,9 +90,11 @@ function renderOrdersPage() {
   });
 
   return render(
-    <TestProviders queryClient={queryClient}>
-      <OrdersPage />
-    </TestProviders>,
+    <MemoryRouter>
+      <TestProviders queryClient={queryClient}>
+        <OrdersPage />
+      </TestProviders>
+    </MemoryRouter>,
   );
 }
 
