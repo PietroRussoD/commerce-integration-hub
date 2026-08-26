@@ -104,6 +104,47 @@ test("renders the empty timeline state", async () => {
   expect(await screen.findByText("No timeline events")).toBeInTheDocument();
 });
 
+test("renders processing attempts and failures", async () => {
+  getOperatorOrderMock.mockResolvedValue({
+    ...orderDetail,
+    processingAttempts: [
+      {
+        id: "018f38c2-1b95-7cc4-bb89-72d26a6f9201",
+        attemptNumber: 1,
+        status: "FAILED_RETRYABLE",
+        trigger: "INITIAL",
+        errorCode: "PROVIDER_TIMEOUT",
+        errorMessage: "Provider did not respond before the deadline",
+        startedAt: "2026-08-21T08:00:00Z",
+        completedAt: "2026-08-21T08:00:01.250Z",
+      },
+      {
+        id: "018f38c2-1b95-7cc4-bb89-72d26a6f9202",
+        attemptNumber: 2,
+        status: "STARTED",
+        trigger: "RETRY",
+        errorCode: null,
+        errorMessage: null,
+        startedAt: "2026-08-21T08:01:00Z",
+        completedAt: null,
+      },
+    ],
+  });
+
+  renderOrderDetailPage();
+
+  expect(await screen.findByRole("row", { name: /1 Initial Failed Retryable.*1\.3 s PROVIDER_TIMEOUT/i })).toBeInTheDocument();
+  expect(screen.getByRole("row", { name: /2 Retry Started.*In progress/i })).toBeInTheDocument();
+});
+
+test("renders the empty processing-attempt state", async () => {
+  getOperatorOrderMock.mockResolvedValue(orderDetail);
+
+  renderOrderDetailPage();
+
+  expect(await screen.findByText("No processing attempts")).toBeInTheDocument();
+});
+
 test("renders an actionable error state", async () => {
   getOperatorOrderMock.mockRejectedValue(new Error("service unavailable"));
 
