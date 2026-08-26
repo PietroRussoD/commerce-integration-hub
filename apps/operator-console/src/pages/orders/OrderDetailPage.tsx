@@ -39,8 +39,84 @@ export function OrderDetailPage() {
             <OrderSummary order={query.data} />
             <OrderItems items={query.data.items} currency={query.data.currency} />
             <OrderTimeline entries={query.data.timeline} />
+            <ProcessingAttempts attempts={query.data.processingAttempts} />
           </div>
         ) : null}
+      </div>
+    </section>
+  );
+}
+
+function ProcessingAttempts({ attempts }: { attempts: OperatorOrderDetail["processingAttempts"] }) {
+  return (
+    <section aria-labelledby="processing-attempts-heading">
+      <div className="mb-3 flex items-baseline justify-between gap-4">
+        <h2 id="processing-attempts-heading" className="text-lg font-semibold">
+          Processing attempts
+        </h2>
+        <span className="text-sm tabular-nums text-zinc-500">{attempts.length}</span>
+      </div>
+
+      <div className="overflow-hidden rounded-md border border-zinc-200 bg-white">
+        {attempts.length === 0 ? (
+          <p className="px-6 py-10 text-center text-sm text-zinc-500">No processing attempts</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[880px] border-collapse text-left text-sm">
+              <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-600">
+                <tr>
+                  <th scope="col" className="px-4 py-3 text-right">
+                    Attempt
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Trigger
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Status
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Started
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right">
+                    Duration
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Error
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {attempts.map((attempt) => (
+                  <tr key={attempt.id}>
+                    <td className="px-4 py-3.5 text-right font-medium tabular-nums">{attempt.attemptNumber}</td>
+                    <td className="px-4 py-3.5 text-zinc-600">{formatLabel(attempt.trigger)}</td>
+                    <td className="px-4 py-3.5 font-medium text-zinc-950">{formatLabel(attempt.status)}</td>
+                    <td className="px-4 py-3.5 whitespace-nowrap text-zinc-600">
+                      <time dateTime={attempt.startedAt}>{dateTimeFormatter.format(new Date(attempt.startedAt))}</time>
+                    </td>
+                    <td className="px-4 py-3.5 text-right tabular-nums text-zinc-600">
+                      {formatDuration(attempt.startedAt, attempt.completedAt)}
+                    </td>
+                    <td className="max-w-80 px-4 py-3.5">
+                      {attempt.errorCode === null ? (
+                        <span className="text-zinc-400">-</span>
+                      ) : (
+                        <>
+                          <p className="font-mono text-xs font-medium text-red-800">{attempt.errorCode}</p>
+                          {attempt.errorMessage !== null ? (
+                            <p className="mt-1 truncate text-xs text-zinc-600" title={attempt.errorMessage}>
+                              {attempt.errorMessage}
+                            </p>
+                          ) : null}
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -220,4 +296,13 @@ function formatTransition(fromStatus: string | null, toStatus: string | null): s
     return `Left ${formatLabel(fromStatus)}`;
   }
   return undefined;
+}
+
+function formatDuration(startedAt: string, completedAt: string | null): string {
+  if (completedAt === null) return "In progress";
+
+  const durationMilliseconds = Math.max(0, new Date(completedAt).getTime() - new Date(startedAt).getTime());
+  if (durationMilliseconds < 1_000) return `${durationMilliseconds} ms`;
+
+  return `${(durationMilliseconds / 1_000).toFixed(1)} s`;
 }
