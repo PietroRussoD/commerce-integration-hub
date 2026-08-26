@@ -4,16 +4,12 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { listOperatorOrders, type ListOperatorOrdersParameters, type OperatorOrderPage } from "../../api/integrationCoreClient";
+import { formatDateTime, formatLabel, formatMoney } from "./orderFormatters";
 
 const PAGE_SIZE = 25;
 const statusOptions = ["ALL", "RECEIVED", "PROCESSING", "READY"] as const;
 
 type StatusFilter = "ALL" | NonNullable<ListOperatorOrdersParameters["status"]>;
-
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
 
 export function OrdersPage() {
   const [status, setStatus] = useState<StatusFilter>("ALL");
@@ -136,7 +132,7 @@ function OrdersTable({ page }: { page: OperatorOrderPage }) {
                 <StatusBadge status={order.status} />
               </td>
               <td className="px-4 py-3.5 text-right font-medium tabular-nums">{formatMoney(order.totalAmount, order.currency)}</td>
-              <td className="px-4 py-3.5 whitespace-nowrap text-zinc-600">{dateTimeFormatter.format(new Date(order.receivedAt))}</td>
+              <td className="px-4 py-3.5 whitespace-nowrap text-zinc-600">{formatDateTime(order.receivedAt)}</td>
               <td className="px-4 py-3.5 text-right tabular-nums text-zinc-600">{order.processingAttempts}</td>
             </tr>
           ))}
@@ -225,21 +221,6 @@ function Pagination({
       </div>
     </div>
   );
-}
-
-function formatLabel(value: string): string {
-  return value
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function formatMoney(amount: string, currency: string): string {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-  }).format(Number(amount));
 }
 
 function shortenId(id: string): string {
