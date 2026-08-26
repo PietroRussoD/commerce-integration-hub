@@ -61,6 +61,58 @@ test("submits a single-item canonical order", async () => {
   );
 });
 
+test("loads replay, conflict, and invalid scenarios from an accepted request", async () => {
+  receiveOrderMock.mockResolvedValue({
+    outcome: "CREATED",
+    order: {
+      id: "018f38c2-1b95-7cc4-bb89-72d26a6f9f88",
+      sourceSystem: "MARKETPLACE_A",
+      externalId: "BASELINE-ORDER",
+      currency: "GBP",
+      totalAmount: "15.00",
+      status: "RECEIVED",
+      receivedAt: "2026-08-26T08:00:00Z",
+      items: [],
+    },
+  });
+  renderSimulator();
+
+  const replayButton = screen.getByRole("button", { name: "Equivalent replay" });
+  const conflictButton = screen.getByRole("button", { name: "Conflict" });
+  expect(replayButton).toBeDisabled();
+  expect(conflictButton).toBeDisabled();
+
+  fireEvent.change(screen.getByLabelText("Source API key"), { target: { value: "key-id.secret" } });
+  fireEvent.change(screen.getByLabelText("External order ID"), { target: { value: "BASELINE-ORDER" } });
+  fireEvent.change(screen.getByLabelText("Currency"), { target: { value: "GBP" } });
+  fireEvent.change(screen.getByLabelText("Declared total"), { target: { value: "15.00" } });
+  fireEvent.change(screen.getByLabelText("SKU"), { target: { value: "BASELINE-SKU" } });
+  fireEvent.change(screen.getByLabelText("Quantity"), { target: { value: "3" } });
+  fireEvent.change(screen.getByLabelText("Unit price"), { target: { value: "5.00" } });
+  fireEvent.click(screen.getByRole("button", { name: "Submit order" }));
+
+  await waitFor(() => expect(replayButton).toBeEnabled());
+  fireEvent.change(screen.getByLabelText("External order ID"), { target: { value: "CHANGED" } });
+  fireEvent.click(replayButton);
+  expect(screen.getByLabelText("External order ID")).toHaveValue("BASELINE-ORDER");
+  expect(screen.getByLabelText("SKU")).toHaveValue("BASELINE-SKU");
+
+  fireEvent.click(conflictButton);
+  expect(screen.getByLabelText("External order ID")).toHaveValue("BASELINE-ORDER");
+  expect(screen.getByLabelText("Declared total")).toHaveValue("10.00");
+  expect(screen.getByLabelText("SKU")).toHaveValue("CONFLICT-SKU");
+
+  fireEvent.click(screen.getByRole("button", { name: "Invalid total" }));
+  expect(screen.getByLabelText("External order ID")).not.toHaveValue("BASELINE-ORDER");
+  expect(screen.getByLabelText("Declared total")).toHaveValue("39.97");
+  expect(screen.getByLabelText("Unit price")).toHaveValue("19.99");
+
+  const invalidExternalId = (screen.getByLabelText("External order ID") as HTMLInputElement).value;
+  fireEvent.click(screen.getByRole("button", { name: "Fresh order" }));
+  expect(screen.getByLabelText("External order ID")).not.toHaveValue(invalidExternalId);
+  expect(screen.getByLabelText("Declared total")).toHaveValue("39.98");
+});
+
 test("renders structured validation errors", async () => {
   receiveOrderMock.mockRejectedValue(
     new IntegrationCoreApiError(400, {
