@@ -25,9 +25,10 @@ mistaken for available behavior.
 - Source order access is restricted to the authenticated source. The operator
   API exposes read-only summaries and details across sources. Cross-source
   administration, functional dashboards, and authenticated operator roles are
-  not implemented. The operator console currently exposes a read-only,
-  paginated order summary with status filtering; order detail and simulator
-  views are not yet implemented.
+  not implemented. The operator console exposes a paginated summary,
+  operational details, and a controlled canonical-ingestion simulator. The
+  simulator keeps its source API key only in page memory and is intended for
+  local development and portfolio demonstrations, not production operation.
 - Health checks, structured logs, correlation IDs, Prometheus runtime metrics,
   and bounded outbox outcome metrics are available. Distributed tracing,
   alerting rules, and production dashboards are not.

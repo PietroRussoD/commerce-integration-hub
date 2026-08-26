@@ -43,12 +43,12 @@ The current baseline establishes:
   with source-owned order access;
 - correlation IDs propagated through HTTP, persistence, and structured logs;
 - a React and TypeScript operator console with a paginated, filterable order
-  summary view, generated API types, routing, tests, enforced coverage, and CI
-  validation.
+  summary view, operational details, a controlled ingestion simulator,
+  generated API types, routing, tests, enforced coverage, and CI validation.
 
-The next executable increment adds the operator order detail view. The demo
-simulation panel follows as a separate increment. Search projections and
-external connector gateways remain later increments.
+The current `v0.4.0-SNAPSHOT` increment is completing console verification and
+release hardening. Search projections and external connector gateways remain
+later increments.
 
 ## Repository structure
 
@@ -118,6 +118,17 @@ different local port.
 Then follow the [local demo](services/integration-core/README.md#local-demo) to
 provision a source credential and exercise reliable order ingestion. The
 credentials in `compose.yaml` are deliberately restricted to local development.
+
+Run the operator console in a second terminal:
+
+```bash
+cd apps/operator-console
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Open [http://localhost:5173](http://localhost:5173). The simulator accepts the
+source API key created by the local demo and keeps it only in page memory.
 
 See [Integration Core](services/integration-core/README.md) for service-level
 architecture and operational details. The current PostgreSQL structure is shown

@@ -1,9 +1,9 @@
 # Operator Console
 
 React and TypeScript console for inspecting Commerce Integration Hub operations.
-The current increment provides the application shell, a paginated order summary
-view with status filtering, generated API types, and a tested HTTP client. The
-order detail view and demo simulator are separate increments.
+It provides a paginated order list, operational order details, and a controlled
+canonical-ingestion simulator. API types are generated from the Integration
+Core OpenAPI document and all HTTP access is isolated behind a tested client.
 
 ## Prerequisites
 
@@ -22,6 +22,26 @@ pnpm dev
 
 Requests under `/api` are proxied to `http://localhost:8080`. Override the
 backend during development with `VITE_INTEGRATION_CORE_PROXY_TARGET`.
+
+Open [http://localhost:5173](http://localhost:5173) after Vite starts. The order
+list and detail views use the read-only operator API. The simulator requires a
+source API key provisioned by the Integration Core administrative CLI.
+
+## Simulator
+
+The simulator submits one canonical order item and supports four controlled
+scenarios:
+
+- `Fresh order` creates a valid request with a new external ID;
+- `Equivalent replay` resubmits the last accepted request unchanged;
+- `Conflict` reuses that external ID with different valid content;
+- `Invalid total` sends a fresh request whose declared total does not match its
+  item.
+
+Replay and conflict become available after one request is accepted. The source
+API key remains only in React memory for the lifetime of the page and is sent in
+the `X-Source-API-Key` request header. The simulator is a local development and
+portfolio surface, not a production administration interface.
 
 Run the complete local quality gate:
 
