@@ -1,15 +1,9 @@
-import { useMutation } from "@tanstack/react-query";
 import { CheckCircle2, CircleX, Copy, FilePlus2, Send, ShieldAlert, TriangleAlert } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent } from "react";
 import { Link } from "react-router-dom";
 
-import {
-  IntegrationCoreApiError,
-  receiveOrder,
-  type ReceiveOrderParameters,
-  type ReceiveOrderRequest,
-  type ReceiveOrderResult,
-} from "../../api/integrationCoreClient";
+import { IntegrationCoreApiError, type ReceiveOrderResult } from "../../api/integrationCoreClient";
+import { type SimulatorFormValues, useOrderSimulator } from "./useOrderSimulator";
 
 const inputClassName =
   "h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-950 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100";
@@ -17,62 +11,11 @@ const amountPattern = "(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?";
 const quantityPattern = "(?:0|[1-9][0-9]{0,14})(?:\\.[0-9]{1,4})?";
 
 export function SimulatorPage() {
-  const [sourceApiKey, setSourceApiKey] = useState("");
-  const [externalId, setExternalId] = useState(createExternalId);
-  const [currency, setCurrency] = useState<ReceiveOrderRequest["currency"]>("EUR");
-  const [declaredTotalAmount, setDeclaredTotalAmount] = useState("39.98");
-  const [sku, setSku] = useState("DEMO-SKU-001");
-  const [quantity, setQuantity] = useState("2");
-  const [unitPrice, setUnitPrice] = useState("19.99");
-  const [lastAcceptedRequest, setLastAcceptedRequest] = useState<ReceiveOrderRequest>();
-  const mutation = useMutation({
-    mutationFn: (parameters: ReceiveOrderParameters) => receiveOrder(parameters),
-    onSuccess: (_result, parameters) => setLastAcceptedRequest(parameters.request),
-  });
+  const simulator = useOrderSimulator();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    mutation.mutate({
-      sourceApiKey,
-      request: {
-        externalId,
-        currency,
-        declaredTotalAmount,
-        items: [{ sku, quantity, unitPrice }],
-      },
-    });
-  }
-
-  function loadRequest(request: ReceiveOrderRequest) {
-    const item = request.items[0];
-    if (item === undefined) return;
-
-    setExternalId(request.externalId);
-    setCurrency(request.currency);
-    setDeclaredTotalAmount(request.declaredTotalAmount);
-    setSku(item.sku);
-    setQuantity(item.quantity);
-    setUnitPrice(item.unitPrice);
-    mutation.reset();
-  }
-
-  function loadFreshOrder() {
-    loadRequest(createDemoRequest());
-  }
-
-  function loadConflict() {
-    if (lastAcceptedRequest === undefined) return;
-
-    loadRequest({
-      externalId: lastAcceptedRequest.externalId,
-      currency: lastAcceptedRequest.currency,
-      declaredTotalAmount: "10.00",
-      items: [{ sku: "CONFLICT-SKU", quantity: "1", unitPrice: "10.00" }],
-    });
-  }
-
-  function loadInvalidOrder() {
-    loadRequest({ ...createDemoRequest(), declaredTotalAmount: "39.97" });
+    simulator.submit();
   }
 
   return (
@@ -86,20 +29,20 @@ export function SimulatorPage() {
       <div className="mt-5 border-b border-zinc-200 pb-5">
         <h2 className="text-sm font-semibold text-zinc-700">Scenarios</h2>
         <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Simulation scenarios">
-          <ScenarioButton icon={FilePlus2} label="Fresh order" onClick={loadFreshOrder} />
+          <ScenarioButton icon={FilePlus2} label="Fresh order" onClick={simulator.loadFreshOrder} />
           <ScenarioButton
             icon={Copy}
             label="Equivalent replay"
-            onClick={() => lastAcceptedRequest !== undefined && loadRequest(lastAcceptedRequest)}
-            disabled={lastAcceptedRequest === undefined}
+            onClick={simulator.loadReplay}
+            disabled={!simulator.canReplay}
           />
           <ScenarioButton
             icon={ShieldAlert}
             label="Conflict"
-            onClick={loadConflict}
-            disabled={lastAcceptedRequest === undefined}
+            onClick={simulator.loadConflict}
+            disabled={!simulator.canReplay}
           />
-          <ScenarioButton icon={CircleX} label="Invalid total" onClick={loadInvalidOrder} />
+          <ScenarioButton icon={CircleX} label="Invalid total" onClick={simulator.loadInvalidOrder} />
         </div>
       </div>
 
@@ -110,8 +53,8 @@ export function SimulatorPage() {
             Source API key
             <input
               type="password"
-              value={sourceApiKey}
-              onChange={(event) => setSourceApiKey(event.target.value)}
+              value={simulator.form.sourceApiKey}
+              onChange={(event) => simulator.updateField("sourceApiKey", event.target.value)}
               autoComplete="off"
               required
               className={inputClassName}
@@ -124,8 +67,8 @@ export function SimulatorPage() {
           <label className="grid gap-1.5 text-sm font-medium text-zinc-700">
             External order ID
             <input
-              value={externalId}
-              onChange={(event) => setExternalId(event.target.value)}
+              value={simulator.form.externalId}
+              onChange={(event) => simulator.updateField("externalId", event.target.value)}
               maxLength={128}
               required
               className={inputClassName}
@@ -134,8 +77,8 @@ export function SimulatorPage() {
           <label className="grid gap-1.5 text-sm font-medium text-zinc-700">
             Currency
             <select
-              value={currency}
-              onChange={(event) => setCurrency(event.target.value as ReceiveOrderRequest["currency"])}
+              value={simulator.form.currency}
+              onChange={(event) => simulator.updateField("currency", event.target.value as SimulatorFormValues["currency"])}
               className={inputClassName}
             >
               <option value="EUR">EUR</option>
@@ -146,8 +89,8 @@ export function SimulatorPage() {
           <label className="grid gap-1.5 text-sm font-medium text-zinc-700">
             Declared total
             <input
-              value={declaredTotalAmount}
-              onChange={(event) => setDeclaredTotalAmount(event.target.value)}
+              value={simulator.form.declaredTotalAmount}
+              onChange={(event) => simulator.updateField("declaredTotalAmount", event.target.value)}
               inputMode="decimal"
               pattern={amountPattern}
               required
@@ -161,8 +104,8 @@ export function SimulatorPage() {
           <label className="grid gap-1.5 text-sm font-medium text-zinc-700">
             SKU
             <input
-              value={sku}
-              onChange={(event) => setSku(event.target.value)}
+              value={simulator.form.sku}
+              onChange={(event) => simulator.updateField("sku", event.target.value)}
               maxLength={100}
               required
               className={inputClassName}
@@ -171,8 +114,8 @@ export function SimulatorPage() {
           <label className="grid gap-1.5 text-sm font-medium text-zinc-700">
             Quantity
             <input
-              value={quantity}
-              onChange={(event) => setQuantity(event.target.value)}
+              value={simulator.form.quantity}
+              onChange={(event) => simulator.updateField("quantity", event.target.value)}
               inputMode="decimal"
               pattern={quantityPattern}
               required
@@ -182,8 +125,8 @@ export function SimulatorPage() {
           <label className="grid gap-1.5 text-sm font-medium text-zinc-700">
             Unit price
             <input
-              value={unitPrice}
-              onChange={(event) => setUnitPrice(event.target.value)}
+              value={simulator.form.unitPrice}
+              onChange={(event) => simulator.updateField("unitPrice", event.target.value)}
               inputMode="decimal"
               pattern={quantityPattern}
               required
@@ -195,17 +138,17 @@ export function SimulatorPage() {
         <div className="flex justify-end border-t border-zinc-200 pt-5">
           <button
             type="submit"
-            disabled={mutation.isPending}
+            disabled={simulator.isPending}
             className="inline-flex h-10 items-center gap-2 rounded-md bg-emerald-800 px-4 text-sm font-semibold text-white hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Send aria-hidden="true" size={17} />
-            {mutation.isPending ? "Submitting..." : "Submit order"}
+            {simulator.isPending ? "Submitting..." : "Submit order"}
           </button>
         </div>
       </form>
 
-      {mutation.isSuccess ? <SimulationSuccess result={mutation.data} /> : null}
-      {mutation.isError ? <SimulationError error={mutation.error} /> : null}
+      {simulator.result !== undefined ? <SimulationSuccess result={simulator.result} /> : null}
+      {simulator.error !== null ? <SimulationError error={simulator.error} /> : null}
     </section>
   );
 }
@@ -276,17 +219,4 @@ function SimulationError({ error }: { error: Error }) {
       </div>
     </div>
   );
-}
-
-function createDemoRequest(): ReceiveOrderRequest {
-  return {
-    externalId: createExternalId(),
-    currency: "EUR",
-    declaredTotalAmount: "39.98",
-    items: [{ sku: "DEMO-SKU-001", quantity: "2", unitPrice: "19.99" }],
-  };
-}
-
-function createExternalId(): string {
-  return `DEMO-${crypto.randomUUID()}`;
 }
