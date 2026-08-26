@@ -1,0 +1,99 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { afterEach, expect, test, vi } from "vitest";
+
+import { IntegrationCoreApiError, receiveOrder } from "../../api/integrationCoreClient";
+import { SimulatorPage } from "./SimulatorPage";
+
+vi.mock("../../api/integrationCoreClient", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../../api/integrationCoreClient")>();
+  return { ...original, receiveOrder: vi.fn() };
+});
+
+const receiveOrderMock = vi.mocked(receiveOrder);
+
+afterEach(() => {
+  cleanup();
+  receiveOrderMock.mockReset();
+});
+
+test("submits a single-item canonical order", async () => {
+  receiveOrderMock.mockResolvedValue({
+    outcome: "CREATED",
+    order: {
+      id: "018f38c2-1b95-7cc4-bb89-72d26a6f9f88",
+      sourceSystem: "MARKETPLACE_A",
+      externalId: "DEMO-ORDER-001",
+      currency: "EUR",
+      totalAmount: "39.98",
+      status: "RECEIVED",
+      receivedAt: "2026-08-26T08:00:00Z",
+      items: [],
+    },
+  });
+  renderSimulator();
+
+  fireEvent.change(screen.getByLabelText("Source API key"), { target: { value: "key-id.secret" } });
+  fireEvent.change(screen.getByLabelText("External order ID"), { target: { value: "DEMO-ORDER-002" } });
+  fireEvent.change(screen.getByLabelText("Currency"), { target: { value: "GBP" } });
+  fireEvent.change(screen.getByLabelText("Declared total"), { target: { value: "15.00" } });
+  fireEvent.change(screen.getByLabelText("SKU"), { target: { value: "DEMO-SKU-002" } });
+  fireEvent.change(screen.getByLabelText("Quantity"), { target: { value: "3" } });
+  fireEvent.change(screen.getByLabelText("Unit price"), { target: { value: "5.00" } });
+  fireEvent.click(screen.getByRole("button", { name: "Submit order" }));
+
+  await waitFor(() => {
+    expect(receiveOrderMock).toHaveBeenCalledWith({
+      sourceApiKey: "key-id.secret",
+      request: {
+        externalId: "DEMO-ORDER-002",
+        currency: "GBP",
+        declaredTotalAmount: "15.00",
+        items: [{ sku: "DEMO-SKU-002", quantity: "3", unitPrice: "5.00" }],
+      },
+    });
+  });
+  expect(await screen.findByRole("status")).toHaveTextContent("Order created");
+  expect(screen.getByRole("link", { name: "View order" })).toHaveAttribute(
+    "href",
+    "/orders/018f38c2-1b95-7cc4-bb89-72d26a6f9f88",
+  );
+});
+
+test("renders structured validation errors", async () => {
+  receiveOrderMock.mockRejectedValue(
+    new IntegrationCoreApiError(400, {
+      type: "urn:problem:request-validation",
+      title: "Request validation failed",
+      status: 400,
+      detail: "One or more request fields are invalid",
+      instance: "/api/v1/orders",
+      code: "REQUEST_VALIDATION_FAILED",
+      errors: [{ field: "items[0].quantity", message: "must match the decimal format" }],
+    }),
+  );
+  renderSimulator();
+
+  fireEvent.change(screen.getByLabelText("Source API key"), { target: { value: "key-id.secret" } });
+  fireEvent.click(screen.getByRole("button", { name: "Submit order" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("One or more request fields are invalid");
+  expect(screen.getByRole("alert")).toHaveTextContent("items[0].quantity");
+});
+
+function renderSimulator() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      mutations: { retry: false },
+    },
+  });
+
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <SimulatorPage />
+      </QueryClientProvider>
+    </MemoryRouter>,
+  );
+}
