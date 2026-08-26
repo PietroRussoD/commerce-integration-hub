@@ -3,11 +3,7 @@ import { ArrowLeft, RefreshCw, TriangleAlert } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
 import { getOperatorOrder, type OperatorOrderDetail } from "../../api/integrationCoreClient";
-
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
+import { formatDateTime, formatDuration, formatLabel, formatMoney, formatTransition } from "./orderFormatters";
 
 export function OrderDetailPage() {
   const orderId = useParams<{ orderId: string }>().orderId ?? "";
@@ -92,7 +88,7 @@ function ProcessingAttempts({ attempts }: { attempts: OperatorOrderDetail["proce
                     <td className="px-4 py-3.5 text-zinc-600">{formatLabel(attempt.trigger)}</td>
                     <td className="px-4 py-3.5 font-medium text-zinc-950">{formatLabel(attempt.status)}</td>
                     <td className="px-4 py-3.5 whitespace-nowrap text-zinc-600">
-                      <time dateTime={attempt.startedAt}>{dateTimeFormatter.format(new Date(attempt.startedAt))}</time>
+                      <time dateTime={attempt.startedAt}>{formatDateTime(attempt.startedAt)}</time>
                     </td>
                     <td className="px-4 py-3.5 text-right tabular-nums text-zinc-600">
                       {formatDuration(attempt.startedAt, attempt.completedAt)}
@@ -145,7 +141,7 @@ function OrderTimeline({ entries }: { entries: OperatorOrderDetail["timeline"] }
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
                     <h3 className="text-sm font-semibold text-zinc-950">{formatLabel(entry.eventType)}</h3>
                     <time dateTime={entry.occurredAt} className="whitespace-nowrap text-xs text-zinc-500">
-                      {dateTimeFormatter.format(new Date(entry.occurredAt))}
+                      {formatDateTime(entry.occurredAt)}
                     </time>
                   </div>
                   {transition !== undefined ? <p className="mt-2 text-sm font-medium text-zinc-700">{transition}</p> : null}
@@ -228,7 +224,7 @@ function OrderSummary({ order }: { order: OperatorOrderDetail }) {
       <SummaryField label="Source" value={formatLabel(order.sourceSystem)} />
       <SummaryField label="Status" value={formatLabel(order.status)} />
       <SummaryField label="Total" value={formatMoney(order.totalAmount, order.currency)} />
-      <SummaryField label="Received" value={dateTimeFormatter.format(new Date(order.receivedAt))} />
+      <SummaryField label="Received" value={formatDateTime(order.receivedAt)} />
       <SummaryField label="Items" value={order.items.length.toString()} />
     </dl>
   );
@@ -268,41 +264,4 @@ function OrderDetailError({ onRetry }: { onRetry: () => void }) {
       </button>
     </div>
   );
-}
-
-function formatLabel(value: string): string {
-  return value
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function formatMoney(amount: string, currency: string): string {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-  }).format(Number(amount));
-}
-
-function formatTransition(fromStatus: string | null, toStatus: string | null): string | undefined {
-  if (fromStatus !== null && toStatus !== null) {
-    return `${formatLabel(fromStatus)} to ${formatLabel(toStatus)}`;
-  }
-  if (toStatus !== null) {
-    return `Entered ${formatLabel(toStatus)}`;
-  }
-  if (fromStatus !== null) {
-    return `Left ${formatLabel(fromStatus)}`;
-  }
-  return undefined;
-}
-
-function formatDuration(startedAt: string, completedAt: string | null): string {
-  if (completedAt === null) return "In progress";
-
-  const durationMilliseconds = Math.max(0, new Date(completedAt).getTime() - new Date(startedAt).getTime());
-  if (durationMilliseconds < 1_000) return `${durationMilliseconds} ms`;
-
-  return `${(durationMilliseconds / 1_000).toFixed(1)} s`;
 }
