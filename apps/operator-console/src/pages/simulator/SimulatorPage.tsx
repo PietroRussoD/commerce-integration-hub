@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { CheckCircle2, Send, TriangleAlert } from "lucide-react";
+import { CheckCircle2, CircleX, Copy, FilePlus2, Send, ShieldAlert, TriangleAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -18,13 +18,17 @@ const quantityPattern = "(?:0|[1-9][0-9]{0,14})(?:\\.[0-9]{1,4})?";
 
 export function SimulatorPage() {
   const [sourceApiKey, setSourceApiKey] = useState("");
-  const [externalId, setExternalId] = useState("DEMO-ORDER-001");
+  const [externalId, setExternalId] = useState(createExternalId);
   const [currency, setCurrency] = useState<ReceiveOrderRequest["currency"]>("EUR");
   const [declaredTotalAmount, setDeclaredTotalAmount] = useState("39.98");
   const [sku, setSku] = useState("DEMO-SKU-001");
   const [quantity, setQuantity] = useState("2");
   const [unitPrice, setUnitPrice] = useState("19.99");
-  const mutation = useMutation({ mutationFn: (parameters: ReceiveOrderParameters) => receiveOrder(parameters) });
+  const [lastAcceptedRequest, setLastAcceptedRequest] = useState<ReceiveOrderRequest>();
+  const mutation = useMutation({
+    mutationFn: (parameters: ReceiveOrderParameters) => receiveOrder(parameters),
+    onSuccess: (_result, parameters) => setLastAcceptedRequest(parameters.request),
+  });
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,12 +43,64 @@ export function SimulatorPage() {
     });
   }
 
+  function loadRequest(request: ReceiveOrderRequest) {
+    const item = request.items[0];
+    if (item === undefined) return;
+
+    setExternalId(request.externalId);
+    setCurrency(request.currency);
+    setDeclaredTotalAmount(request.declaredTotalAmount);
+    setSku(item.sku);
+    setQuantity(item.quantity);
+    setUnitPrice(item.unitPrice);
+    mutation.reset();
+  }
+
+  function loadFreshOrder() {
+    loadRequest(createDemoRequest());
+  }
+
+  function loadConflict() {
+    if (lastAcceptedRequest === undefined) return;
+
+    loadRequest({
+      externalId: lastAcceptedRequest.externalId,
+      currency: lastAcceptedRequest.currency,
+      declaredTotalAmount: "10.00",
+      items: [{ sku: "CONFLICT-SKU", quantity: "1", unitPrice: "10.00" }],
+    });
+  }
+
+  function loadInvalidOrder() {
+    loadRequest({ ...createDemoRequest(), declaredTotalAmount: "39.97" });
+  }
+
   return (
     <section aria-labelledby="simulator-heading">
       <div className="border-b border-zinc-200 pb-5">
         <h1 id="simulator-heading" className="text-2xl font-semibold">
           Simulator
         </h1>
+      </div>
+
+      <div className="mt-5 border-b border-zinc-200 pb-5">
+        <h2 className="text-sm font-semibold text-zinc-700">Scenarios</h2>
+        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Simulation scenarios">
+          <ScenarioButton icon={FilePlus2} label="Fresh order" onClick={loadFreshOrder} />
+          <ScenarioButton
+            icon={Copy}
+            label="Equivalent replay"
+            onClick={() => lastAcceptedRequest !== undefined && loadRequest(lastAcceptedRequest)}
+            disabled={lastAcceptedRequest === undefined}
+          />
+          <ScenarioButton
+            icon={ShieldAlert}
+            label="Conflict"
+            onClick={loadConflict}
+            disabled={lastAcceptedRequest === undefined}
+          />
+          <ScenarioButton icon={CircleX} label="Invalid total" onClick={loadInvalidOrder} />
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-7">
@@ -154,6 +210,30 @@ export function SimulatorPage() {
   );
 }
 
+function ScenarioButton({
+  icon: Icon,
+  label,
+  onClick,
+  disabled = false,
+}: {
+  icon: typeof FilePlus2;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex h-9 items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <Icon aria-hidden="true" size={16} />
+      {label}
+    </button>
+  );
+}
+
 function SimulationSuccess({ result }: { result: ReceiveOrderResult }) {
   const title = result.outcome === "CREATED" ? "Order created" : "Equivalent order replayed";
 
@@ -196,4 +276,17 @@ function SimulationError({ error }: { error: Error }) {
       </div>
     </div>
   );
+}
+
+function createDemoRequest(): ReceiveOrderRequest {
+  return {
+    externalId: createExternalId(),
+    currency: "EUR",
+    declaredTotalAmount: "39.98",
+    items: [{ sku: "DEMO-SKU-001", quantity: "2", unitPrice: "19.99" }],
+  };
+}
+
+function createExternalId(): string {
+  return `DEMO-${crypto.randomUUID()}`;
 }
