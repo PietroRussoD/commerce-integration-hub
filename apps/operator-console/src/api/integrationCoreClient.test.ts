@@ -1,6 +1,24 @@
 import { afterEach, expect, test, vi } from "vitest";
 
-import { getOperatorOrder, listOperatorOrders } from "./integrationCoreClient";
+import { getOperatorOrder, IntegrationCoreApiError, listOperatorOrders, receiveOrder } from "./integrationCoreClient";
+
+const receiveOrderRequest = {
+  externalId: "ORDER-42",
+  currency: "EUR",
+  declaredTotalAmount: "39.98",
+  items: [{ sku: "SKU-1", quantity: "2", unitPrice: "19.99" }],
+};
+
+const receiveOrderResponse = {
+  id: "018f38c2-1b95-7cc4-bb89-72d26a6f9f88",
+  sourceSystem: "MARKETPLACE_A",
+  externalId: "ORDER-42",
+  currency: "EUR",
+  totalAmount: "39.98",
+  status: "RECEIVED",
+  receivedAt: "2026-08-26T08:00:00Z",
+  items: [],
+};
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -63,4 +81,64 @@ test("rejects unsuccessful operator order detail responses", async () => {
   await expect(getOperatorOrder({ orderId: "missing-order" })).rejects.toThrow(
     "Operator order detail request failed with status 404",
   );
+});
+
+test.each([
+  [201, "CREATED"],
+  [200, "REPLAYED"],
+] as const)("submits an order and maps status %i to %s", async (status, outcome) => {
+  const fetchMock = vi.fn().mockResolvedValue(
+    new Response(JSON.stringify(receiveOrderResponse), {
+      status,
+      headers: { "Content-Type": "application/json" },
+    }),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(
+    receiveOrder({
+      request: receiveOrderRequest,
+      sourceApiKey: "key-id.secret",
+      correlationId: "018f38c2-1b95-7cc4-bb89-72d26a6f9000",
+    }),
+  ).resolves.toEqual({ order: receiveOrderResponse, outcome });
+  expect(fetchMock).toHaveBeenCalledWith("/api/v1/orders", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Correlation-ID": "018f38c2-1b95-7cc4-bb89-72d26a6f9000",
+      "X-Source-API-Key": "key-id.secret",
+    },
+    body: JSON.stringify(receiveOrderRequest),
+    signal: undefined,
+  });
+});
+
+test("preserves problem details from a rejected order", async () => {
+  const problem = {
+    type: "urn:problem:request-validation",
+    title: "Request validation failed",
+    status: 400,
+    detail: "One or more request fields are invalid",
+    instance: "/api/v1/orders",
+    code: "REQUEST_VALIDATION_FAILED",
+    errors: [{ field: "items[0].quantity", message: "must match the decimal format" }],
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(problem), {
+        status: 400,
+        headers: { "Content-Type": "application/problem+json" },
+      }),
+    ),
+  );
+
+  const error = await receiveOrder({ request: receiveOrderRequest, sourceApiKey: "key-id.secret" }).catch(
+    (caught: unknown) => caught,
+  );
+
+  expect(error).toBeInstanceOf(IntegrationCoreApiError);
+  expect(error).toMatchObject({ status: 400, problem, message: problem.detail });
 });
