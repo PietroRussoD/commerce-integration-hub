@@ -37,7 +37,7 @@ export function OrdersPage() {
         description={query.data === undefined ? "\u00a0" : `${query.data.total} total`}
         actions={
           <div className="flex items-end gap-2">
-            <label className="grid gap-1 text-xs font-medium text-zinc-600">
+            <label className="grid gap-1 text-xs font-medium text-app-foreground-secondary">
               Status
               <select
                 value={status}
@@ -45,7 +45,7 @@ export function OrdersPage() {
                   setStatus(event.target.value as StatusFilter);
                   setOffset(0);
                 }}
-                className="h-9 min-w-36 rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
+                className="h-9 min-w-36 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring"
               >
                 {statusOptions.map((option) => (
                   <option key={option} value={option}>
@@ -62,7 +62,7 @@ export function OrdersPage() {
         }
       />
 
-      <div className="mt-5 overflow-hidden rounded-md border border-zinc-200 bg-white">
+      <div className="mt-5 overflow-hidden rounded-md border border-app-border bg-app-surface">
         {query.isPending ? <OrdersLoading /> : null}
         {query.isError ? <OrdersError onRetry={() => void query.refetch()} /> : null}
         {query.data !== undefined ? <OrdersTable page={query.data} /> : null}
@@ -81,13 +81,13 @@ export function OrdersPage() {
 
 function OrdersTable({ page }: { page: OperatorOrderPage }) {
   if (page.items.length === 0) {
-    return <p className="px-6 py-16 text-center text-sm text-zinc-500">No orders found</p>;
+    return <p className="px-6 py-16 text-center text-sm text-app-foreground-muted">No orders found</p>;
   }
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[850px] border-collapse text-left text-sm">
-        <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-semibold text-zinc-600">
+        <thead className="border-b border-app-border bg-app-canvas text-xs font-semibold text-app-foreground-secondary">
           <tr>
             <th scope="col" className="px-4 py-3">
               Order
@@ -109,25 +109,25 @@ function OrdersTable({ page }: { page: OperatorOrderPage }) {
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-100">
+        <tbody className="divide-y divide-app-surface-muted">
           {page.items.map((order) => (
-            <tr key={order.id} className="group hover:bg-zinc-50">
+            <tr key={order.id} className="group hover:bg-app-canvas">
               <td className="px-4 py-3.5">
                 <Link
                   to={`/orders/${order.id}`}
-                  className="font-medium text-zinc-950 underline-offset-4 group-hover:text-emerald-800 group-hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+                  className="font-medium text-app-foreground underline-offset-4 group-hover:text-app-brand-primary group-hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
                 >
                   {order.externalOrderId}
                 </Link>
-                <p className="mt-0.5 font-mono text-xs text-zinc-400">{shortenId(order.id)}</p>
+                <p className="mt-0.5 font-mono text-xs text-app-foreground-faint">{shortenId(order.id)}</p>
               </td>
-              <td className="px-4 py-3.5 text-zinc-600">{formatLabel(order.sourceSystem)}</td>
+              <td className="px-4 py-3.5 text-app-foreground-secondary">{formatLabel(order.sourceSystem)}</td>
               <td className="px-4 py-3.5">
                 <StatusBadge status={order.status}>{formatLabel(order.status)}</StatusBadge>
               </td>
               <td className="px-4 py-3.5 text-right font-medium tabular-nums">{formatMoney(order.totalAmount, order.currency)}</td>
-              <td className="px-4 py-3.5 whitespace-nowrap text-zinc-600">{formatDateTime(order.receivedAt)}</td>
-              <td className="px-4 py-3.5 text-right tabular-nums text-zinc-600">{order.processingAttempts}</td>
+              <td className="px-4 py-3.5 whitespace-nowrap text-app-foreground-secondary">{formatDateTime(order.receivedAt)}</td>
+              <td className="px-4 py-3.5 text-right tabular-nums text-app-foreground-secondary">{order.processingAttempts}</td>
             </tr>
           ))}
         </tbody>
@@ -140,7 +140,7 @@ function OrdersLoading() {
   return (
     <div role="status" aria-label="Loading orders" className="space-y-3 px-4 py-5">
       {Array.from({ length: 5 }, (_, index) => (
-        <div key={index} className="h-12 animate-pulse rounded bg-zinc-100" />
+        <div key={index} className="h-12 animate-pulse rounded bg-app-surface-muted" />
       ))}
     </div>
   );
@@ -154,7 +154,7 @@ function OrdersError({ onRetry }: { onRetry: () => void }) {
       <button
         type="button"
         onClick={onRetry}
-        className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium hover:bg-zinc-50"
+        className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm font-medium hover:bg-app-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
       >
         <RefreshCw aria-hidden="true" size={16} />
         Retry
@@ -176,7 +176,7 @@ function Pagination({
   const last = Math.min(page.offset + page.items.length, page.total);
 
   return (
-    <div className="mt-4 flex items-center justify-end gap-3 text-sm text-zinc-600">
+    <div className="mt-4 flex items-center justify-end gap-3 text-sm text-app-foreground-secondary">
       <span className="tabular-nums">
         {first}-{last} of {page.total}
       </span>
