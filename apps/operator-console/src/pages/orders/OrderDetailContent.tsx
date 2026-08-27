@@ -1,4 +1,7 @@
+import { type ReactNode } from "react";
+
 import type { OperatorOrderDetail } from "../../api/integrationCoreClient";
+import { StatusBadge } from "../../components/ui/StatusBadge";
 import { formatDateTime, formatDuration, formatLabel, formatMoney, formatTransition } from "./orderFormatters";
 
 export function OrderDetailContent({ order }: { order: OperatorOrderDetail }) {
@@ -17,7 +20,7 @@ function OrderSummary({ order }: { order: OperatorOrderDetail }) {
     <dl className="grid gap-px overflow-hidden rounded-md border border-zinc-200 bg-zinc-200 sm:grid-cols-2 lg:grid-cols-3">
       <SummaryField label="External order" value={order.externalOrderId} />
       <SummaryField label="Source" value={formatLabel(order.sourceSystem)} />
-      <SummaryField label="Status" value={formatLabel(order.status)} />
+      <SummaryField label="Status" value={<StatusBadge status={order.status}>{formatLabel(order.status)}</StatusBadge>} />
       <SummaryField label="Total" value={formatMoney(order.totalAmount, order.currency)} />
       <SummaryField label="Received" value={formatDateTime(order.receivedAt)} />
       <SummaryField label="Items" value={order.items.length.toString()} />
@@ -25,7 +28,7 @@ function OrderSummary({ order }: { order: OperatorOrderDetail }) {
   );
 }
 
-function SummaryField({ label, value }: { label: string; value: string }) {
+function SummaryField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="bg-white px-4 py-4">
       <dt className="text-xs font-medium text-zinc-500">{label}</dt>
@@ -134,7 +137,9 @@ function ProcessingAttempts({ attempts }: { attempts: OperatorOrderDetail["proce
                   <tr key={attempt.id}>
                     <td className="px-4 py-3.5 text-right font-medium tabular-nums">{attempt.attemptNumber}</td>
                     <td className="px-4 py-3.5 text-zinc-600">{formatLabel(attempt.trigger)}</td>
-                    <td className="px-4 py-3.5 font-medium text-zinc-950">{formatLabel(attempt.status)}</td>
+                    <td className="px-4 py-3.5">
+                      <StatusBadge status={attempt.status}>{formatLabel(attempt.status)}</StatusBadge>
+                    </td>
                     <td className="px-4 py-3.5 whitespace-nowrap text-zinc-600">
                       <time dateTime={attempt.startedAt}>{formatDateTime(attempt.startedAt)}</time>
                     </td>
