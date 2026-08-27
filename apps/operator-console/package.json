@@ -10,13 +10,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
     "generate:api": "openapi-typescript ../../services/integration-core/src/main/resources/META-INF/integration-core.yaml -o src/api/generated/integration-core.ts",
     "check:api": "pnpm generate:api && git diff --exit-code -- src/api/generated/integration-core.ts",
     "lint": "eslint .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "type-check": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
-    "check": "pnpm lint && pnpm type-check && pnpm test:coverage && pnpm build"
+    "check": "pnpm lint && pnpm type-check && pnpm test:coverage && pnpm build && pnpm build-storybook"
   },
   "dependencies": {
     "@tanstack/react-query": "5.102.2",
@@ -27,6 +29,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@storybook/addon-a11y": "10.5.10",
+    "@storybook/addon-docs": "10.5.10",
+    "@storybook/react-vite": "10.5.10",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
@@ -41,6 +46,7 @@
     "globals": "^17.11.0",
     "jsdom": "^30.0.1",
     "openapi-typescript": "^7.13.0",
+    "storybook": "10.5.10",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.67.0",

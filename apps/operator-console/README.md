@@ -27,6 +27,20 @@ Open [http://localhost:5173](http://localhost:5173) after Vite starts. The order
 list and detail views use the read-only operator API. The simulator requires a
 source API key provisioned by the Integration Core administrative CLI.
 
+## Component development
+
+Run Storybook to develop and inspect shared UI components independently from
+the application and backend:
+
+```bash
+pnpm storybook
+```
+
+Open [http://localhost:6006](http://localhost:6006). Component stories include
+generated documentation, interactive controls, and accessibility checks. Build
+the static component documentation with `pnpm build-storybook`; the complete
+`pnpm check` quality gate also runs this build.
+
 ## Simulator
 
 The simulator submits one canonical order item and supports four controlled
