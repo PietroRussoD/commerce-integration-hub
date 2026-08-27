@@ -21,6 +21,22 @@
   text-rendering: optimizeLegibility;
 }
 
+[data-brand="client-blue"] {
+  --app-canvas: #f8fafc;
+  --app-surface: #ffffff;
+  --app-surface-muted: #f1f5f9;
+  --app-foreground: #0f172a;
+  --app-foreground-secondary: #475569;
+  --app-foreground-muted: #64748b;
+  --app-border: #e2e8f0;
+  --app-border-strong: #cbd5e1;
+  --app-navigation-active: #1e3a8a;
+  --app-navigation-foreground: #ffffff;
+  --app-brand-focus: #2563eb;
+  --app-selection: #bfdbfe;
+  --app-selection-foreground: #1e3a8a;
+}
+
 @theme inline {
   --color-app-canvas: var(--app-canvas);
   --color-app-surface: var(--app-surface);
