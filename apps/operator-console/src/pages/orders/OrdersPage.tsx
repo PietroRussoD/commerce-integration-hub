@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 
 import { listOperatorOrders, type ListOperatorOrdersParameters, type OperatorOrderPage } from "../../api/integrationCoreClient";
 import { IconButton } from "../../components/ui/IconButton";
+import { PageHeader } from "../../components/ui/PageHeader";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { formatDateTime, formatLabel, formatMoney } from "./orderFormatters";
 
@@ -30,42 +31,36 @@ export function OrdersPage() {
 
   return (
     <section aria-labelledby="orders-heading">
-      <div className="flex flex-col gap-4 border-b border-zinc-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 id="orders-heading" className="text-2xl font-semibold">
-            Orders
-          </h1>
-          <p className="mt-1 min-h-5 text-sm text-zinc-500">{query.data === undefined ? "\u00a0" : `${query.data.total} total`}</p>
-        </div>
+      <PageHeader
+        titleId="orders-heading"
+        title="Orders"
+        description={query.data === undefined ? "\u00a0" : `${query.data.total} total`}
+        actions={
+          <div className="flex items-end gap-2">
+            <label className="grid gap-1 text-xs font-medium text-zinc-600">
+              Status
+              <select
+                value={status}
+                onChange={(event) => {
+                  setStatus(event.target.value as StatusFilter);
+                  setOffset(0);
+                }}
+                className="h-9 min-w-36 rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
+              >
+                {statusOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {formatLabel(option)}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <div className="flex items-end gap-2">
-          <label className="grid gap-1 text-xs font-medium text-zinc-600">
-            Status
-            <select
-              value={status}
-              onChange={(event) => {
-                setStatus(event.target.value as StatusFilter);
-                setOffset(0);
-              }}
-              className="h-9 min-w-36 rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100"
-            >
-              {statusOptions.map((option) => (
-                <option key={option} value={option}>
-                  {formatLabel(option)}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <IconButton
-            label="Refresh orders"
-            onClick={() => void query.refetch()}
-            disabled={query.isFetching}
-          >
-            <RefreshCw aria-hidden="true" size={17} className={query.isFetching ? "animate-spin" : undefined} />
-          </IconButton>
-        </div>
-      </div>
+            <IconButton label="Refresh orders" onClick={() => void query.refetch()} disabled={query.isFetching}>
+              <RefreshCw aria-hidden="true" size={17} className={query.isFetching ? "animate-spin" : undefined} />
+            </IconButton>
+          </div>
+        }
+      />
 
       <div className="mt-5 overflow-hidden rounded-md border border-zinc-200 bg-white">
         {query.isPending ? <OrdersLoading /> : null}
