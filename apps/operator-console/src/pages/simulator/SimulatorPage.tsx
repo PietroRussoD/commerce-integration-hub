@@ -1,5 +1,5 @@
-import { CheckCircle2, CircleX, Copy, FilePlus2, Send, ShieldAlert, TriangleAlert } from "lucide-react";
-import { type FormEvent } from "react";
+import { CheckCircle2, CircleX, Copy, Eye, EyeOff, FilePlus2, Send, ShieldAlert, TriangleAlert } from "lucide-react";
+import { type FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { IntegrationCoreApiError, type ReceiveOrderResult } from "../../api/integrationCoreClient";
@@ -12,6 +12,7 @@ const quantityPattern = "(?:0|[1-9][0-9]{0,14})(?:\\.[0-9]{1,4})?";
 
 export function SimulatorPage() {
   const simulator = useOrderSimulator();
+  const [isSourceApiKeyVisible, setIsSourceApiKeyVisible] = useState(false);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,17 +50,29 @@ export function SimulatorPage() {
       <form onSubmit={handleSubmit} className="mt-5 space-y-7">
         <fieldset className="grid gap-4 border-0 p-0 sm:grid-cols-2">
           <legend className="mb-3 text-lg font-semibold">Source authentication</legend>
-          <label className="grid gap-1.5 text-sm font-medium text-zinc-700 sm:col-span-2">
-            Source API key
-            <input
-              type="password"
-              value={simulator.form.sourceApiKey}
-              onChange={(event) => simulator.updateField("sourceApiKey", event.target.value)}
-              autoComplete="off"
-              required
-              className={inputClassName}
-            />
-          </label>
+          <div className="grid gap-1.5 text-sm font-medium text-zinc-700 sm:col-span-2">
+            <label htmlFor="source-api-key">Source API key</label>
+            <div className="relative">
+              <input
+                id="source-api-key"
+                type={isSourceApiKeyVisible ? "text" : "password"}
+                value={simulator.form.sourceApiKey}
+                onChange={(event) => simulator.updateField("sourceApiKey", event.target.value)}
+                autoComplete="off"
+                required
+                className={`${inputClassName} pr-11`}
+              />
+              <button
+                type="button"
+                onClick={() => setIsSourceApiKeyVisible((isVisible) => !isVisible)}
+                aria-label={isSourceApiKeyVisible ? "Hide source API key" : "Show source API key"}
+                aria-pressed={isSourceApiKeyVisible}
+                className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-zinc-500 hover:text-zinc-900"
+              >
+                {isSourceApiKeyVisible ? <EyeOff aria-hidden="true" size={17} /> : <Eye aria-hidden="true" size={17} />}
+              </button>
+            </div>
+          </div>
         </fieldset>
 
         <fieldset className="grid gap-4 border-0 border-t border-zinc-200 p-0 pt-6 sm:grid-cols-2 lg:grid-cols-3">

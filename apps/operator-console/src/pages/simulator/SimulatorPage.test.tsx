@@ -18,6 +18,19 @@ afterEach(() => {
   receiveOrderMock.mockReset();
 });
 
+test("masks the source API key and lets the operator reveal it", () => {
+  renderSimulator();
+
+  const sourceApiKeyInput = screen.getByLabelText("Source API key");
+  expect(sourceApiKeyInput).toHaveAttribute("type", "password");
+
+  fireEvent.click(screen.getByRole("button", { name: "Show source API key" }));
+  expect(sourceApiKeyInput).toHaveAttribute("type", "text");
+
+  fireEvent.click(screen.getByRole("button", { name: "Hide source API key" }));
+  expect(sourceApiKeyInput).toHaveAttribute("type", "password");
+});
+
 test("submits a single-item canonical order", async () => {
   receiveOrderMock.mockResolvedValue({
     outcome: "CREATED",
