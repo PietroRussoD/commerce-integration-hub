@@ -8,8 +8,9 @@ type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "aria-label
 };
 
 const variantClassNames = {
-  bordered: "border border-zinc-300 bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950",
-  ghost: "text-zinc-500 hover:text-zinc-900",
+  bordered:
+    "border border-app-border-strong bg-app-surface text-app-foreground-secondary hover:bg-app-canvas hover:text-app-foreground",
+  ghost: "text-app-foreground-muted hover:text-app-foreground",
 } as const;
 
 const sizeClassNames = {
@@ -32,7 +33,7 @@ export function IconButton({
       type={type}
       aria-label={label}
       title={label}
-      className={`grid shrink-0 place-items-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 ${variantClassNames[variant]} ${sizeClassNames[size]} ${className}`}
+      className={`grid shrink-0 place-items-center rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus disabled:cursor-not-allowed disabled:opacity-50 ${variantClassNames[variant]} ${sizeClassNames[size]} ${className}`}
     >
       {children}
     </button>
