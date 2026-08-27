@@ -41,7 +41,10 @@ export const WithNavigation: Story = {
   args: {
     description: <span className="font-mono text-xs">fad69137-2417-449d-9aa6-63f2fe2dd362</span>,
     navigation: (
-      <a href="#orders" className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-950">
+      <a
+        href="#orders"
+        className="inline-flex items-center gap-2 text-sm font-medium text-app-foreground-secondary hover:text-app-foreground"
+      >
         <ArrowLeft aria-hidden="true" size={16} />
         Orders
       </a>
