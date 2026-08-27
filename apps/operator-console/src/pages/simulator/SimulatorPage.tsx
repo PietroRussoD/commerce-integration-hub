@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { IntegrationCoreApiError, type ReceiveOrderResult } from "../../api/integrationCoreClient";
 import { IconButton } from "../../components/ui/IconButton";
+import { PageHeader } from "../../components/ui/PageHeader";
 import { type SimulatorFormValues, useOrderSimulator } from "./useOrderSimulator";
 
 const inputClassName =
@@ -22,11 +23,7 @@ export function SimulatorPage() {
 
   return (
     <section aria-labelledby="simulator-heading">
-      <div className="border-b border-zinc-200 pb-5">
-        <h1 id="simulator-heading" className="text-2xl font-semibold">
-          Simulator
-        </h1>
-      </div>
+      <PageHeader titleId="simulator-heading" title="Simulator" />
 
       <div className="mt-5 border-b border-zinc-200 pb-5">
         <h2 className="text-sm font-semibold text-zinc-700">Scenarios</h2>
