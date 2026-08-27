@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 
 import { listOperatorOrders, type ListOperatorOrdersParameters, type OperatorOrderPage } from "../../api/integrationCoreClient";
 import { IconButton } from "../../components/ui/IconButton";
+import { StatusBadge } from "../../components/ui/StatusBadge";
 import { formatDateTime, formatLabel, formatMoney } from "./orderFormatters";
 
 const PAGE_SIZE = 25;
@@ -127,7 +128,7 @@ function OrdersTable({ page }: { page: OperatorOrderPage }) {
               </td>
               <td className="px-4 py-3.5 text-zinc-600">{formatLabel(order.sourceSystem)}</td>
               <td className="px-4 py-3.5">
-                <StatusBadge status={order.status} />
+                <StatusBadge status={order.status}>{formatLabel(order.status)}</StatusBadge>
               </td>
               <td className="px-4 py-3.5 text-right font-medium tabular-nums">{formatMoney(order.totalAmount, order.currency)}</td>
               <td className="px-4 py-3.5 whitespace-nowrap text-zinc-600">{formatDateTime(order.receivedAt)}</td>
@@ -138,17 +139,6 @@ function OrdersTable({ page }: { page: OperatorOrderPage }) {
       </table>
     </div>
   );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const colors =
-    {
-      RECEIVED: "bg-sky-50 text-sky-800 ring-sky-600/20",
-      PROCESSING: "bg-amber-50 text-amber-800 ring-amber-600/20",
-      READY: "bg-emerald-50 text-emerald-800 ring-emerald-600/20",
-    }[status] ?? "bg-zinc-100 text-zinc-700 ring-zinc-500/20";
-
-  return <span className={`inline-flex rounded px-2 py-1 text-xs font-semibold ring-1 ring-inset ${colors}`}>{formatLabel(status)}</span>;
 }
 
 function OrdersLoading() {
