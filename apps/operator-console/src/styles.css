@@ -5,13 +5,18 @@
   --app-surface: #ffffff;
   --app-surface-muted: #f4f4f5;
   --app-foreground: #09090b;
+  --app-foreground-strong: #3f3f46;
   --app-foreground-secondary: #52525b;
   --app-foreground-muted: #71717a;
   --app-border: #e4e4e7;
   --app-border-strong: #d4d4d8;
   --app-navigation-active: #18181b;
   --app-navigation-foreground: #ffffff;
+  --app-brand-primary: #065f46;
+  --app-brand-primary-hover: #064e3b;
+  --app-brand-foreground: #ffffff;
   --app-brand-focus: #047857;
+  --app-brand-focus-ring: #d1fae5;
   --app-selection: #a7f3d0;
   --app-selection-foreground: #064e3b;
 
@@ -26,13 +31,18 @@
   --app-surface: #ffffff;
   --app-surface-muted: #f1f5f9;
   --app-foreground: #0f172a;
+  --app-foreground-strong: #334155;
   --app-foreground-secondary: #475569;
   --app-foreground-muted: #64748b;
   --app-border: #e2e8f0;
   --app-border-strong: #cbd5e1;
   --app-navigation-active: #1e3a8a;
   --app-navigation-foreground: #ffffff;
+  --app-brand-primary: #1d4ed8;
+  --app-brand-primary-hover: #1e40af;
+  --app-brand-foreground: #ffffff;
   --app-brand-focus: #2563eb;
+  --app-brand-focus-ring: #dbeafe;
   --app-selection: #bfdbfe;
   --app-selection-foreground: #1e3a8a;
 }
@@ -42,13 +52,18 @@
   --color-app-surface: var(--app-surface);
   --color-app-surface-muted: var(--app-surface-muted);
   --color-app-foreground: var(--app-foreground);
+  --color-app-foreground-strong: var(--app-foreground-strong);
   --color-app-foreground-secondary: var(--app-foreground-secondary);
   --color-app-foreground-muted: var(--app-foreground-muted);
   --color-app-border: var(--app-border);
   --color-app-border-strong: var(--app-border-strong);
   --color-app-navigation-active: var(--app-navigation-active);
   --color-app-navigation-foreground: var(--app-navigation-foreground);
+  --color-app-brand-primary: var(--app-brand-primary);
+  --color-app-brand-primary-hover: var(--app-brand-primary-hover);
+  --color-app-brand-foreground: var(--app-brand-foreground);
   --color-app-brand-focus: var(--app-brand-focus);
+  --color-app-brand-focus-ring: var(--app-brand-focus-ring);
 }
 
 body {

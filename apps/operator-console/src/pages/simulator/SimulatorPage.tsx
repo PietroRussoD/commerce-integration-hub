@@ -8,7 +8,7 @@ import { PageHeader } from "../../components/ui/PageHeader";
 import { type SimulatorFormValues, useOrderSimulator } from "./useOrderSimulator";
 
 const inputClassName =
-  "h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-950 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-100";
+  "h-10 w-full rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring";
 const amountPattern = "(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?";
 const quantityPattern = "(?:0|[1-9][0-9]{0,14})(?:\\.[0-9]{1,4})?";
 
@@ -25,8 +25,8 @@ export function SimulatorPage() {
     <section aria-labelledby="simulator-heading">
       <PageHeader titleId="simulator-heading" title="Simulator" />
 
-      <div className="mt-5 border-b border-zinc-200 pb-5">
-        <h2 className="text-sm font-semibold text-zinc-700">Scenarios</h2>
+      <div className="mt-5 border-b border-app-border pb-5">
+        <h2 className="text-sm font-semibold text-app-foreground-strong">Scenarios</h2>
         <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Simulation scenarios">
           <ScenarioButton icon={FilePlus2} label="Fresh order" onClick={simulator.loadFreshOrder} />
           <ScenarioButton
@@ -48,7 +48,7 @@ export function SimulatorPage() {
       <form onSubmit={handleSubmit} className="mt-5 space-y-7">
         <fieldset className="grid gap-4 border-0 p-0 sm:grid-cols-2">
           <legend className="mb-3 text-lg font-semibold">Source authentication</legend>
-          <div className="grid gap-1.5 text-sm font-medium text-zinc-700 sm:col-span-2">
+          <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong sm:col-span-2">
             <label htmlFor="source-api-key">Source API key</label>
             <div className="relative">
               <input
@@ -74,9 +74,9 @@ export function SimulatorPage() {
           </div>
         </fieldset>
 
-        <fieldset className="grid gap-4 border-0 border-t border-zinc-200 p-0 pt-6 sm:grid-cols-2 lg:grid-cols-3">
+        <fieldset className="grid gap-4 border-0 border-t border-app-border p-0 pt-6 sm:grid-cols-2 lg:grid-cols-3">
           <legend className="mb-3 text-lg font-semibold">Order</legend>
-          <label className="grid gap-1.5 text-sm font-medium text-zinc-700">
+          <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
             External order ID
             <input
               value={simulator.form.externalId}
@@ -86,7 +86,7 @@ export function SimulatorPage() {
               className={inputClassName}
             />
           </label>
-          <label className="grid gap-1.5 text-sm font-medium text-zinc-700">
+          <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
             Currency
             <select
               value={simulator.form.currency}
@@ -98,7 +98,7 @@ export function SimulatorPage() {
               <option value="USD">USD</option>
             </select>
           </label>
-          <label className="grid gap-1.5 text-sm font-medium text-zinc-700">
+          <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
             Declared total
             <input
               value={simulator.form.declaredTotalAmount}
@@ -111,9 +111,9 @@ export function SimulatorPage() {
           </label>
         </fieldset>
 
-        <fieldset className="grid gap-4 border-0 border-t border-zinc-200 p-0 pt-6 sm:grid-cols-3">
+        <fieldset className="grid gap-4 border-0 border-t border-app-border p-0 pt-6 sm:grid-cols-3">
           <legend className="mb-3 text-lg font-semibold">Order item</legend>
-          <label className="grid gap-1.5 text-sm font-medium text-zinc-700">
+          <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
             SKU
             <input
               value={simulator.form.sku}
@@ -123,7 +123,7 @@ export function SimulatorPage() {
               className={inputClassName}
             />
           </label>
-          <label className="grid gap-1.5 text-sm font-medium text-zinc-700">
+          <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
             Quantity
             <input
               value={simulator.form.quantity}
@@ -134,7 +134,7 @@ export function SimulatorPage() {
               className={inputClassName}
             />
           </label>
-          <label className="grid gap-1.5 text-sm font-medium text-zinc-700">
+          <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
             Unit price
             <input
               value={simulator.form.unitPrice}
@@ -147,11 +147,11 @@ export function SimulatorPage() {
           </label>
         </fieldset>
 
-        <div className="flex justify-end border-t border-zinc-200 pt-5">
+        <div className="flex justify-end border-t border-app-border pt-5">
           <button
             type="submit"
             disabled={simulator.isPending}
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-emerald-800 px-4 text-sm font-semibold text-white hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-app-brand-primary px-4 text-sm font-semibold text-app-brand-foreground hover:bg-app-brand-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Send aria-hidden="true" size={17} />
             {simulator.isPending ? "Submitting..." : "Submit order"}
@@ -181,7 +181,7 @@ function ScenarioButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex h-9 items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40"
+      className="inline-flex h-9 items-center gap-2 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm font-medium text-app-foreground-strong hover:bg-app-canvas hover:text-app-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus disabled:cursor-not-allowed disabled:opacity-40"
     >
       <Icon aria-hidden="true" size={16} />
       {label}
