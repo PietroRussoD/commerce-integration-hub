@@ -11,6 +11,12 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: #fafafa;
+}
+
+::selection {
+  background: #a7f3d0;
+  color: #064e3b;
 }
 
 button,
