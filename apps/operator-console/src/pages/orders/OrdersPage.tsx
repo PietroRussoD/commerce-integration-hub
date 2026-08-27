@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { listOperatorOrders, type ListOperatorOrdersParameters, type OperatorOrderPage } from "../../api/integrationCoreClient";
+import { IconButton } from "../../components/ui/IconButton";
 import { formatDateTime, formatLabel, formatMoney } from "./orderFormatters";
 
 const PAGE_SIZE = 25;
@@ -55,16 +56,13 @@ export function OrdersPage() {
             </select>
           </label>
 
-          <button
-            type="button"
+          <IconButton
+            label="Refresh orders"
             onClick={() => void query.refetch()}
             disabled={query.isFetching}
-            aria-label="Refresh orders"
-            title="Refresh orders"
-            className="grid size-9 place-items-center rounded-md border border-zinc-300 bg-white text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <RefreshCw aria-hidden="true" size={17} className={query.isFetching ? "animate-spin" : undefined} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -198,26 +196,20 @@ function Pagination({
         {first}-{last} of {page.total}
       </span>
       <div className="flex gap-1">
-        <button
-          type="button"
+        <IconButton
+          label="Previous page"
           onClick={onPrevious}
           disabled={page.offset === 0}
-          aria-label="Previous page"
-          title="Previous page"
-          className="grid size-9 place-items-center rounded-md border border-zinc-300 bg-white hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ChevronLeft aria-hidden="true" size={18} />
-        </button>
-        <button
-          type="button"
+        </IconButton>
+        <IconButton
+          label="Next page"
           onClick={onNext}
           disabled={page.offset + page.items.length >= page.total}
-          aria-label="Next page"
-          title="Next page"
-          className="grid size-9 place-items-center rounded-md border border-zinc-300 bg-white hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ChevronRight aria-hidden="true" size={18} />
-        </button>
+        </IconButton>
       </div>
     </div>
   );

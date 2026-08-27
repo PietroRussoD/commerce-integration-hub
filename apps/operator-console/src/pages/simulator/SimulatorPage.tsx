@@ -3,6 +3,7 @@ import { type FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { IntegrationCoreApiError, type ReceiveOrderResult } from "../../api/integrationCoreClient";
+import { IconButton } from "../../components/ui/IconButton";
 import { type SimulatorFormValues, useOrderSimulator } from "./useOrderSimulator";
 
 const inputClassName =
@@ -62,15 +63,16 @@ export function SimulatorPage() {
                 required
                 className={`${inputClassName} pr-11`}
               />
-              <button
-                type="button"
+              <IconButton
+                label={isSourceApiKeyVisible ? "Hide source API key" : "Show source API key"}
+                variant="ghost"
+                size="md"
                 onClick={() => setIsSourceApiKeyVisible((isVisible) => !isVisible)}
-                aria-label={isSourceApiKeyVisible ? "Hide source API key" : "Show source API key"}
                 aria-pressed={isSourceApiKeyVisible}
-                className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-zinc-500 hover:text-zinc-900"
+                className="absolute right-0 top-0"
               >
                 {isSourceApiKeyVisible ? <EyeOff aria-hidden="true" size={17} /> : <Eye aria-hidden="true" size={17} />}
-              </button>
+              </IconButton>
             </div>
           </div>
         </fieldset>
