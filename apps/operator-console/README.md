@@ -41,6 +41,15 @@ generated documentation, interactive controls, and accessibility checks. Build
 the static component documentation with `pnpm build-storybook`; the complete
 `pnpm check` quality gate also runs this build.
 
+## Branding
+
+The console resolves its brand from an exact hostname match before React
+renders. `localhost` uses the default Integration Hub theme, while
+[http://client-blue.localhost:5173](http://client-blue.localhost:5173) previews
+the alternate client theme. Registered hostnames live in
+`src/theme/brandThemes.ts`; their CSS tokens use matching `data-brand` selectors
+in `src/styles.css`. Storybook exposes the same themes from its Brand toolbar.
+
 ## Simulator
 
 The simulator submits one canonical order item and supports four controlled
