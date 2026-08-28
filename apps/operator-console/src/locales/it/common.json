@@ -1,5 +1,6 @@
 {
   "shell": {
+    "skipToContent": "Vai al contenuto principale",
     "console": {
       "commerceOperations": "Operazioni commerciali",
       "operator": "Console operativa"

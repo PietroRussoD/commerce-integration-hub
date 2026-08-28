@@ -1,5 +1,6 @@
 {
   "shell": {
+    "skipToContent": "Skip to main content",
     "console": {
       "commerceOperations": "Commerce operations",
       "operator": "Operator console"

@@ -35,6 +35,8 @@ full-page audit.
 
 - The document language follows the selected English or Italian locale.
 - Interactive controls expose accessible names and visible keyboard focus.
+- A localized keyboard skip link bypasses repeated header and navigation
+  controls and moves focus to the main content.
 - Status and error feedback use appropriate live semantics.
 - Tables retain their semantic structure and confine horizontal scrolling to
   their own container on narrow screens.
