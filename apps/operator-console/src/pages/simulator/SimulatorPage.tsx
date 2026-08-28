@@ -17,6 +17,7 @@ export function SimulatorPage() {
   const { t } = useTranslation();
   const simulator = useOrderSimulator();
   const [isSourceApiKeyVisible, setIsSourceApiKeyVisible] = useState(false);
+  const externalIdError = findFieldError(simulator.error, "externalId");
   const declaredTotalError = findFieldError(simulator.error, "declaredTotalAmount");
   const skuError = findFieldError(simulator.error, "items[0].sku");
   const quantityError = findFieldError(simulator.error, "items[0].quantity");
@@ -86,16 +87,20 @@ export function SimulatorPage() {
 
         <fieldset className="grid gap-4 border-0 border-t border-app-border p-0 pt-6 sm:grid-cols-2 lg:grid-cols-3">
           <legend className="mb-3 text-lg font-semibold">{t("simulator.order.title")}</legend>
-          <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
-            {t("simulator.order.externalId")}
+          <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
+            <label htmlFor="order-external-id">{t("simulator.order.externalId")}</label>
             <input
+              id="order-external-id"
               value={simulator.form.externalId}
               onChange={(event) => simulator.updateField("externalId", event.target.value)}
               maxLength={128}
               required
+              aria-invalid={externalIdError !== undefined}
+              aria-describedby={externalIdError !== undefined ? "order-external-id-error" : undefined}
               className={inputClassName}
             />
-          </label>
+            <FieldError id="order-external-id-error" error={externalIdError} />
+          </div>
           <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
             {t("simulator.order.currency")}
             <select
