@@ -49,14 +49,14 @@ renders. `localhost` uses the default Integration Hub theme, while
 the alternate client identity and theme. Registered hostnames, product names,
 logos, document titles, and browser colors live in `src/theme/brandThemes.ts`;
 their CSS tokens use matching `data-brand` selectors in `src/styles.css`.
-Storybook exposes the same themes from its Brand toolbar.
+Storybook exposes the same themes from its `Brand` toolbar.
 
 ## Localization
 
-English is the active and fallback locale. English and Italian resources are
-bundled from `src/locales`; the shell already consumes typed translation keys.
-Italian remains internal until the remaining page copy and locale-aware value
-formatting are complete.
+English is the default and fallback locale. English and Italian resources are
+bundled from `src/locales`; the header selector applies the locale immediately
+and persists it in browser storage. Dates, money, and durations follow the
+active locale. Storybook exposes both languages from its `Locale` toolbar.
 
 ## Simulator
 

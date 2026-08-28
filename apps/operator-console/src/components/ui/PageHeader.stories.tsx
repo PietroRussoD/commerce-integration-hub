@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ArrowLeft, RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { IconButton } from "./IconButton";
 import { PageHeader } from "./PageHeader";
@@ -52,3 +53,24 @@ export const WithNavigation: Story = {
     title: "Order details",
   },
 };
+
+export const Localized: Story = {
+  render: () => <LocalizedPageHeader />,
+};
+
+function LocalizedPageHeader() {
+  const { t } = useTranslation();
+
+  return (
+    <PageHeader
+      titleId="storybook-localized-page-heading"
+      title={t("orders.title")}
+      description={t("orders.total", { count: 42 })}
+      actions={
+        <IconButton label={t("orders.actions.refresh")}>
+          <RefreshCw aria-hidden="true" size={17} />
+        </IconButton>
+      }
+    />
+  );
+}
