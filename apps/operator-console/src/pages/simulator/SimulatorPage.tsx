@@ -1,5 +1,5 @@
 import { CheckCircle2, CircleX, Copy, Eye, EyeOff, FilePlus2, Send, ShieldAlert, TriangleAlert } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -9,19 +9,38 @@ import { PageHeader } from "../../components/ui/PageHeader";
 import { type SimulatorFormValues, useOrderSimulator } from "./useOrderSimulator";
 
 const inputClassName =
-  "h-10 w-full rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring";
+  "h-10 w-full rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring aria-invalid:border-red-600 aria-invalid:ring-1 aria-invalid:ring-red-200";
 const amountPattern = "(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?";
 const quantityPattern = "(?:0|[1-9][0-9]{0,14})(?:\\.[0-9]{1,4})?";
+const fieldElementIds: Record<string, string> = {
+  externalId: "order-external-id",
+  currency: "order-currency",
+  declaredTotalAmount: "order-declared-total",
+  "items[0].sku": "order-item-sku",
+  "items[0].quantity": "order-item-quantity",
+  "items[0].unitPrice": "order-item-unit-price",
+};
 
 export function SimulatorPage() {
   const { t } = useTranslation();
   const simulator = useOrderSimulator();
   const [isSourceApiKeyVisible, setIsSourceApiKeyVisible] = useState(false);
   const externalIdError = findFieldError(simulator.error, "externalId");
+  const currencyError = findFieldError(simulator.error, "currency");
   const declaredTotalError = findFieldError(simulator.error, "declaredTotalAmount");
   const skuError = findFieldError(simulator.error, "items[0].sku");
   const quantityError = findFieldError(simulator.error, "items[0].quantity");
   const unitPriceError = findFieldError(simulator.error, "items[0].unitPrice");
+
+  useEffect(() => {
+    if (!(simulator.error instanceof IntegrationCoreApiError)) return;
+
+    const fieldErrors = simulator.error.problem?.errors;
+    const firstInvalidFieldId = Object.entries(fieldElementIds).find(([field]) =>
+      fieldErrors?.some((error) => error.field === field),
+    )?.[1];
+    if (firstInvalidFieldId !== undefined) document.getElementById(firstInvalidFieldId)?.focus();
+  }, [simulator.error]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -101,18 +120,22 @@ export function SimulatorPage() {
             />
             <FieldError id="order-external-id-error" error={externalIdError} />
           </div>
-          <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
-            {t("simulator.order.currency")}
+          <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
+            <label htmlFor="order-currency">{t("simulator.order.currency")}</label>
             <select
+              id="order-currency"
               value={simulator.form.currency}
               onChange={(event) => simulator.updateField("currency", event.target.value as SimulatorFormValues["currency"])}
+              aria-invalid={currencyError !== undefined}
+              aria-describedby={currencyError !== undefined ? "order-currency-error" : undefined}
               className={inputClassName}
             >
               <option value="EUR">EUR</option>
               <option value="GBP">GBP</option>
               <option value="USD">USD</option>
             </select>
-          </label>
+            <FieldError id="order-currency-error" error={currencyError} />
+          </div>
           <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
             <label htmlFor="order-declared-total">{t("simulator.order.declaredTotal")}</label>
             <input
