@@ -1,8 +1,16 @@
 import { type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import type { OperatorOrderDetail } from "../../api/integrationCoreClient";
 import { StatusBadge } from "../../components/ui/StatusBadge";
+import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatDuration, formatLabel, formatMoney, formatTransition } from "./orderFormatters";
+
+const orderStatusLabelKeys = {
+  RECEIVED: "orders.status.received",
+  PROCESSING: "orders.status.processing",
+  READY: "orders.status.ready",
+} as const;
 
 export function OrderDetailContent({ order }: { order: OperatorOrderDetail }) {
   return (
@@ -16,14 +24,25 @@ export function OrderDetailContent({ order }: { order: OperatorOrderDetail }) {
 }
 
 function OrderSummary({ order }: { order: OperatorOrderDetail }) {
+  const { t, i18n } = useTranslation();
+  const locale = resolveIntlLocale(i18n.resolvedLanguage);
+  const statusLabelKey = orderStatusLabelKeys[order.status as keyof typeof orderStatusLabelKeys];
+
   return (
     <dl className="grid gap-px overflow-hidden rounded-md border border-app-border bg-app-border sm:grid-cols-2 lg:grid-cols-3">
-      <SummaryField label="External order" value={order.externalOrderId} />
-      <SummaryField label="Source" value={formatLabel(order.sourceSystem)} />
-      <SummaryField label="Status" value={<StatusBadge status={order.status}>{formatLabel(order.status)}</StatusBadge>} />
-      <SummaryField label="Total" value={formatMoney(order.totalAmount, order.currency)} />
-      <SummaryField label="Received" value={formatDateTime(order.receivedAt)} />
-      <SummaryField label="Items" value={order.items.length.toString()} />
+      <SummaryField label={t("orderDetail.summary.externalOrder")} value={order.externalOrderId} />
+      <SummaryField label={t("orderDetail.summary.source")} value={formatLabel(order.sourceSystem)} />
+      <SummaryField
+        label={t("orderDetail.summary.status")}
+        value={
+          <StatusBadge status={order.status}>
+            {statusLabelKey === undefined ? formatLabel(order.status) : t(statusLabelKey)}
+          </StatusBadge>
+        }
+      />
+      <SummaryField label={t("orderDetail.summary.total")} value={formatMoney(order.totalAmount, order.currency, locale)} />
+      <SummaryField label={t("orderDetail.summary.received")} value={formatDateTime(order.receivedAt, locale)} />
+      <SummaryField label={t("orderDetail.summary.items")} value={order.items.length.toString()} />
     </dl>
   );
 }
@@ -38,23 +57,26 @@ function SummaryField({ label, value }: { label: string; value: ReactNode }) {
 }
 
 function OrderItems({ items, currency }: { items: OperatorOrderDetail["items"]; currency: string }) {
+  const { t, i18n } = useTranslation();
+  const locale = resolveIntlLocale(i18n.resolvedLanguage);
+
   return (
     <section aria-labelledby="order-items-heading">
-      <SectionHeading id="order-items-heading" title="Order items" count={items.length} />
+      <SectionHeading id="order-items-heading" title={t("orderDetail.items.title")} count={items.length} />
       <div className="overflow-hidden rounded-md border border-app-border bg-app-surface">
         {items.length === 0 ? (
-          <EmptySection>No order items</EmptySection>
+          <EmptySection>{t("orderDetail.items.empty")}</EmptySection>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] border-collapse text-left text-sm">
               <thead className="border-b border-app-border bg-app-canvas text-xs font-semibold text-app-foreground-secondary">
                 <tr>
-                  <th scope="col" className="px-4 py-3">Line</th>
-                  <th scope="col" className="px-4 py-3">SKU</th>
-                  <th scope="col" className="px-4 py-3">Description</th>
-                  <th scope="col" className="px-4 py-3 text-right">Quantity</th>
-                  <th scope="col" className="px-4 py-3 text-right">Unit price</th>
-                  <th scope="col" className="px-4 py-3 text-right">Line total</th>
+                  <th scope="col" className="px-4 py-3">{t("orderDetail.items.columns.line")}</th>
+                  <th scope="col" className="px-4 py-3">{t("orderDetail.items.columns.sku")}</th>
+                  <th scope="col" className="px-4 py-3">{t("orderDetail.items.columns.description")}</th>
+                  <th scope="col" className="px-4 py-3 text-right">{t("orderDetail.items.columns.quantity")}</th>
+                  <th scope="col" className="px-4 py-3 text-right">{t("orderDetail.items.columns.unitPrice")}</th>
+                  <th scope="col" className="px-4 py-3 text-right">{t("orderDetail.items.columns.lineTotal")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-app-surface-muted">
@@ -66,8 +88,8 @@ function OrderItems({ items, currency }: { items: OperatorOrderDetail["items"]; 
                       {item.description ?? "-"}
                     </td>
                     <td className="px-4 py-3.5 text-right tabular-nums">{item.quantity}</td>
-                    <td className="px-4 py-3.5 text-right tabular-nums">{formatMoney(item.unitPrice, currency)}</td>
-                    <td className="px-4 py-3.5 text-right font-medium tabular-nums">{formatMoney(item.lineAmount, currency)}</td>
+                    <td className="px-4 py-3.5 text-right tabular-nums">{formatMoney(item.unitPrice, currency, locale)}</td>
+                    <td className="px-4 py-3.5 text-right font-medium tabular-nums">{formatMoney(item.lineAmount, currency, locale)}</td>
                   </tr>
                 ))}
               </tbody>

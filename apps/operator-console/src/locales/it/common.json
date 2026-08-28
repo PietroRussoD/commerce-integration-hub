@@ -40,5 +40,32 @@
     "loading": "Caricamento ordini",
     "error": "Impossibile caricare gli ordini",
     "pagination": "{{first}}-{{last}} di {{total}}"
+  },
+  "orderDetail": {
+    "title": "Dettagli ordine",
+    "backToOrders": "Ordini",
+    "loading": "Caricamento dettagli ordine",
+    "error": "Impossibile caricare i dettagli dell'ordine",
+    "retry": "Riprova",
+    "summary": {
+      "externalOrder": "Ordine esterno",
+      "source": "Origine",
+      "status": "Stato",
+      "total": "Totale",
+      "received": "Ricevuto",
+      "items": "Articoli"
+    },
+    "items": {
+      "title": "Articoli dell'ordine",
+      "empty": "Nessun articolo nell'ordine",
+      "columns": {
+        "line": "Riga",
+        "sku": "SKU",
+        "description": "Descrizione",
+        "quantity": "Quantità",
+        "unitPrice": "Prezzo unitario",
+        "lineTotal": "Totale riga"
+      }
+    }
   }
 }
