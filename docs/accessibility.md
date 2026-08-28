@@ -38,7 +38,7 @@ full-page audit.
 - A localized keyboard skip link bypasses repeated header and navigation
   controls and moves focus to the main content.
 - Client-side route changes move focus to the newly rendered main content.
-- Status and error feedback use appropriate live semantics.
+- Pending, success, and error feedback use appropriate live semantics.
 - Tables retain their semantic structure and confine horizontal scrolling to
   their own container on narrow screens.
 - Desktop and 320 px mobile layouts were checked for both brands and both

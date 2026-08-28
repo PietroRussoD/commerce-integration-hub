@@ -47,7 +47,7 @@ export function SimulatorPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-5 space-y-7">
+      <form onSubmit={handleSubmit} aria-busy={simulator.isPending} className="mt-5 space-y-7">
         <fieldset className="grid gap-4 border-0 p-0 sm:grid-cols-2">
           <legend className="mb-3 text-lg font-semibold">{t("simulator.authentication.title")}</legend>
           <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong sm:col-span-2">
@@ -163,6 +163,11 @@ export function SimulatorPage() {
             {simulator.isPending ? t("simulator.actions.submitting") : t("simulator.actions.submit")}
           </button>
         </div>
+        {simulator.isPending ? (
+          <p role="status" className="sr-only">
+            {t("simulator.actions.submitting")}
+          </p>
+        ) : null}
       </form>
 
       {simulator.result !== undefined ? <SimulationSuccess result={simulator.result} /> : null}
