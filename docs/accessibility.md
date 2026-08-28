@@ -37,6 +37,7 @@ full-page audit.
 - Interactive controls expose accessible names and visible keyboard focus.
 - A localized keyboard skip link bypasses repeated header and navigation
   controls and moves focus to the main content.
+- Client-side route changes move focus to the newly rendered main content.
 - Status and error feedback use appropriate live semantics.
 - Tables retain their semantic structure and confine horizontal scrolling to
   their own container on narrow screens.
