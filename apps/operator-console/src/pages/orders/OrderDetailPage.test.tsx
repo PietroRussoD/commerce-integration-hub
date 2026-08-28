@@ -92,9 +92,9 @@ test("renders timeline events in API order", async () => {
 
   const events = await screen.findAllByRole("listitem");
   expect(events).toHaveLength(2);
-  expect(events[0]).toHaveTextContent("Order Received");
+  expect(events[0]).toHaveTextContent("Order received");
   expect(events[0]).toHaveTextContent("Entered Received");
-  expect(events[1]).toHaveTextContent("Processing Started");
+  expect(events[1]).toHaveTextContent("Processing started");
   expect(events[1]).toHaveTextContent("Received to Processing");
 });
 
@@ -113,7 +113,7 @@ test("renders processing attempts and failures", async () => {
       {
         id: "018f38c2-1b95-7cc4-bb89-72d26a6f9201",
         attemptNumber: 1,
-        status: "FAILED_RETRYABLE",
+        status: "FAILED",
         trigger: "INITIAL",
         errorCode: "PROVIDER_TIMEOUT",
         errorMessage: "Provider did not respond before the deadline",
@@ -124,7 +124,7 @@ test("renders processing attempts and failures", async () => {
         id: "018f38c2-1b95-7cc4-bb89-72d26a6f9202",
         attemptNumber: 2,
         status: "STARTED",
-        trigger: "RETRY",
+        trigger: "MANUAL_RETRY",
         errorCode: null,
         errorMessage: null,
         startedAt: "2026-08-21T08:01:00Z",
@@ -135,8 +135,8 @@ test("renders processing attempts and failures", async () => {
 
   renderOrderDetailPage();
 
-  expect(await screen.findByRole("row", { name: /1 Initial Failed Retryable.*1\.3 s PROVIDER_TIMEOUT/i })).toBeInTheDocument();
-  expect(screen.getByRole("row", { name: /2 Retry Started.*In progress/i })).toBeInTheDocument();
+  expect(await screen.findByRole("row", { name: /1 Initial Failed.*1\.3 s PROVIDER_TIMEOUT/i })).toBeInTheDocument();
+  expect(screen.getByRole("row", { name: /2 Manual retry Started.*In progress/i })).toBeInTheDocument();
 });
 
 test("renders the empty processing-attempt state", async () => {
@@ -156,8 +156,33 @@ test("renders an actionable error state", async () => {
   expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
 });
 
-test("renders the summary and items using the Italian locale", async () => {
-  getOperatorOrderMock.mockResolvedValue(orderDetail);
+test("renders order details using the Italian locale", async () => {
+  getOperatorOrderMock.mockResolvedValue({
+    ...orderDetail,
+    timeline: [
+      {
+        id: "018f38c2-1b95-7cc4-bb89-72d26a6f9002",
+        eventType: "PROCESSING_SUCCEEDED",
+        fromStatus: "PROCESSING",
+        toStatus: "READY",
+        message: null,
+        correlationId: "018f38c2-1b95-7cc4-bb89-72d26a6f9102",
+        occurredAt: "2026-08-21T08:00:01Z",
+      },
+    ],
+    processingAttempts: [
+      {
+        id: "018f38c2-1b95-7cc4-bb89-72d26a6f9201",
+        attemptNumber: 1,
+        status: "FAILED",
+        trigger: "MANUAL_RETRY",
+        errorCode: "PROVIDER_TIMEOUT",
+        errorMessage: "Provider did not respond before the deadline",
+        startedAt: "2026-08-21T08:00:00Z",
+        completedAt: "2026-08-21T08:00:01.250Z",
+      },
+    ],
+  });
 
   renderOrderDetailPage("it");
 
@@ -167,6 +192,10 @@ test("renders the summary and items using the Italian locale", async () => {
   expect(screen.getByRole("heading", { name: "Articoli dell'ordine" })).toBeInTheDocument();
   expect(screen.getByRole("columnheader", { name: "Prezzo unitario" })).toBeInTheDocument();
   expect(screen.getAllByText(/19,99|39,98/)).not.toHaveLength(0);
+  expect(screen.getByRole("heading", { name: "Cronologia" })).toBeInTheDocument();
+  expect(screen.getByRole("listitem")).toHaveTextContent("Elaborazione completata");
+  expect(screen.getByRole("listitem")).toHaveTextContent("Da In elaborazione a Pronto");
+  expect(screen.getByRole("row", { name: /1 Nuovo tentativo manuale Non riuscito.*1,3 s PROVIDER_TIMEOUT/i })).toBeInTheDocument();
 });
 
 function renderOrderDetailPage(locale: SupportedLocale = "en") {
