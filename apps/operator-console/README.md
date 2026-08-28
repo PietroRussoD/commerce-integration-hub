@@ -58,6 +58,12 @@ bundled from `src/locales`; the header selector applies the locale immediately
 and persists it in browser storage. Dates, money, and durations follow the
 active locale. Storybook exposes both languages from its `Locale` toolbar.
 
+## Accessibility
+
+The console targets WCAG 2.2 Level AA without making a formal conformance claim.
+See the [accessibility plan](../../docs/accessibility.md) for automated coverage,
+current evidence, and the remaining manual audit checklist.
+
 ## Simulator
 
 The simulator submits one canonical order item and supports four controlled

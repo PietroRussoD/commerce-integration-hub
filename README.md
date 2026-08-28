@@ -140,6 +140,8 @@ The developing publisher state machine is shown in the
 [outbox lifecycle diagrams](docs/outbox-lifecycle.md).
 Significant design choices are recorded in the
 [architecture decision log](docs/decisions/README.md).
+The frontend accessibility target, automated coverage, and remaining manual
+checks are documented in the [accessibility plan](docs/accessibility.md).
 
 The precise boundary of the current implementation is documented in
 [current limitations](docs/limitations.md). The delivered behavior and its
