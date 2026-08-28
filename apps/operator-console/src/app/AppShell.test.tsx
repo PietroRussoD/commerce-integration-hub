@@ -3,12 +3,13 @@ import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, expect, test } from "vitest";
 
 import { AppProviders } from "./AppProviders";
-import { appRoutes } from "./router";
+import { createAppRoutes } from "./router";
+import { resolveBrandThemeForHostname } from "../theme/brandThemes";
 
 afterEach(cleanup);
 
 test("renders navigation inside the operator shell", async () => {
-  const router = createMemoryRouter(appRoutes, { initialEntries: ["/simulator"] });
+  const router = createMemoryRouter(createAppRoutes(), { initialEntries: ["/simulator"] });
 
   render(
     <AppProviders>
@@ -22,7 +23,7 @@ test("renders navigation inside the operator shell", async () => {
 });
 
 test("renders the order detail route inside the operator shell", async () => {
-  const router = createMemoryRouter(appRoutes, { initialEntries: ["/orders/order-42"] });
+  const router = createMemoryRouter(createAppRoutes(), { initialEntries: ["/orders/order-42"] });
 
   render(
     <AppProviders>
@@ -36,4 +37,18 @@ test("renders the order detail route inside the operator shell", async () => {
     "aria-current",
     "page",
   );
+});
+
+test("renders the client identity supplied to the operator shell", async () => {
+  const clientTheme = resolveBrandThemeForHostname("client-blue.localhost");
+  const router = createMemoryRouter(createAppRoutes(clientTheme), { initialEntries: ["/simulator"] });
+
+  render(
+    <AppProviders>
+      <RouterProvider router={router} />
+    </AppProviders>,
+  );
+
+  expect(await screen.findByText("Client Blue")).toBeInTheDocument();
+  expect(screen.getByText("Commerce operations")).toBeInTheDocument();
 });
