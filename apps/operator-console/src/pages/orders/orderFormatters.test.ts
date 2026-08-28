@@ -1,9 +1,16 @@
 import { expect, test } from "vitest";
 
-import { formatDuration, formatLabel, formatTransition } from "./orderFormatters";
+import { formatDateTime, formatDuration, formatLabel, formatMoney, formatTransition } from "./orderFormatters";
 
 test("formats enum-like values as readable labels", () => {
   expect(formatLabel("FAILED_RETRYABLE")).toBe("Failed Retryable");
+});
+
+test("formats dates and money for the selected locale", () => {
+  expect(formatDateTime("2026-08-21T12:00:00Z", "en-GB")).toContain("Aug");
+  expect(formatDateTime("2026-08-21T12:00:00Z", "it-IT")).toContain("ago");
+  expect(formatMoney("39.98", "EUR", "en-GB")).toContain("39.98");
+  expect(formatMoney("39.98", "EUR", "it-IT")).toContain("39,98");
 });
 
 test("formats completed and active attempt durations", () => {

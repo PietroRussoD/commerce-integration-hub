@@ -9,5 +9,36 @@
       "orders": "Ordini",
       "simulator": "Simulatore"
     }
+  },
+  "orders": {
+    "title": "Ordini",
+    "total": "Totale: {{count}}",
+    "filter": {
+      "status": "Stato",
+      "all": "Tutti"
+    },
+    "actions": {
+      "refresh": "Aggiorna ordini",
+      "retry": "Riprova",
+      "previousPage": "Pagina precedente",
+      "nextPage": "Pagina successiva"
+    },
+    "table": {
+      "order": "Ordine",
+      "source": "Origine",
+      "status": "Stato",
+      "total": "Totale",
+      "received": "Ricevuto",
+      "attempts": "Tentativi"
+    },
+    "status": {
+      "received": "Ricevuto",
+      "processing": "In elaborazione",
+      "ready": "Pronto"
+    },
+    "empty": "Nessun ordine trovato",
+    "loading": "Caricamento ordini",
+    "error": "Impossibile caricare gli ordini",
+    "pagination": "{{first}}-{{last}} di {{total}}"
   }
 }

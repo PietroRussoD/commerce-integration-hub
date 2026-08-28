@@ -1,20 +1,29 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, RefreshCw, TriangleAlert } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { listOperatorOrders, type ListOperatorOrdersParameters, type OperatorOrderPage } from "../../api/integrationCoreClient";
 import { IconButton } from "../../components/ui/IconButton";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { StatusBadge } from "../../components/ui/StatusBadge";
+import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatLabel, formatMoney } from "./orderFormatters";
 
 const PAGE_SIZE = 25;
 const statusOptions = ["ALL", "RECEIVED", "PROCESSING", "READY"] as const;
+const statusLabelKeys = {
+  ALL: "orders.filter.all",
+  RECEIVED: "orders.status.received",
+  PROCESSING: "orders.status.processing",
+  READY: "orders.status.ready",
+} as const;
 
 type StatusFilter = "ALL" | NonNullable<ListOperatorOrdersParameters["status"]>;
 
 export function OrdersPage() {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<StatusFilter>("ALL");
   const [offset, setOffset] = useState(0);
   const query = useQuery({
@@ -33,12 +42,12 @@ export function OrdersPage() {
     <section aria-labelledby="orders-heading">
       <PageHeader
         titleId="orders-heading"
-        title="Orders"
-        description={query.data === undefined ? "\u00a0" : `${query.data.total} total`}
+        title={t("orders.title")}
+        description={query.data === undefined ? "\u00a0" : t("orders.total", { count: query.data.total })}
         actions={
           <div className="flex items-end gap-2">
             <label className="grid gap-1 text-xs font-medium text-app-foreground-secondary">
-              Status
+              {t("orders.filter.status")}
               <select
                 value={status}
                 onChange={(event) => {
@@ -49,13 +58,13 @@ export function OrdersPage() {
               >
                 {statusOptions.map((option) => (
                   <option key={option} value={option}>
-                    {formatLabel(option)}
+                    {t(statusLabelKeys[option])}
                   </option>
                 ))}
               </select>
             </label>
 
-            <IconButton label="Refresh orders" onClick={() => void query.refetch()} disabled={query.isFetching}>
+            <IconButton label={t("orders.actions.refresh")} onClick={() => void query.refetch()} disabled={query.isFetching}>
               <RefreshCw aria-hidden="true" size={17} className={query.isFetching ? "animate-spin" : undefined} />
             </IconButton>
           </div>
@@ -80,8 +89,11 @@ export function OrdersPage() {
 }
 
 function OrdersTable({ page }: { page: OperatorOrderPage }) {
+  const { t, i18n } = useTranslation();
+  const locale = resolveIntlLocale(i18n.resolvedLanguage);
+
   if (page.items.length === 0) {
-    return <p className="px-6 py-16 text-center text-sm text-app-foreground-muted">No orders found</p>;
+    return <p className="px-6 py-16 text-center text-sm text-app-foreground-muted">{t("orders.empty")}</p>;
   }
 
   return (
@@ -90,22 +102,22 @@ function OrdersTable({ page }: { page: OperatorOrderPage }) {
         <thead className="border-b border-app-border bg-app-canvas text-xs font-semibold text-app-foreground-secondary">
           <tr>
             <th scope="col" className="px-4 py-3">
-              Order
+              {t("orders.table.order")}
             </th>
             <th scope="col" className="px-4 py-3">
-              Source
+              {t("orders.table.source")}
             </th>
             <th scope="col" className="px-4 py-3">
-              Status
+              {t("orders.table.status")}
             </th>
             <th scope="col" className="px-4 py-3 text-right">
-              Total
+              {t("orders.table.total")}
             </th>
             <th scope="col" className="px-4 py-3">
-              Received
+              {t("orders.table.received")}
             </th>
             <th scope="col" className="px-4 py-3 text-right">
-              Attempts
+              {t("orders.table.attempts")}
             </th>
           </tr>
         </thead>
@@ -123,10 +135,18 @@ function OrdersTable({ page }: { page: OperatorOrderPage }) {
               </td>
               <td className="px-4 py-3.5 text-app-foreground-secondary">{formatLabel(order.sourceSystem)}</td>
               <td className="px-4 py-3.5">
-                <StatusBadge status={order.status}>{formatLabel(order.status)}</StatusBadge>
+                <StatusBadge status={order.status}>
+                  {statusLabelKeys[order.status as keyof typeof statusLabelKeys] === undefined
+                    ? formatLabel(order.status)
+                    : t(statusLabelKeys[order.status as keyof typeof statusLabelKeys])}
+                </StatusBadge>
               </td>
-              <td className="px-4 py-3.5 text-right font-medium tabular-nums">{formatMoney(order.totalAmount, order.currency)}</td>
-              <td className="px-4 py-3.5 whitespace-nowrap text-app-foreground-secondary">{formatDateTime(order.receivedAt)}</td>
+              <td className="px-4 py-3.5 text-right font-medium tabular-nums">
+                {formatMoney(order.totalAmount, order.currency, locale)}
+              </td>
+              <td className="px-4 py-3.5 whitespace-nowrap text-app-foreground-secondary">
+                {formatDateTime(order.receivedAt, locale)}
+              </td>
               <td className="px-4 py-3.5 text-right tabular-nums text-app-foreground-secondary">{order.processingAttempts}</td>
             </tr>
           ))}
@@ -137,8 +157,10 @@ function OrdersTable({ page }: { page: OperatorOrderPage }) {
 }
 
 function OrdersLoading() {
+  const { t } = useTranslation();
+
   return (
-    <div role="status" aria-label="Loading orders" className="space-y-3 px-4 py-5">
+    <div role="status" aria-label={t("orders.loading")} className="space-y-3 px-4 py-5">
       {Array.from({ length: 5 }, (_, index) => (
         <div key={index} className="h-12 animate-pulse rounded bg-app-surface-muted" />
       ))}
@@ -147,17 +169,19 @@ function OrdersLoading() {
 }
 
 function OrdersError({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation();
+
   return (
     <div role="alert" className="flex flex-col items-center px-6 py-14 text-center">
       <TriangleAlert aria-hidden="true" size={24} className="text-red-700" />
-      <p className="mt-3 font-medium">Unable to load orders</p>
+      <p className="mt-3 font-medium">{t("orders.error")}</p>
       <button
         type="button"
         onClick={onRetry}
         className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm font-medium hover:bg-app-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
       >
         <RefreshCw aria-hidden="true" size={16} />
-        Retry
+        {t("orders.actions.retry")}
       </button>
     </div>
   );
@@ -172,24 +196,25 @@ function Pagination({
   onPrevious: () => void;
   onNext: () => void;
 }) {
+  const { t } = useTranslation();
   const first = page.offset + 1;
   const last = Math.min(page.offset + page.items.length, page.total);
 
   return (
     <div className="mt-4 flex items-center justify-end gap-3 text-sm text-app-foreground-secondary">
       <span className="tabular-nums">
-        {first}-{last} of {page.total}
+        {t("orders.pagination", { first, last, total: page.total })}
       </span>
       <div className="flex gap-1">
         <IconButton
-          label="Previous page"
+          label={t("orders.actions.previousPage")}
           onClick={onPrevious}
           disabled={page.offset === 0}
         >
           <ChevronLeft aria-hidden="true" size={18} />
         </IconButton>
         <IconButton
-          label="Next page"
+          label={t("orders.actions.nextPage")}
           onClick={onNext}
           disabled={page.offset + page.items.length >= page.total}
         >
