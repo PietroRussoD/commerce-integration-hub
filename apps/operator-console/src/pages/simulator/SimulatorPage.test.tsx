@@ -161,6 +161,10 @@ test("renders structured validation errors", async () => {
 
   expect(await screen.findByRole("alert")).toHaveTextContent("One or more request fields are invalid");
   expect(screen.getByRole("alert")).toHaveTextContent("items[0].quantity");
+  const quantityInput = screen.getByLabelText("Quantity");
+  expect(quantityInput).toHaveAttribute("aria-invalid", "true");
+  expect(quantityInput).toHaveAttribute("aria-describedby", "order-item-quantity-error");
+  expect(document.getElementById("order-item-quantity-error")).toHaveTextContent("must match the decimal format");
 });
 
 test("renders and submits the simulator in Italian", async () => {
