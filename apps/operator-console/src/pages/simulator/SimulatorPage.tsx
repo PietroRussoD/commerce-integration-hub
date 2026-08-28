@@ -17,6 +17,10 @@ export function SimulatorPage() {
   const { t } = useTranslation();
   const simulator = useOrderSimulator();
   const [isSourceApiKeyVisible, setIsSourceApiKeyVisible] = useState(false);
+  const quantityError =
+    simulator.error instanceof IntegrationCoreApiError
+      ? simulator.error.problem?.errors?.find((error) => error.field === "items[0].quantity")
+      : undefined;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -129,17 +133,25 @@ export function SimulatorPage() {
               className={inputClassName}
             />
           </label>
-          <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
-            {t("simulator.item.quantity")}
+          <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
+            <label htmlFor="order-item-quantity">{t("simulator.item.quantity")}</label>
             <input
+              id="order-item-quantity"
               value={simulator.form.quantity}
               onChange={(event) => simulator.updateField("quantity", event.target.value)}
               inputMode="decimal"
               pattern={quantityPattern}
               required
+              aria-invalid={quantityError !== undefined}
+              aria-describedby={quantityError !== undefined ? "order-item-quantity-error" : undefined}
               className={inputClassName}
             />
-          </label>
+            {quantityError !== undefined ? (
+              <span id="order-item-quantity-error" className="text-xs font-normal text-red-700">
+                {quantityError.message}
+              </span>
+            ) : null}
+          </div>
           <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
             {t("simulator.item.unitPrice")}
             <input
