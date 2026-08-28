@@ -12,12 +12,16 @@
     "build": "vite build",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:install": "playwright install chromium",
     "generate:api": "openapi-typescript ../../services/integration-core/src/main/resources/META-INF/integration-core.yaml -o src/api/generated/integration-core.ts",
     "check:api": "pnpm generate:api && git diff --exit-code -- src/api/generated/integration-core.ts",
     "lint": "eslint .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "type-check": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
+    "type-check": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.e2e.json",
     "check": "pnpm lint && pnpm type-check && pnpm test:coverage && pnpm build && pnpm build-storybook"
   },
   "dependencies": {
@@ -31,6 +35,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.1",
     "@storybook/addon-a11y": "10.5.10",
     "@storybook/addon-docs": "10.5.10",
     "@storybook/react-vite": "10.5.10",

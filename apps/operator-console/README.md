@@ -87,6 +87,19 @@ pnpm check:api
 pnpm check
 ```
 
+Browser-level tests use Playwright with Chromium and deterministic mocked API
+responses. Install the browser once, then run the suite locally:
+
+```bash
+pnpm test:e2e:install
+pnpm test:e2e
+```
+
+Playwright starts Vite automatically on port `4173`. Use `pnpm test:e2e:ui`
+for interactive debugging and `pnpm test:e2e:report` to open the latest HTML
+report. Screenshots and traces are retained only for failures. These browser
+tests are intentionally local and are not part of the GitHub Actions workflow.
+
 `pnpm check` enforces the configured Vitest coverage thresholds. Open the local
 HTML report at `coverage/index.html`. CI retains the same report for 14 days as
 the `operator-console-coverage` artifact, including when a later test or

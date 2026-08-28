@@ -44,7 +44,8 @@ The current baseline establishes:
 - correlation IDs propagated through HTTP, persistence, and structured logs;
 - a React and TypeScript operator console with a paginated, filterable order
   summary view, operational details, a controlled ingestion simulator,
-  generated API types, routing, tests, enforced coverage, and CI validation.
+  generated API types, routing, unit and local Chromium browser tests, enforced
+  coverage, and CI validation.
 
 The current `v0.4.0-SNAPSHOT` increment is completing console verification and
 release hardening. Search projections and external connector gateways remain
@@ -73,7 +74,13 @@ cd apps/operator-console
 pnpm install --frozen-lockfile
 pnpm check:api
 pnpm check
+pnpm test:e2e:install
+pnpm test:e2e
 ```
+
+The Playwright browser suite runs locally against an automatically started Vite
+server with deterministic API fixtures; it is not currently a GitHub Actions
+gate.
 
 ## Security verification
 

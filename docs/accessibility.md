@@ -31,6 +31,12 @@ interactive state. Storybook provides interactive Axe checks for shared
 components through its accessibility addon, but those checks do not replace a
 full-page audit.
 
+The local `pnpm test:e2e` Playwright suite verifies the order list-to-detail
+flow, simulator success and validation states, focus recovery, keyboard skip
+navigation, and global overflow at a 320 px viewport in Chromium. The suite
+uses deterministic API fixtures and is not currently executed by GitHub
+Actions, so it does not verify the live backend or act as a CI gate.
+
 ## Current Evidence
 
 - The document language follows the selected English or Italian locale.
