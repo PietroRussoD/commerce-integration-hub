@@ -7,6 +7,16 @@ import commonIt from "../locales/it/common.json";
 export const supportedLocales = ["en", "it"] as const;
 export type SupportedLocale = (typeof supportedLocales)[number];
 
+const intlLocales: Record<SupportedLocale, string> = {
+  en: "en-GB",
+  it: "it-IT",
+};
+
+export function resolveIntlLocale(language: string | undefined): string {
+  const locale = supportedLocales.find((candidate) => language === candidate || language?.startsWith(`${candidate}-`));
+  return intlLocales[locale ?? "en"];
+}
+
 export function createAppI18n(locale: SupportedLocale = "en"): i18n {
   const instance = createInstance();
 

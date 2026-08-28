@@ -1,10 +1,8 @@
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
-
-export function formatDateTime(value: string): string {
-  return dateTimeFormatter.format(new Date(value));
+export function formatDateTime(value: string, locale = "en-GB"): string {
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 export function formatLabel(value: string): string {
@@ -15,8 +13,8 @@ export function formatLabel(value: string): string {
     .join(" ");
 }
 
-export function formatMoney(amount: string, currency: string): string {
-  return new Intl.NumberFormat(undefined, {
+export function formatMoney(amount: string, currency: string, locale = "en-GB"): string {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
   }).format(Number(amount));

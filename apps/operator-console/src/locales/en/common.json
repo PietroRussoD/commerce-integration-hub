@@ -9,5 +9,36 @@
       "orders": "Orders",
       "simulator": "Simulator"
     }
+  },
+  "orders": {
+    "title": "Orders",
+    "total": "Total: {{count}}",
+    "filter": {
+      "status": "Status",
+      "all": "All"
+    },
+    "actions": {
+      "refresh": "Refresh orders",
+      "retry": "Retry",
+      "previousPage": "Previous page",
+      "nextPage": "Next page"
+    },
+    "table": {
+      "order": "Order",
+      "source": "Source",
+      "status": "Status",
+      "total": "Total",
+      "received": "Received",
+      "attempts": "Attempts"
+    },
+    "status": {
+      "received": "Received",
+      "processing": "Processing",
+      "ready": "Ready"
+    },
+    "empty": "No orders found",
+    "loading": "Loading orders",
+    "error": "Unable to load orders",
+    "pagination": "{{first}}-{{last}} of {{total}}"
   }
 }
