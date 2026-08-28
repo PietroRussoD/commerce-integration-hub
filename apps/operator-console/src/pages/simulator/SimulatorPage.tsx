@@ -18,6 +18,7 @@ export function SimulatorPage() {
   const simulator = useOrderSimulator();
   const [isSourceApiKeyVisible, setIsSourceApiKeyVisible] = useState(false);
   const declaredTotalError = findFieldError(simulator.error, "declaredTotalAmount");
+  const skuError = findFieldError(simulator.error, "items[0].sku");
   const quantityError = findFieldError(simulator.error, "items[0].quantity");
   const unitPriceError = findFieldError(simulator.error, "items[0].unitPrice");
 
@@ -126,16 +127,20 @@ export function SimulatorPage() {
 
         <fieldset className="grid gap-4 border-0 border-t border-app-border p-0 pt-6 sm:grid-cols-3">
           <legend className="mb-3 text-lg font-semibold">{t("simulator.item.title")}</legend>
-          <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
-            {t("simulator.item.sku")}
+          <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
+            <label htmlFor="order-item-sku">{t("simulator.item.sku")}</label>
             <input
+              id="order-item-sku"
               value={simulator.form.sku}
               onChange={(event) => simulator.updateField("sku", event.target.value)}
               maxLength={100}
               required
+              aria-invalid={skuError !== undefined}
+              aria-describedby={skuError !== undefined ? "order-item-sku-error" : undefined}
               className={inputClassName}
             />
-          </label>
+            <FieldError id="order-item-sku-error" error={skuError} />
+          </div>
           <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
             <label htmlFor="order-item-quantity">{t("simulator.item.quantity")}</label>
             <input
