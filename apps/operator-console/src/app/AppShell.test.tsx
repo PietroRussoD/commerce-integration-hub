@@ -31,6 +31,24 @@ test("renders navigation inside the operator shell", async () => {
   expect(screen.getByRole("link", { name: "Simulator" })).toHaveAttribute("aria-current", "page");
 });
 
+test("moves focus to the main content after route navigation", async () => {
+  const router = createMemoryRouter(createAppRoutes(), { initialEntries: ["/simulator"] });
+
+  render(
+    <AppProviders>
+      <RouterProvider router={router} />
+    </AppProviders>,
+  );
+
+  expect(await screen.findByRole("heading", { name: "Simulator" })).toBeInTheDocument();
+  expect(screen.getByRole("main")).not.toHaveFocus();
+
+  fireEvent.click(screen.getByRole("link", { name: "Orders" }));
+
+  expect(await screen.findByRole("heading", { name: "Orders" })).toBeInTheDocument();
+  expect(screen.getByRole("main")).toHaveFocus();
+});
+
 test("renders the order detail route inside the operator shell", async () => {
   const router = createMemoryRouter(createAppRoutes(), { initialEntries: ["/orders/order-42"] });
 

@@ -1,6 +1,7 @@
 import { ClipboardList, FlaskConical } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { storeBrowserLocale, supportedLocales, type SupportedLocale } from "../i18n/i18n";
 import type { BrandTheme } from "../theme/brandThemes";
@@ -12,6 +13,16 @@ const navigation = [
 
 export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
   const { t } = useTranslation();
+  const { pathname } = useLocation();
+  const mainContentRef = useRef<HTMLElement>(null);
+  const previousPathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    if (previousPathnameRef.current !== pathname) {
+      mainContentRef.current?.focus({ preventScroll: true });
+      previousPathnameRef.current = pathname;
+    }
+  }, [pathname]);
 
   return (
     <div className="min-h-screen bg-app-canvas text-app-foreground">
@@ -61,7 +72,12 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
           </ul>
         </nav>
 
-        <main id="main-content" tabIndex={-1} className="min-w-0 px-4 py-6 focus:outline-none sm:px-7 sm:py-8 lg:px-10 lg:py-10">
+        <main
+          ref={mainContentRef}
+          id="main-content"
+          tabIndex={-1}
+          className="min-w-0 px-4 py-6 focus:outline-none sm:px-7 sm:py-8 lg:px-10 lg:py-10"
+        >
           <div className="mx-auto w-full max-w-[1280px]">
             <Outlet />
           </div>
