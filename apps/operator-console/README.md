@@ -46,9 +46,10 @@ the static component documentation with `pnpm build-storybook`; the complete
 The console resolves its brand from an exact hostname match before React
 renders. `localhost` uses the default Integration Hub theme, while
 [http://client-blue.localhost:5173](http://client-blue.localhost:5173) previews
-the alternate client theme. Registered hostnames live in
-`src/theme/brandThemes.ts`; their CSS tokens use matching `data-brand` selectors
-in `src/styles.css`. Storybook exposes the same themes from its Brand toolbar.
+the alternate client identity and theme. Registered hostnames, product names,
+logos, document titles, and browser colors live in `src/theme/brandThemes.ts`;
+their CSS tokens use matching `data-brand` selectors in `src/styles.css`.
+Storybook exposes the same themes from its Brand toolbar.
 
 ## Simulator
 

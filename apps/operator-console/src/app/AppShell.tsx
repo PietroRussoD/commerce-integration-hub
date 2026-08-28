@@ -1,21 +1,23 @@
 import { ClipboardList, FlaskConical } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 
+import type { BrandTheme } from "../theme/brandThemes";
+
 const navigation = [
   { to: "/orders", label: "Orders", icon: ClipboardList },
   { to: "/simulator", label: "Simulator", icon: FlaskConical },
 ];
 
-export function AppShell() {
+export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
   return (
     <div className="min-h-screen bg-app-canvas text-app-foreground">
       <header className="sticky top-0 z-30 border-b border-app-border bg-app-surface">
         <div className="mx-auto flex h-16 max-w-screen-2xl items-center px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3 md:w-[232px] md:border-r md:border-app-border md:pr-5">
-            <img src="/favicon.svg" alt="" className="size-8 shrink-0" />
+            <img src={brandTheme.logoPath} alt="" className="size-8 shrink-0" />
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-app-foreground">Commerce Integration Hub</p>
-              <p className="text-xs text-app-foreground-muted">Operator console</p>
+              <p className="truncate text-sm font-semibold text-app-foreground">{brandTheme.productName}</p>
+              <p className="text-xs text-app-foreground-muted">{brandTheme.consoleName}</p>
             </div>
           </div>
         </div>
