@@ -17,14 +17,8 @@ export function SimulatorPage() {
   const { t } = useTranslation();
   const simulator = useOrderSimulator();
   const [isSourceApiKeyVisible, setIsSourceApiKeyVisible] = useState(false);
-  const quantityError =
-    simulator.error instanceof IntegrationCoreApiError
-      ? simulator.error.problem?.errors?.find((error) => error.field === "items[0].quantity")
-      : undefined;
-  const unitPriceError =
-    simulator.error instanceof IntegrationCoreApiError
-      ? simulator.error.problem?.errors?.find((error) => error.field === "items[0].unitPrice")
-      : undefined;
+  const quantityError = findFieldError(simulator.error, "items[0].quantity");
+  const unitPriceError = findFieldError(simulator.error, "items[0].unitPrice");
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -150,11 +144,7 @@ export function SimulatorPage() {
               aria-describedby={quantityError !== undefined ? "order-item-quantity-error" : undefined}
               className={inputClassName}
             />
-            {quantityError !== undefined ? (
-              <span id="order-item-quantity-error" className="text-xs font-normal text-red-700">
-                {quantityError.message}
-              </span>
-            ) : null}
+            <FieldError id="order-item-quantity-error" error={quantityError} />
           </div>
           <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
             <label htmlFor="order-item-unit-price">{t("simulator.item.unitPrice")}</label>
@@ -169,11 +159,7 @@ export function SimulatorPage() {
               aria-describedby={unitPriceError !== undefined ? "order-item-unit-price-error" : undefined}
               className={inputClassName}
             />
-            {unitPriceError !== undefined ? (
-              <span id="order-item-unit-price-error" className="text-xs font-normal text-red-700">
-                {unitPriceError.message}
-              </span>
-            ) : null}
+            <FieldError id="order-item-unit-price-error" error={unitPriceError} />
           </div>
         </fieldset>
 
@@ -197,6 +183,22 @@ export function SimulatorPage() {
       {simulator.result !== undefined ? <SimulationSuccess result={simulator.result} /> : null}
       {simulator.error !== null ? <SimulationError error={simulator.error} /> : null}
     </section>
+  );
+}
+
+function findFieldError(error: Error | null, field: string) {
+  if (!(error instanceof IntegrationCoreApiError)) return undefined;
+
+  return error.problem?.errors?.find((fieldError) => fieldError.field === field);
+}
+
+function FieldError({ id, error }: { id: string; error: { message: string } | undefined }) {
+  if (error === undefined) return null;
+
+  return (
+    <span id={id} className="text-xs font-normal text-red-700">
+      {error.message}
+    </span>
   );
 }
 
