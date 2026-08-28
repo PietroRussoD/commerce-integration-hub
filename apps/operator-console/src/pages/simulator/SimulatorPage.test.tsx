@@ -34,6 +34,19 @@ test("masks the source API key and lets the operator reveal it", () => {
   expect(sourceApiKeyInput).toHaveAttribute("type", "password");
 });
 
+test("announces a pending order submission", async () => {
+  receiveOrderMock.mockImplementation(() => new Promise(() => undefined));
+  renderSimulator();
+
+  fireEvent.change(screen.getByLabelText("Source API key"), { target: { value: "key-id.secret" } });
+  fireEvent.click(screen.getByRole("button", { name: "Submit order" }));
+
+  expect(await screen.findByRole("status")).toHaveTextContent("Submitting...");
+  const submitButton = screen.getByRole("button", { name: "Submitting..." });
+  expect(submitButton).toBeDisabled();
+  expect(submitButton.closest("form")).toHaveAttribute("aria-busy", "true");
+});
+
 test("submits a single-item canonical order", async () => {
   receiveOrderMock.mockResolvedValue({
     outcome: "CREATED",
