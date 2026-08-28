@@ -66,6 +66,47 @@
         "unitPrice": "Unit price",
         "lineTotal": "Line total"
       }
+    },
+    "timeline": {
+      "title": "Timeline",
+      "empty": "No timeline events",
+      "ariaLabel": "Order timeline events",
+      "correlation": "Correlation",
+      "events": {
+        "orderReceived": "Order received",
+        "processingStarted": "Processing started",
+        "processingSucceeded": "Processing succeeded",
+        "processingFailed": "Processing failed",
+        "retryRequested": "Retry requested"
+      },
+      "transition": {
+        "between": "{{from}} to {{to}}",
+        "entered": "Entered {{status}}",
+        "left": "Left {{status}}"
+      }
+    },
+    "attempts": {
+      "title": "Processing attempts",
+      "empty": "No processing attempts",
+      "columns": {
+        "attempt": "Attempt",
+        "trigger": "Trigger",
+        "status": "Status",
+        "started": "Started",
+        "duration": "Duration",
+        "error": "Error"
+      },
+      "status": {
+        "started": "Started",
+        "succeeded": "Succeeded",
+        "failed": "Failed"
+      },
+      "trigger": {
+        "initial": "Initial",
+        "automaticRetry": "Automatic retry",
+        "manualRetry": "Manual retry"
+      },
+      "inProgress": "In progress"
     }
   }
 }

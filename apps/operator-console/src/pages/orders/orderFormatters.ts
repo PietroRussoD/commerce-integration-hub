@@ -20,24 +20,20 @@ export function formatMoney(amount: string, currency: string, locale = "en-GB"):
   }).format(Number(amount));
 }
 
-export function formatTransition(fromStatus: string | null, toStatus: string | null): string | undefined {
-  if (fromStatus !== null && toStatus !== null) {
-    return `${formatLabel(fromStatus)} to ${formatLabel(toStatus)}`;
-  }
-  if (toStatus !== null) {
-    return `Entered ${formatLabel(toStatus)}`;
-  }
-  if (fromStatus !== null) {
-    return `Left ${formatLabel(fromStatus)}`;
-  }
-  return undefined;
-}
-
-export function formatDuration(startedAt: string, completedAt: string | null): string {
-  if (completedAt === null) return "In progress";
+export function formatDuration(
+  startedAt: string,
+  completedAt: string | null,
+  locale = "en-GB",
+  inProgressLabel = "In progress",
+): string {
+  if (completedAt === null) return inProgressLabel;
 
   const durationMilliseconds = Math.max(0, new Date(completedAt).getTime() - new Date(startedAt).getTime());
   if (durationMilliseconds < 1_000) return `${durationMilliseconds} ms`;
 
-  return `${(durationMilliseconds / 1_000).toFixed(1)} s`;
+  const seconds = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(durationMilliseconds / 1_000);
+  return `${seconds} s`;
 }

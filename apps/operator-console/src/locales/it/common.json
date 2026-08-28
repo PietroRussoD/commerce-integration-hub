@@ -66,6 +66,47 @@
         "unitPrice": "Prezzo unitario",
         "lineTotal": "Totale riga"
       }
+    },
+    "timeline": {
+      "title": "Cronologia",
+      "empty": "Nessun evento nella cronologia",
+      "ariaLabel": "Eventi della cronologia dell'ordine",
+      "correlation": "Correlazione",
+      "events": {
+        "orderReceived": "Ordine ricevuto",
+        "processingStarted": "Elaborazione avviata",
+        "processingSucceeded": "Elaborazione completata",
+        "processingFailed": "Elaborazione non riuscita",
+        "retryRequested": "Nuovo tentativo richiesto"
+      },
+      "transition": {
+        "between": "Da {{from}} a {{to}}",
+        "entered": "Passato a {{status}}",
+        "left": "Uscito da {{status}}"
+      }
+    },
+    "attempts": {
+      "title": "Tentativi di elaborazione",
+      "empty": "Nessun tentativo di elaborazione",
+      "columns": {
+        "attempt": "Tentativo",
+        "trigger": "Origine",
+        "status": "Stato",
+        "started": "Avviato",
+        "duration": "Durata",
+        "error": "Errore"
+      },
+      "status": {
+        "started": "Avviato",
+        "succeeded": "Completato",
+        "failed": "Non riuscito"
+      },
+      "trigger": {
+        "initial": "Iniziale",
+        "automaticRetry": "Nuovo tentativo automatico",
+        "manualRetry": "Nuovo tentativo manuale"
+      },
+      "inProgress": "In corso"
     }
   }
 }
