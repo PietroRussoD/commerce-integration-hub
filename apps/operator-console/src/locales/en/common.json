@@ -40,5 +40,32 @@
     "loading": "Loading orders",
     "error": "Unable to load orders",
     "pagination": "{{first}}-{{last}} of {{total}}"
+  },
+  "orderDetail": {
+    "title": "Order details",
+    "backToOrders": "Orders",
+    "loading": "Loading order details",
+    "error": "Unable to load order details",
+    "retry": "Retry",
+    "summary": {
+      "externalOrder": "External order",
+      "source": "Source",
+      "status": "Status",
+      "total": "Total",
+      "received": "Received",
+      "items": "Items"
+    },
+    "items": {
+      "title": "Order items",
+      "empty": "No order items",
+      "columns": {
+        "line": "Line",
+        "sku": "SKU",
+        "description": "Description",
+        "quantity": "Quantity",
+        "unitPrice": "Unit price",
+        "lineTotal": "Line total"
+      }
+    }
   }
 }

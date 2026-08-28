@@ -1,9 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
+import { I18nextProvider } from "react-i18next";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { getOperatorOrder, type OperatorOrderDetail } from "../../api/integrationCoreClient";
+import { createAppI18n, type SupportedLocale } from "../../i18n/i18n";
 import { OrderDetailPage } from "./OrderDetailPage";
 
 vi.mock("../../api/integrationCoreClient", () => ({
@@ -154,7 +156,20 @@ test("renders an actionable error state", async () => {
   expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
 });
 
-function renderOrderDetailPage() {
+test("renders the summary and items using the Italian locale", async () => {
+  getOperatorOrderMock.mockResolvedValue(orderDetail);
+
+  renderOrderDetailPage("it");
+
+  expect(screen.getByRole("heading", { name: "Dettagli ordine" })).toBeInTheDocument();
+  expect(await screen.findByText("ORDER-42")).toBeInTheDocument();
+  expect(screen.getByText("Pronto")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Articoli dell'ordine" })).toBeInTheDocument();
+  expect(screen.getByRole("columnheader", { name: "Prezzo unitario" })).toBeInTheDocument();
+  expect(screen.getAllByText(/19,99|39,98/)).not.toHaveLength(0);
+});
+
+function renderOrderDetailPage(locale: SupportedLocale = "en") {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -162,12 +177,14 @@ function renderOrderDetailPage() {
   });
 
   return render(
-    <MemoryRouter initialEntries={["/orders/018f38c2-1b95-7cc4-bb89-72d26a6f9f88"]}>
-      <QueryClientProvider client={queryClient}>
-        <Routes>
-          <Route path="/orders/:orderId" element={<OrderDetailPage />} />
-        </Routes>
-      </QueryClientProvider>
-    </MemoryRouter>,
+    <I18nextProvider i18n={createAppI18n(locale)} defaultNS="common">
+      <MemoryRouter initialEntries={["/orders/018f38c2-1b95-7cc4-bb89-72d26a6f9f88"]}>
+        <QueryClientProvider client={queryClient}>
+          <Routes>
+            <Route path="/orders/:orderId" element={<OrderDetailPage />} />
+          </Routes>
+        </QueryClientProvider>
+      </MemoryRouter>
+    </I18nextProvider>,
   );
 }
