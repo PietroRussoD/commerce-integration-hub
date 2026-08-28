@@ -1,5 +1,6 @@
 import { CheckCircle2, CircleX, Copy, Eye, EyeOff, FilePlus2, Send, ShieldAlert, TriangleAlert } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { IntegrationCoreApiError, type ReceiveOrderResult } from "../../api/integrationCoreClient";
@@ -13,6 +14,7 @@ const amountPattern = "(?:0|[1-9][0-9]{0,16})(?:\\.[0-9]{1,2})?";
 const quantityPattern = "(?:0|[1-9][0-9]{0,14})(?:\\.[0-9]{1,4})?";
 
 export function SimulatorPage() {
+  const { t } = useTranslation();
   const simulator = useOrderSimulator();
   const [isSourceApiKeyVisible, setIsSourceApiKeyVisible] = useState(false);
 
@@ -23,33 +25,33 @@ export function SimulatorPage() {
 
   return (
     <section aria-labelledby="simulator-heading">
-      <PageHeader titleId="simulator-heading" title="Simulator" />
+      <PageHeader titleId="simulator-heading" title={t("simulator.title")} />
 
       <div className="mt-5 border-b border-app-border pb-5">
-        <h2 className="text-sm font-semibold text-app-foreground-strong">Scenarios</h2>
-        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Simulation scenarios">
-          <ScenarioButton icon={FilePlus2} label="Fresh order" onClick={simulator.loadFreshOrder} />
+        <h2 className="text-sm font-semibold text-app-foreground-strong">{t("simulator.scenarios.title")}</h2>
+        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={t("simulator.scenarios.ariaLabel")}>
+          <ScenarioButton icon={FilePlus2} label={t("simulator.scenarios.freshOrder")} onClick={simulator.loadFreshOrder} />
           <ScenarioButton
             icon={Copy}
-            label="Equivalent replay"
+            label={t("simulator.scenarios.equivalentReplay")}
             onClick={simulator.loadReplay}
             disabled={!simulator.canReplay}
           />
           <ScenarioButton
             icon={ShieldAlert}
-            label="Conflict"
+            label={t("simulator.scenarios.conflict")}
             onClick={simulator.loadConflict}
             disabled={!simulator.canReplay}
           />
-          <ScenarioButton icon={CircleX} label="Invalid total" onClick={simulator.loadInvalidOrder} />
+          <ScenarioButton icon={CircleX} label={t("simulator.scenarios.invalidTotal")} onClick={simulator.loadInvalidOrder} />
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-7">
         <fieldset className="grid gap-4 border-0 p-0 sm:grid-cols-2">
-          <legend className="mb-3 text-lg font-semibold">Source authentication</legend>
+          <legend className="mb-3 text-lg font-semibold">{t("simulator.authentication.title")}</legend>
           <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong sm:col-span-2">
-            <label htmlFor="source-api-key">Source API key</label>
+            <label htmlFor="source-api-key">{t("simulator.authentication.apiKey")}</label>
             <div className="relative">
               <input
                 id="source-api-key"
@@ -61,7 +63,11 @@ export function SimulatorPage() {
                 className={`${inputClassName} pr-11`}
               />
               <IconButton
-                label={isSourceApiKeyVisible ? "Hide source API key" : "Show source API key"}
+                label={
+                  isSourceApiKeyVisible
+                    ? t("simulator.authentication.hideApiKey")
+                    : t("simulator.authentication.showApiKey")
+                }
                 variant="ghost"
                 size="md"
                 onClick={() => setIsSourceApiKeyVisible((isVisible) => !isVisible)}
@@ -75,9 +81,9 @@ export function SimulatorPage() {
         </fieldset>
 
         <fieldset className="grid gap-4 border-0 border-t border-app-border p-0 pt-6 sm:grid-cols-2 lg:grid-cols-3">
-          <legend className="mb-3 text-lg font-semibold">Order</legend>
+          <legend className="mb-3 text-lg font-semibold">{t("simulator.order.title")}</legend>
           <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
-            External order ID
+            {t("simulator.order.externalId")}
             <input
               value={simulator.form.externalId}
               onChange={(event) => simulator.updateField("externalId", event.target.value)}
@@ -87,7 +93,7 @@ export function SimulatorPage() {
             />
           </label>
           <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
-            Currency
+            {t("simulator.order.currency")}
             <select
               value={simulator.form.currency}
               onChange={(event) => simulator.updateField("currency", event.target.value as SimulatorFormValues["currency"])}
@@ -99,7 +105,7 @@ export function SimulatorPage() {
             </select>
           </label>
           <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
-            Declared total
+            {t("simulator.order.declaredTotal")}
             <input
               value={simulator.form.declaredTotalAmount}
               onChange={(event) => simulator.updateField("declaredTotalAmount", event.target.value)}
@@ -112,9 +118,9 @@ export function SimulatorPage() {
         </fieldset>
 
         <fieldset className="grid gap-4 border-0 border-t border-app-border p-0 pt-6 sm:grid-cols-3">
-          <legend className="mb-3 text-lg font-semibold">Order item</legend>
+          <legend className="mb-3 text-lg font-semibold">{t("simulator.item.title")}</legend>
           <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
-            SKU
+            {t("simulator.item.sku")}
             <input
               value={simulator.form.sku}
               onChange={(event) => simulator.updateField("sku", event.target.value)}
@@ -124,7 +130,7 @@ export function SimulatorPage() {
             />
           </label>
           <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
-            Quantity
+            {t("simulator.item.quantity")}
             <input
               value={simulator.form.quantity}
               onChange={(event) => simulator.updateField("quantity", event.target.value)}
@@ -135,7 +141,7 @@ export function SimulatorPage() {
             />
           </label>
           <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
-            Unit price
+            {t("simulator.item.unitPrice")}
             <input
               value={simulator.form.unitPrice}
               onChange={(event) => simulator.updateField("unitPrice", event.target.value)}
@@ -154,7 +160,7 @@ export function SimulatorPage() {
             className="inline-flex h-10 items-center gap-2 rounded-md bg-app-brand-primary px-4 text-sm font-semibold text-app-brand-foreground hover:bg-app-brand-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Send aria-hidden="true" size={17} />
-            {simulator.isPending ? "Submitting..." : "Submit order"}
+            {simulator.isPending ? t("simulator.actions.submitting") : t("simulator.actions.submit")}
           </button>
         </div>
       </form>
@@ -190,7 +196,8 @@ function ScenarioButton({
 }
 
 function SimulationSuccess({ result }: { result: ReceiveOrderResult }) {
-  const title = result.outcome === "CREATED" ? "Order created" : "Equivalent order replayed";
+  const { t } = useTranslation();
+  const title = result.outcome === "CREATED" ? t("simulator.success.created") : t("simulator.success.replayed");
 
   return (
     <div role="status" className="mt-6 border-t border-emerald-200 bg-emerald-50 px-4 py-4 text-emerald-950">
@@ -200,7 +207,7 @@ function SimulationSuccess({ result }: { result: ReceiveOrderResult }) {
           <p className="font-semibold">{title}</p>
           <p className="mt-1 break-all font-mono text-xs text-emerald-800">{result.order.id}</p>
           <Link to={`/orders/${result.order.id}`} className="mt-3 inline-block text-sm font-semibold underline underline-offset-4">
-            View order
+            {t("simulator.actions.viewOrder")}
           </Link>
         </div>
       </div>
@@ -209,6 +216,7 @@ function SimulationSuccess({ result }: { result: ReceiveOrderResult }) {
 }
 
 function SimulationError({ error }: { error: Error }) {
+  const { t } = useTranslation();
   const fieldErrors = error instanceof IntegrationCoreApiError ? error.problem?.errors : undefined;
 
   return (
@@ -216,7 +224,7 @@ function SimulationError({ error }: { error: Error }) {
       <div className="flex items-start gap-3">
         <TriangleAlert aria-hidden="true" size={20} className="mt-0.5 shrink-0 text-red-700" />
         <div>
-          <p className="font-semibold">Order submission failed</p>
+          <p className="font-semibold">{t("simulator.error.title")}</p>
           <p className="mt-1 text-sm">{error.message}</p>
           {fieldErrors !== undefined && fieldErrors.length > 0 ? (
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
