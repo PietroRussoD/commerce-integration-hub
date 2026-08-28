@@ -1,0 +1,13 @@
+{
+  "shell": {
+    "console": {
+      "commerceOperations": "Operazioni commerciali",
+      "operator": "Console operativa"
+    },
+    "navigation": {
+      "label": "Navigazione principale",
+      "orders": "Ordini",
+      "simulator": "Simulatore"
+    }
+  }
+}
