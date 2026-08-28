@@ -108,5 +108,46 @@
       },
       "inProgress": "In progress"
     }
+  },
+  "simulator": {
+    "title": "Simulator",
+    "scenarios": {
+      "title": "Scenarios",
+      "ariaLabel": "Simulation scenarios",
+      "freshOrder": "Fresh order",
+      "equivalentReplay": "Equivalent replay",
+      "conflict": "Conflict",
+      "invalidTotal": "Invalid total"
+    },
+    "authentication": {
+      "title": "Source authentication",
+      "apiKey": "Source API key",
+      "showApiKey": "Show source API key",
+      "hideApiKey": "Hide source API key"
+    },
+    "order": {
+      "title": "Order",
+      "externalId": "External order ID",
+      "currency": "Currency",
+      "declaredTotal": "Declared total"
+    },
+    "item": {
+      "title": "Order item",
+      "sku": "SKU",
+      "quantity": "Quantity",
+      "unitPrice": "Unit price"
+    },
+    "actions": {
+      "submit": "Submit order",
+      "submitting": "Submitting...",
+      "viewOrder": "View order"
+    },
+    "success": {
+      "created": "Order created",
+      "replayed": "Equivalent order replayed"
+    },
+    "error": {
+      "title": "Order submission failed"
+    }
   }
 }

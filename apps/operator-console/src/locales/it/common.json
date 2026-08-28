@@ -108,5 +108,46 @@
       },
       "inProgress": "In corso"
     }
+  },
+  "simulator": {
+    "title": "Simulatore",
+    "scenarios": {
+      "title": "Scenari",
+      "ariaLabel": "Scenari di simulazione",
+      "freshOrder": "Nuovo ordine",
+      "equivalentReplay": "Ripetizione equivalente",
+      "conflict": "Conflitto",
+      "invalidTotal": "Totale non valido"
+    },
+    "authentication": {
+      "title": "Autenticazione origine",
+      "apiKey": "Chiave API dell'origine",
+      "showApiKey": "Mostra chiave API dell'origine",
+      "hideApiKey": "Nascondi chiave API dell'origine"
+    },
+    "order": {
+      "title": "Ordine",
+      "externalId": "ID ordine esterno",
+      "currency": "Valuta",
+      "declaredTotal": "Totale dichiarato"
+    },
+    "item": {
+      "title": "Articolo dell'ordine",
+      "sku": "SKU",
+      "quantity": "Quantità",
+      "unitPrice": "Prezzo unitario"
+    },
+    "actions": {
+      "submit": "Invia ordine",
+      "submitting": "Invio in corso...",
+      "viewOrder": "Visualizza ordine"
+    },
+    "success": {
+      "created": "Ordine creato",
+      "replayed": "Ordine equivalente ripetuto"
+    },
+    "error": {
+      "title": "Invio dell'ordine non riuscito"
+    }
   }
 }

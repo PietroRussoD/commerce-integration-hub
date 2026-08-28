@@ -1,9 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { I18nextProvider } from "react-i18next";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { IntegrationCoreApiError, receiveOrder } from "../../api/integrationCoreClient";
+import { createAppI18n, type SupportedLocale } from "../../i18n/i18n";
 import { SimulatorPage } from "./SimulatorPage";
 
 vi.mock("../../api/integrationCoreClient", async (importOriginal) => {
@@ -147,7 +149,32 @@ test("renders structured validation errors", async () => {
   expect(screen.getByRole("alert")).toHaveTextContent("items[0].quantity");
 });
 
-function renderSimulator() {
+test("renders and submits the simulator in Italian", async () => {
+  receiveOrderMock.mockResolvedValue({
+    outcome: "CREATED",
+    order: {
+      id: "018f38c2-1b95-7cc4-bb89-72d26a6f9f88",
+      sourceSystem: "MARKETPLACE_A",
+      externalId: "DEMO-ORDER-001",
+      currency: "EUR",
+      totalAmount: "39.98",
+      status: "RECEIVED",
+      receivedAt: "2026-08-26T08:00:00Z",
+      items: [],
+    },
+  });
+  renderSimulator("it");
+
+  expect(screen.getByRole("heading", { name: "Simulatore" })).toBeInTheDocument();
+  expect(screen.getByRole("group", { name: "Scenari di simulazione" })).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Chiave API dell'origine"), { target: { value: "key-id.secret" } });
+  fireEvent.click(screen.getByRole("button", { name: "Invia ordine" }));
+
+  expect(await screen.findByRole("status")).toHaveTextContent("Ordine creato");
+  expect(screen.getByRole("link", { name: "Visualizza ordine" })).toBeInTheDocument();
+});
+
+function renderSimulator(locale: SupportedLocale = "en") {
   const queryClient = new QueryClient({
     defaultOptions: {
       mutations: { retry: false },
@@ -155,10 +182,12 @@ function renderSimulator() {
   });
 
   return render(
-    <MemoryRouter>
-      <QueryClientProvider client={queryClient}>
-        <SimulatorPage />
-      </QueryClientProvider>
-    </MemoryRouter>,
+    <I18nextProvider i18n={createAppI18n(locale)} defaultNS="common">
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <SimulatorPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    </I18nextProvider>,
   );
 }
