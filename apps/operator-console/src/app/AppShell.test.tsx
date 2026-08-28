@@ -10,6 +10,7 @@ import { resolveBrandThemeForHostname } from "../theme/brandThemes";
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
+  document.documentElement.lang = "en";
 });
 
 test("renders navigation inside the operator shell", async () => {
@@ -89,4 +90,5 @@ test("changes and persists the operator locale", async () => {
   expect(await screen.findByRole("heading", { name: "Simulatore" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Italiano" })).toHaveAttribute("aria-pressed", "true");
   expect(window.localStorage.getItem(localeStorageKey)).toBe("it");
+  expect(document.documentElement).toHaveAttribute("lang", "it");
 });
