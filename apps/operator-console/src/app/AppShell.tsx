@@ -15,6 +15,12 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
 
   return (
     <div className="min-h-screen bg-app-canvas text-app-foreground">
+      <a
+        href="#main-content"
+        className="fixed left-3 top-3 z-50 -translate-y-20 rounded-md bg-app-navigation-active px-3 py-2 text-sm font-semibold text-app-navigation-foreground shadow-lg transition-transform focus:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+      >
+        {t("shell.skipToContent")}
+      </a>
       <header className="sticky top-0 z-30 border-b border-app-border bg-app-surface">
         <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3 md:w-[232px] md:border-r md:border-app-border md:pr-5">
@@ -55,7 +61,7 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
           </ul>
         </nav>
 
-        <main className="min-w-0 px-4 py-6 sm:px-7 sm:py-8 lg:px-10 lg:py-10">
+        <main id="main-content" tabIndex={-1} className="min-w-0 px-4 py-6 focus:outline-none sm:px-7 sm:py-8 lg:px-10 lg:py-10">
           <div className="mx-auto w-full max-w-[1280px]">
             <Outlet />
           </div>
