@@ -39,6 +39,8 @@ full-page audit.
   controls and moves focus to the main content.
 - Client-side route changes move focus to the newly rendered main content.
 - Pending, success, and error feedback use appropriate live semantics.
+- Structured API validation errors are displayed next to their controls,
+  programmatically associated, and focus the first invalid field.
 - Tables retain their semantic structure and confine horizontal scrolling to
   their own container on narrow screens.
 - Desktop and 320 px mobile layouts were checked for both brands and both

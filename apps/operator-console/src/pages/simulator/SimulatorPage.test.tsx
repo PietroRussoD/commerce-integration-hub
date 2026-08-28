@@ -152,8 +152,9 @@ test("renders structured validation errors", async () => {
       instance: "/api/v1/orders",
       code: "REQUEST_VALIDATION_FAILED",
       errors: [
-        { field: "externalId", message: "must not be blank" },
+        { field: "currency", message: "must match EUR, GBP, or USD" },
         { field: "declaredTotalAmount", message: "must match the decimal format" },
+        { field: "externalId", message: "must not be blank" },
         { field: "items[0].sku", message: "must not be blank" },
         { field: "items[0].quantity", message: "must match the decimal format" },
         { field: "items[0].unitPrice", message: "must match the decimal format" },
@@ -171,6 +172,11 @@ test("renders structured validation errors", async () => {
   expect(externalIdInput).toHaveAttribute("aria-invalid", "true");
   expect(externalIdInput).toHaveAttribute("aria-describedby", "order-external-id-error");
   expect(document.getElementById("order-external-id-error")).toHaveTextContent("must not be blank");
+  expect(externalIdInput).toHaveFocus();
+  const currencyInput = screen.getByLabelText("Currency");
+  expect(currencyInput).toHaveAttribute("aria-invalid", "true");
+  expect(currencyInput).toHaveAttribute("aria-describedby", "order-currency-error");
+  expect(document.getElementById("order-currency-error")).toHaveTextContent("must match EUR, GBP, or USD");
   const declaredTotalInput = screen.getByLabelText("Declared total");
   expect(declaredTotalInput).toHaveAttribute("aria-invalid", "true");
   expect(declaredTotalInput).toHaveAttribute("aria-describedby", "order-declared-total-error");
