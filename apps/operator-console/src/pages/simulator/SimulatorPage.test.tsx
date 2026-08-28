@@ -153,6 +153,7 @@ test("renders structured validation errors", async () => {
       code: "REQUEST_VALIDATION_FAILED",
       errors: [
         { field: "declaredTotalAmount", message: "must match the decimal format" },
+        { field: "items[0].sku", message: "must not be blank" },
         { field: "items[0].quantity", message: "must match the decimal format" },
         { field: "items[0].unitPrice", message: "must match the decimal format" },
       ],
@@ -169,6 +170,10 @@ test("renders structured validation errors", async () => {
   expect(declaredTotalInput).toHaveAttribute("aria-invalid", "true");
   expect(declaredTotalInput).toHaveAttribute("aria-describedby", "order-declared-total-error");
   expect(document.getElementById("order-declared-total-error")).toHaveTextContent("must match the decimal format");
+  const skuInput = screen.getByLabelText("SKU");
+  expect(skuInput).toHaveAttribute("aria-invalid", "true");
+  expect(skuInput).toHaveAttribute("aria-describedby", "order-item-sku-error");
+  expect(document.getElementById("order-item-sku-error")).toHaveTextContent("must not be blank");
   const quantityInput = screen.getByLabelText("Quantity");
   expect(quantityInput).toHaveAttribute("aria-invalid", "true");
   expect(quantityInput).toHaveAttribute("aria-describedby", "order-item-quantity-error");
