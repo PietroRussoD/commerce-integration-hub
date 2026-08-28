@@ -6,6 +6,7 @@ import commonIt from "../locales/it/common.json";
 
 export const supportedLocales = ["en", "it"] as const;
 export type SupportedLocale = (typeof supportedLocales)[number];
+export const localeStorageKey = "operator-console.locale";
 
 const intlLocales: Record<SupportedLocale, string> = {
   en: "en-GB",
@@ -15,6 +16,39 @@ const intlLocales: Record<SupportedLocale, string> = {
 export function resolveIntlLocale(language: string | undefined): string {
   const locale = supportedLocales.find((candidate) => language === candidate || language?.startsWith(`${candidate}-`));
   return intlLocales[locale ?? "en"];
+}
+
+export function readStoredLocale(storage: Pick<Storage, "getItem"> | undefined): SupportedLocale {
+  try {
+    const storedLocale = storage?.getItem(localeStorageKey);
+    return supportedLocales.includes(storedLocale as SupportedLocale) ? (storedLocale as SupportedLocale) : "en";
+  } catch {
+    return "en";
+  }
+}
+
+export function storeLocale(storage: Pick<Storage, "setItem"> | undefined, locale: SupportedLocale): void {
+  try {
+    storage?.setItem(localeStorageKey, locale);
+  } catch {
+    // The language still changes when browser storage is unavailable.
+  }
+}
+
+export function readBrowserLocale(): SupportedLocale {
+  return readStoredLocale(getBrowserStorage());
+}
+
+export function storeBrowserLocale(locale: SupportedLocale): void {
+  storeLocale(getBrowserStorage(), locale);
+}
+
+function getBrowserStorage(): Storage | undefined {
+  try {
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
 }
 
 export function createAppI18n(locale: SupportedLocale = "en"): i18n {

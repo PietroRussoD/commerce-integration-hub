@@ -1,10 +1,26 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 
 import commonEn from "../locales/en/common.json";
 import commonIt from "../locales/it/common.json";
+import { localeStorageKey, readStoredLocale, storeLocale } from "./i18n";
 
 test("English and Italian catalogs expose the same translation keys", () => {
   expect(collectLeafKeys(commonIt)).toEqual(collectLeafKeys(commonEn));
+});
+
+test("reads only supported locales from storage", () => {
+  expect(readStoredLocale({ getItem: () => "it" })).toBe("it");
+  expect(readStoredLocale({ getItem: () => "fr" })).toBe("en");
+  expect(readStoredLocale({ getItem: () => null })).toBe("en");
+  expect(readStoredLocale({ getItem: () => { throw new Error("storage unavailable"); } })).toBe("en");
+});
+
+test("stores the selected locale without failing when storage is unavailable", () => {
+  const setItem = vi.fn();
+  storeLocale({ setItem }, "it");
+  expect(setItem).toHaveBeenCalledWith(localeStorageKey, "it");
+
+  expect(() => storeLocale({ setItem: () => { throw new Error("storage unavailable"); } }, "en")).not.toThrow();
 });
 
 function collectLeafKeys(value: object, prefix = ""): string[] {

@@ -1,13 +1,16 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, expect, test } from "vitest";
 
 import { AppProviders } from "./AppProviders";
 import { createAppRoutes } from "./router";
-import { createAppI18n } from "../i18n/i18n";
+import { createAppI18n, localeStorageKey } from "../i18n/i18n";
 import { resolveBrandThemeForHostname } from "../theme/brandThemes";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  window.localStorage.clear();
+});
 
 test("renders navigation inside the operator shell", async () => {
   const router = createMemoryRouter(createAppRoutes(), { initialEntries: ["/simulator"] });
@@ -67,4 +70,23 @@ test("renders shell navigation in Italian when supplied with the Italian locale"
   expect(within(navigation).getByRole("link", { name: "Ordini" })).toHaveAttribute("href", "/orders");
   expect(within(navigation).getByRole("link", { name: "Simulatore" })).toHaveAttribute("aria-current", "page");
   expect(screen.getByText("Console operativa")).toBeInTheDocument();
+});
+
+test("changes and persists the operator locale", async () => {
+  const router = createMemoryRouter(createAppRoutes(), { initialEntries: ["/simulator"] });
+
+  render(
+    <AppProviders i18nInstance={createAppI18n("en")}>
+      <RouterProvider router={router} />
+    </AppProviders>,
+  );
+
+  expect(await screen.findByRole("heading", { name: "Simulator" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "English" })).toHaveAttribute("aria-pressed", "true");
+
+  fireEvent.click(screen.getByRole("button", { name: "Italian" }));
+
+  expect(await screen.findByRole("heading", { name: "Simulatore" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Italiano" })).toHaveAttribute("aria-pressed", "true");
+  expect(window.localStorage.getItem(localeStorageKey)).toBe("it");
 });
