@@ -152,6 +152,7 @@ test("renders structured validation errors", async () => {
       instance: "/api/v1/orders",
       code: "REQUEST_VALIDATION_FAILED",
       errors: [
+        { field: "declaredTotalAmount", message: "must match the decimal format" },
         { field: "items[0].quantity", message: "must match the decimal format" },
         { field: "items[0].unitPrice", message: "must match the decimal format" },
       ],
@@ -164,6 +165,10 @@ test("renders structured validation errors", async () => {
 
   expect(await screen.findByRole("alert")).toHaveTextContent("One or more request fields are invalid");
   expect(screen.getByRole("alert")).toHaveTextContent("items[0].quantity");
+  const declaredTotalInput = screen.getByLabelText("Declared total");
+  expect(declaredTotalInput).toHaveAttribute("aria-invalid", "true");
+  expect(declaredTotalInput).toHaveAttribute("aria-describedby", "order-declared-total-error");
+  expect(document.getElementById("order-declared-total-error")).toHaveTextContent("must match the decimal format");
   const quantityInput = screen.getByLabelText("Quantity");
   expect(quantityInput).toHaveAttribute("aria-invalid", "true");
   expect(quantityInput).toHaveAttribute("aria-describedby", "order-item-quantity-error");

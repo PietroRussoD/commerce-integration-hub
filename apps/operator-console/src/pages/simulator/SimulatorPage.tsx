@@ -17,6 +17,7 @@ export function SimulatorPage() {
   const { t } = useTranslation();
   const simulator = useOrderSimulator();
   const [isSourceApiKeyVisible, setIsSourceApiKeyVisible] = useState(false);
+  const declaredTotalError = findFieldError(simulator.error, "declaredTotalAmount");
   const quantityError = findFieldError(simulator.error, "items[0].quantity");
   const unitPriceError = findFieldError(simulator.error, "items[0].unitPrice");
 
@@ -106,17 +107,21 @@ export function SimulatorPage() {
               <option value="USD">USD</option>
             </select>
           </label>
-          <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
-            {t("simulator.order.declaredTotal")}
+          <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
+            <label htmlFor="order-declared-total">{t("simulator.order.declaredTotal")}</label>
             <input
+              id="order-declared-total"
               value={simulator.form.declaredTotalAmount}
               onChange={(event) => simulator.updateField("declaredTotalAmount", event.target.value)}
               inputMode="decimal"
               pattern={amountPattern}
               required
+              aria-invalid={declaredTotalError !== undefined}
+              aria-describedby={declaredTotalError !== undefined ? "order-declared-total-error" : undefined}
               className={inputClassName}
             />
-          </label>
+            <FieldError id="order-declared-total-error" error={declaredTotalError} />
+          </div>
         </fieldset>
 
         <fieldset className="grid gap-4 border-0 border-t border-app-border p-0 pt-6 sm:grid-cols-3">
