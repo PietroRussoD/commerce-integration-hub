@@ -7,6 +7,7 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { listOperatorOrders } from "../../api/integrationCoreClient";
 import { createAppI18n, type SupportedLocale } from "../../i18n/i18n";
+import { expectNoAccessibilityViolations } from "../../test/accessibility";
 import { OrdersPage } from "./OrdersPage";
 
 vi.mock("../../api/integrationCoreClient", () => ({
@@ -112,6 +113,32 @@ test("renders translated labels and locale-aware values in Italian", async () =>
   expect(screen.getByRole("row", { name: /ORDER-42.*Pronto/i })).toBeInTheDocument();
   expect(screen.getByText("1-1 di 1")).toBeInTheDocument();
   expect(screen.getByText(/39,98/)).toBeInTheDocument();
+});
+
+test("has no automatically detectable accessibility violations in the loaded order list", async () => {
+  listOperatorOrdersMock.mockResolvedValue({
+    items: [
+      {
+        id: "018f38c2-1b95-7cc4-bb89-72d26a6f9f88",
+        sourceSystem: "MARKETPLACE_A",
+        externalOrderId: "ORDER-42",
+        status: "READY",
+        currency: "EUR",
+        totalAmount: "39.98",
+        receivedAt: "2026-08-21T08:00:00Z",
+        lastEventAt: "2026-08-21T08:00:05Z",
+        processingAttempts: 2,
+      },
+    ],
+    limit: 25,
+    offset: 0,
+    total: 1,
+  });
+
+  const { container } = renderOrdersPage();
+  expect(await screen.findByText("ORDER-42")).toBeInTheDocument();
+
+  await expectNoAccessibilityViolations(container);
 });
 
 function renderOrdersPage(locale: SupportedLocale = "en") {

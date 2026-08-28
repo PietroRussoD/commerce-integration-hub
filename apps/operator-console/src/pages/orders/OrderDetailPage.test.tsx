@@ -6,6 +6,7 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { getOperatorOrder, type OperatorOrderDetail } from "../../api/integrationCoreClient";
 import { createAppI18n, type SupportedLocale } from "../../i18n/i18n";
+import { expectNoAccessibilityViolations } from "../../test/accessibility";
 import { OrderDetailPage } from "./OrderDetailPage";
 
 vi.mock("../../api/integrationCoreClient", () => ({
@@ -196,6 +197,15 @@ test("renders order details using the Italian locale", async () => {
   expect(screen.getByRole("listitem")).toHaveTextContent("Elaborazione completata");
   expect(screen.getByRole("listitem")).toHaveTextContent("Da In elaborazione a Pronto");
   expect(screen.getByRole("row", { name: /1 Nuovo tentativo manuale Non riuscito.*1,3 s PROVIDER_TIMEOUT/i })).toBeInTheDocument();
+});
+
+test("has no automatically detectable accessibility violations in loaded order details", async () => {
+  getOperatorOrderMock.mockResolvedValue(orderDetail);
+
+  const { container } = renderOrderDetailPage();
+  expect(await screen.findByText("ORDER-42")).toBeInTheDocument();
+
+  await expectNoAccessibilityViolations(container);
 });
 
 function renderOrderDetailPage(locale: SupportedLocale = "en") {
