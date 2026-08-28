@@ -13,6 +13,10 @@ const intlLocales: Record<SupportedLocale, string> = {
   it: "it-IT",
 };
 
+export function resolveSupportedLocale(value: unknown): SupportedLocale {
+  return supportedLocales.includes(value as SupportedLocale) ? (value as SupportedLocale) : "en";
+}
+
 export function resolveIntlLocale(language: string | undefined): string {
   const locale = supportedLocales.find((candidate) => language === candidate || language?.startsWith(`${candidate}-`));
   return intlLocales[locale ?? "en"];
@@ -21,7 +25,7 @@ export function resolveIntlLocale(language: string | undefined): string {
 export function readStoredLocale(storage: Pick<Storage, "getItem"> | undefined): SupportedLocale {
   try {
     const storedLocale = storage?.getItem(localeStorageKey);
-    return supportedLocales.includes(storedLocale as SupportedLocale) ? (storedLocale as SupportedLocale) : "en";
+    return resolveSupportedLocale(storedLocale);
   } catch {
     return "en";
   }
