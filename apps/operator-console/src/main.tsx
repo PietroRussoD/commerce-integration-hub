@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import { AppProviders } from "./app/AppProviders";
 import { createAppRoutes } from "./app/router";
+import { createAppI18n, readBrowserLocale } from "./i18n/i18n";
 import { applyBrandThemeToDocument, resolveBrandThemeForHostname } from "./theme/brandThemes";
 import "./styles.css";
 
@@ -15,11 +16,12 @@ if (rootElement === null) {
 
 const brandTheme = resolveBrandThemeForHostname(window.location.hostname);
 applyBrandThemeToDocument(brandTheme, document);
+const i18n = createAppI18n(readBrowserLocale());
 const router = createBrowserRouter(createAppRoutes(brandTheme));
 
 createRoot(rootElement).render(
   <StrictMode>
-    <AppProviders>
+    <AppProviders i18nInstance={i18n}>
       <RouterProvider router={router} />
     </AppProviders>
   </StrictMode>,

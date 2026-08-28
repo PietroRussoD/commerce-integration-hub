@@ -8,6 +8,11 @@
       "label": "Navigazione principale",
       "orders": "Ordini",
       "simulator": "Simulatore"
+    },
+    "language": {
+      "label": "Lingua",
+      "english": "Inglese",
+      "italian": "Italiano"
     }
   },
   "orders": {

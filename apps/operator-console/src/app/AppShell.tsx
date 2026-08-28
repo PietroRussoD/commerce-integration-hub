@@ -2,6 +2,7 @@ import { ClipboardList, FlaskConical } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
 
+import { storeBrowserLocale, supportedLocales, type SupportedLocale } from "../i18n/i18n";
 import type { BrandTheme } from "../theme/brandThemes";
 
 const navigation = [
@@ -15,7 +16,7 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
   return (
     <div className="min-h-screen bg-app-canvas text-app-foreground">
       <header className="sticky top-0 z-30 border-b border-app-border bg-app-surface">
-        <div className="mx-auto flex h-16 max-w-screen-2xl items-center px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3 md:w-[232px] md:border-r md:border-app-border md:pr-5">
             <img src={brandTheme.logoPath} alt="" className="size-8 shrink-0" />
             <div className="min-w-0">
@@ -23,6 +24,7 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
               <p className="text-xs text-app-foreground-muted">{t(brandTheme.consoleNameKey)}</p>
             </div>
           </div>
+          <LanguageSelector />
         </div>
       </header>
 
@@ -59,6 +61,37 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
           </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+function LanguageSelector() {
+  const { t, i18n } = useTranslation();
+  const activeLocale: SupportedLocale = i18n.resolvedLanguage === "it" ? "it" : "en";
+
+  function selectLocale(locale: SupportedLocale) {
+    storeBrowserLocale(locale);
+    void i18n.changeLanguage(locale);
+  }
+
+  return (
+    <div
+      role="group"
+      aria-label={t("shell.language.label")}
+      className="flex shrink-0 rounded-md border border-app-border-strong bg-app-canvas p-0.5"
+    >
+      {supportedLocales.map((locale) => (
+        <button
+          key={locale}
+          type="button"
+          aria-label={locale === "en" ? t("shell.language.english") : t("shell.language.italian")}
+          aria-pressed={activeLocale === locale}
+          onClick={() => selectLocale(locale)}
+          className="h-7 min-w-9 rounded px-2 text-xs font-semibold uppercase text-app-foreground-secondary transition-colors aria-pressed:bg-app-surface aria-pressed:text-app-foreground aria-pressed:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+        >
+          {locale}
+        </button>
+      ))}
     </div>
   );
 }
