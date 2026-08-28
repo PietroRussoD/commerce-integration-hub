@@ -151,7 +151,10 @@ test("renders structured validation errors", async () => {
       detail: "One or more request fields are invalid",
       instance: "/api/v1/orders",
       code: "REQUEST_VALIDATION_FAILED",
-      errors: [{ field: "items[0].quantity", message: "must match the decimal format" }],
+      errors: [
+        { field: "items[0].quantity", message: "must match the decimal format" },
+        { field: "items[0].unitPrice", message: "must match the decimal format" },
+      ],
     }),
   );
   renderSimulator();
@@ -165,6 +168,10 @@ test("renders structured validation errors", async () => {
   expect(quantityInput).toHaveAttribute("aria-invalid", "true");
   expect(quantityInput).toHaveAttribute("aria-describedby", "order-item-quantity-error");
   expect(document.getElementById("order-item-quantity-error")).toHaveTextContent("must match the decimal format");
+  const unitPriceInput = screen.getByLabelText("Unit price");
+  expect(unitPriceInput).toHaveAttribute("aria-invalid", "true");
+  expect(unitPriceInput).toHaveAttribute("aria-describedby", "order-item-unit-price-error");
+  expect(document.getElementById("order-item-unit-price-error")).toHaveTextContent("must match the decimal format");
 });
 
 test("renders and submits the simulator in Italian", async () => {

@@ -21,6 +21,10 @@ export function SimulatorPage() {
     simulator.error instanceof IntegrationCoreApiError
       ? simulator.error.problem?.errors?.find((error) => error.field === "items[0].quantity")
       : undefined;
+  const unitPriceError =
+    simulator.error instanceof IntegrationCoreApiError
+      ? simulator.error.problem?.errors?.find((error) => error.field === "items[0].unitPrice")
+      : undefined;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -152,17 +156,25 @@ export function SimulatorPage() {
               </span>
             ) : null}
           </div>
-          <label className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
-            {t("simulator.item.unitPrice")}
+          <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
+            <label htmlFor="order-item-unit-price">{t("simulator.item.unitPrice")}</label>
             <input
+              id="order-item-unit-price"
               value={simulator.form.unitPrice}
               onChange={(event) => simulator.updateField("unitPrice", event.target.value)}
               inputMode="decimal"
               pattern={quantityPattern}
               required
+              aria-invalid={unitPriceError !== undefined}
+              aria-describedby={unitPriceError !== undefined ? "order-item-unit-price-error" : undefined}
               className={inputClassName}
             />
-          </label>
+            {unitPriceError !== undefined ? (
+              <span id="order-item-unit-price-error" className="text-xs font-normal text-red-700">
+                {unitPriceError.message}
+              </span>
+            ) : null}
+          </div>
         </fieldset>
 
         <div className="flex justify-end border-t border-app-border pt-5">
