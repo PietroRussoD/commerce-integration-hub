@@ -6,6 +6,7 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { IntegrationCoreApiError, receiveOrder } from "../../api/integrationCoreClient";
 import { createAppI18n, type SupportedLocale } from "../../i18n/i18n";
+import { expectNoAccessibilityViolations } from "../../test/accessibility";
 import { SimulatorPage } from "./SimulatorPage";
 
 vi.mock("../../api/integrationCoreClient", async (importOriginal) => {
@@ -172,6 +173,12 @@ test("renders and submits the simulator in Italian", async () => {
 
   expect(await screen.findByRole("status")).toHaveTextContent("Ordine creato");
   expect(screen.getByRole("link", { name: "Visualizza ordine" })).toBeInTheDocument();
+});
+
+test("has no automatically detectable accessibility violations in the simulator", async () => {
+  const { container } = renderSimulator();
+
+  await expectNoAccessibilityViolations(container);
 });
 
 function renderSimulator(locale: SupportedLocale = "en") {

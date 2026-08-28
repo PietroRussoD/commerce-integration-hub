@@ -5,6 +5,7 @@ import { afterEach, expect, test } from "vitest";
 import { AppProviders } from "./AppProviders";
 import { createAppRoutes } from "./router";
 import { createAppI18n, localeStorageKey } from "../i18n/i18n";
+import { expectNoAccessibilityViolations } from "../test/accessibility";
 import { resolveBrandThemeForHostname } from "../theme/brandThemes";
 
 afterEach(() => {
@@ -91,4 +92,16 @@ test("changes and persists the operator locale", async () => {
   expect(screen.getByRole("button", { name: "Italiano" })).toHaveAttribute("aria-pressed", "true");
   expect(window.localStorage.getItem(localeStorageKey)).toBe("it");
   expect(document.documentElement).toHaveAttribute("lang", "it");
+});
+
+test("has no automatically detectable accessibility violations in the application shell", async () => {
+  const router = createMemoryRouter(createAppRoutes(), { initialEntries: ["/simulator"] });
+  const { container } = render(
+    <AppProviders i18nInstance={createAppI18n("en")}>
+      <RouterProvider router={router} />
+    </AppProviders>,
+  );
+
+  expect(await screen.findByRole("heading", { name: "Simulator" })).toBeInTheDocument();
+  await expectNoAccessibilityViolations(container);
 });
