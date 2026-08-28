@@ -1,0 +1,13 @@
+{
+  "shell": {
+    "console": {
+      "commerceOperations": "Commerce operations",
+      "operator": "Operator console"
+    },
+    "navigation": {
+      "label": "Primary navigation",
+      "orders": "Orders",
+      "simulator": "Simulator"
+    }
+  }
+}

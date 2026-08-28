@@ -51,6 +51,13 @@ logos, document titles, and browser colors live in `src/theme/brandThemes.ts`;
 their CSS tokens use matching `data-brand` selectors in `src/styles.css`.
 Storybook exposes the same themes from its Brand toolbar.
 
+## Localization
+
+English is the active and fallback locale. English and Italian resources are
+bundled from `src/locales`; the shell already consumes typed translation keys.
+Italian remains internal until the remaining page copy and locale-aware value
+formatting are complete.
+
 ## Simulator
 
 The simulator submits one canonical order item and supports four controlled

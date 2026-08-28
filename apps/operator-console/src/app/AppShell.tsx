@@ -1,14 +1,17 @@
 import { ClipboardList, FlaskConical } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router-dom";
 
 import type { BrandTheme } from "../theme/brandThemes";
 
 const navigation = [
-  { to: "/orders", label: "Orders", icon: ClipboardList },
-  { to: "/simulator", label: "Simulator", icon: FlaskConical },
-];
+  { to: "/orders", labelKey: "shell.navigation.orders", icon: ClipboardList },
+  { to: "/simulator", labelKey: "shell.navigation.simulator", icon: FlaskConical },
+] as const;
 
 export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-app-canvas text-app-foreground">
       <header className="sticky top-0 z-30 border-b border-app-border bg-app-surface">
@@ -17,7 +20,7 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
             <img src={brandTheme.logoPath} alt="" className="size-8 shrink-0" />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-app-foreground">{brandTheme.productName}</p>
-              <p className="text-xs text-app-foreground-muted">{brandTheme.consoleName}</p>
+              <p className="text-xs text-app-foreground-muted">{t(brandTheme.consoleNameKey)}</p>
             </div>
           </div>
         </div>
@@ -25,11 +28,11 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
 
       <div className="mx-auto grid max-w-screen-2xl md:grid-cols-[232px_minmax(0,1fr)]">
         <nav
-          aria-label="Primary"
+          aria-label={t("shell.navigation.label")}
           className="sticky top-16 z-20 border-b border-app-border bg-app-surface px-3 py-2 md:h-[calc(100vh-4rem)] md:border-r md:border-b-0 md:px-4 md:py-6"
         >
           <ul className="flex gap-1 md:flex-col">
-            {navigation.map(({ to, label, icon: Icon }) => (
+            {navigation.map(({ to, labelKey, icon: Icon }) => (
               <li key={to} className="min-w-0 flex-1 md:flex-none">
                 <NavLink
                   to={to}
@@ -43,7 +46,7 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
                   }
                 >
                   <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
-                  <span className="truncate">{label}</span>
+                  <span className="truncate">{t(labelKey)}</span>
                 </NavLink>
               </li>
             ))}
