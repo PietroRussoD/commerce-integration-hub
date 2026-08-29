@@ -158,6 +158,65 @@ describe("MARKETPLACE_A webhook route", () => {
         });
     });
 
+    it.each([
+        {
+            reason: "unsupported_event_type",
+            payload: { ...VALID_PAYLOAD, eventType: "order.cancelled" }
+        },
+        {
+            reason: "unsupported_currency",
+            payload: {
+                ...VALID_PAYLOAD,
+                order: { ...VALID_PAYLOAD.order, currency: "JPY" }
+            }
+        },
+        {
+            reason: "duplicate_line_number",
+            payload: {
+                ...VALID_PAYLOAD,
+                order: {
+                    ...VALID_PAYLOAD.order,
+                    totalCents: 5997,
+                    lines: [
+                        ...VALID_PAYLOAD.order.lines,
+                        {
+                            lineNumber: "1",
+                            productCode: "SKU-BOOK-2",
+                            quantity: 1,
+                            unitPriceCents: 1999
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            reason: "total_mismatch",
+            payload: {
+                ...VALID_PAYLOAD,
+                order: { ...VALID_PAYLOAD.order, totalCents: 3999 }
+            }
+        }
+    ])("returns the same generic response for $reason", async ({ reason, payload }) => {
+        const application = buildTestApplication(() => ({ authenticated: true }));
+
+        const response = await application.inject({
+            method: "POST",
+            url: MARKETPLACE_A_WEBHOOK_PATH,
+            headers: { "content-type": "application/json" },
+            payload
+        });
+
+        expect(response.statusCode).toBe(422);
+        expect(response.headers["content-type"]).toMatch(/^application\/problem\+json/);
+        expect(response.json()).toEqual({
+            type: "urn:problem:unsupported-provider-content",
+            title: "Unsupported provider content",
+            status: 422,
+            detail: "The webhook payload cannot be mapped to a canonical order"
+        });
+        expect(response.body).not.toContain(reason);
+    });
+
     it("fails closed after successful authentication until durable receipt exists", async () => {
         const application = buildTestApplication(() => ({ authenticated: true }));
 
