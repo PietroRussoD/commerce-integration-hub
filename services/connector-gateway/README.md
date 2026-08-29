@@ -2,9 +2,10 @@
 
 Provider-facing Node.js and TypeScript service for the Commerce Integration Hub.
 The current baseline exposes a health endpoint and contains framework-independent
-`MARKETPLACE_A` raw-body signature and timestamp-freshness validation. These
-components are not connected to an HTTP route yet; durable webhook receipt,
-delivery storage, and forwarding are introduced in later increments.
+`MARKETPLACE_A` raw-body signature validation, timestamp-freshness validation,
+and current/previous verification-key selection. These components are not
+connected to an HTTP route yet; durable webhook receipt, delivery storage, and
+forwarding are introduced in later increments.
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).
 
