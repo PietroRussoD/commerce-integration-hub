@@ -7,11 +7,11 @@ import { migrateToLatest } from "../../src/infrastructure/database/migrator.js";
 
 import type { Kysely } from "kysely";
 
-const CONNECTOR_A_ID = "0199037b-6400-7000-8000-000000000001";
-const CONNECTOR_B_ID = "0199037b-6400-7000-8000-000000000002";
-const DELIVERY_A_ID = "0199037b-6400-7000-8000-000000000003";
-const DELIVERY_B_ID = "0199037b-6400-7000-8000-000000000004";
-const DELIVERY_C_ID = "0199037b-6400-7000-8000-000000000005";
+const CONNECTOR_A_ID = "0199037b-6400-7000-8000-000000000201";
+const CONNECTOR_B_ID = "0199037b-6400-7000-8000-000000000202";
+const DELIVERY_A_ID = "0199037b-6400-7000-8000-000000000203";
+const DELIVERY_B_ID = "0199037b-6400-7000-8000-000000000204";
+const DELIVERY_C_ID = "0199037b-6400-7000-8000-000000000205";
 const PAYLOAD_HASH = "a".repeat(64);
 
 describe("connector gateway database migration", () => {
@@ -39,6 +39,10 @@ describe("connector gateway database migration", () => {
             expect.objectContaining({
                 migrationName: "001_create_delivery_ledger",
                 status: "Success"
+            }),
+            expect.objectContaining({
+                migrationName: "002_seed_marketplace_a_connector",
+                status: "Success"
             })
         ]);
         expect(secondRun).toEqual([]);
@@ -55,6 +59,17 @@ describe("connector gateway database migration", () => {
             "connector_configurations",
             "inbound_deliveries"
         ]);
+
+        const seededConnector = await database
+            .selectFrom("connector_configurations")
+            .select(["id", "provider", "secret_reference"])
+            .where("id", "=", "0199037b-6400-7000-8000-000000000001")
+            .executeTakeFirstOrThrow();
+        expect(seededConnector).toEqual({
+            id: "0199037b-6400-7000-8000-000000000001",
+            provider: "MARKETPLACE_A",
+            secret_reference: "env:MARKETPLACE_A_WEBHOOK_CURRENT_SECRET_BASE64"
+        });
     });
 
     it("scopes external event uniqueness to the connector", async () => {
@@ -91,7 +106,7 @@ describe("connector gateway database migration", () => {
             database
                 .insertInto("connector_configurations")
                 .values({
-                    ...connectorConfiguration("0199037b-6400-7000-8000-000000000006", "ERP_B"),
+                    ...connectorConfiguration("0199037b-6400-7000-8000-000000000206", "ERP_B"),
                     mode: "POLLING",
                     schedule: null
                 })
@@ -103,7 +118,7 @@ describe("connector gateway database migration", () => {
                 .insertInto("inbound_deliveries")
                 .values({
                     ...inboundDelivery(
-                        "0199037b-6400-7000-8000-000000000007",
+                        "0199037b-6400-7000-8000-000000000207",
                         CONNECTOR_A_ID
                     ),
                     provider_payload_hash: "not-a-sha-256"
