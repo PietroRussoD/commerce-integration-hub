@@ -21,6 +21,8 @@ implementation chronology.
   and atomic effects for idempotent order processing.
 - [ADR 0009](0009-bounded-consumer-retries-and-dead-letter-routing.md): bounded
   consumer retries, permanent failure classification, and dead-letter routing.
+- [ADR 0010](0010-node-typescript-fastify-gateway.md): Node.js, strict
+  TypeScript, and Fastify for the provider-facing Connector Gateway.
 
 Accepted records are not edited to hide a later change of direction. Later
 extensions or replacements are recorded in a new ADR and linked to the earlier

@@ -20,6 +20,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
+      connector_gateway: ${{ steps.filter.outputs.connector_gateway }}
       integration_core: ${{ steps.filter.outputs.integration_core }}
       operator_console: ${{ steps.filter.outputs.operator_console }}
 
@@ -27,7 +28,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6.0.2
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Detect affected applications
@@ -35,15 +36,70 @@ jobs:
         uses: dorny/paths-filter@v4.0.3
         with:
           filters: |
+            connector_gateway:
+              - "services/connector-gateway/**"
+              - ".github/workflows/ci.yml"
             integration_core:
               - "services/integration-core/**"
-              - ".gitleaks.toml"
               - "docker-compose.yml"
               - ".github/workflows/ci.yml"
             operator_console:
               - "apps/operator-console/**"
               - "services/integration-core/**"
               - ".github/workflows/ci.yml"
+
+      - name: Scan Git history for secrets
+        run: >-
+          docker run --rm
+          --volume "$GITHUB_WORKSPACE:/repo"
+          ghcr.io/gitleaks/gitleaks:v8.30.1
+          git
+          --config /repo/.gitleaks.toml
+          --redact=100
+          --no-banner
+          /repo
+
+  connector-gateway:
+    needs: changes
+    if: needs.changes.outputs.connector_gateway == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: services/connector-gateway
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@v2.0.2
+        with:
+          version: 11.23.0
+          runtime: node@24
+          cache: true
+          cache-dependency-path: services/connector-gateway/pnpm-lock.yaml
+          package-json-file: services/connector-gateway/package.json
+          install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check connector gateway
+        run: pnpm check
+
+      - name: Upload connector gateway coverage
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: connector-gateway-coverage
+          path: services/connector-gateway/coverage
+          if-no-files-found: warn
+          retention-days: 14
 
   operator-console:
     needs: changes
@@ -108,17 +164,6 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Scan Git history for secrets
-        run: >-
-          docker run --rm
-          --volume "$GITHUB_WORKSPACE:/repo"
-          ghcr.io/gitleaks/gitleaks:v8.30.1
-          git
-          --config /repo/.gitleaks.toml
-          --redact=100
-          --no-banner
-          /repo
 
       - name: Set up Java
         uses: actions/setup-java@v5.6.0
