@@ -97,10 +97,12 @@ integration state remain separate audited capabilities.
 
 ### Provider-specific Connector Gateway
 
-Planned. A Node.js and TypeScript gateway will accept signed proprietary
-webhooks and poll cursor-based provider APIs. It will durably record technical
-delivery, normalize provider payloads, and call the canonical Kotlin API. The
-gateway will own delivery state but will not mutate authoritative order state.
+In progress. The Node.js and TypeScript gateway has a tested but unregistered
+`MARKETPLACE_A` HTTP adapter covering exact raw-body authentication, key
+rotation, strict provider validation, canonical mapping, and receipt-command
+fingerprinting. It does not yet persist or accept deliveries, forward canonical
+orders, or poll cursor-based provider APIs. The completed gateway will own
+delivery state but will not mutate authoritative order state.
 
 ### Event Subscription
 
@@ -138,7 +140,7 @@ external subscribers remain planned.
 | Operator order summary API | Implemented |
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
-| Provider-specific Connector Gateway | Planned |
+| Provider-specific Connector Gateway | Signed-webhook boundary in progress; durable receipt not implemented |
 | OpenSearch projection | Planned |
 
 ## Non-goals

@@ -9,8 +9,8 @@ problem being solved, intended users, integration modes, and delivery roadmap.
 ## Current status
 
 The repository currently contains the Kotlin Integration Core, the React and
-TypeScript operator console, and the initial Node.js and TypeScript Connector
-Gateway skeleton. The core owns a currency-aware order aggregate, HTTP
+TypeScript operator console, and the in-progress Node.js and TypeScript Connector
+Gateway. The core owns a currency-aware order aggregate, HTTP
 ingestion and retrieval, and a PostgreSQL schema managed with Flyway and
 accessed through a jOOQ repository adapter. It persists complete orders and
 classifies equivalent and conflicting replays using a versioned canonical
@@ -48,8 +48,12 @@ The current baseline establishes:
   generated API types, routing, unit and local Chromium browser tests, enforced
   coverage, and CI validation;
 - a strict TypeScript and Fastify Connector Gateway baseline with an injectable
-  application factory, health endpoint, unit test, enforced coverage, and an
-  independent selective CI job.
+  application factory, health endpoint, enforced coverage, and an independent
+  selective CI job;
+- a tested `MARKETPLACE_A` boundary for raw-body HMAC authentication, bounded
+  key rotation, strict provider-schema validation, semantic canonical mapping,
+  generic Problem Details failures, and raw-byte receipt fingerprinting. The
+  route remains unregistered until durable delivery persistence is implemented.
 
 The `v0.4.0` release completes the first operator-console increment and its
 release verification. The `v0.5.0-SNAPSHOT` increment is introducing the

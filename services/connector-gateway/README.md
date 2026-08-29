@@ -1,26 +1,21 @@
 # Connector Gateway
 
 Provider-facing Node.js and TypeScript service for the Commerce Integration Hub.
-The current baseline exposes a health endpoint and contains framework-independent
-`MARKETPLACE_A` raw-body signature validation, timestamp-freshness validation,
-and current/previous verification-key selection. A framework-independent
-authenticator composes these checks and reports bounded internal failure reasons.
-Strict environment parsing is available for Base64 secrets, rotation settings,
-and the bounded freshness tolerance. A composition root builds the complete
-authenticator once from that validated configuration. A connector-scoped Fastify
-parser preserves exact JSON bytes, enforces a 1 MiB limit, and rejects other
-media types without changing parsers outside that scope. The provider route
-adapter maps every authentication failure to the same `401` problem response and
-fails closed with `503` after successful authentication until durable receipt is
-implemented. A strict Ajv contract parser validates authenticated provider JSON
-without coercion, defaults, or unknown-field removal; malformed JSON and schema
-violations map to one generic `400` problem response. The route is not registered
-by the running application yet. A provider mapper separates delivery identity
-from canonical order identity, enforces supported semantics, and converts integer
-cents to exact decimal strings without floating-point arithmetic. Semantic
-mapping failures share one generic `422` problem response. Valid mappings can be
-assembled into a readonly receipt command containing the exact provider JSON and
-its byte-level SHA-256 fingerprint for future durable deduplication.
+
+Current implemented scope:
+
+- health endpoint and graceful process lifecycle;
+- strict `MARKETPLACE_A` raw-body authentication with timestamp freshness and
+  bounded current/previous key rotation;
+- connector-scoped 1 MiB raw JSON parsing, strict provider validation, generic
+  `401`/`400`/`422` Problem Details responses, and exact canonical mapping;
+- readonly receipt-command creation with the validated provider JSON, mapping
+  version, canonical order, and raw-byte SHA-256 fingerprint.
+
+The provider route is tested but not registered by the running application.
+Authenticated valid requests fail closed with `503` until durable receipt is
+implemented.
+
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).
 
