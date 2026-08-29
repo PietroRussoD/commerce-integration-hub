@@ -11,7 +11,24 @@ import {
     marketplaceAWebhookRoute
 } from "./webhook-route.js";
 
-const RAW_BODY = '{  "eventId" : "evt-42" }\n';
+const VALID_PAYLOAD = {
+    eventId: "evt-42",
+    eventType: "order.created",
+    order: {
+        orderNumber: "MA-42",
+        currency: "EUR",
+        totalCents: 3998,
+        lines: [
+            {
+                lineNumber: "1",
+                productCode: "SKU-BOOK-1",
+                quantity: 2,
+                unitPriceCents: 1999
+            }
+        ]
+    }
+};
+const RAW_BODY = `${JSON.stringify(VALID_PAYLOAD)}\n`;
 const applications: FastifyInstance[] = [];
 
 afterEach(async () => {
@@ -101,6 +118,45 @@ describe("MARKETPLACE_A webhook route", () => {
             expect(response.body).not.toContain(reason);
         }
     );
+
+    it("authenticates before parsing an untrusted payload", async () => {
+        const application = buildTestApplication(() => ({
+            authenticated: false,
+            reason: "invalid_signature"
+        }));
+
+        const response = await application.inject({
+            method: "POST",
+            url: MARKETPLACE_A_WEBHOOK_PATH,
+            headers: { "content-type": "application/json" },
+            payload: '{"eventId":'
+        });
+
+        expect(response.statusCode).toBe(401);
+    });
+
+    it.each([
+        '{"eventId":',
+        JSON.stringify({ ...VALID_PAYLOAD, unexpected: true })
+    ])("returns the same generic response for an invalid provider payload", async (payload) => {
+        const application = buildTestApplication(() => ({ authenticated: true }));
+
+        const response = await application.inject({
+            method: "POST",
+            url: MARKETPLACE_A_WEBHOOK_PATH,
+            headers: { "content-type": "application/json" },
+            payload
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.headers["content-type"]).toMatch(/^application\/problem\+json/);
+        expect(response.json()).toEqual({
+            type: "urn:problem:invalid-provider-payload",
+            title: "Invalid provider payload",
+            status: 400,
+            detail: "The webhook payload does not match the MARKETPLACE_A contract"
+        });
+    });
 
     it("fails closed after successful authentication until durable receipt exists", async () => {
         const application = buildTestApplication(() => ({ authenticated: true }));
