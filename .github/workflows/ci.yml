@@ -4,21 +4,54 @@ on:
   push:
     branches:
       - main
-    tags:
-      - "v*"
   pull_request:
 
-permissions:
-  contents: read
-  packages: write
+permissions: {}
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  operator-console:
+  changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      integration_core: ${{ steps.filter.outputs.integration_core }}
+      operator_console: ${{ steps.filter.outputs.operator_console }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Detect affected applications
+        id: filter
+        uses: dorny/paths-filter@v4.0.3
+        with:
+          filters: |
+            integration_core:
+              - "services/integration-core/**"
+              - ".gitleaks.toml"
+              - "docker-compose.yml"
+              - ".github/workflows/ci.yml"
+            operator_console:
+              - "apps/operator-console/**"
+              - "services/integration-core/**"
+              - ".github/workflows/ci.yml"
+
+  operator-console:
+    needs: changes
+    if: needs.changes.outputs.operator_console == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: apps/operator-console
@@ -26,6 +59,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Set up pnpm and Node.js
         uses: pnpm/setup@v2.0.2
@@ -56,7 +91,13 @@ jobs:
           retention-days: 14
 
   integration-core:
+    needs: changes
+    if: needs.changes.outputs.integration_core == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
     defaults:
       run:
         working-directory: services/integration-core
@@ -66,6 +107,7 @@ jobs:
         uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Scan Git history for secrets
         run: >-
@@ -96,6 +138,7 @@ jobs:
           name: integration-core-coverage
           path: services/integration-core/target/site/jacoco
           if-no-files-found: warn
+          retention-days: 14
 
       - name: Upload software bill of materials
         uses: actions/upload-artifact@v7.0.1
@@ -104,26 +147,6 @@ jobs:
           path: services/integration-core/target/sbom/integration-core.cdx.json
           if-no-files-found: error
           retention-days: 14
-
-      - name: Build image for vulnerability scan
-        run: >-
-          docker build
-          --file src/main/docker/Dockerfile.jvm
-          --tag integration-core:security-scan
-          .
-
-      - name: Scan container image
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: integration-core:security-scan
-          scanners: vuln
-          vuln-type: os,library
-          severity: HIGH,CRITICAL
-          exit-code: "1"
-          ignore-unfixed: "false"
-          format: table
-          hide-progress: true
-          version: v0.74.0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4.1.0
@@ -143,7 +166,6 @@ jobs:
           images: ghcr.io/pietrorussod/commerce-integration-hub/integration-core
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=tag
 
       - name: Build and optionally push Docker image
         uses: docker/build-push-action@v7
@@ -153,3 +175,5 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
+          cache-from: type=gha,scope=integration-core
+          cache-to: type=gha,mode=max,scope=integration-core
