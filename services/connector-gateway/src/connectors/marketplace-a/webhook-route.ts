@@ -4,6 +4,7 @@ import type {
     MarketplaceAWebhookAuthenticationInput,
     MarketplaceAWebhookAuthenticator
 } from "./webhook-authenticator.js";
+import { mapMarketplaceAWebhookPayload } from "./webhook-payload-mapper.js";
 import { parseMarketplaceAWebhookPayload } from "./webhook-payload-parser.js";
 import { configureMarketplaceARawJsonBodyParser } from "./raw-json-body-parser.js";
 
@@ -56,6 +57,7 @@ export const marketplaceAWebhookRoute: FastifyPluginCallback<
                 response: {
                     400: PROBLEM_DETAILS_SCHEMA,
                     401: PROBLEM_DETAILS_SCHEMA,
+                    422: PROBLEM_DETAILS_SCHEMA,
                     503: PROBLEM_DETAILS_SCHEMA
                 }
             }
@@ -92,6 +94,20 @@ export const marketplaceAWebhookRoute: FastifyPluginCallback<
                         title: "Invalid provider payload",
                         status: 400,
                         detail: "The webhook payload does not match the MARKETPLACE_A contract"
+                    });
+                return;
+            }
+
+            const mapping = mapMarketplaceAWebhookPayload(parsing.payload);
+            if (!mapping.mapped) {
+                reply
+                    .code(422)
+                    .type("application/problem+json")
+                    .send({
+                        type: "urn:problem:unsupported-provider-content",
+                        title: "Unsupported provider content",
+                        status: 422,
+                        detail: "The webhook payload cannot be mapped to a canonical order"
                     });
                 return;
             }
