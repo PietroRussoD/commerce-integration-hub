@@ -7,9 +7,10 @@ and current/previous verification-key selection. A framework-independent
 authenticator composes these checks and reports bounded internal failure reasons.
 Strict environment parsing is available for Base64 secrets, rotation settings,
 and the bounded freshness tolerance. A composition root builds the complete
-authenticator once from that validated configuration. It is not connected to an
-HTTP route yet; durable webhook receipt, delivery storage, and forwarding are
-introduced in later increments.
+authenticator once from that validated configuration. A connector-scoped Fastify
+parser preserves exact JSON bytes, enforces a 1 MiB limit, and rejects other
+media types without changing parsers outside that scope. No production webhook
+route exists yet; durable receipt, storage, and forwarding follow later.
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).
 
