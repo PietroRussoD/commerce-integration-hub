@@ -183,7 +183,9 @@ constraints bound connector modes, delivery states, hashes, attempts, leases,
 and HTTP status values. A partial index orders dispatchable `RECEIVED` and
 `RETRY_WAIT` rows by their next attempt and receipt times.
 
-The schema exists before its repository adapter so the persistence contract can
-be verified independently. `delivery_attempts` and polling checkpoints remain
-planned and will be introduced by later migrations with their corresponding
-behavior.
+The repository uses the composite unique key to classify concurrent first
+receipt, equivalent replay, and conflicting content transactionally. It never
+replaces the original delivery when a provider reuses an event identity with a
+different payload. Runtime composition remains separate from this persistence
+adapter. `delivery_attempts` and polling checkpoints remain planned and will be
+introduced by later migrations with their corresponding behavior.

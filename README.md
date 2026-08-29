@@ -54,8 +54,11 @@ The current baseline establishes:
   key rotation, strict provider-schema validation, semantic canonical mapping,
   generic Problem Details failures, and raw-byte receipt fingerprinting;
 - a Kysely-managed Connector Gateway PostgreSQL delivery-ledger schema,
-  protected by database constraints and a real PostgreSQL migration test. The
-  route remains unregistered until the repository adapter is connected.
+  protected by database constraints and real PostgreSQL migration tests;
+- a transactional Connector Gateway repository that preserves a single stable
+  delivery identity while classifying concurrent first receipt, equivalent
+  replay, and payload conflict. The route remains unregistered until runtime
+  composition is connected.
 
 The `v0.4.0` release completes the first operator-console increment and its
 release verification. The `v0.5.0-SNAPSHOT` increment is introducing the
