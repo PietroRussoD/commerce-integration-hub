@@ -1,4 +1,11 @@
 import { buildApplication } from "./app.js";
+import { createReceiveInboundDeliveryUseCase } from "./application/deliveries/receive-inbound-delivery.js";
+import { readMarketplaceAConnectorId } from "./connectors/marketplace-a/connector-configuration.js";
+import { readMarketplaceAWebhookSecurityConfiguration } from "./connectors/marketplace-a/webhook-security-configuration.js";
+import { createConfiguredMarketplaceAWebhookAuthenticator } from "./connectors/marketplace-a/webhook-security.js";
+import { loadDatabaseConfiguration } from "./infrastructure/database/database-configuration.js";
+import { createDatabase } from "./infrastructure/database/database.js";
+import { KyselyInboundDeliveryRepository } from "./infrastructure/database/kysely-inbound-delivery-repository.js";
 
 const DEFAULT_PORT = 8081;
 const MIN_PORT = 1;
@@ -17,7 +24,25 @@ function readPort(rawPort: string | undefined): number {
     return port;
 }
 
-const application = buildApplication({ logger: true });
+const databaseConfiguration = loadDatabaseConfiguration();
+const webhookSecurityConfiguration = readMarketplaceAWebhookSecurityConfiguration(process.env);
+const database = createDatabase(databaseConfiguration);
+const repository = new KyselyInboundDeliveryRepository(database);
+const receiveInboundDelivery = createReceiveInboundDeliveryUseCase({
+    connectorId: readMarketplaceAConnectorId(),
+    repository
+});
+const application = buildApplication({
+    logger: true,
+    marketplaceAWebhook: {
+        authenticate: createConfiguredMarketplaceAWebhookAuthenticator(
+            webhookSecurityConfiguration
+        ),
+        receiveInboundDelivery
+    }
+});
+
+application.addHook("onClose", async () => database.destroy());
 
 async function shutDown(signal: NodeJS.Signals): Promise<void> {
     application.log.info({ signal }, "Shutting down connector gateway");
@@ -41,4 +66,5 @@ try {
 } catch (error) {
     application.log.error(error);
     process.exitCode = 1;
+    await application.close();
 }
