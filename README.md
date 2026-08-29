@@ -8,13 +8,14 @@ problem being solved, intended users, integration modes, and delivery roadmap.
 
 ## Current status
 
-The repository currently contains the Kotlin Integration Core and the React and
-TypeScript operator console. The backend owns a currency-aware order
-aggregate, HTTP ingestion and retrieval, and a PostgreSQL schema managed with
-Flyway and accessed through a jOOQ repository adapter. It persists complete
-orders and classifies equivalent and conflicting replays using a versioned
-canonical payload fingerprint. New orders, timeline events, and pending outbox
-events are committed atomically.
+The repository currently contains the Kotlin Integration Core, the React and
+TypeScript operator console, and the initial Node.js and TypeScript Connector
+Gateway skeleton. The core owns a currency-aware order aggregate, HTTP
+ingestion and retrieval, and a PostgreSQL schema managed with Flyway and
+accessed through a jOOQ repository adapter. It persists complete orders and
+classifies equivalent and conflicting replays using a versioned canonical
+payload fingerprint. New orders, timeline events, and pending outbox events are
+committed atomically.
 
 The current baseline establishes:
 
@@ -45,12 +46,15 @@ The current baseline establishes:
 - a React and TypeScript operator console with a paginated, filterable order
   summary view, operational details, a controlled ingestion simulator,
   generated API types, routing, unit and local Chromium browser tests, enforced
-  coverage, and CI validation.
+  coverage, and CI validation;
+- a strict TypeScript and Fastify Connector Gateway baseline with an injectable
+  application factory, health endpoint, unit test, enforced coverage, and an
+  independent selective CI job.
 
 The `v0.4.0` release completes the first operator-console increment and its
-release verification. The planned `v0.5.0` increment introduces the external
-Node.js and TypeScript Connector Gateway. Search projections remain a later
-increment.
+release verification. The `v0.5.0-SNAPSHOT` increment is introducing the
+external Node.js and TypeScript Connector Gateway. Search projections remain a
+later increment.
 
 ## Repository structure
 
@@ -58,6 +62,7 @@ increment.
 apps/
   operator-console/  React and TypeScript operational UI
 services/
+  connector-gateway/ Node.js and TypeScript provider-facing adapter
   integration-core/  Kotlin/Quarkus authoritative order service
 ```
 
@@ -77,6 +82,14 @@ pnpm check:api
 pnpm check
 pnpm test:e2e:install
 pnpm test:e2e
+```
+
+Validate the connector gateway:
+
+```bash
+cd services/connector-gateway
+pnpm install --frozen-lockfile
+pnpm check
 ```
 
 The Playwright browser suite runs locally against an automatically started Vite
