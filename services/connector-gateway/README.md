@@ -12,7 +12,9 @@ parser preserves exact JSON bytes, enforces a 1 MiB limit, and rejects other
 media types without changing parsers outside that scope. The provider route
 adapter maps every authentication failure to the same `401` problem response and
 fails closed with `503` after successful authentication until durable receipt is
-implemented. It is not registered by the running application yet.
+implemented. A strict Ajv contract parser validates authenticated provider JSON
+without coercion, defaults, or unknown-field removal. The route is not registered
+by the running application yet.
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).
 
