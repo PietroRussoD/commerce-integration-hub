@@ -433,9 +433,10 @@ docker build \
   .
 ```
 
-CI scans this image with Trivy before registry publication and fails on any
-`HIGH` or `CRITICAL` operating-system or application-library vulnerability.
-Run the equivalent check locally with Docker:
+The `Container security` workflow scans the published `latest` image every
+Monday and on demand. It fails on any `HIGH` or `CRITICAL` operating-system or
+application-library vulnerability. Run the equivalent check locally with
+Docker:
 
 ```bash
 docker run --rm \
@@ -474,7 +475,9 @@ Publishing rules:
 
 - pull requests build the image but do not push it;
 - pushes to `main` publish `latest`;
-- Git tags matching `v*` publish the corresponding version tag.
+- Git tags matching `v*` promote the existing `latest` image to the
+  corresponding version tag without rebuilding it;
+- promotion fails if the image revision does not match the tagged commit.
 
 ## Format
 

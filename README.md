@@ -99,7 +99,9 @@ docker run --rm \
   /repo
 ```
 
-The final container vulnerability gate is documented in the
+The published container is scanned with Trivy every Monday and on demand,
+instead of rebuilding and scanning it on every push. The local command and
+release-image rules are documented in the
 [Integration Core container section](services/integration-core/README.md#container-image).
 Dependabot checks Maven dependencies, GitHub Actions, the service Dockerfile,
 and Docker Compose images weekly. Minor and patch updates are grouped, while
