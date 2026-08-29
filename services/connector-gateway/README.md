@@ -14,11 +14,14 @@ Current implemented scope:
 - a connector-bound receipt use case and repository port with atomic
   `CREATED`, `EQUIVALENT_REPLAY`, and `PAYLOAD_CONFLICT` outcomes;
 - a Kysely-managed PostgreSQL delivery-ledger schema with database constraints
-  and a real PostgreSQL migration test.
+  and a real PostgreSQL migration test;
+- a transactional Kysely repository that atomically classifies first receipt,
+  equivalent replay, and conflicting payload while preserving the first
+  delivery identity and content under concurrent requests.
 
 The provider route is tested but not registered by the running application.
 Authenticated valid requests fail closed with `503` until durable receipt is
-connected through the PostgreSQL repository adapter.
+connected during application composition.
 
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).

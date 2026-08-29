@@ -101,11 +101,13 @@ In progress. The Node.js and TypeScript gateway has a tested but unregistered
 `MARKETPLACE_A` HTTP adapter covering exact raw-body authentication, key
 rotation, strict provider validation, canonical mapping, and receipt-command
 fingerprinting. Its Kysely-managed PostgreSQL delivery-ledger schema and
-constraints are integration-tested, but the repository adapter is not yet
-connected, so the running gateway does not accept or persist deliveries. It
-does not yet forward canonical orders or poll cursor-based provider APIs. The
-completed gateway will own delivery state but will not mutate authoritative
-order state.
+constraints are integration-tested. Its transactional repository classifies
+first receipts, equivalent replays, and conflicting content under concurrent
+requests without replacing the original delivery. Runtime composition is not
+yet connected, so the running gateway still does not accept or persist
+deliveries. It does not yet forward canonical orders or poll cursor-based
+provider APIs. The completed gateway will own delivery state but will not
+mutate authoritative order state.
 
 ### Event Subscription
 
@@ -143,7 +145,7 @@ external subscribers remain planned.
 | Operator order summary API | Implemented |
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
-| Provider-specific Connector Gateway | Signed-webhook boundary and delivery schema implemented; repository adapter in progress |
+| Provider-specific Connector Gateway | Signed-webhook boundary, delivery schema, and repository implemented; runtime wiring in progress |
 | OpenSearch projection | Planned |
 
 ## Non-goals
