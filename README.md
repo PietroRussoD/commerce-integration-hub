@@ -60,7 +60,10 @@ The current baseline establishes:
   replay, and payload conflict;
 - a running signed-webhook route composed with PostgreSQL persistence that
   emits `202` only after durable commit, preserves replay identity, and returns
-  `409` for conflicting provider bytes. Forwarding remains in progress.
+  `409` for conflicting provider bytes;
+- bounded oldest-first gateway delivery claims using `SKIP LOCKED`, short
+  leases, and fencing tokens, verified with concurrent PostgreSQL workers.
+  HTTP forwarding and completion transitions remain in progress.
 
 The `v0.4.0` release completes the first operator-console increment and its
 release verification. The `v0.5.0-SNAPSHOT` increment is introducing the
@@ -171,6 +174,8 @@ in the [relational data model](docs/data-model.md), while the implemented reques
 flows are captured in the [ingestion sequence diagrams](docs/ingestion-sequences.md).
 The currently supported domain transitions are shown in the
 [order lifecycle](docs/order-lifecycle.md).
+The current Connector Gateway claim boundary is shown in the
+[gateway delivery lifecycle](docs/gateway-delivery-lifecycle.md).
 The developing publisher state machine is shown in the
 [outbox lifecycle diagrams](docs/outbox-lifecycle.md).
 Significant design choices are recorded in the

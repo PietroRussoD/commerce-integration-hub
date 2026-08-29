@@ -163,6 +163,7 @@ erDiagram
         integer attempt_count
         timestamptz next_attempt_at
         varchar lease_owner
+        uuid lease_token
         timestamptz lease_expires_at
         varchar error_code
         varchar safe_error_message
@@ -182,6 +183,12 @@ replay or a payload conflict by comparing its SHA-256 fingerprint. Check
 constraints bound connector modes, delivery states, hashes, attempts, leases,
 and HTTP status values. A partial index orders dispatchable `RECEIVED` and
 `RETRY_WAIT` rows by their next attempt and receipt times.
+
+The claim adapter locks only eligible delivery rows with `SKIP LOCKED`, assigns
+one lease token to a bounded batch, and commits before network work begins. The
+owner, token, and expiry are either all null or all present. Future completion
+and recovery transitions must match the token so a late worker cannot mutate a
+new ownership generation. See the [gateway delivery lifecycle](gateway-delivery-lifecycle.md).
 
 The repository uses the composite unique key to classify concurrent first
 receipt, equivalent replay, and conflicting content transactionally. It never

@@ -19,12 +19,15 @@ Current implemented scope:
   equivalent replay, and conflicting payload while preserving the first
   delivery identity and content under concurrent requests;
 - production composition of webhook authentication, canonical mapping, receipt
-  use case, repository, and database lifecycle.
+  use case, repository, and database lifecycle;
+- a bounded delivery-claim use case and Kysely adapter using oldest-first
+  eligibility, `SKIP LOCKED`, short leases, and UUID fencing tokens.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
 conflicting bytes for the same provider event return `409`. Forwarding accepted
-deliveries to the Integration Core is the next increment.
+deliveries to the Integration Core is the next increment. Claiming is verified
+but not scheduled by the running process yet.
 
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).
