@@ -6,7 +6,8 @@ The current baseline exposes a health endpoint and contains framework-independen
 and current/previous verification-key selection. A framework-independent
 authenticator composes these checks and reports bounded internal failure reasons.
 Strict environment parsing is available for Base64 secrets, rotation settings,
-and the bounded freshness tolerance. These components are not connected to an
+and the bounded freshness tolerance. A composition root builds the complete
+authenticator once from that validated configuration. It is not connected to an
 HTTP route yet; durable webhook receipt, delivery storage, and forwarding are
 introduced in later increments.
 The runtime and framework boundary are documented in
