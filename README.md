@@ -52,8 +52,10 @@ The current baseline establishes:
   selective CI job;
 - a tested `MARKETPLACE_A` boundary for raw-body HMAC authentication, bounded
   key rotation, strict provider-schema validation, semantic canonical mapping,
-  generic Problem Details failures, and raw-byte receipt fingerprinting. The
-  route remains unregistered until durable delivery persistence is implemented.
+  generic Problem Details failures, and raw-byte receipt fingerprinting;
+- a Kysely-managed Connector Gateway PostgreSQL delivery-ledger schema,
+  protected by database constraints and a real PostgreSQL migration test. The
+  route remains unregistered until the repository adapter is connected.
 
 The `v0.4.0` release completes the first operator-console increment and its
 release verification. The `v0.5.0-SNAPSHOT` increment is introducing the
@@ -94,6 +96,7 @@ Validate the connector gateway:
 cd services/connector-gateway
 pnpm install --frozen-lockfile
 pnpm check
+pnpm test:integration
 ```
 
 The Playwright browser suite runs locally against an automatically started Vite
