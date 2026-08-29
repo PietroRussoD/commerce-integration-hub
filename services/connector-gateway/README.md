@@ -10,7 +10,9 @@ Current implemented scope:
 - connector-scoped 1 MiB raw JSON parsing, strict provider validation, generic
   `401`/`400`/`422` Problem Details responses, and exact canonical mapping;
 - readonly receipt-command creation with the validated provider JSON, mapping
-  version, canonical order, and raw-byte SHA-256 fingerprint.
+  version, canonical order, and raw-byte SHA-256 fingerprint;
+- a connector-bound receipt use case and repository port with atomic
+  `CREATED`, `EQUIVALENT_REPLAY`, and `PAYLOAD_CONFLICT` outcomes.
 
 The provider route is tested but not registered by the running application.
 Authenticated valid requests fail closed with `503` until durable receipt is
