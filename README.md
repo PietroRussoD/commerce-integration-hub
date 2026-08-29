@@ -47,9 +47,10 @@ The current baseline establishes:
   generated API types, routing, unit and local Chromium browser tests, enforced
   coverage, and CI validation.
 
-The current `v0.4.0-SNAPSHOT` increment is completing console verification and
-release hardening. Search projections and external connector gateways remain
-later increments.
+The `v0.4.0` release completes the first operator-console increment and its
+release verification. The planned `v0.5.0` increment introduces the external
+Node.js and TypeScript Connector Gateway. Search projections remain a later
+increment.
 
 ## Repository structure
 
@@ -153,6 +154,7 @@ checks are documented in the [accessibility plan](docs/accessibility.md).
 The precise boundary of the current implementation is documented in
 [current limitations](docs/limitations.md). The delivered behavior and its
 verification evidence are summarized in the
-[`v0.3.0` release notes](docs/releases/v0.3.0.md). Previous milestones are
-documented in the [`v0.2.0`](docs/releases/v0.2.0.md) and
+[`v0.4.0` release notes](docs/releases/v0.4.0.md). Previous milestones are
+documented in the [`v0.3.0`](docs/releases/v0.3.0.md),
+[`v0.2.0`](docs/releases/v0.2.0.md), and
 [`v0.1.0`](docs/releases/v0.1.0.md) release notes.

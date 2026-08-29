@@ -104,8 +104,9 @@ gateway will own delivery state but will not mutate authoritative order state.
 
 ### Event Subscription
 
-In progress. The Integration Core publishes versioned canonical events through
-Kafka-compatible infrastructure and processes `OrderReceived.v1` idempotently.
+Available for the current internal processing scope. The Integration Core
+publishes versioned canonical events through Kafka-compatible infrastructure
+and processes `OrderReceived.v1` idempotently.
 The consumer records attempts and timeline entries transactionally, transitions
 successful orders to `READY`, and emits `OrderReady.v1`. Search projection and
 external subscribers remain planned.
