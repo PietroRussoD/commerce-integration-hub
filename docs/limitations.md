@@ -10,10 +10,9 @@ mistaken for available behavior.
   not yet receive provider-specific webhooks, poll external systems, or perform
   provider-specific normalization.
 - The Connector Gateway contains locally verified `MARKETPLACE_A` authentication,
-  validation, mapping, and receipt-command components. Its route is not registered
-  by the running process. Its delivery schema and migrations are tested against
-  PostgreSQL, and its repository is verified under concurrent receipt. Runtime
-  composition and forwarding are not yet implemented.
+  validation, mapping, durable receipt, and replay/conflict classification. Its
+  schema and repository are tested against PostgreSQL, including concurrent
+  receipt. Accepted deliveries are not yet forwarded to the Integration Core.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the
