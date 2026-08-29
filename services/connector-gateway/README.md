@@ -18,7 +18,9 @@ violations map to one generic `400` problem response. The route is not registere
 by the running application yet. A provider mapper separates delivery identity
 from canonical order identity, enforces supported semantics, and converts integer
 cents to exact decimal strings without floating-point arithmetic. Semantic
-mapping failures share one generic `422` problem response.
+mapping failures share one generic `422` problem response. Valid mappings can be
+assembled into a readonly receipt command containing the exact provider JSON and
+its byte-level SHA-256 fingerprint for future durable deduplication.
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).
 

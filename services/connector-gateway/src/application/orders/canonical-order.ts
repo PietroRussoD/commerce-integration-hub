@@ -1,15 +1,15 @@
 export type CanonicalCurrency = "EUR" | "GBP" | "USD";
 
 export interface CanonicalOrderItem {
-    externalLineId: string;
-    sku: string;
-    quantity: string;
-    unitPrice: string;
+    readonly externalLineId: string;
+    readonly sku: string;
+    readonly quantity: string;
+    readonly unitPrice: string;
 }
 
 export interface CanonicalOrder {
-    externalId: string;
-    currency: CanonicalCurrency;
-    declaredTotalAmount: string;
-    items: CanonicalOrderItem[];
+    readonly externalId: string;
+    readonly currency: CanonicalCurrency;
+    readonly declaredTotalAmount: string;
+    readonly items: readonly CanonicalOrderItem[];
 }

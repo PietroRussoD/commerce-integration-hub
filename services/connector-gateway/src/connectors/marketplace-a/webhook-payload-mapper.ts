@@ -4,9 +4,9 @@ import type { MarketplaceAWebhookPayload } from "./webhook-payload-parser.js";
 export const MARKETPLACE_A_ORDER_MAPPING_VERSION = "marketplace-a-order-v1";
 
 export interface MappedMarketplaceAOrderWebhook {
-    providerEventId: string;
-    mappingVersion: typeof MARKETPLACE_A_ORDER_MAPPING_VERSION;
-    canonicalOrder: CanonicalOrder;
+    readonly providerEventId: string;
+    readonly mappingVersion: typeof MARKETPLACE_A_ORDER_MAPPING_VERSION;
+    readonly canonicalOrder: CanonicalOrder;
 }
 
 export type MarketplaceAWebhookPayloadMappingResult =
