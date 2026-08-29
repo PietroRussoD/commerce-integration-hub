@@ -15,7 +15,9 @@ fails closed with `503` after successful authentication until durable receipt is
 implemented. A strict Ajv contract parser validates authenticated provider JSON
 without coercion, defaults, or unknown-field removal; malformed JSON and schema
 violations map to one generic `400` problem response. The route is not registered
-by the running application yet.
+by the running application yet. A provider mapper separates delivery identity
+from canonical order identity, enforces supported semantics, and converts integer
+cents to exact decimal strings without floating-point arithmetic.
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).
 
