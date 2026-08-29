@@ -4,6 +4,7 @@ import type {
     MarketplaceAWebhookAuthenticationInput,
     MarketplaceAWebhookAuthenticator
 } from "./webhook-authenticator.js";
+import { parseMarketplaceAWebhookPayload } from "./webhook-payload-parser.js";
 import { configureMarketplaceARawJsonBodyParser } from "./raw-json-body-parser.js";
 
 export const MARKETPLACE_A_WEBHOOK_PATH = "/providers/marketplace-a/v1/order-webhooks";
@@ -53,6 +54,7 @@ export const marketplaceAWebhookRoute: FastifyPluginCallback<
         {
             schema: {
                 response: {
+                    400: PROBLEM_DETAILS_SCHEMA,
                     401: PROBLEM_DETAILS_SCHEMA,
                     503: PROBLEM_DETAILS_SCHEMA
                 }
@@ -76,6 +78,20 @@ export const marketplaceAWebhookRoute: FastifyPluginCallback<
                         title: "Webhook authentication failed",
                         status: 401,
                         detail: "The webhook credentials could not be verified"
+                    });
+                return;
+            }
+
+            const parsing = parseMarketplaceAWebhookPayload(request.body);
+            if (!parsing.valid) {
+                reply
+                    .code(400)
+                    .type("application/problem+json")
+                    .send({
+                        type: "urn:problem:invalid-provider-payload",
+                        title: "Invalid provider payload",
+                        status: 400,
+                        detail: "The webhook payload does not match the MARKETPLACE_A contract"
                     });
                 return;
             }
