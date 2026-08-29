@@ -11,8 +11,8 @@ mistaken for available behavior.
   provider-specific normalization.
 - The Connector Gateway contains locally verified `MARKETPLACE_A` authentication,
   validation, mapping, and receipt-command components. Its route is not registered
-  by the running process, and delivery persistence and forwarding are not yet
-  implemented.
+  by the running process. Its delivery schema and migrations are tested against
+  PostgreSQL, but the repository adapter and forwarding are not yet implemented.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the

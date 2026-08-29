@@ -23,6 +23,8 @@ implementation chronology.
   consumer retries, permanent failure classification, and dead-letter routing.
 - [ADR 0010](0010-node-typescript-fastify-gateway.md): Node.js, strict
   TypeScript, and Fastify for the provider-facing Connector Gateway.
+- [ADR 0011](0011-gateway-postgresql-kysely-persistence.md): gateway-owned
+  PostgreSQL delivery state with Kysely migrations and repository adapters.
 
 Accepted records are not edited to hide a later change of direction. Later
 extensions or replacements are recorded in a new ADR and linked to the earlier

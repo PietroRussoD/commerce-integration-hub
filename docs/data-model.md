@@ -1,7 +1,7 @@
 # Relational Data Model
 
-This diagram describes the PostgreSQL schema currently implemented by the
-Integration Core. Flyway migrations remain the authoritative schema definition.
+The first diagram describes the PostgreSQL schema owned by the Integration
+Core. Flyway migrations remain its authoritative schema definition.
 
 ```mermaid
 erDiagram
@@ -127,3 +127,63 @@ timeline. Attempt numbers are unique within an order, and a partial unique index
 allows at most one `STARTED` attempt per order. State constraints require
 successful and failed attempts to have a completion time, while only failed
 attempts may contain a non-blank safe error code and message.
+
+## Connector Gateway
+
+The Connector Gateway owns a separate schema managed with Kysely migrations.
+It does not read Integration Core tables and shares no transaction with the
+core.
+
+```mermaid
+erDiagram
+    connector_configurations ||--o{ inbound_deliveries : receives
+
+    connector_configurations {
+        uuid id PK
+        varchar provider
+        varchar source_system
+        varchar mode
+        varchar status
+        varchar schedule
+        varchar secret_reference
+        integer version
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    inbound_deliveries {
+        uuid id PK
+        uuid connector_id FK
+        varchar external_event_id
+        char provider_payload_hash
+        jsonb raw_payload
+        jsonb canonical_payload
+        varchar mapping_version
+        varchar status
+        integer attempt_count
+        timestamptz next_attempt_at
+        varchar lease_owner
+        timestamptz lease_expires_at
+        varchar error_code
+        varchar safe_error_message
+        smallint last_http_status
+        uuid correlation_id
+        uuid last_core_order_id
+        timestamptz received_at
+        timestamptz updated_at
+        timestamptz completed_at
+        timestamptz payload_expires_at
+    }
+```
+
+`connector_id` and `external_event_id` form the delivery idempotency key. A
+second delivery with the same key must be classified atomically as an equivalent
+replay or a payload conflict by comparing its SHA-256 fingerprint. Check
+constraints bound connector modes, delivery states, hashes, attempts, leases,
+and HTTP status values. A partial index orders dispatchable `RECEIVED` and
+`RETRY_WAIT` rows by their next attempt and receipt times.
+
+The schema exists before its repository adapter so the persistence contract can
+be verified independently. `delivery_attempts` and polling checkpoints remain
+planned and will be introduced by later migrations with their corresponding
+behavior.
