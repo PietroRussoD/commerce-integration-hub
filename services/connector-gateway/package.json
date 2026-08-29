@@ -14,16 +14,22 @@
         "lint": "eslint .",
         "type-check": "tsc --noEmit",
         "test": "vitest run",
+        "test:integration": "vitest run --config vitest.integration.config.ts",
         "test:coverage": "vitest run --coverage",
-        "check": "pnpm lint && pnpm type-check && pnpm test:coverage && pnpm build"
+        "check": "pnpm lint && pnpm type-check && pnpm test:coverage && pnpm build",
+        "db:migrate": "tsx src/database-migrate.ts"
     },
     "dependencies": {
         "ajv": "8.20.0",
-        "fastify": "5.12.1"
+        "fastify": "5.12.1",
+        "kysely": "0.29.5",
+        "pg": "8.23.0"
     },
     "devDependencies": {
         "@eslint/js": "10.0.1",
+        "@testcontainers/postgresql": "12.1.0",
         "@types/node": "26.4.0",
+        "@types/pg": "8.23.1",
         "@vitest/coverage-v8": "4.1.11",
         "eslint": "10.9.1",
         "globals": "17.11.0",

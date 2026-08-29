@@ -92,6 +92,9 @@ jobs:
       - name: Check connector gateway
         run: pnpm check
 
+      - name: Test connector gateway migrations
+        run: pnpm test:integration
+
       - name: Upload connector gateway coverage
         if: always()
         uses: actions/upload-artifact@v7.0.1

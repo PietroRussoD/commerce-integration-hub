@@ -17,6 +17,23 @@ services:
       timeout: 5s
       retries: 15
 
+  connector-gateway-postgres:
+    image: postgres:18.3
+    profiles: ["gateway"]
+    environment:
+      POSTGRES_DB: connector_gateway
+      POSTGRES_USER: connector_gateway
+      POSTGRES_PASSWORD: local-development-only
+    ports:
+      - "${CONNECTOR_GATEWAY_POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - connector-gateway-postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U connector_gateway -d connector_gateway"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v26.2.1
     command:
@@ -103,5 +120,6 @@ services:
       start_period: 5s
 
 volumes:
+  connector-gateway-postgres:
   integration-hub-postgres:
   integration-hub-redpanda:
