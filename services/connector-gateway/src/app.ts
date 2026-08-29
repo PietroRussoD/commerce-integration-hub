@@ -1,7 +1,13 @@
 import Fastify, { type FastifyInstance } from "fastify";
 
+import {
+    type MarketplaceAWebhookRouteOptions,
+    marketplaceAWebhookRoute
+} from "./connectors/marketplace-a/webhook-route.js";
+
 export interface BuildApplicationOptions {
     logger?: boolean;
+    marketplaceAWebhook?: MarketplaceAWebhookRouteOptions;
 }
 
 interface HealthResponse {
@@ -29,6 +35,10 @@ export function buildApplication(options: BuildApplicationOptions = {}): Fastify
         },
         () => ({ status: "UP" })
     );
+
+    if (options.marketplaceAWebhook !== undefined) {
+        application.register(marketplaceAWebhookRoute, options.marketplaceAWebhook);
+    }
 
     return application;
 }
