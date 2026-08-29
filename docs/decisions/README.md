@@ -25,6 +25,8 @@ implementation chronology.
   TypeScript, and Fastify for the provider-facing Connector Gateway.
 - [ADR 0011](0011-gateway-postgresql-kysely-persistence.md): gateway-owned
   PostgreSQL delivery state with Kysely migrations and repository adapters.
+- [ADR 0012](0012-short-lived-gateway-delivery-claims.md): bounded,
+  non-blocking gateway delivery claims with short leases and fencing tokens.
 
 Accepted records are not edited to hide a later change of direction. Later
 extensions or replacements are recorded in a new ADR and linked to the earlier
