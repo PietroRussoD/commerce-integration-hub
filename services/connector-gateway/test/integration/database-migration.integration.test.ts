@@ -43,6 +43,10 @@ describe("connector gateway database migration", () => {
             expect.objectContaining({
                 migrationName: "002_seed_marketplace_a_connector",
                 status: "Success"
+            }),
+            expect.objectContaining({
+                migrationName: "003_add_delivery_lease_token",
+                status: "Success"
             })
         ]);
         expect(secondRun).toEqual([]);
@@ -122,6 +126,20 @@ describe("connector gateway database migration", () => {
                         CONNECTOR_A_ID
                     ),
                     provider_payload_hash: "not-a-sha-256"
+                })
+                .execute()
+        ).rejects.toMatchObject({ code: "23514" });
+
+        await expect(
+            database
+                .insertInto("inbound_deliveries")
+                .values({
+                    ...inboundDelivery(
+                        "0199037b-6400-7000-8000-000000000208",
+                        CONNECTOR_A_ID
+                    ),
+                    external_event_id: "evt-invalid-lease",
+                    lease_owner: "worker-without-token"
                 })
                 .execute()
         ).rejects.toMatchObject({ code: "23514" });
