@@ -103,11 +103,11 @@ rotation, strict provider validation, canonical mapping, and receipt-command
 fingerprinting. Its Kysely-managed PostgreSQL delivery-ledger schema and
 constraints are integration-tested. Its transactional repository classifies
 first receipts, equivalent replays, and conflicting content under concurrent
-requests without replacing the original delivery. Runtime composition is not
-yet connected, so the running gateway still does not accept or persist
-deliveries. It does not yet forward canonical orders or poll cursor-based
-provider APIs. The completed gateway will own delivery state but will not
-mutate authoritative order state.
+requests without replacing the original delivery. The running route composes
+authentication, mapping, the receipt use case, and PostgreSQL lifecycle, and
+returns `202` only after durable commit. It does not yet forward canonical
+orders or poll cursor-based provider APIs. The completed gateway will own
+delivery state but will not mutate authoritative order state.
 
 ### Event Subscription
 
@@ -145,7 +145,7 @@ external subscribers remain planned.
 | Operator order summary API | Implemented |
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
-| Provider-specific Connector Gateway | Signed-webhook boundary, delivery schema, and repository implemented; runtime wiring in progress |
+| Provider-specific Connector Gateway | Durable signed-webhook receipt implemented; forwarding worker in progress |
 | OpenSearch projection | Planned |
 
 ## Non-goals

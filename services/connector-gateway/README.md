@@ -17,11 +17,14 @@ Current implemented scope:
   and a real PostgreSQL migration test;
 - a transactional Kysely repository that atomically classifies first receipt,
   equivalent replay, and conflicting payload while preserving the first
-  delivery identity and content under concurrent requests.
+  delivery identity and content under concurrent requests;
+- production composition of webhook authentication, canonical mapping, receipt
+  use case, repository, and database lifecycle.
 
-The provider route is tested but not registered by the running application.
-Authenticated valid requests fail closed with `503` until durable receipt is
-connected during application composition.
+The running provider route returns `202` only after PostgreSQL commit. An
+equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
+conflicting bytes for the same provider event return `409`. Forwarding accepted
+deliveries to the Integration Core is the next increment.
 
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).
@@ -64,7 +67,15 @@ records the persistence decision.
 ## Run
 
 ```bash
-pnpm dev
+docker compose --profile gateway up -d connector-gateway-postgres
+
+DATABASE_URL=postgresql://connector_gateway:local-development-only@localhost:5434/connector_gateway \
+  pnpm db:migrate
+
+DATABASE_URL=postgresql://connector_gateway:local-development-only@localhost:5434/connector_gateway \
+MARKETPLACE_A_WEBHOOK_CURRENT_KEY_ID=local-key \
+MARKETPLACE_A_WEBHOOK_CURRENT_SECRET_BASE64="$(openssl rand -base64 32)" \
+  pnpm dev
 ```
 
 The service listens on `0.0.0.0:8081` by default. Override the bind address
@@ -77,3 +88,6 @@ curl http://localhost:8081/health
 ```json
 {"status":"UP"}
 ```
+
+`MARKETPLACE_A_CONNECTOR_ID` optionally selects a preconfigured connector. It
+defaults to the `MARKETPLACE_A` connector inserted by migration `002`.

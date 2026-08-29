@@ -57,8 +57,10 @@ The current baseline establishes:
   protected by database constraints and real PostgreSQL migration tests;
 - a transactional Connector Gateway repository that preserves a single stable
   delivery identity while classifying concurrent first receipt, equivalent
-  replay, and payload conflict. The route remains unregistered until runtime
-  composition is connected.
+  replay, and payload conflict;
+- a running signed-webhook route composed with PostgreSQL persistence that
+  emits `202` only after durable commit, preserves replay identity, and returns
+  `409` for conflicting provider bytes. Forwarding remains in progress.
 
 The `v0.4.0` release completes the first operator-console increment and its
 release verification. The `v0.5.0-SNAPSHOT` increment is introducing the

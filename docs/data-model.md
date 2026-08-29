@@ -186,6 +186,7 @@ and HTTP status values. A partial index orders dispatchable `RECEIVED` and
 The repository uses the composite unique key to classify concurrent first
 receipt, equivalent replay, and conflicting content transactionally. It never
 replaces the original delivery when a provider reuses an event identity with a
-different payload. Runtime composition remains separate from this persistence
-adapter. `delivery_attempts` and polling checkpoints remain planned and will be
-introduced by later migrations with their corresponding behavior.
+different payload. The signed-webhook route invokes this adapter before
+returning `202`; forwarding state is processed separately. `delivery_attempts`
+and polling checkpoints remain planned and will be introduced by later
+migrations with their corresponding behavior.
