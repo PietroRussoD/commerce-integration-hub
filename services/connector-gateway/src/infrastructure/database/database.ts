@@ -46,6 +46,7 @@ export interface InboundDeliveriesTable {
     readonly attempt_count: Generated<number>;
     readonly next_attempt_at: Generated<Date>;
     readonly lease_owner: string | null;
+    readonly lease_token: Generated<string | null>;
     readonly lease_expires_at: Date | null;
     readonly error_code: string | null;
     readonly safe_error_message: string | null;
