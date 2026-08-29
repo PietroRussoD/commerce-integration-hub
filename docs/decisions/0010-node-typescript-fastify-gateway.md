@@ -23,9 +23,9 @@ structured request logging, lifecycle hooks, and in-process HTTP testing through
 `inject`. The application factory is separate from the process bootstrap so
 tests do not need to open a network port.
 
-Provider authentication, mapping, persistence, retry decisions, and forwarding
-logic will be framework-independent. Fastify types must not cross the inbound
-HTTP adapter into those components.
+Provider authentication and mapping are framework-independent; persistence,
+retry decisions, and forwarding follow the same boundary as they are added.
+Fastify types must not cross the inbound HTTP adapter into those components.
 
 ## Alternatives
 
