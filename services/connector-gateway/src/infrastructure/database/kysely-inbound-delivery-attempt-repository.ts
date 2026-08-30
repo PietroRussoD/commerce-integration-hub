@@ -10,10 +10,18 @@ import type {
     CompleteDeliveredInboundDeliveryAttemptResult,
     DeliveredInboundDeliveryAttemptRepository
 } from "../../application/deliveries/complete-delivered-inbound-delivery-attempt.js";
+import type {
+    CompleteRetryableInboundDeliveryAttemptCommand,
+    CompleteRetryableInboundDeliveryAttemptResult,
+    RetryableInboundDeliveryAttemptRepository
+} from "../../application/deliveries/complete-retryable-inbound-delivery-attempt.js";
 import type { GatewayDatabase } from "./database.js";
 
 export class KyselyInboundDeliveryAttemptRepository
-    implements InboundDeliveryAttemptRepository, DeliveredInboundDeliveryAttemptRepository
+    implements
+        InboundDeliveryAttemptRepository,
+        DeliveredInboundDeliveryAttemptRepository,
+        RetryableInboundDeliveryAttemptRepository
 {
     public constructor(private readonly database: Kysely<GatewayDatabase>) {}
 
@@ -32,7 +40,7 @@ export class KyselyInboundDeliveryAttemptRepository
                 .where("lease_owner", "=", command.workerId)
                 .where("lease_token", "=", command.leaseToken)
                 .where("lease_expires_at", ">", command.startedAt)
-                .returning("attempt_count")
+                .returning(["attempt_count", "received_at"])
                 .executeTakeFirst();
 
             if (delivery === undefined) {
@@ -59,6 +67,7 @@ export class KyselyInboundDeliveryAttemptRepository
             return {
                 attemptId: command.attemptId,
                 attemptNumber: delivery.attempt_count,
+                deliveryReceivedAt: delivery.received_at,
                 outcome: "STARTED",
                 startedAt: command.startedAt
             };
@@ -110,6 +119,70 @@ export class KyselyInboundDeliveryAttemptRepository
                 .where("id", "=", command.attemptId)
                 .where("delivery_id", "=", command.deliveryId)
                 .where("attempt_number", "=", delivery.attempt_count)
+                .where("completed_at", "is", null)
+                .returning("id")
+                .executeTakeFirst();
+
+            if (attempt === undefined) {
+                throw new Error("Current delivery attempt is missing or already completed");
+            }
+            return { outcome: "COMPLETED" };
+        });
+    }
+
+    public completeRetryable(
+        command: CompleteRetryableInboundDeliveryAttemptCommand
+    ): Promise<CompleteRetryableInboundDeliveryAttemptResult> {
+        return this.database.transaction().execute(async (transaction) => {
+            const delivery = await transaction
+                .updateTable("inbound_deliveries")
+                .set({
+                    completed_at:
+                        command.targetStatus === "EXHAUSTED" ? command.completedAt : null,
+                    error_code: command.errorCode,
+                    last_core_order_id: null,
+                    last_http_status: command.httpStatus ?? null,
+                    lease_expires_at: null,
+                    lease_owner: null,
+                    lease_token: null,
+                    next_attempt_at:
+                        command.targetStatus === "RETRY_WAIT"
+                            ? command.nextAttemptAt
+                            : command.completedAt,
+                    safe_error_message: null,
+                    status: command.targetStatus,
+                    updated_at: command.completedAt
+                })
+                .where("id", "=", command.deliveryId)
+                .where("status", "=", "FORWARDING")
+                .where("lease_owner", "=", command.workerId)
+                .where("lease_token", "=", command.leaseToken)
+                .returning("attempt_count")
+                .executeTakeFirst();
+
+            if (delivery === undefined) {
+                return { outcome: "STALE_CLAIM" };
+            }
+            if (delivery.attempt_count !== command.attemptNumber) {
+                throw new Error("Current delivery attempt number does not match");
+            }
+
+            const attempt = await transaction
+                .updateTable("delivery_attempts")
+                .set({
+                    completed_at: command.completedAt,
+                    duration_ms: sql<number>`GREATEST(
+                        0,
+                        FLOOR(EXTRACT(EPOCH FROM (${command.completedAt} - started_at)) * 1000)
+                    )::integer`,
+                    error_code: command.errorCode,
+                    http_status: command.httpStatus ?? null,
+                    outcome: "RETRYABLE_FAILURE",
+                    safe_error_message: null
+                })
+                .where("id", "=", command.attemptId)
+                .where("delivery_id", "=", command.deliveryId)
+                .where("attempt_number", "=", command.attemptNumber)
                 .where("completed_at", "is", null)
                 .returning("id")
                 .executeTakeFirst();

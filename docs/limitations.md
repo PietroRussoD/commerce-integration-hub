@@ -15,7 +15,8 @@ mistaken for available behavior.
   receipt. Bounded concurrent claiming, fencing, and Integration Core HTTP
   outcome classification are implemented. Atomic fenced attempt start is also
   verified independently, together with successful `DELIVERED` completion, but
-  claims are not scheduled and retry or failure outcomes are not persisted yet.
+  claims are not scheduled. Retry and exhaustion outcomes are persisted by an
+  independently tested adapter; permanent and configuration failures remain.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the

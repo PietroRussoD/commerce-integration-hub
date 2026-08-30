@@ -32,7 +32,9 @@ Current implemented scope:
 - an aligned delivery-state vocabulary with database-enforced active,
   forwarding, and terminal lease/completion invariants;
 - atomic fenced `DELIVERED` completion for the current open attempt and delivery,
-  including measured duration and Integration Core response identity.
+  including measured duration and Integration Core response identity;
+- bounded equal-jitter retry scheduling and terminal exhaustion, persisted with
+  attempt completion and lease release in one fenced transaction.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
@@ -40,7 +42,8 @@ conflicting bytes for the same provider event return `409`. Claiming and the
 HTTP client are independently verified but not yet composed into a scheduled
 worker. Attempt start is independently verified but not yet invoked by the
 runtime. Successful outcome persistence is independently verified, while retry
-and failure transitions remain pending.
+and exhaustion persistence are also verified. Permanent and configuration
+failure transitions remain pending.
 
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).

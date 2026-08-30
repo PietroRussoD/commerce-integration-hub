@@ -16,6 +16,7 @@ describe("createStartInboundDeliveryAttemptUseCase", () => {
             .mockResolvedValue({
                 attemptId: ATTEMPT_ID,
                 attemptNumber: 1,
+                deliveryReceivedAt: new Date("2026-08-30T08:00:00.000Z"),
                 outcome: "STARTED",
                 startedAt: new Date("2026-08-30T09:00:00.000Z")
             });
@@ -99,6 +100,7 @@ function createUseCase(
                 Promise.resolve({
                     attemptId: ATTEMPT_ID,
                     attemptNumber: 1,
+                    deliveryReceivedAt: new Date("2026-08-30T08:00:00.000Z"),
                     outcome: "STARTED",
                     startedAt: new Date("2026-08-30T09:00:00.000Z")
                 })

@@ -4,6 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import type { StartInboundDeliveryAttemptCommand } from "../../src/application/deliveries/start-inbound-delivery-attempt.js";
 import type { CompleteDeliveredInboundDeliveryAttemptCommand } from "../../src/application/deliveries/complete-delivered-inbound-delivery-attempt.js";
+import type { CompleteRetryableInboundDeliveryAttemptCommand } from "../../src/application/deliveries/complete-retryable-inbound-delivery-attempt.js";
 import { readMarketplaceAConnectorId } from "../../src/connectors/marketplace-a/connector-configuration.js";
 import { createDatabase, type GatewayDatabase } from "../../src/infrastructure/database/database.js";
 import { KyselyInboundDeliveryAttemptRepository } from "../../src/infrastructure/database/kysely-inbound-delivery-attempt-repository.js";
@@ -13,6 +14,7 @@ const CONNECTOR_ID = readMarketplaceAConnectorId({});
 const DELIVERY_ID = "0199037b-6400-7000-8000-000000000721";
 const LEASE_TOKEN = "0199037b-6400-7000-8000-000000000722";
 const CORE_ORDER_ID = "0199037b-6400-7000-8000-000000000726";
+const RECEIVED_AT = new Date("2026-08-30T08:00:00.000Z");
 const NOW = new Date("2026-08-30T09:00:00.000Z");
 const COMPLETED_AT = new Date("2026-08-30T09:00:30.125Z");
 
@@ -47,6 +49,7 @@ describe("KyselyInboundDeliveryAttemptRepository", () => {
         await expect(repository.start(startCommand())).resolves.toEqual({
             attemptId: "0199037b-6400-7000-8000-000000000723",
             attemptNumber: 1,
+            deliveryReceivedAt: RECEIVED_AT,
             outcome: "STARTED",
             startedAt: NOW
         });
@@ -237,6 +240,117 @@ describe("KyselyInboundDeliveryAttemptRepository", () => {
         });
     });
 
+    it("closes the attempt and schedules a retry", async () => {
+        await insertDelivery();
+        await repository.start(startCommand());
+
+        await expect(repository.completeRetryable(retryCommand())).resolves.toEqual({
+            outcome: "COMPLETED"
+        });
+
+        await expect(
+            database
+                .selectFrom("inbound_deliveries")
+                .select([
+                    "status",
+                    "attempt_count",
+                    "next_attempt_at",
+                    "error_code",
+                    "last_http_status",
+                    "lease_token",
+                    "completed_at"
+                ])
+                .where("id", "=", DELIVERY_ID)
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({
+            status: "RETRY_WAIT",
+            attempt_count: 1,
+            next_attempt_at: new Date("2026-08-30T09:00:05.125Z"),
+            error_code: "CORE_RETRYABLE_STATUS",
+            last_http_status: 503,
+            lease_token: null,
+            completed_at: null
+        });
+        await expect(
+            database
+                .selectFrom("delivery_attempts")
+                .select(["completed_at", "duration_ms", "error_code", "http_status", "outcome"])
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({
+            completed_at: new Date("2026-08-30T09:00:00.125Z"),
+            duration_ms: 125,
+            error_code: "CORE_RETRYABLE_STATUS",
+            http_status: 503,
+            outcome: "RETRYABLE_FAILURE"
+        });
+    });
+
+    it("closes the delivery when retry policy is exhausted", async () => {
+        await insertDelivery();
+        await repository.start(startCommand());
+
+        await expect(repository.completeRetryable(exhaustedCommand())).resolves.toEqual({
+            outcome: "COMPLETED"
+        });
+
+        await expect(
+            database
+                .selectFrom("inbound_deliveries")
+                .select([
+                    "status",
+                    "next_attempt_at",
+                    "error_code",
+                    "last_http_status",
+                    "lease_owner",
+                    "completed_at"
+                ])
+                .where("id", "=", DELIVERY_ID)
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({
+            status: "EXHAUSTED",
+            next_attempt_at: new Date("2026-08-30T09:00:00.125Z"),
+            error_code: "CORE_TIMEOUT",
+            last_http_status: null,
+            lease_owner: null,
+            completed_at: new Date("2026-08-30T09:00:00.125Z")
+        });
+    });
+
+    it("rejects retry completion from a stale claim", async () => {
+        await insertDelivery();
+        await repository.start(startCommand());
+
+        await expect(
+            repository.completeRetryable({
+                ...retryCommand(),
+                leaseToken: "0199037b-6400-7000-8000-000000000728"
+            })
+        ).resolves.toEqual({ outcome: "STALE_CLAIM" });
+        await expect(
+            database
+                .selectFrom("inbound_deliveries")
+                .select(["status", "lease_token"])
+                .where("id", "=", DELIVERY_ID)
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({ status: "FORWARDING", lease_token: LEASE_TOKEN });
+    });
+
+    it("rolls back retry completion for a mismatched attempt number", async () => {
+        await insertDelivery();
+        await repository.start(startCommand());
+
+        await expect(
+            repository.completeRetryable({ ...retryCommand(), attemptNumber: 2 })
+        ).rejects.toThrow("Current delivery attempt number does not match");
+        await expect(
+            database
+                .selectFrom("inbound_deliveries")
+                .select(["status", "lease_token"])
+                .where("id", "=", DELIVERY_ID)
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({ status: "FORWARDING", lease_token: LEASE_TOKEN });
+    });
+
     function startCommand(
         overrides: Partial<StartInboundDeliveryAttemptCommand> = {}
     ): StartInboundDeliveryAttemptCommand {
@@ -263,6 +377,36 @@ describe("KyselyInboundDeliveryAttemptRepository", () => {
             leaseToken: LEASE_TOKEN,
             workerId: "gateway-worker-1",
             ...overrides
+        };
+    }
+
+    function retryCommand(): CompleteRetryableInboundDeliveryAttemptCommand {
+        return {
+            attemptId: "0199037b-6400-7000-8000-000000000723",
+            attemptNumber: 1,
+            completedAt: new Date("2026-08-30T09:00:00.125Z"),
+            deliveryId: DELIVERY_ID,
+            deliveryReceivedAt: RECEIVED_AT,
+            errorCode: "CORE_RETRYABLE_STATUS",
+            httpStatus: 503,
+            leaseToken: LEASE_TOKEN,
+            nextAttemptAt: new Date("2026-08-30T09:00:05.125Z"),
+            targetStatus: "RETRY_WAIT",
+            workerId: "gateway-worker-1"
+        };
+    }
+
+    function exhaustedCommand(): CompleteRetryableInboundDeliveryAttemptCommand {
+        return {
+            attemptId: "0199037b-6400-7000-8000-000000000723",
+            attemptNumber: 1,
+            completedAt: new Date("2026-08-30T09:00:00.125Z"),
+            deliveryId: DELIVERY_ID,
+            deliveryReceivedAt: RECEIVED_AT,
+            errorCode: "CORE_TIMEOUT",
+            leaseToken: LEASE_TOKEN,
+            targetStatus: "EXHAUSTED",
+            workerId: "gateway-worker-1"
         };
     }
 
@@ -299,6 +443,7 @@ describe("KyselyInboundDeliveryAttemptRepository", () => {
                     ]
                 },
                 mapping_version: "marketplace-a-order-v1",
+                received_at: RECEIVED_AT,
                 status,
                 lease_owner: status === "FORWARDING" ? "gateway-worker-1" : null,
                 lease_token: status === "FORWARDING" ? LEASE_TOKEN : null,
