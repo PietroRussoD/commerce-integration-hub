@@ -13,9 +13,11 @@ stateDiagram-v2
     RECEIVED --> FORWARDING: Due delivery claimed
     RETRY_WAIT --> FORWARDING: Due retry claimed
     FORWARDING --> DELIVERED: Successful attempt completed
+    FORWARDING --> RETRY_WAIT: Retryable attempt scheduled
+    FORWARDING --> EXHAUSTED: Retry budget or age exhausted
 
     note right of FORWARDING
-        Retry and failure transitions
+        Permanent and configuration failures
         are not implemented yet
     end note
 ```
@@ -27,7 +29,8 @@ configured lease duration is bounded to five minutes.
 The persisted terminal vocabulary is `DELIVERED`, `PERMANENT_FAILURE`,
 `BLOCKED_CONFIGURATION`, and `EXHAUSTED`. These states require a completion
 timestamp and no lease. `DELIVERED` completion is implemented; the remaining
-terminal transitions are not.
+implemented transitions are `RETRY_WAIT` and `EXHAUSTED`. Permanent and
+configuration-failure transitions remain pending.
 
 ## Concurrent Claim
 
@@ -62,6 +65,12 @@ HTTP status and core order ID, clears the lease, and moves the delivery to
 `DELIVERED`. A mismatched claim changes nothing, while missing current attempt
 evidence rolls back the whole completion transaction.
 
+Retryable completion uses at most five actual attempts and a 24-hour delivery
+age. Equal jitter is applied to base delays of 5 seconds, 30 seconds, 2 minutes,
+and 10 minutes. A bounded `Retry-After` may extend but never shorten that delay.
+Retry schedules `next_attempt_at`; exhausted work receives a terminal completion
+timestamp. Both paths close the attempt and clear the lease atomically.
+
 The HTTP adapter maps Integration Core responses to delivered, blocked
 configuration, permanent failure, or retryable failure. It does not update the
 ledger. This keeps network policy separate from fenced state transitions and
@@ -69,4 +78,5 @@ allows a late worker result to be rejected safely.
 
 See [ADR 0012](decisions/0012-short-lived-gateway-delivery-claims.md) for the
 claim decision and [ADR 0013](decisions/0013-classify-integration-core-http-outcomes.md)
-for HTTP outcome classification.
+for HTTP outcome classification. [ADR 0014](decisions/0014-bound-gateway-delivery-retries.md)
+records the retry policy.

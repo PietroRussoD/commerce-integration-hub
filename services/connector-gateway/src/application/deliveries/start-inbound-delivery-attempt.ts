@@ -18,6 +18,7 @@ export type StartInboundDeliveryAttemptResult =
     | {
           readonly attemptId: string;
           readonly attemptNumber: number;
+          readonly deliveryReceivedAt: Date;
           readonly outcome: "STARTED";
           readonly startedAt: Date;
       }

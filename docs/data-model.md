@@ -221,5 +221,6 @@ and trace ID shape, require delivered attempts to record `200` or `201`, and
 prevent successful attempts from carrying error data.
 Fenced attempt creation is implemented atomically with the delivery attempt
 counter. Successful completion atomically closes the current attempt and moves
-the delivery to `DELIVERED`; retry and failure completion remain later
-increments. Polling checkpoints remain planned.
+the delivery to `DELIVERED`. Retryable completion atomically schedules
+`RETRY_WAIT` or terminates as `EXHAUSTED`; permanent and configuration failure
+completion remain later increments. Polling checkpoints remain planned.

@@ -64,7 +64,7 @@ The current baseline establishes:
 - bounded oldest-first gateway delivery claims using `SKIP LOCKED`, short
   leases, and fencing tokens, plus atomic fenced attempt start, verified with
   concurrent and rollback-focused PostgreSQL tests and constrained lifecycle
-  states, including successful `DELIVERED` completion;
+  states, including successful delivery, bounded retry, and exhaustion;
 - a typed Integration Core HTTP client with bounded configuration, timeouts,
   redirect handling, response validation, and retry classification. Worker
   composition and completion transitions remain in progress.
