@@ -83,6 +83,14 @@ failure. Shutdown aborts in-flight HTTP work, waits for the active cycle, and
 then closes PostgreSQL. The worker is explicitly enabled through configuration;
 receipt-only operation remains available.
 
+Scheduling runs inside the long-lived Node.js process using a one-shot timer
+created only after the preceding cycle completes. It is not an external cron or
+Kubernetes `CronJob`. Multiple service replicas can run the scheduler because
+database row locks, leases, and fencing tokens coordinate delivery ownership.
+The process-level integration test exercises this runtime from a signed webhook
+through a real PostgreSQL ledger and local HTTP core to `DELIVERED`, then verifies
+graceful `SIGTERM` shutdown and absence of configured secrets from captured logs.
+
 The `delivery_attempts` table now defines the evidence written when a real call
 starts and completes. The fenced start operation atomically verifies the current
 unexpired claim, increments `attempt_count`, and inserts the open attempt. A

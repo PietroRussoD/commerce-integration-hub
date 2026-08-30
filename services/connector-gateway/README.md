@@ -74,8 +74,9 @@ pnpm test:integration
 ```
 
 Unit tests and coverage stay fast and container-free. `test:integration`
-starts PostgreSQL 18.3 with Testcontainers and verifies the migration and its
-critical constraints.
+starts PostgreSQL 18.3 with Testcontainers and verifies migrations, critical
+constraints, repositories, durable receipt, and the complete worker process from
+a signed webhook to the Integration Core HTTP boundary and persisted completion.
 
 ## Database migration
 
@@ -142,3 +143,8 @@ MARKETPLACE_A_WEBHOOK_CURRENT_SECRET_BASE64="<canonical-base64-secret>" \
 `INTEGRATION_CORE_TIMEOUT_MILLISECONDS`. Each cycle recovers expired claims
 before claiming new work, and the next cycle is scheduled only after the current
 one finishes.
+
+This is an in-process scheduler, not an operating-system cron task or Kubernetes
+`CronJob`. Every running Gateway replica may execute its own scheduler;
+PostgreSQL `SKIP LOCKED`, leases, and fencing tokens coordinate ownership across
+replicas.
