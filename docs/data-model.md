@@ -216,5 +216,6 @@ state. Attempt numbers are unique per delivery. Database constraints distinguish
 an open attempt from a completed one, validate outcome, duration, HTTP status,
 and trace ID shape, require delivered attempts to record `200` or `201`, and
 prevent successful attempts from carrying error data.
-The schema is implemented; fenced attempt creation and completion remain the
-next application and repository increments. Polling checkpoints remain planned.
+Fenced attempt creation is implemented atomically with the delivery attempt
+counter; completion remains the next application and repository increment.
+Polling checkpoints remain planned.
