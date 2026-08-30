@@ -38,7 +38,9 @@ Current implemented scope:
 - fenced permanent-failure and blocked-configuration completion, including
   non-destructive connector blocking after core authentication rejection;
 - bounded expired-lease recovery that preserves pre-attempt counts, closes
-  abandoned open attempts, reuses the retry policy, and fences concurrent repair.
+  abandoned open attempts, reuses the retry policy, and fences concurrent repair;
+- an application batch worker that composes claim, fenced attempt start,
+  Integration Core forwarding, and every persisted completion outcome.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
@@ -47,8 +49,8 @@ HTTP client are independently verified but not yet composed into a scheduled
 worker. Attempt start is independently verified but not yet invoked by the
 runtime. Successful outcome persistence is independently verified, while retry
 and exhaustion persistence are also verified. Permanent and configuration
-failure transitions and expired-lease recovery are verified as well; scheduled
-worker composition remains pending.
+failure transitions, expired-lease recovery, and batch orchestration are verified
+as well; runtime scheduling and operational configuration remain pending.
 
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).

@@ -1,8 +1,8 @@
 # Gateway Delivery Claim Lifecycle
 
 This document describes the implemented claim, attempt, completion, and recovery
-boundaries. The Integration Core HTTP adapter is implemented and tested
-independently; scheduled worker composition remains a later slice.
+boundaries. The Integration Core HTTP adapter and application batch worker are
+implemented and tested; runtime scheduling remains a later slice.
 
 ## Current State Transition
 
@@ -27,7 +27,7 @@ configured lease duration is bounded to five minutes.
 The persisted terminal vocabulary is `DELIVERED`, `PERMANENT_FAILURE`,
 `BLOCKED_CONFIGURATION`, and `EXHAUSTED`. These states require a completion
 timestamp and no lease. All transitions shown above are implemented and tested
-independently of worker composition.
+at repository and application-orchestration boundaries.
 
 ## Concurrent Claim
 
@@ -52,6 +52,30 @@ The transaction commits before the Integration Core HTTP call. Every
 later state transition must match delivery ID, worker ID, and lease token. A
 claim does not increment `attempt_count` because no network attempt has started
 at that point.
+
+## Processing Batch
+
+```mermaid
+sequenceDiagram
+    participant W as Batch worker
+    participant DB as Gateway PostgreSQL
+    participant C as Integration Core
+
+    W->>DB: Claim bounded due batch
+    par Each claimed delivery
+        W->>DB: Fence claim and open attempt
+        DB-->>W: Attempt number and receipt time
+        W->>C: POST canonical order
+        C-->>W: Typed HTTP outcome
+        W->>DB: Fence and persist outcome
+    end
+```
+
+The application worker executes the claimed batch concurrently. The claim batch
+size therefore also bounds HTTP concurrency. A stale attempt start is never
+forwarded, and a stale completion is counted separately from the remote outcome.
+Unexpected infrastructure failure is propagated; its claim remains
+`FORWARDING` for the expired-lease recovery cycle.
 
 The `delivery_attempts` table now defines the evidence written when a real call
 starts and completes. The fenced start operation atomically verifies the current
