@@ -1,9 +1,6 @@
 import type { ForwardCanonicalOrderResult } from "../forwarding/forward-canonical-order.js";
+import { decideInboundDeliveryRetry } from "./inbound-delivery-retry-policy.js";
 
-const BASE_RETRY_DELAYS_MILLISECONDS = [5_000, 30_000, 120_000, 600_000] as const;
-const MAX_ATTEMPTS = 5;
-const MAX_DELIVERY_AGE_MILLISECONDS = 86_400_000;
-const MAX_RETRY_AFTER_MILLISECONDS = 900_000;
 const MAX_WORKER_ID_LENGTH = 100;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -69,46 +66,18 @@ export function createCompleteRetryableInboundDeliveryAttemptUseCase({
         validateRequest(request);
         const completedAtMilliseconds = currentTimeMilliseconds();
         const completedAt = new Date(completedAtMilliseconds);
-        const deliveryDeadline =
-            request.deliveryReceivedAt.getTime() + MAX_DELIVERY_AGE_MILLISECONDS;
-
-        if (request.attemptNumber >= MAX_ATTEMPTS || completedAtMilliseconds >= deliveryDeadline) {
-            return repository.completeRetryable({
-                ...request,
-                completedAt,
-                targetStatus: "EXHAUSTED",
-                workerId
-            });
-        }
-
-        const randomValue = random();
-        if (!Number.isFinite(randomValue) || randomValue < 0 || randomValue >= 1) {
-            throw new Error("random must return a finite number between 0 inclusive and 1 exclusive");
-        }
-        const delayIndex = (request.attemptNumber - 1) as 0 | 1 | 2 | 3;
-        const baseDelay = BASE_RETRY_DELAYS_MILLISECONDS[delayIndex];
-        const minimumJitteredDelay = Math.ceil(baseDelay / 2);
-        const jitteredDelay =
-            minimumJitteredDelay +
-            Math.floor(randomValue * (baseDelay - minimumJitteredDelay + 1));
-        const delay = Math.max(jitteredDelay, request.retryAfterMilliseconds ?? 0);
-        const nextAttemptAtMilliseconds = completedAtMilliseconds + delay;
+        const decision = decideInboundDeliveryRetry({
+            attemptNumber: request.attemptNumber,
+            completedAt,
+            deliveryReceivedAt: request.deliveryReceivedAt,
+            randomValue: random(),
+            retryAfterMilliseconds: request.retryAfterMilliseconds
+        });
 
         return repository.completeRetryable(
-            nextAttemptAtMilliseconds >= deliveryDeadline
-                ? {
-                      ...request,
-                      completedAt,
-                      targetStatus: "EXHAUSTED",
-                      workerId
-                  }
-                : {
-                      ...request,
-                      completedAt,
-                      nextAttemptAt: new Date(nextAttemptAtMilliseconds),
-                      targetStatus: "RETRY_WAIT",
-                      workerId
-                  }
+            decision.targetStatus === "EXHAUSTED"
+                ? { ...request, completedAt, targetStatus: "EXHAUSTED", workerId }
+                : { ...request, completedAt, ...decision, workerId }
         );
     };
 }
@@ -117,27 +86,11 @@ function validateRequest(request: CompleteRetryableInboundDeliveryAttemptRequest
     assertUuid(request.attemptId, "attemptId");
     assertUuid(request.deliveryId, "deliveryId");
     assertUuid(request.leaseToken, "leaseToken");
-    if (!Number.isInteger(request.attemptNumber) || request.attemptNumber < 1 || request.attemptNumber > MAX_ATTEMPTS) {
-        throw new Error(`attemptNumber must be an integer between 1 and ${MAX_ATTEMPTS}`);
-    }
-    if (!Number.isFinite(request.deliveryReceivedAt.getTime())) {
-        throw new Error("deliveryReceivedAt must be a valid date");
-    }
     if (
         request.httpStatus !== undefined &&
         (!Number.isInteger(request.httpStatus) || request.httpStatus < 100 || request.httpStatus > 599)
     ) {
         throw new Error("httpStatus must be an integer between 100 and 599");
-    }
-    if (
-        request.retryAfterMilliseconds !== undefined &&
-        (!Number.isInteger(request.retryAfterMilliseconds) ||
-            request.retryAfterMilliseconds < 0 ||
-            request.retryAfterMilliseconds > MAX_RETRY_AFTER_MILLISECONDS)
-    ) {
-        throw new Error(
-            `retryAfterMilliseconds must be an integer between 0 and ${MAX_RETRY_AFTER_MILLISECONDS}`
-        );
     }
 }
 

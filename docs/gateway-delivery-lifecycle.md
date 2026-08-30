@@ -1,9 +1,8 @@
 # Gateway Delivery Claim Lifecycle
 
-This document describes the implemented claim boundary. The Integration Core
-HTTP adapter is implemented and tested independently; worker composition,
-remaining completion outcomes, retry scheduling, and expired-lease recovery
-remain later slices.
+This document describes the implemented claim, attempt, completion, and recovery
+boundaries. The Integration Core HTTP adapter is implemented and tested
+independently; scheduled worker composition remains a later slice.
 
 ## Current State Transition
 
@@ -17,6 +16,8 @@ stateDiagram-v2
     FORWARDING --> EXHAUSTED: Retry budget or age exhausted
     FORWARDING --> PERMANENT_FAILURE: Request permanently rejected
     FORWARDING --> BLOCKED_CONFIGURATION: Core authentication rejected
+    FORWARDING --> RETRY_WAIT: Expired lease recovered
+    FORWARDING --> EXHAUSTED: Expired lease exceeds delivery age
 ```
 
 Only deliveries belonging to an `ACTIVE` connector are eligible. Claims are
@@ -61,6 +62,26 @@ HTTP status and core order ID, clears the lease, and moves the delivery to
 `DELIVERED`. A mismatched claim changes nothing, while missing current attempt
 evidence rolls back the whole completion transaction.
 
+## Expired Lease Recovery
+
+```mermaid
+sequenceDiagram
+    participant R as Recovery cycle
+    participant P as Shared retry policy
+    participant DB as Gateway PostgreSQL
+
+    R->>DB: Find bounded expired FORWARDING claims
+    alt No open attempt
+        R->>DB: Fence claim and return to RETRY_WAIT
+        Note over R,DB: attempt_count is unchanged
+    else Open attempt exists
+        R->>P: Evaluate attempt count and delivery age
+        P-->>R: RETRY_WAIT or EXHAUSTED
+        R->>DB: Fence claim, close attempt, apply decision
+    end
+    DB-->>R: RECOVERED or STALE_CLAIM
+```
+
 Retryable completion uses at most five actual attempts and a 24-hour delivery
 age. Equal jitter is applied to base delays of 5 seconds, 30 seconds, 2 minutes,
 and 10 minutes. A bounded `Retry-After` may extend but never shorten that delay.
@@ -71,6 +92,14 @@ Permanent failure and blocked configuration also close the current attempt and
 delivery atomically. A core `401` or `403` moves an active connector to
 `BLOCKED_CONFIGURATION`, preventing further claims. A connector already marked
 `DISABLED` is never overwritten by this automatic transition.
+
+Expired leases are scanned in bounded oldest-first batches. Recovery before an
+HTTP attempt returns the delivery to `RETRY_WAIT` immediately without changing
+`attempt_count`. Recovery with an open attempt closes that attempt as
+`RETRYABLE_FAILURE` and applies the same bounded retry policy as an ordinary
+transport failure. The recovery update matches the observed owner, token,
+attempt number, and expiry; a changed claim returns `STALE_CLAIM`, while changed
+attempt evidence rolls back the transaction for reevaluation on a later scan.
 
 The HTTP adapter maps Integration Core responses to delivered, blocked
 configuration, permanent failure, or retryable failure. It does not update the

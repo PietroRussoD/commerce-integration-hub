@@ -17,7 +17,8 @@ mistaken for available behavior.
   verified independently, together with successful `DELIVERED` completion, but
   claims are not scheduled. Retry and exhaustion outcomes are persisted by an
   independently tested adapter; permanent and configuration failures are also
-  persisted, but the runtime worker and expired-lease recovery remain pending.
+  persisted. Expired claims are recovered with fenced retry or exhaustion
+  transitions, but the scheduled runtime worker remains pending.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the
