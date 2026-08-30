@@ -22,6 +22,10 @@ Only deliveries belonging to an `ACTIVE` connector are eligible. Claims are
 ordered by `next_attempt_at`, then `received_at`, and bounded to 100 rows. The
 configured lease duration is bounded to five minutes.
 
+The persisted terminal vocabulary is `DELIVERED`, `PERMANENT_FAILURE`,
+`BLOCKED_CONFIGURATION`, and `EXHAUSTED`. These states require a completion
+timestamp and no lease. Their transitions are not implemented yet.
+
 ## Concurrent Claim
 
 ```mermaid

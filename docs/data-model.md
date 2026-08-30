@@ -196,8 +196,11 @@ erDiagram
 second delivery with the same key must be classified atomically as an equivalent
 replay or a payload conflict by comparing its SHA-256 fingerprint. Check
 constraints bound connector modes, delivery states, hashes, attempts, leases,
-and HTTP status values. A partial index orders dispatchable `RECEIVED` and
-`RETRY_WAIT` rows by their next attempt and receipt times.
+and HTTP status values. Active states are `RECEIVED`, `FORWARDING`, and
+`RETRY_WAIT`; terminal states are `DELIVERED`, `PERMANENT_FAILURE`,
+`BLOCKED_CONFIGURATION`, and `EXHAUSTED`. A lifecycle constraint requires lease
+ownership only while forwarding and `completed_at` only for terminal rows. A
+partial index orders dispatchable rows by their next attempt and receipt times.
 
 The claim adapter locks only eligible delivery rows with `SKIP LOCKED`, assigns
 one lease token to a bounded batch, and commits before network work begins. The
