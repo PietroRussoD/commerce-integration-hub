@@ -21,16 +21,21 @@ Current implemented scope:
 - production composition of webhook authentication, canonical mapping, receipt
   use case, repository, and database lifecycle;
 - a bounded delivery-claim use case and Kysely adapter using oldest-first
-  eligibility, `SKIP LOCKED`, short leases, and UUID fencing tokens.
+  eligibility, `SKIP LOCKED`, short leases, and UUID fencing tokens;
+- an Integration Core HTTP client behind an application port, with bounded
+  configuration, timeout and cancellation handling, manual redirects, validated
+  success responses, and typed delivery outcomes.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
-conflicting bytes for the same provider event return `409`. Forwarding accepted
-deliveries to the Integration Core is the next increment. Claiming is verified
-but not scheduled by the running process yet.
+conflicting bytes for the same provider event return `409`. Claiming and the
+HTTP client are independently verified but not yet composed into a scheduled
+worker, and forwarding outcomes do not yet mutate delivery state.
 
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).
+The forwarding boundary and response policy are recorded in
+[ADR 0013](../../docs/decisions/0013-classify-integration-core-http-outcomes.md).
 
 ## Requirements
 

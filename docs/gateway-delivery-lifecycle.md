@@ -1,6 +1,7 @@
 # Gateway Delivery Claim Lifecycle
 
-This document describes the implemented claim boundary. HTTP forwarding,
+This document describes the implemented claim boundary. The Integration Core
+HTTP adapter is implemented and tested independently; worker composition,
 completion, retry scheduling, and expired-lease recovery remain later slices.
 
 ## Current State Transition
@@ -12,8 +13,8 @@ stateDiagram-v2
     RETRY_WAIT --> FORWARDING: Due retry claimed
 
     note right of FORWARDING
-        Completion, retry, and recovery
-        are not implemented yet
+        HTTP outcomes are classified;
+        lifecycle transitions are not implemented yet
     end note
 ```
 
@@ -40,10 +41,16 @@ sequenceDiagram
     end
 ```
 
-The transaction commits before any future Integration Core HTTP call. Every
+The transaction commits before the Integration Core HTTP call. Every
 later state transition must match delivery ID, worker ID, and lease token. A
 claim does not increment `attempt_count` because no network attempt has started
 at that point.
 
+The HTTP adapter maps Integration Core responses to delivered, blocked
+configuration, permanent failure, or retryable failure. It does not update the
+ledger. This keeps network policy separate from fenced state transitions and
+allows a late worker result to be rejected safely.
+
 See [ADR 0012](decisions/0012-short-lived-gateway-delivery-claims.md) for the
-decision and rejected alternatives.
+claim decision and [ADR 0013](decisions/0013-classify-integration-core-http-outcomes.md)
+for HTTP outcome classification.

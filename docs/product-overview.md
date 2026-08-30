@@ -97,7 +97,7 @@ integration state remain separate audited capabilities.
 
 ### Provider-specific Connector Gateway
 
-In progress. The Node.js and TypeScript gateway has a tested but unregistered
+In progress. The Node.js and TypeScript gateway has a registered
 `MARKETPLACE_A` HTTP adapter covering exact raw-body authentication, key
 rotation, strict provider validation, canonical mapping, and receipt-command
 fingerprinting. Its Kysely-managed PostgreSQL delivery-ledger schema and
@@ -106,8 +106,11 @@ first receipts, equivalent replays, and conflicting content under concurrent
 requests without replacing the original delivery. The running route composes
 authentication, mapping, the receipt use case, and PostgreSQL lifecycle, and
 returns `202` only after durable commit. It does not yet forward canonical
-orders or poll cursor-based provider APIs. The completed gateway will own
-delivery state but will not mutate authoritative order state.
+orders automatically or poll cursor-based provider APIs. Bounded concurrent
+claims and a typed Integration Core HTTP client are independently tested, but
+worker scheduling and fenced outcome persistence are not yet composed. The
+completed gateway will own delivery state but will not mutate authoritative
+order state.
 
 ### Event Subscription
 
@@ -145,7 +148,7 @@ external subscribers remain planned.
 | Operator order summary API | Implemented |
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
-| Provider-specific Connector Gateway | Durable signed-webhook receipt implemented; forwarding worker in progress |
+| Provider-specific Connector Gateway | Durable receipt, fenced claims, and core HTTP client implemented; worker composition in progress |
 | OpenSearch projection | Planned |
 
 ## Non-goals
