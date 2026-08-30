@@ -69,7 +69,8 @@ The current baseline establishes:
 - a typed Integration Core HTTP client with bounded configuration, timeouts,
   redirect handling, response validation, and retry classification, composed by
   a bounded application batch worker and an opt-in recovery-first runtime
-  scheduler with overlap prevention and graceful shutdown.
+  scheduler with overlap prevention, graceful shutdown, and bounded-cardinality
+  Prometheus metrics.
 
 The `v0.4.0` release completes the first operator-console increment and its
 release verification. The `v0.5.0-SNAPSHOT` increment is introducing the

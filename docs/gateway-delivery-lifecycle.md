@@ -91,6 +91,11 @@ The process-level integration test exercises this runtime from a signed webhook
 through a real PostgreSQL ledger and local HTTP core to `DELIVERED`, then verifies
 graceful `SIGTERM` shutdown and absence of configured secrets from captured logs.
 
+Prometheus records cycle outcomes and duration, active-cycle state, last
+successful cycle time, fixed delivery outcomes, and recovery outcomes. Labels
+are bounded enums; delivery and worker identities remain in logs and the ledger,
+not metric labels.
+
 The `delivery_attempts` table now defines the evidence written when a real call
 starts and completes. The fenced start operation atomically verifies the current
 unexpired claim, increments `attempt_count`, and inserts the open attempt. A

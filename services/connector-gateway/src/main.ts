@@ -19,6 +19,7 @@ import { KyselyInboundDeliveryClaimRepository } from "./infrastructure/database/
 import { KyselyInboundDeliveryRepository } from "./infrastructure/database/kysely-inbound-delivery-repository.js";
 import { FetchIntegrationCoreOrderClient } from "./infrastructure/http/fetch-integration-core-order-client.js";
 import { readIntegrationCoreClientConfiguration } from "./infrastructure/http/integration-core-client-configuration.js";
+import { createConnectorGatewayMetrics } from "./infrastructure/observability/delivery-worker-metrics.js";
 import {
     assertLeaseExceedsForwardingTimeout,
     readDeliveryWorkerConfiguration
@@ -49,6 +50,7 @@ const databaseConfiguration = loadDatabaseConfiguration();
 const webhookSecurityConfiguration = readMarketplaceAWebhookSecurityConfiguration(process.env);
 const deliveryWorkerConfiguration = readDeliveryWorkerConfiguration(process.env);
 const database = createDatabase(databaseConfiguration);
+const metrics = createConnectorGatewayMetrics();
 const deliveryRepository = new KyselyInboundDeliveryRepository(database);
 const receiveInboundDelivery = createReceiveInboundDeliveryUseCase({
     connectorId: readMarketplaceAConnectorId(),
@@ -61,7 +63,8 @@ const application = buildApplication({
             webhookSecurityConfiguration
         ),
         receiveInboundDelivery
-    }
+    },
+    metrics: metrics.exporter
 });
 let deliveryWorker: DeliveryWorkerScheduler | undefined;
 
@@ -105,6 +108,7 @@ if (deliveryWorkerConfiguration.enabled) {
     deliveryWorker = createDeliveryWorkerScheduler({
         intervalMilliseconds: deliveryWorkerConfiguration.intervalMilliseconds,
         logger: application.log,
+        metrics: metrics.deliveryWorker,
         processBatch,
         recoverExpired: createRecoverExpiredInboundDeliveriesUseCase({
             batchSize: deliveryWorkerConfiguration.batchSize,

@@ -177,6 +177,23 @@ describe("Connector Gateway delivery worker process", () => {
             ]
         });
 
+        const metricsResponse = await fetch(`http://127.0.0.1:${gatewayPort}/metrics`);
+        const metrics = await metricsResponse.text();
+        expect(metricsResponse.status).toBe(200);
+        expect(metricsResponse.headers.get("content-type")).toBe(
+            "text/plain; version=0.0.4; charset=utf-8"
+        );
+        expect(metrics).toContain(
+            'connector_gateway_delivery_worker_deliveries_total{outcome="claimed"} 1'
+        );
+        expect(metrics).toContain(
+            'connector_gateway_delivery_worker_deliveries_total{outcome="delivered"} 1'
+        );
+        expect(metrics).toContain(
+            'connector_gateway_delivery_worker_cycles_total{outcome="completed"}'
+        );
+        expect(metrics).toContain("connector_gateway_process_resident_memory_bytes");
+
         gatewayProcess!.kill("SIGTERM");
         await expect(waitForProcessExit(gatewayProcess!)).resolves.toEqual({
             code: 0,

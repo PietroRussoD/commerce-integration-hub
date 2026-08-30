@@ -1,5 +1,6 @@
 import type { ProcessInboundDeliveryBatchResult } from "../../application/deliveries/process-inbound-delivery-batch.js";
 import type { RecoverExpiredInboundDeliveriesResult } from "../../application/deliveries/recover-expired-inbound-deliveries.js";
+import type { DeliveryWorkerMetrics } from "../observability/delivery-worker-metrics.js";
 
 interface DeliveryWorkerLogger {
     error(context: { readonly err: unknown }, message: string): void;
@@ -12,8 +13,10 @@ interface DeliveryWorkerCycleResult {
 }
 
 export interface DeliveryWorkerSchedulerDependencies {
+    readonly currentTimeMilliseconds?: () => number;
     readonly intervalMilliseconds: number;
     readonly logger: DeliveryWorkerLogger;
+    readonly metrics: DeliveryWorkerMetrics;
     readonly processBatch: (request: {
         readonly signal: AbortSignal;
     }) => Promise<ProcessInboundDeliveryBatchResult>;
@@ -26,8 +29,10 @@ export interface DeliveryWorkerScheduler {
 }
 
 export function createDeliveryWorkerScheduler({
+    currentTimeMilliseconds = performance.now.bind(performance),
     intervalMilliseconds,
     logger,
+    metrics,
     processBatch,
     recoverExpired
 }: DeliveryWorkerSchedulerDependencies): DeliveryWorkerScheduler {
@@ -38,9 +43,29 @@ export function createDeliveryWorkerScheduler({
 
     const executeCycle = (): void => {
         const signal = abortController!.signal;
+        const startedAtMilliseconds = currentTimeMilliseconds();
+        metrics.cycleStarted();
         activeCycle = runCycle(signal)
+            .then((result) => {
+                const durationSeconds = elapsedSeconds(
+                    startedAtMilliseconds,
+                    currentTimeMilliseconds()
+                );
+                if (result === undefined) {
+                    metrics.recordCancelled(durationSeconds);
+                } else {
+                    metrics.recordCompleted(result, durationSeconds);
+                }
+            })
             .catch((error: unknown) => {
-                if (!signal.aborted) {
+                const durationSeconds = elapsedSeconds(
+                    startedAtMilliseconds,
+                    currentTimeMilliseconds()
+                );
+                if (signal.aborted) {
+                    metrics.recordCancelled(durationSeconds);
+                } else {
+                    metrics.recordFailed(durationSeconds);
                     logger.error({ err: error }, "Delivery worker cycle failed");
                 }
             })
@@ -52,15 +77,19 @@ export function createDeliveryWorkerScheduler({
             });
     };
 
-    const runCycle = async (signal: AbortSignal): Promise<void> => {
+    const runCycle = async (
+        signal: AbortSignal
+    ): Promise<DeliveryWorkerCycleResult | undefined> => {
         const recovery = await recoverExpired();
         if (signal.aborted) {
-            return;
+            return undefined;
         }
         const processing = await processBatch({ signal });
+        const result = { processing, recovery };
         if (recovery.found > 0 || processing.claimed > 0) {
-            logger.info({ processing, recovery }, "Delivery worker cycle completed");
+            logger.info(result, "Delivery worker cycle completed");
         }
+        return result;
     };
 
     return {
@@ -82,4 +111,8 @@ export function createDeliveryWorkerScheduler({
             await activeCycle;
         }
     };
+}
+
+function elapsedSeconds(startedAtMilliseconds: number, completedAtMilliseconds: number): number {
+    return Math.max(0, completedAtMilliseconds - startedAtMilliseconds) / 1_000;
 }

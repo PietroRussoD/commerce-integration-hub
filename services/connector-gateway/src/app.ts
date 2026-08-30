@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from "fastify";
 
+import type { MetricsExporter } from "./infrastructure/observability/delivery-worker-metrics.js";
 import {
     type MarketplaceAWebhookRouteOptions,
     marketplaceAWebhookRoute
@@ -8,6 +9,7 @@ import {
 export interface BuildApplicationOptions {
     logger?: boolean;
     marketplaceAWebhook?: MarketplaceAWebhookRouteOptions;
+    metrics?: MetricsExporter;
 }
 
 interface HealthResponse {
@@ -35,6 +37,14 @@ export function buildApplication(options: BuildApplicationOptions = {}): Fastify
         },
         () => ({ status: "UP" })
     );
+
+    if (options.metrics !== undefined) {
+        application.get("/metrics", async (_request, reply) => {
+            reply.header("Cache-Control", "no-store");
+            reply.type(options.metrics!.contentType);
+            return options.metrics!.metrics();
+        });
+    }
 
     if (options.marketplaceAWebhook !== undefined) {
         application.register(marketplaceAWebhookRoute, options.marketplaceAWebhook);

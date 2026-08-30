@@ -45,6 +45,14 @@ describe("createDeliveryWorkerScheduler", () => {
             },
             "Delivery worker cycle completed"
         );
+        expect(dependencies.metrics.cycleStarted).toHaveBeenCalledTimes(1);
+        expect(dependencies.metrics.recordCompleted).toHaveBeenCalledWith(
+            {
+                processing: { ...EMPTY_PROCESSING, claimed: 1, delivered: 1 },
+                recovery: { found: 1, recovered: 1, staleClaims: 0 }
+            },
+            0
+        );
 
         await vi.advanceTimersByTimeAsync(1_000);
         expect(dependencies.recoverExpired).toHaveBeenCalledTimes(2);
@@ -75,6 +83,7 @@ describe("createDeliveryWorkerScheduler", () => {
             { err: failure },
             "Delivery worker cycle failed"
         );
+        expect(dependencies.metrics.recordFailed).toHaveBeenCalledWith(0);
         await vi.advanceTimersByTimeAsync(1_000);
         expect(dependencies.recoverExpired).toHaveBeenCalledTimes(2);
         await scheduler.stop();
@@ -93,6 +102,7 @@ describe("createDeliveryWorkerScheduler", () => {
 
         expect(dependencies.processBatch).not.toHaveBeenCalled();
         expect(dependencies.logger.error).not.toHaveBeenCalled();
+        expect(dependencies.metrics.recordCancelled).toHaveBeenCalledWith(0);
     });
 
     it("does not log a failure produced while stopping", async () => {
@@ -107,6 +117,7 @@ describe("createDeliveryWorkerScheduler", () => {
         await stopping;
 
         expect(dependencies.logger.error).not.toHaveBeenCalled();
+        expect(dependencies.metrics.recordCancelled).toHaveBeenCalledWith(0);
     });
 
     it("cancels a pending timer and permits a later restart", async () => {
@@ -124,14 +135,38 @@ describe("createDeliveryWorkerScheduler", () => {
         expect(dependencies.recoverExpired).toHaveBeenCalledTimes(2);
         await scheduler.stop();
     });
+
+    it("clamps duration if the injected monotonic clock moves backwards", async () => {
+        const dependencies = createDependencies();
+        dependencies.currentTimeMilliseconds
+            .mockReturnValueOnce(100)
+            .mockReturnValueOnce(50);
+        const scheduler = createDeliveryWorkerScheduler(dependencies);
+
+        scheduler.start();
+        await flushPromises();
+
+        expect(dependencies.metrics.recordCompleted).toHaveBeenCalledWith(
+            { processing: EMPTY_PROCESSING, recovery: EMPTY_RECOVERY },
+            0
+        );
+        await scheduler.stop();
+    });
 });
 
 function createDependencies() {
     return {
+        currentTimeMilliseconds: vi.fn(() => 0),
         intervalMilliseconds: 1_000,
         logger: {
             error: vi.fn(),
             info: vi.fn()
+        },
+        metrics: {
+            cycleStarted: vi.fn(),
+            recordCancelled: vi.fn(),
+            recordCompleted: vi.fn(),
+            recordFailed: vi.fn()
         },
         processBatch: vi.fn().mockResolvedValue(EMPTY_PROCESSING),
         recoverExpired: vi.fn().mockResolvedValue(EMPTY_RECOVERY)

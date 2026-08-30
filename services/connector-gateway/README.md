@@ -42,7 +42,9 @@ Current implemented scope:
 - an application batch worker that composes claim, fenced attempt start,
   Integration Core forwarding, and every persisted completion outcome;
 - an opt-in non-overlapping runtime scheduler with recovery-first cycles,
-  activity summaries, failure isolation, and graceful cancellation.
+  activity summaries, failure isolation, and graceful cancellation;
+- a Prometheus `/metrics` endpoint with Node.js runtime and bounded-cardinality
+  worker cycle, duration, delivery-outcome, and recovery metrics.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
@@ -148,3 +150,20 @@ This is an in-process scheduler, not an operating-system cron task or Kubernetes
 `CronJob`. Every running Gateway replica may execute its own scheduler;
 PostgreSQL `SKIP LOCKED`, leases, and fencing tokens coordinate ownership across
 replicas.
+
+## Metrics
+
+`GET /metrics` exposes Prometheus text format through the official
+`@prometheus-io/client`. Worker metrics use the
+`connector_gateway_delivery_worker_` prefix and cover:
+
+- cycles and durations by `completed`, `failed`, or `cancelled` outcome;
+- active-cycle state and last successful cycle timestamp;
+- claimed deliveries and fixed processing outcomes;
+- recovered and stale expired claims.
+
+Node.js runtime metrics use the `connector_gateway_` prefix. Counters are local
+to each process and must be summed across replicas by Prometheus. No worker,
+delivery, URL, or free-form error value is used as a metric label. The endpoint
+uses `Cache-Control: no-store`; production routing should expose it only to the
+monitoring network or an internal ingress.
