@@ -12,6 +12,7 @@ export default defineConfig({
                 "src/database-migrate.ts",
                 "src/**/*.test.ts",
                 "src/infrastructure/database/database.ts",
+                "src/infrastructure/database/kysely-inbound-delivery-attempt-repository.ts",
                 "src/infrastructure/database/kysely-inbound-delivery-claim-repository.ts",
                 "src/infrastructure/database/kysely-inbound-delivery-repository.ts",
                 "src/infrastructure/database/migrations/**/*.ts",

@@ -26,14 +26,16 @@ Current implemented scope:
   configuration, timeout and cancellation handling, manual redirects, validated
   success responses, and typed delivery outcomes;
 - a constrained PostgreSQL `delivery_attempts` schema with per-delivery attempt
-  numbering and coherent open and completed evidence.
+  numbering and coherent open and completed evidence;
+- an atomic fenced attempt-start use case and Kysely adapter that increment the
+  delivery count and insert open attempt evidence in one transaction.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
 conflicting bytes for the same provider event return `409`. Claiming and the
 HTTP client are independently verified but not yet composed into a scheduled
-worker. Attempt persistence is not yet invoked and forwarding outcomes do not
-yet mutate delivery state.
+worker. Attempt start is independently verified but not yet invoked by the
+runtime, and forwarding outcomes do not yet mutate delivery state.
 
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).
