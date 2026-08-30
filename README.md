@@ -62,8 +62,10 @@ The current baseline establishes:
   emits `202` only after durable commit, preserves replay identity, and returns
   `409` for conflicting provider bytes;
 - bounded oldest-first gateway delivery claims using `SKIP LOCKED`, short
-  leases, and fencing tokens, verified with concurrent PostgreSQL workers.
-  HTTP forwarding and completion transitions remain in progress.
+  leases, and fencing tokens, verified with concurrent PostgreSQL workers;
+- a typed Integration Core HTTP client with bounded configuration, timeouts,
+  redirect handling, response validation, and retry classification. Worker
+  composition and completion transitions remain in progress.
 
 The `v0.4.0` release completes the first operator-console increment and its
 release verification. The `v0.5.0-SNAPSHOT` increment is introducing the

@@ -12,9 +12,9 @@ mistaken for available behavior.
 - The Connector Gateway contains locally verified `MARKETPLACE_A` authentication,
   validation, mapping, durable receipt, and replay/conflict classification. Its
   schema and repository are tested against PostgreSQL, including concurrent
-  receipt. Bounded concurrent claiming and fencing are implemented, but claims
-  are not scheduled and accepted deliveries are not yet sent to the Integration
-  Core.
+  receipt. Bounded concurrent claiming, fencing, and Integration Core HTTP
+  outcome classification are implemented, but claims are not scheduled and
+  forwarding outcomes are not persisted yet.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the

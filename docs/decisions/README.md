@@ -27,6 +27,8 @@ implementation chronology.
   PostgreSQL delivery state with Kysely migrations and repository adapters.
 - [ADR 0012](0012-short-lived-gateway-delivery-claims.md): bounded,
   non-blocking gateway delivery claims with short leases and fencing tokens.
+- [ADR 0013](0013-classify-integration-core-http-outcomes.md): bounded and
+  typed Integration Core HTTP outcome classification.
 
 Accepted records are not edited to hide a later change of direction. Later
 extensions or replacements are recorded in a new ADR and linked to the earlier
