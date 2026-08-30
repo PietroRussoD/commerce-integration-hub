@@ -15,13 +15,19 @@ import type {
     CompleteRetryableInboundDeliveryAttemptResult,
     RetryableInboundDeliveryAttemptRepository
 } from "../../application/deliveries/complete-retryable-inbound-delivery-attempt.js";
+import type {
+    CompleteTerminalInboundDeliveryAttemptCommand,
+    CompleteTerminalInboundDeliveryAttemptResult,
+    TerminalInboundDeliveryAttemptRepository
+} from "../../application/deliveries/complete-terminal-inbound-delivery-attempt.js";
 import type { GatewayDatabase } from "./database.js";
 
 export class KyselyInboundDeliveryAttemptRepository
     implements
         InboundDeliveryAttemptRepository,
         DeliveredInboundDeliveryAttemptRepository,
-        RetryableInboundDeliveryAttemptRepository
+        RetryableInboundDeliveryAttemptRepository,
+        TerminalInboundDeliveryAttemptRepository
 {
     public constructor(private readonly database: Kysely<GatewayDatabase>) {}
 
@@ -189,6 +195,78 @@ export class KyselyInboundDeliveryAttemptRepository
 
             if (attempt === undefined) {
                 throw new Error("Current delivery attempt is missing or already completed");
+            }
+            return { outcome: "COMPLETED" };
+        });
+    }
+
+    public completeTerminal(
+        command: CompleteTerminalInboundDeliveryAttemptCommand
+    ): Promise<CompleteTerminalInboundDeliveryAttemptResult> {
+        return this.database.transaction().execute(async (transaction) => {
+            const delivery = await transaction
+                .updateTable("inbound_deliveries")
+                .set({
+                    completed_at: command.completedAt,
+                    error_code: command.errorCode,
+                    last_core_order_id: null,
+                    last_http_status: command.httpStatus,
+                    lease_expires_at: null,
+                    lease_owner: null,
+                    lease_token: null,
+                    next_attempt_at: command.completedAt,
+                    safe_error_message: null,
+                    status: command.outcome,
+                    updated_at: command.completedAt
+                })
+                .where("id", "=", command.deliveryId)
+                .where("status", "=", "FORWARDING")
+                .where("lease_owner", "=", command.workerId)
+                .where("lease_token", "=", command.leaseToken)
+                .returning(["attempt_count", "connector_id"])
+                .executeTakeFirst();
+
+            if (delivery === undefined) {
+                return { outcome: "STALE_CLAIM" };
+            }
+            if (delivery.attempt_count !== command.attemptNumber) {
+                throw new Error("Current delivery attempt number does not match");
+            }
+
+            const attempt = await transaction
+                .updateTable("delivery_attempts")
+                .set({
+                    completed_at: command.completedAt,
+                    duration_ms: sql<number>`GREATEST(
+                        0,
+                        FLOOR(EXTRACT(EPOCH FROM (${command.completedAt} - started_at)) * 1000)
+                    )::integer`,
+                    error_code: command.errorCode,
+                    http_status: command.httpStatus,
+                    outcome: command.outcome,
+                    safe_error_message: null
+                })
+                .where("id", "=", command.attemptId)
+                .where("delivery_id", "=", command.deliveryId)
+                .where("attempt_number", "=", command.attemptNumber)
+                .where("completed_at", "is", null)
+                .returning("id")
+                .executeTakeFirst();
+
+            if (attempt === undefined) {
+                throw new Error("Current delivery attempt is missing or already completed");
+            }
+
+            if (command.outcome === "BLOCKED_CONFIGURATION") {
+                await transaction
+                    .updateTable("connector_configurations")
+                    .set({
+                        status: "BLOCKED_CONFIGURATION",
+                        updated_at: command.completedAt
+                    })
+                    .where("id", "=", delivery.connector_id)
+                    .where("status", "=", "ACTIVE")
+                    .execute();
             }
             return { outcome: "COMPLETED" };
         });
