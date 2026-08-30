@@ -87,6 +87,7 @@ export function createDatabase(configuration: DatabaseConfiguration): Kysely<Gat
     return new Kysely<GatewayDatabase>({
         dialect: new PostgresDialect({
             pool: new Pool({
+                connectionTimeoutMillis: configuration.connectionTimeoutMilliseconds,
                 connectionString: configuration.connectionString,
                 max: configuration.maxPoolSize
             })

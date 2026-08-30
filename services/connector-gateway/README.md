@@ -112,15 +112,27 @@ MARKETPLACE_A_WEBHOOK_CURRENT_SECRET_BASE64="$(openssl rand -base64 32)" \
 ```
 
 The service listens on `0.0.0.0:8081` by default. Override the bind address
-with `HOST` and the port with `PORT`.
+with `HOST` and the port with `PORT`. Health endpoints are:
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /health` | backward-compatible liveness |
+| `GET /health/live` | process liveness |
+| `GET /health/ready` | PostgreSQL readiness, returning `503` when unavailable |
 
 ```bash
-curl http://localhost:8081/health
+curl http://localhost:8081/health/ready
 ```
 
 ```json
-{"status":"UP"}
+{"checks":{"database":"UP"},"status":"UP"}
 ```
+
+Integration Core is deliberately excluded from readiness. Core outages are
+handled through durable retry and must not prevent the Gateway from accepting
+provider webhooks. Database connection acquisition defaults to a bounded two
+seconds and can be configured with
+`DATABASE_CONNECTION_TIMEOUT_MILLISECONDS` between `100` and `30000`.
 
 `MARKETPLACE_A_CONNECTOR_ID` optionally selects a preconfigured connector. It
 defaults to the `MARKETPLACE_A` connector inserted by migration `002`.
