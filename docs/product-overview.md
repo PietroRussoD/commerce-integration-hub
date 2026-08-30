@@ -148,7 +148,7 @@ external subscribers remain planned.
 | Operator order summary API | Implemented |
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
-| Provider-specific Connector Gateway | Durable receipt and complete fenced forwarding flow implemented; runtime scheduling in progress |
+| Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
 | OpenSearch projection | Planned |
 
 ## Non-goals

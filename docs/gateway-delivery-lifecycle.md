@@ -1,8 +1,8 @@
 # Gateway Delivery Claim Lifecycle
 
 This document describes the implemented claim, attempt, completion, and recovery
-boundaries. The Integration Core HTTP adapter and application batch worker are
-implemented and tested; runtime scheduling remains a later slice.
+boundaries. The Integration Core HTTP adapter, application batch worker, and
+non-overlapping runtime scheduler are implemented and tested.
 
 ## Current State Transition
 
@@ -76,6 +76,12 @@ size therefore also bounds HTTP concurrency. A stale attempt start is never
 forwarded, and a stale completion is counted separately from the remote outcome.
 Unexpected infrastructure failure is propagated; its claim remains
 `FORWARDING` for the expired-lease recovery cycle.
+
+The runtime executes recovery before processing, waits for a cycle to finish
+before scheduling the next one, and logs only cycles with activity or unexpected
+failure. Shutdown aborts in-flight HTTP work, waits for the active cycle, and
+then closes PostgreSQL. The worker is explicitly enabled through configuration;
+receipt-only operation remains available.
 
 The `delivery_attempts` table now defines the evidence written when a real call
 starts and completes. The fenced start operation atomically verifies the current

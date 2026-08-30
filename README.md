@@ -68,7 +68,8 @@ The current baseline establishes:
   failure, blocked configuration, and expired-lease recovery;
 - a typed Integration Core HTTP client with bounded configuration, timeouts,
   redirect handling, response validation, and retry classification, composed by
-  a bounded application batch worker. Runtime scheduling remains in progress.
+  a bounded application batch worker and an opt-in recovery-first runtime
+  scheduler with overlap prevention and graceful shutdown.
 
 The `v0.4.0` release completes the first operator-console increment and its
 release verification. The `v0.5.0-SNAPSHOT` increment is introducing the
