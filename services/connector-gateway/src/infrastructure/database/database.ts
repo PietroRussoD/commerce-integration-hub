@@ -16,6 +16,11 @@ export type InboundDeliveryStatus =
     | "RECEIVED"
     | "RETRY_WAIT"
     | "SUCCEEDED";
+export type DeliveryAttemptOutcome =
+    | "BLOCKED_CONFIGURATION"
+    | "DELIVERED"
+    | "PERMANENT_FAILURE"
+    | "RETRYABLE_FAILURE";
 
 export interface ConnectorConfigurationsTable {
     readonly id: string;
@@ -59,8 +64,23 @@ export interface InboundDeliveriesTable {
     readonly payload_expires_at: Generated<Date>;
 }
 
+export interface DeliveryAttemptsTable {
+    readonly id: string;
+    readonly delivery_id: string;
+    readonly attempt_number: number;
+    readonly started_at: Date;
+    readonly completed_at: Date | null;
+    readonly outcome: DeliveryAttemptOutcome | null;
+    readonly http_status: number | null;
+    readonly error_code: string | null;
+    readonly safe_error_message: string | null;
+    readonly duration_ms: number | null;
+    readonly trace_id: string | null;
+}
+
 export interface GatewayDatabase {
     readonly connector_configurations: ConnectorConfigurationsTable;
+    readonly delivery_attempts: DeliveryAttemptsTable;
     readonly inbound_deliveries: InboundDeliveriesTable;
 }
 

@@ -47,6 +47,10 @@ describe("connector gateway database migration", () => {
             expect.objectContaining({
                 migrationName: "003_add_delivery_lease_token",
                 status: "Success"
+            }),
+            expect.objectContaining({
+                migrationName: "004_create_delivery_attempts",
+                status: "Success"
             })
         ]);
         expect(secondRun).toEqual([]);
@@ -55,12 +59,13 @@ describe("connector gateway database migration", () => {
             SELECT table_name
             FROM information_schema.tables
             WHERE table_schema = 'public'
-              AND table_name IN ('connector_configurations', 'inbound_deliveries')
+              AND table_name IN ('connector_configurations', 'delivery_attempts', 'inbound_deliveries')
             ORDER BY table_name
         `.execute(database);
 
         expect(tables.rows.map(({ table_name: tableName }) => tableName)).toEqual([
             "connector_configurations",
+            "delivery_attempts",
             "inbound_deliveries"
         ]);
 
@@ -73,6 +78,110 @@ describe("connector gateway database migration", () => {
             id: "0199037b-6400-7000-8000-000000000001",
             provider: "MARKETPLACE_A",
             secret_reference: "env:MARKETPLACE_A_WEBHOOK_CURRENT_SECRET_BASE64"
+        });
+    });
+
+    it("enforces the delivery-attempt lifecycle", async () => {
+        const deliveryId = "0199037b-6400-7000-8000-000000000211";
+        await database
+            .insertInto("inbound_deliveries")
+            .values(
+                inboundDelivery(deliveryId, "0199037b-6400-7000-8000-000000000001")
+            )
+            .execute();
+
+        const openAttempt = deliveryAttempt(
+            "0199037b-6400-7000-8000-000000000212",
+            deliveryId,
+            1
+        );
+        await database.insertInto("delivery_attempts").values(openAttempt).execute();
+
+        await expect(
+            database
+                .insertInto("delivery_attempts")
+                .values(
+                    deliveryAttempt(
+                        "0199037b-6400-7000-8000-000000000213",
+                        deliveryId,
+                        0
+                    )
+                )
+                .execute()
+        ).rejects.toMatchObject({ code: "23514" });
+
+        await expect(
+            database
+                .insertInto("delivery_attempts")
+                .values({
+                    ...deliveryAttempt(
+                        "0199037b-6400-7000-8000-000000000216",
+                        deliveryId,
+                        3
+                    ),
+                    completed_at: new Date("2026-08-30T08:00:00.125Z"),
+                    duration_ms: 125,
+                    outcome: "DELIVERED"
+                })
+                .execute()
+        ).rejects.toMatchObject({ code: "23514" });
+
+        await expect(
+            database
+                .insertInto("delivery_attempts")
+                .values({
+                    ...deliveryAttempt(
+                        "0199037b-6400-7000-8000-000000000214",
+                        deliveryId,
+                        2
+                    ),
+                    outcome: "RETRYABLE_FAILURE"
+                })
+                .execute()
+        ).rejects.toMatchObject({ code: "23514" });
+
+        await expect(
+            database
+                .insertInto("delivery_attempts")
+                .values({
+                    ...deliveryAttempt(
+                        "0199037b-6400-7000-8000-000000000215",
+                        deliveryId,
+                        1
+                    )
+                })
+                .execute()
+        ).rejects.toMatchObject({ code: "23505" });
+
+        await database
+            .updateTable("delivery_attempts")
+            .set({
+                completed_at: new Date("2026-08-30T08:00:00.125Z"),
+                duration_ms: 125,
+                http_status: 201,
+                outcome: "DELIVERED"
+            })
+            .where("id", "=", openAttempt.id)
+            .execute();
+
+        await expect(
+            database
+                .selectFrom("delivery_attempts")
+                .select([
+                    "attempt_number",
+                    "completed_at",
+                    "duration_ms",
+                    "http_status",
+                    "outcome"
+                ])
+                .where("id", "=", openAttempt.id)
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({
+            attempt_number: 1,
+            completed_at: new Date("2026-08-30T08:00:00.125Z"),
+            duration_ms: 125,
+            http_status: 201,
+            outcome: "DELIVERED"
         });
     });
 
@@ -187,5 +296,21 @@ function inboundDelivery(id: string, connectorId: string) {
         correlation_id: null,
         last_core_order_id: null,
         completed_at: null
+    };
+}
+
+function deliveryAttempt(id: string, deliveryId: string, attemptNumber: number) {
+    return {
+        id,
+        delivery_id: deliveryId,
+        attempt_number: attemptNumber,
+        started_at: new Date("2026-08-30T08:00:00.000Z"),
+        completed_at: null,
+        outcome: null,
+        http_status: null,
+        error_code: null,
+        safe_error_message: null,
+        duration_ms: null,
+        trace_id: "a".repeat(32)
     };
 }
