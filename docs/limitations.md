@@ -14,8 +14,8 @@ mistaken for available behavior.
   schema and repository are tested against PostgreSQL, including concurrent
   receipt. Bounded concurrent claiming, fencing, and Integration Core HTTP
   outcome classification are implemented. Atomic fenced attempt start is also
-  verified independently, but claims are not scheduled and forwarding outcomes
-  are not persisted yet.
+  verified independently, together with successful `DELIVERED` completion, but
+  claims are not scheduled and retry or failure outcomes are not persisted yet.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the

@@ -220,5 +220,6 @@ an open attempt from a completed one, validate outcome, duration, HTTP status,
 and trace ID shape, require delivered attempts to record `200` or `201`, and
 prevent successful attempts from carrying error data.
 Fenced attempt creation is implemented atomically with the delivery attempt
-counter; completion remains the next application and repository increment.
-Polling checkpoints remain planned.
+counter. Successful completion atomically closes the current attempt and moves
+the delivery to `DELIVERED`; retry and failure completion remain later
+increments. Polling checkpoints remain planned.
