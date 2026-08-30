@@ -40,7 +40,9 @@ Current implemented scope:
 - bounded expired-lease recovery that preserves pre-attempt counts, closes
   abandoned open attempts, reuses the retry policy, and fences concurrent repair;
 - an application batch worker that composes claim, fenced attempt start,
-  Integration Core forwarding, and every persisted completion outcome.
+  Integration Core forwarding, and every persisted completion outcome;
+- an opt-in non-overlapping runtime scheduler with recovery-first cycles,
+  activity summaries, failure isolation, and graceful cancellation.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
@@ -49,8 +51,8 @@ HTTP client are independently verified but not yet composed into a scheduled
 worker. Attempt start is independently verified but not yet invoked by the
 runtime. Successful outcome persistence is independently verified, while retry
 and exhaustion persistence are also verified. Permanent and configuration
-failure transitions, expired-lease recovery, and batch orchestration are verified
-as well; runtime scheduling and operational configuration remain pending.
+failure transitions, expired-lease recovery, batch orchestration, and runtime
+scheduling are verified as well.
 
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).
@@ -119,3 +121,24 @@ curl http://localhost:8081/health
 
 `MARKETPLACE_A_CONNECTOR_ID` optionally selects a preconfigured connector. It
 defaults to the `MARKETPLACE_A` connector inserted by migration `002`.
+
+The forwarding worker is disabled by default. Enable it after provisioning a
+source API key in Integration Core:
+
+```bash
+DELIVERY_WORKER_ENABLED=true \
+DELIVERY_WORKER_ID=connector-gateway-local \
+INTEGRATION_CORE_BASE_URL=http://localhost:8080 \
+INTEGRATION_CORE_SOURCE_API_KEY="<provisioned-source-api-key>" \
+DATABASE_URL=postgresql://connector_gateway:local-development-only@localhost:5434/connector_gateway \
+MARKETPLACE_A_WEBHOOK_CURRENT_KEY_ID=local-key \
+MARKETPLACE_A_WEBHOOK_CURRENT_SECRET_BASE64="<canonical-base64-secret>" \
+  pnpm dev
+```
+
+`DELIVERY_WORKER_BATCH_SIZE` defaults to `5`,
+`DELIVERY_WORKER_INTERVAL_MILLISECONDS` to `2000`, and
+`DELIVERY_WORKER_LEASE_DURATION_MILLISECONDS` to `60000`. The lease must exceed
+`INTEGRATION_CORE_TIMEOUT_MILLISECONDS`. Each cycle recovers expired claims
+before claiming new work, and the next cycle is scheduled only after the current
+one finishes.
