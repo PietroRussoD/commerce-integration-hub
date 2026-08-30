@@ -20,9 +20,10 @@ mistaken for available behavior.
   persisted. Expired claims are recovered with fenced retry or exhaustion
   transitions. The application batch worker composes the complete forwarding
   path. Its opt-in runtime scheduler executes recovery-first cycles without
-  overlap and supports graceful cancellation. Gateway worker metrics remain
-  pending; the complete forwarding process is covered by an automated
-  PostgreSQL-backed integration test.
+  overlap and supports graceful cancellation. Prometheus exposes bounded worker
+  cycle, duration, processing, and recovery metrics. The complete forwarding
+  process and metric exposition are covered by an automated PostgreSQL-backed
+  integration test.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the
@@ -44,8 +45,9 @@ mistaken for available behavior.
   simulator keeps its source API key only in page memory and is intended for
   local development and portfolio demonstrations, not production operation.
 - Health checks, structured logs, correlation IDs, Prometheus runtime metrics,
-  and bounded outbox outcome metrics are available. Distributed tracing,
-  alerting rules, and production dashboards are not.
+  and bounded outbox and Gateway-worker outcome metrics are available.
+  Distributed tracing, alerting rules, and production dashboards are not.
+  Deployment must restrict `/metrics` to trusted monitoring infrastructure.
 - Raw provider payloads are not retained by the canonical API.
 
 ## Deployment and Scale

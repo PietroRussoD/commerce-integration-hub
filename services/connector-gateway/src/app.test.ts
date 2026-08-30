@@ -38,4 +38,23 @@ describe("health endpoint", () => {
 
         expect(response.statusCode).toBe(401);
     });
+
+    it("exposes a configured Prometheus registry", async () => {
+        const application = buildApplication({
+            metrics: {
+                contentType: "text/plain; version=0.0.4; charset=utf-8",
+                metrics: () => Promise.resolve("gateway_test_metric 1\n")
+            }
+        });
+        applications.push(application);
+
+        const response = await application.inject({ method: "GET", url: "/metrics" });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.headers["content-type"]).toBe(
+            "text/plain; version=0.0.4; charset=utf-8"
+        );
+        expect(response.headers["cache-control"]).toBe("no-store");
+        expect(response.body).toBe("gateway_test_metric 1\n");
+    });
 });

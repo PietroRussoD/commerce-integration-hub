@@ -20,6 +20,7 @@
         "db:migrate": "tsx src/database-migrate.ts"
     },
     "dependencies": {
+        "@prometheus-io/client": "0.16.1",
         "ajv": "8.20.0",
         "fastify": "5.12.1",
         "kysely": "0.29.5",
