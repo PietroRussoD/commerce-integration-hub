@@ -20,12 +20,20 @@ import type {
     CompleteTerminalInboundDeliveryAttemptResult,
     TerminalInboundDeliveryAttemptRepository
 } from "../../application/deliveries/complete-terminal-inbound-delivery-attempt.js";
+import type {
+    ExpiredInboundDelivery,
+    ExpiredInboundDeliveryRepository,
+    FindExpiredInboundDeliveriesCommand,
+    RecoverExpiredInboundDeliveryCommand,
+    RecoverExpiredInboundDeliveryResult
+} from "../../application/deliveries/recover-expired-inbound-deliveries.js";
 import type { GatewayDatabase } from "./database.js";
 
 export class KyselyInboundDeliveryAttemptRepository
     implements
         InboundDeliveryAttemptRepository,
         DeliveredInboundDeliveryAttemptRepository,
+        ExpiredInboundDeliveryRepository,
         RetryableInboundDeliveryAttemptRepository,
         TerminalInboundDeliveryAttemptRepository
 {
@@ -77,6 +85,107 @@ export class KyselyInboundDeliveryAttemptRepository
                 outcome: "STARTED",
                 startedAt: command.startedAt
             };
+        });
+    }
+
+    public findExpired(
+        command: FindExpiredInboundDeliveriesCommand
+    ): Promise<readonly ExpiredInboundDelivery[]> {
+        return this.database
+            .selectFrom("inbound_deliveries as delivery")
+            .leftJoin("delivery_attempts as attempt", (join) =>
+                join
+                    .onRef("attempt.delivery_id", "=", "delivery.id")
+                    .onRef("attempt.attempt_number", "=", "delivery.attempt_count")
+                    .on("attempt.completed_at", "is", null)
+            )
+            .select([
+                "attempt.id as attemptId",
+                "delivery.attempt_count as attemptNumber",
+                "delivery.id as deliveryId",
+                "delivery.received_at as deliveryReceivedAt",
+                "delivery.lease_owner as leaseOwner",
+                "delivery.lease_token as leaseToken"
+            ])
+            .where("delivery.status", "=", "FORWARDING")
+            .where("delivery.lease_expires_at", "<=", command.expiredAt)
+            .orderBy("delivery.lease_expires_at", "asc")
+            .orderBy("delivery.received_at", "asc")
+            .limit(command.limit)
+            .$narrowType<{ leaseOwner: string; leaseToken: string }>()
+            .execute();
+    }
+
+    public recoverExpired(
+        command: RecoverExpiredInboundDeliveryCommand
+    ): Promise<RecoverExpiredInboundDeliveryResult> {
+        return this.database.transaction().execute(async (transaction) => {
+            const delivery = await transaction
+                .updateTable("inbound_deliveries")
+                .set({
+                    completed_at:
+                        command.targetStatus === "EXHAUSTED" ? command.recoveredAt : null,
+                    error_code: command.errorCode,
+                    last_core_order_id: null,
+                    last_http_status: null,
+                    lease_expires_at: null,
+                    lease_owner: null,
+                    lease_token: null,
+                    next_attempt_at:
+                        command.targetStatus === "RETRY_WAIT"
+                            ? command.nextAttemptAt
+                            : command.recoveredAt,
+                    safe_error_message: null,
+                    status: command.targetStatus,
+                    updated_at: command.recoveredAt
+                })
+                .where("id", "=", command.deliveryId)
+                .where("status", "=", "FORWARDING")
+                .where("attempt_count", "=", command.attemptNumber)
+                .where("lease_owner", "=", command.leaseOwner)
+                .where("lease_token", "=", command.leaseToken)
+                .where("lease_expires_at", "<=", command.recoveredAt)
+                .returning("id")
+                .executeTakeFirst();
+
+            if (delivery === undefined) {
+                return { outcome: "STALE_CLAIM" };
+            }
+
+            const openAttempt = await transaction
+                .selectFrom("delivery_attempts")
+                .select("id")
+                .where("delivery_id", "=", command.deliveryId)
+                .where("attempt_number", "=", command.attemptNumber)
+                .where("completed_at", "is", null)
+                .executeTakeFirst();
+
+            if ((openAttempt?.id ?? null) !== command.attemptId) {
+                throw new Error("Current open delivery attempt changed during recovery");
+            }
+
+            if (command.attemptId !== null) {
+                await transaction
+                    .updateTable("delivery_attempts")
+                    .set({
+                        completed_at: command.recoveredAt,
+                        duration_ms: sql<number>`GREATEST(
+                            0,
+                            FLOOR(EXTRACT(EPOCH FROM (${command.recoveredAt} - started_at)) * 1000)
+                        )::integer`,
+                        error_code: command.errorCode,
+                        http_status: null,
+                        outcome: "RETRYABLE_FAILURE",
+                        safe_error_message: null
+                    })
+                    .where("id", "=", command.attemptId)
+                    .where("delivery_id", "=", command.deliveryId)
+                    .where("attempt_number", "=", command.attemptNumber)
+                    .where("completed_at", "is", null)
+                    .executeTakeFirstOrThrow();
+            }
+
+            return { outcome: "RECOVERED" };
         });
     }
 

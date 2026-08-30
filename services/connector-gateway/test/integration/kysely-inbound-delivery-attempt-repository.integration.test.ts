@@ -6,6 +6,7 @@ import type { StartInboundDeliveryAttemptCommand } from "../../src/application/d
 import type { CompleteDeliveredInboundDeliveryAttemptCommand } from "../../src/application/deliveries/complete-delivered-inbound-delivery-attempt.js";
 import type { CompleteRetryableInboundDeliveryAttemptCommand } from "../../src/application/deliveries/complete-retryable-inbound-delivery-attempt.js";
 import type { CompleteTerminalInboundDeliveryAttemptCommand } from "../../src/application/deliveries/complete-terminal-inbound-delivery-attempt.js";
+import type { RecoverExpiredInboundDeliveryCommand } from "../../src/application/deliveries/recover-expired-inbound-deliveries.js";
 import { readMarketplaceAConnectorId } from "../../src/connectors/marketplace-a/connector-configuration.js";
 import { createDatabase, type GatewayDatabase } from "../../src/infrastructure/database/database.js";
 import { KyselyInboundDeliveryAttemptRepository } from "../../src/infrastructure/database/kysely-inbound-delivery-attempt-repository.js";
@@ -464,6 +465,105 @@ describe("KyselyInboundDeliveryAttemptRepository", () => {
         ).resolves.toEqual({ status: "FORWARDING", lease_token: LEASE_TOKEN });
     });
 
+    it("finds expired claims and returns a pre-attempt claim to the queue", async () => {
+        await insertDelivery();
+        const recoveredAt = new Date("2026-08-30T09:00:30.000Z");
+
+        await expect(
+            repository.findExpired({ expiredAt: recoveredAt, limit: 10 })
+        ).resolves.toEqual([
+            {
+                attemptId: null,
+                attemptNumber: 0,
+                deliveryId: DELIVERY_ID,
+                deliveryReceivedAt: RECEIVED_AT,
+                leaseOwner: "gateway-worker-1",
+                leaseToken: LEASE_TOKEN
+            }
+        ]);
+        await expect(
+            repository.recoverExpired(recoveryCommand({ recoveredAt }))
+        ).resolves.toEqual({ outcome: "RECOVERED" });
+        await expect(
+            database
+                .selectFrom("inbound_deliveries")
+                .select([
+                    "status",
+                    "attempt_count",
+                    "next_attempt_at",
+                    "error_code",
+                    "lease_token"
+                ])
+                .where("id", "=", DELIVERY_ID)
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({
+            status: "RETRY_WAIT",
+            attempt_count: 0,
+            next_attempt_at: recoveredAt,
+            error_code: "CLAIM_LEASE_EXPIRED",
+            lease_token: null
+        });
+    });
+
+    it("closes an open attempt while recovering its expired claim", async () => {
+        await insertDelivery();
+        await repository.start(startCommand());
+        const recoveredAt = new Date("2026-08-30T09:00:30.000Z");
+
+        await expect(
+            repository.recoverExpired(
+                recoveryCommand({
+                    attemptId: startCommand().attemptId,
+                    attemptNumber: 1,
+                    errorCode: "ATTEMPT_LEASE_EXPIRED",
+                    nextAttemptAt: new Date("2026-08-30T09:00:32.500Z"),
+                    recoveredAt
+                })
+            )
+        ).resolves.toEqual({ outcome: "RECOVERED" });
+        await expect(
+            database
+                .selectFrom("delivery_attempts")
+                .select(["completed_at", "duration_ms", "error_code", "outcome"])
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({
+            completed_at: recoveredAt,
+            duration_ms: 30_000,
+            error_code: "ATTEMPT_LEASE_EXPIRED",
+            outcome: "RETRYABLE_FAILURE"
+        });
+    });
+
+    it("rejects recovery after another worker has replaced the claim", async () => {
+        await insertDelivery();
+
+        await expect(
+            repository.recoverExpired(
+                recoveryCommand({
+                    leaseToken: "0199037b-6400-7000-8000-000000000754"
+                })
+            )
+        ).resolves.toEqual({ outcome: "STALE_CLAIM" });
+    });
+
+    it("rolls back recovery when the observed open attempt has changed", async () => {
+        await insertDelivery();
+        await repository.start(startCommand());
+
+        await expect(
+            repository.recoverExpired(
+                recoveryCommand({ attemptNumber: 1, attemptId: null })
+            )
+        ).rejects.toThrow("Current open delivery attempt changed during recovery");
+        await expect(
+            database
+                .selectFrom("inbound_deliveries")
+                .select(["status", "lease_token"])
+                .where("id", "=", DELIVERY_ID)
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({ status: "FORWARDING", lease_token: LEASE_TOKEN });
+    });
+
     function startCommand(
         overrides: Partial<StartInboundDeliveryAttemptCommand> = {}
     ): StartInboundDeliveryAttemptCommand {
@@ -489,6 +589,23 @@ describe("KyselyInboundDeliveryAttemptRepository", () => {
             httpStatus: 201,
             leaseToken: LEASE_TOKEN,
             workerId: "gateway-worker-1",
+            ...overrides
+        };
+    }
+
+    function recoveryCommand(
+        overrides: Partial<RecoverExpiredInboundDeliveryCommand> = {}
+    ): RecoverExpiredInboundDeliveryCommand {
+        return {
+            attemptId: null,
+            attemptNumber: 0,
+            deliveryId: DELIVERY_ID,
+            errorCode: "CLAIM_LEASE_EXPIRED",
+            leaseOwner: "gateway-worker-1",
+            leaseToken: LEASE_TOKEN,
+            nextAttemptAt: new Date("2026-08-30T09:00:30.000Z"),
+            recoveredAt: new Date("2026-08-30T09:00:30.000Z"),
+            targetStatus: "RETRY_WAIT",
             ...overrides
         };
     }

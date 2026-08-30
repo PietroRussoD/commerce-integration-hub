@@ -65,10 +65,10 @@ The current baseline establishes:
   leases, and fencing tokens, plus atomic fenced attempt start, verified with
   concurrent and rollback-focused PostgreSQL tests and constrained lifecycle
   states, including successful delivery, bounded retry, exhaustion, permanent
-  failure, and blocked configuration;
+  failure, blocked configuration, and expired-lease recovery;
 - a typed Integration Core HTTP client with bounded configuration, timeouts,
-  redirect handling, response validation, and retry classification. Worker
-  composition and completion transitions remain in progress.
+  redirect handling, response validation, and retry classification. Scheduled
+  worker composition remains in progress.
 
 The `v0.4.0` release completes the first operator-console increment and its
 release verification. The `v0.5.0-SNAPSHOT` increment is introducing the
