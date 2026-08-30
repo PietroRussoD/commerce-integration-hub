@@ -137,6 +137,7 @@ core.
 ```mermaid
 erDiagram
     connector_configurations ||--o{ inbound_deliveries : receives
+    inbound_deliveries ||--o{ delivery_attempts : records
 
     connector_configurations {
         uuid id PK
@@ -175,6 +176,20 @@ erDiagram
         timestamptz completed_at
         timestamptz payload_expires_at
     }
+
+    delivery_attempts {
+        uuid id PK
+        uuid delivery_id FK
+        integer attempt_number
+        timestamptz started_at
+        timestamptz completed_at
+        varchar outcome
+        smallint http_status
+        varchar error_code
+        varchar safe_error_message
+        integer duration_ms
+        char trace_id
+    }
 ```
 
 `connector_id` and `external_event_id` form the delivery idempotency key. A
@@ -194,6 +209,12 @@ The repository uses the composite unique key to classify concurrent first
 receipt, equivalent replay, and conflicting content transactionally. It never
 replaces the original delivery when a provider reuses an event identity with a
 different payload. The signed-webhook route invokes this adapter before
-returning `202`; forwarding state is processed separately. `delivery_attempts`
-and polling checkpoints remain planned and will be introduced by later
-migrations with their corresponding behavior.
+returning `202`; forwarding state is processed separately.
+
+`delivery_attempts` stores bounded technical evidence separately from delivery
+state. Attempt numbers are unique per delivery. Database constraints distinguish
+an open attempt from a completed one, validate outcome, duration, HTTP status,
+and trace ID shape, require delivered attempts to record `200` or `201`, and
+prevent successful attempts from carrying error data.
+The schema is implemented; fenced attempt creation and completion remain the
+next application and repository increments. Polling checkpoints remain planned.

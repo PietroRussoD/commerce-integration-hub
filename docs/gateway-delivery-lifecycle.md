@@ -46,6 +46,10 @@ later state transition must match delivery ID, worker ID, and lease token. A
 claim does not increment `attempt_count` because no network attempt has started
 at that point.
 
+The `delivery_attempts` table now defines the evidence written when a real call
+starts and completes. Its schema is constrained and migration-tested, but the
+fenced repository operation that creates an attempt is the next increment.
+
 The HTTP adapter maps Integration Core responses to delivered, blocked
 configuration, permanent failure, or retryable failure. It does not update the
 ledger. This keeps network policy separate from fenced state transitions and

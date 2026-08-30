@@ -24,13 +24,16 @@ Current implemented scope:
   eligibility, `SKIP LOCKED`, short leases, and UUID fencing tokens;
 - an Integration Core HTTP client behind an application port, with bounded
   configuration, timeout and cancellation handling, manual redirects, validated
-  success responses, and typed delivery outcomes.
+  success responses, and typed delivery outcomes;
+- a constrained PostgreSQL `delivery_attempts` schema with per-delivery attempt
+  numbering and coherent open and completed evidence.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
 conflicting bytes for the same provider event return `409`. Claiming and the
 HTTP client are independently verified but not yet composed into a scheduled
-worker, and forwarding outcomes do not yet mutate delivery state.
+worker. Attempt persistence is not yet invoked and forwarding outcomes do not
+yet mutate delivery state.
 
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).

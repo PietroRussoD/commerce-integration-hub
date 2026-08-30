@@ -5,11 +5,13 @@ import type { GatewayDatabase } from "./database.js";
 import * as createDeliveryLedger from "./migrations/001_create_delivery_ledger.js";
 import * as seedMarketplaceAConnector from "./migrations/002_seed_marketplace_a_connector.js";
 import * as addDeliveryLeaseToken from "./migrations/003_add_delivery_lease_token.js";
+import * as createDeliveryAttempts from "./migrations/004_create_delivery_attempts.js";
 
 const migrations: Record<string, Migration> = {
     "001_create_delivery_ledger": createDeliveryLedger,
     "002_seed_marketplace_a_connector": seedMarketplaceAConnector,
-    "003_add_delivery_lease_token": addDeliveryLeaseToken
+    "003_add_delivery_lease_token": addDeliveryLeaseToken,
+    "004_create_delivery_attempts": createDeliveryAttempts
 };
 
 const migrationProvider: MigrationProvider = {
