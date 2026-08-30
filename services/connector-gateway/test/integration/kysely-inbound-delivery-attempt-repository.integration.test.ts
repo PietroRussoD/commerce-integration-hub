@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { StartInboundDeliveryAttemptCommand } from "../../src/application/deliveries/start-inbound-delivery-attempt.js";
 import type { CompleteDeliveredInboundDeliveryAttemptCommand } from "../../src/application/deliveries/complete-delivered-inbound-delivery-attempt.js";
 import type { CompleteRetryableInboundDeliveryAttemptCommand } from "../../src/application/deliveries/complete-retryable-inbound-delivery-attempt.js";
+import type { CompleteTerminalInboundDeliveryAttemptCommand } from "../../src/application/deliveries/complete-terminal-inbound-delivery-attempt.js";
 import { readMarketplaceAConnectorId } from "../../src/connectors/marketplace-a/connector-configuration.js";
 import { createDatabase, type GatewayDatabase } from "../../src/infrastructure/database/database.js";
 import { KyselyInboundDeliveryAttemptRepository } from "../../src/infrastructure/database/kysely-inbound-delivery-attempt-repository.js";
@@ -36,6 +37,11 @@ describe("KyselyInboundDeliveryAttemptRepository", () => {
     beforeEach(async () => {
         await database.deleteFrom("delivery_attempts").execute();
         await database.deleteFrom("inbound_deliveries").execute();
+        await database
+            .updateTable("connector_configurations")
+            .set({ status: "ACTIVE" })
+            .where("id", "=", CONNECTOR_ID)
+            .execute();
     });
 
     afterAll(async () => {
@@ -351,6 +357,113 @@ describe("KyselyInboundDeliveryAttemptRepository", () => {
         ).resolves.toEqual({ status: "FORWARDING", lease_token: LEASE_TOKEN });
     });
 
+    it("closes a permanently failed attempt and delivery", async () => {
+        await insertDelivery();
+        await repository.start(startCommand());
+
+        await expect(repository.completeTerminal(permanentCommand())).resolves.toEqual({
+            outcome: "COMPLETED"
+        });
+
+        await expect(
+            database
+                .selectFrom("inbound_deliveries")
+                .select([
+                    "status",
+                    "error_code",
+                    "last_http_status",
+                    "lease_token",
+                    "completed_at"
+                ])
+                .where("id", "=", DELIVERY_ID)
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({
+            status: "PERMANENT_FAILURE",
+            error_code: "CORE_REQUEST_REJECTED",
+            last_http_status: 422,
+            lease_token: null,
+            completed_at: new Date("2026-08-30T09:00:00.125Z")
+        });
+        await expect(
+            database
+                .selectFrom("delivery_attempts")
+                .select(["outcome", "error_code", "http_status", "duration_ms"])
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({
+            outcome: "PERMANENT_FAILURE",
+            error_code: "CORE_REQUEST_REJECTED",
+            http_status: 422,
+            duration_ms: 125
+        });
+    });
+
+    it("blocks an active connector after core authentication rejection", async () => {
+        await insertDelivery();
+        await repository.start(startCommand());
+
+        await expect(repository.completeTerminal(blockedCommand())).resolves.toEqual({
+            outcome: "COMPLETED"
+        });
+
+        await expect(
+            database
+                .selectFrom("inbound_deliveries")
+                .select(["status", "error_code", "last_http_status"])
+                .where("id", "=", DELIVERY_ID)
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({
+            status: "BLOCKED_CONFIGURATION",
+            error_code: "CORE_AUTHENTICATION_REJECTED",
+            last_http_status: 401
+        });
+        await expect(
+            database
+                .selectFrom("connector_configurations")
+                .select("status")
+                .where("id", "=", CONNECTOR_ID)
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({ status: "BLOCKED_CONFIGURATION" });
+    });
+
+    it("does not replace an administrative connector disable", async () => {
+        await insertDelivery();
+        await repository.start(startCommand());
+        await database
+            .updateTable("connector_configurations")
+            .set({ status: "DISABLED" })
+            .where("id", "=", CONNECTOR_ID)
+            .execute();
+
+        await repository.completeTerminal(blockedCommand());
+
+        await expect(
+            database
+                .selectFrom("connector_configurations")
+                .select("status")
+                .where("id", "=", CONNECTOR_ID)
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({ status: "DISABLED" });
+    });
+
+    it("rejects terminal completion from a stale claim", async () => {
+        await insertDelivery();
+        await repository.start(startCommand());
+
+        await expect(
+            repository.completeTerminal({
+                ...permanentCommand(),
+                leaseToken: "0199037b-6400-7000-8000-000000000729"
+            })
+        ).resolves.toEqual({ outcome: "STALE_CLAIM" });
+        await expect(
+            database
+                .selectFrom("inbound_deliveries")
+                .select(["status", "lease_token"])
+                .where("id", "=", DELIVERY_ID)
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({ status: "FORWARDING", lease_token: LEASE_TOKEN });
+    });
+
     function startCommand(
         overrides: Partial<StartInboundDeliveryAttemptCommand> = {}
     ): StartInboundDeliveryAttemptCommand {
@@ -406,6 +519,34 @@ describe("KyselyInboundDeliveryAttemptRepository", () => {
             errorCode: "CORE_TIMEOUT",
             leaseToken: LEASE_TOKEN,
             targetStatus: "EXHAUSTED",
+            workerId: "gateway-worker-1"
+        };
+    }
+
+    function permanentCommand(): CompleteTerminalInboundDeliveryAttemptCommand {
+        return {
+            attemptId: "0199037b-6400-7000-8000-000000000723",
+            attemptNumber: 1,
+            completedAt: new Date("2026-08-30T09:00:00.125Z"),
+            deliveryId: DELIVERY_ID,
+            errorCode: "CORE_REQUEST_REJECTED",
+            httpStatus: 422,
+            leaseToken: LEASE_TOKEN,
+            outcome: "PERMANENT_FAILURE",
+            workerId: "gateway-worker-1"
+        };
+    }
+
+    function blockedCommand(): CompleteTerminalInboundDeliveryAttemptCommand {
+        return {
+            attemptId: "0199037b-6400-7000-8000-000000000723",
+            attemptNumber: 1,
+            completedAt: new Date("2026-08-30T09:00:00.125Z"),
+            deliveryId: DELIVERY_ID,
+            errorCode: "CORE_AUTHENTICATION_REJECTED",
+            httpStatus: 401,
+            leaseToken: LEASE_TOKEN,
+            outcome: "BLOCKED_CONFIGURATION",
             workerId: "gateway-worker-1"
         };
     }

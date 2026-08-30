@@ -222,5 +222,6 @@ prevent successful attempts from carrying error data.
 Fenced attempt creation is implemented atomically with the delivery attempt
 counter. Successful completion atomically closes the current attempt and moves
 the delivery to `DELIVERED`. Retryable completion atomically schedules
-`RETRY_WAIT` or terminates as `EXHAUSTED`; permanent and configuration failure
-completion remain later increments. Polling checkpoints remain planned.
+`RETRY_WAIT` or terminates as `EXHAUSTED`; permanent and configuration failures
+close both records and configuration rejection blocks an active connector.
+Polling checkpoints remain planned.

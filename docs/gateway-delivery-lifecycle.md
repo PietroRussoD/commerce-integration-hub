@@ -15,11 +15,8 @@ stateDiagram-v2
     FORWARDING --> DELIVERED: Successful attempt completed
     FORWARDING --> RETRY_WAIT: Retryable attempt scheduled
     FORWARDING --> EXHAUSTED: Retry budget or age exhausted
-
-    note right of FORWARDING
-        Permanent and configuration failures
-        are not implemented yet
-    end note
+    FORWARDING --> PERMANENT_FAILURE: Request permanently rejected
+    FORWARDING --> BLOCKED_CONFIGURATION: Core authentication rejected
 ```
 
 Only deliveries belonging to an `ACTIVE` connector are eligible. Claims are
@@ -28,9 +25,8 @@ configured lease duration is bounded to five minutes.
 
 The persisted terminal vocabulary is `DELIVERED`, `PERMANENT_FAILURE`,
 `BLOCKED_CONFIGURATION`, and `EXHAUSTED`. These states require a completion
-timestamp and no lease. `DELIVERED` completion is implemented; the remaining
-implemented transitions are `RETRY_WAIT` and `EXHAUSTED`. Permanent and
-configuration-failure transitions remain pending.
+timestamp and no lease. All transitions shown above are implemented and tested
+independently of worker composition.
 
 ## Concurrent Claim
 
@@ -70,6 +66,11 @@ age. Equal jitter is applied to base delays of 5 seconds, 30 seconds, 2 minutes,
 and 10 minutes. A bounded `Retry-After` may extend but never shorten that delay.
 Retry schedules `next_attempt_at`; exhausted work receives a terminal completion
 timestamp. Both paths close the attempt and clear the lease atomically.
+
+Permanent failure and blocked configuration also close the current attempt and
+delivery atomically. A core `401` or `403` moves an active connector to
+`BLOCKED_CONFIGURATION`, preventing further claims. A connector already marked
+`DISABLED` is never overwritten by this automatic transition.
 
 The HTTP adapter maps Integration Core responses to delivered, blocked
 configuration, permanent failure, or retryable failure. It does not update the
