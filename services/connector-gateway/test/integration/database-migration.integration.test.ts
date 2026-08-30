@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createDatabase, type GatewayDatabase } from "../../src/infrastructure/database/database.js";
 import { migrateToLatest } from "../../src/infrastructure/database/migrator.js";
+import * as alignDeliveryLifecycleStates from "../../src/infrastructure/database/migrations/005_align_delivery_lifecycle_states.js";
 
 import type { Kysely } from "kysely";
 
@@ -50,6 +51,10 @@ describe("connector gateway database migration", () => {
             }),
             expect.objectContaining({
                 migrationName: "004_create_delivery_attempts",
+                status: "Success"
+            }),
+            expect.objectContaining({
+                migrationName: "005_align_delivery_lifecycle_states",
                 status: "Success"
             })
         ]);
@@ -252,6 +257,125 @@ describe("connector gateway database migration", () => {
                 })
                 .execute()
         ).rejects.toMatchObject({ code: "23514" });
+
+        await expect(
+            database
+                .insertInto("inbound_deliveries")
+                .values({
+                    ...inboundDelivery(
+                        "0199037b-6400-7000-8000-000000000209",
+                        CONNECTOR_A_ID
+                    ),
+                    external_event_id: "evt-forwarding-without-lease",
+                    status: "FORWARDING"
+                })
+                .execute()
+        ).rejects.toMatchObject({ code: "23514" });
+
+        await expect(
+            database
+                .insertInto("inbound_deliveries")
+                .values({
+                    ...inboundDelivery(
+                        "0199037b-6400-7000-8000-000000000210",
+                        CONNECTOR_A_ID
+                    ),
+                    external_event_id: "evt-delivered-without-completion",
+                    status: "DELIVERED"
+                })
+                .execute()
+        ).rejects.toMatchObject({ code: "23514" });
+
+        await expect(
+            database
+                .insertInto("inbound_deliveries")
+                .values({
+                    ...inboundDelivery(
+                        "0199037b-6400-7000-8000-000000000216",
+                        CONNECTOR_A_ID
+                    ),
+                    external_event_id: "evt-delivered",
+                    status: "DELIVERED",
+                    completed_at: new Date("2026-08-30T10:00:00.000Z")
+                })
+                .execute()
+        ).resolves.toBeDefined();
+    });
+
+    it("maps legacy terminal delivery states", async () => {
+        const migrationDatabase = database as unknown as Kysely<unknown>;
+        await alignDeliveryLifecycleStates.down(migrationDatabase);
+        await database
+            .insertInto("inbound_deliveries")
+            .values([
+                {
+                    ...inboundDelivery(
+                        "0199037b-6400-7000-8000-000000000217",
+                        CONNECTOR_A_ID
+                    ),
+                    external_event_id: "evt-legacy-succeeded"
+                },
+                {
+                    ...inboundDelivery(
+                        "0199037b-6400-7000-8000-000000000218",
+                        CONNECTOR_A_ID
+                    ),
+                    external_event_id: "evt-legacy-auth"
+                },
+                {
+                    ...inboundDelivery(
+                        "0199037b-6400-7000-8000-000000000219",
+                        CONNECTOR_A_ID
+                    ),
+                    external_event_id: "evt-legacy-conflict"
+                }
+            ])
+            .execute();
+        await sql`
+            UPDATE inbound_deliveries
+            SET status = CASE external_event_id
+                WHEN 'evt-legacy-succeeded' THEN 'SUCCEEDED'
+                WHEN 'evt-legacy-auth' THEN 'BLOCKED_AUTH'
+                WHEN 'evt-legacy-conflict' THEN 'PAYLOAD_CONFLICT'
+                ELSE status
+            END
+            WHERE external_event_id LIKE 'evt-legacy-%'
+        `.execute(database);
+
+        await alignDeliveryLifecycleStates.up(migrationDatabase);
+
+        const migrated = await database
+            .selectFrom("inbound_deliveries")
+            .select(["external_event_id", "status", "error_code", "completed_at"])
+            .where("external_event_id", "like", "evt-legacy-%")
+            .orderBy("external_event_id")
+            .execute();
+        expect(migrated.every(({ completed_at: completedAt }) => completedAt instanceof Date)).toBe(
+            true
+        );
+        expect(
+            migrated.map(({ error_code, external_event_id, status }) => ({
+                error_code,
+                external_event_id,
+                status
+            }))
+        ).toEqual([
+            {
+                external_event_id: "evt-legacy-auth",
+                status: "BLOCKED_CONFIGURATION",
+                error_code: "CORE_AUTHENTICATION_REJECTED"
+            },
+            {
+                external_event_id: "evt-legacy-conflict",
+                status: "PERMANENT_FAILURE",
+                error_code: "PAYLOAD_CONFLICT"
+            },
+            {
+                external_event_id: "evt-legacy-succeeded",
+                status: "DELIVERED",
+                error_code: null
+            }
+        ]);
     });
 });
 

@@ -28,7 +28,9 @@ Current implemented scope:
 - a constrained PostgreSQL `delivery_attempts` schema with per-delivery attempt
   numbering and coherent open and completed evidence;
 - an atomic fenced attempt-start use case and Kysely adapter that increment the
-  delivery count and insert open attempt evidence in one transaction.
+  delivery count and insert open attempt evidence in one transaction;
+- an aligned delivery-state vocabulary with database-enforced active,
+  forwarding, and terminal lease/completion invariants.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;

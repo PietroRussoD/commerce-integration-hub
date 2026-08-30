@@ -8,14 +8,13 @@ export type ConnectorProvider = "ERP_B" | "MARKETPLACE_A";
 export type ConnectorMode = "POLLING" | "WEBHOOK";
 export type ConnectorStatus = "ACTIVE" | "BLOCKED_CONFIGURATION" | "DISABLED";
 export type InboundDeliveryStatus =
-    | "BLOCKED_AUTH"
     | "BLOCKED_CONFIGURATION"
+    | "DELIVERED"
+    | "EXHAUSTED"
     | "FORWARDING"
-    | "PAYLOAD_CONFLICT"
     | "PERMANENT_FAILURE"
     | "RECEIVED"
-    | "RETRY_WAIT"
-    | "SUCCEEDED";
+    | "RETRY_WAIT";
 export type DeliveryAttemptOutcome =
     | "BLOCKED_CONFIGURATION"
     | "DELIVERED"
