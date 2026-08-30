@@ -18,7 +18,8 @@ mistaken for available behavior.
   claims are not scheduled. Retry and exhaustion outcomes are persisted by an
   independently tested adapter; permanent and configuration failures are also
   persisted. Expired claims are recovered with fenced retry or exhaustion
-  transitions, but the scheduled runtime worker remains pending.
+  transitions. The application batch worker composes the complete forwarding
+  path, but its runtime scheduler and operational configuration remain pending.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the
