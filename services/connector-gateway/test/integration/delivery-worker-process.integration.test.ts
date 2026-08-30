@@ -54,6 +54,7 @@ describe("Connector Gateway delivery worker process", () => {
     beforeAll(async () => {
         container = await new PostgreSqlContainer("postgres:18.3").start();
         database = createDatabase({
+            connectionTimeoutMilliseconds: 2_000,
             connectionString: container.getConnectionUri(),
             maxPoolSize: 4
         });
@@ -111,6 +112,15 @@ describe("Connector Gateway delivery worker process", () => {
     });
 
     it("forwards a signed durable receipt and shuts down cleanly", async () => {
+        const readinessResponse = await fetch(
+            `http://127.0.0.1:${gatewayPort}/health/ready`
+        );
+        expect(readinessResponse.status).toBe(200);
+        await expect(readinessResponse.json()).resolves.toEqual({
+            checks: { database: "UP" },
+            status: "UP"
+        });
+
         const timestamp = Math.floor(Date.now() / 1_000).toString();
         const signature = createHmac("sha256", WEBHOOK_SECRET)
             .update(timestamp)

@@ -9,6 +9,7 @@ import { readMarketplaceAConnectorId } from "../../src/connectors/marketplace-a/
 import { MARKETPLACE_A_WEBHOOK_PATH } from "../../src/connectors/marketplace-a/webhook-route.js";
 import { createDatabase, type GatewayDatabase } from "../../src/infrastructure/database/database.js";
 import { KyselyInboundDeliveryRepository } from "../../src/infrastructure/database/kysely-inbound-delivery-repository.js";
+import { KyselyDatabaseReadiness } from "../../src/infrastructure/database/kysely-database-readiness.js";
 import { migrateToLatest } from "../../src/infrastructure/database/migrator.js";
 
 const VALID_PAYLOAD = JSON.stringify({
@@ -37,11 +38,13 @@ describe("MARKETPLACE_A durable webhook receipt", () => {
     beforeAll(async () => {
         container = await new PostgreSqlContainer("postgres:18.3").start();
         database = createDatabase({
+            connectionTimeoutMilliseconds: 2_000,
             connectionString: container.getConnectionUri(),
             maxPoolSize: 4
         });
         await migrateToLatest(database);
 
+        const databaseReadiness = new KyselyDatabaseReadiness(database);
         application = buildApplication({
             marketplaceAWebhook: {
                 authenticate: () => ({ authenticated: true }),
@@ -49,7 +52,8 @@ describe("MARKETPLACE_A durable webhook receipt", () => {
                     connectorId: readMarketplaceAConnectorId({}),
                     repository: new KyselyInboundDeliveryRepository(database)
                 })
-            }
+            },
+            readiness: () => databaseReadiness.isReady()
         });
     });
 
@@ -79,6 +83,16 @@ describe("MARKETPLACE_A durable webhook receipt", () => {
             id: first.json<{ deliveryId: string }>().deliveryId,
             external_event_id: "evt-http-1",
             status: "RECEIVED"
+        });
+    });
+
+    it("reports PostgreSQL readiness", async () => {
+        const response = await application.inject({ method: "GET", url: "/health/ready" });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toEqual({
+            checks: { database: "UP" },
+            status: "UP"
         });
     });
 

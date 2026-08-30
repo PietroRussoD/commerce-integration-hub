@@ -22,6 +22,7 @@ describe("connector gateway database migration", () => {
     beforeAll(async () => {
         container = await new PostgreSqlContainer("postgres:18.3").start();
         database = createDatabase({
+            connectionTimeoutMilliseconds: 2_000,
             connectionString: container.getConnectionUri(),
             maxPoolSize: 2
         });

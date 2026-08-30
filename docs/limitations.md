@@ -44,7 +44,8 @@ mistaken for available behavior.
   operational details, and a controlled canonical-ingestion simulator. The
   simulator keeps its source API key only in page memory and is intended for
   local development and portfolio demonstrations, not production operation.
-- Health checks, structured logs, correlation IDs, Prometheus runtime metrics,
+- Liveness and PostgreSQL readiness checks, structured logs, correlation IDs,
+  Prometheus runtime metrics,
   and bounded outbox and Gateway-worker outcome metrics are available.
   Distributed tracing, alerting rules, and production dashboards are not.
   Deployment must restrict `/metrics` to trusted monitoring infrastructure.

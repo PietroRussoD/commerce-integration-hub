@@ -143,7 +143,7 @@ external subscribers remain planned.
 | Kafka publisher adapter | Implemented and broker-tested |
 | Scheduled outbox dispatch | Implemented |
 | Scheduled expired-claim recovery | Implemented |
-| Health checks and Prometheus outbox/Gateway-worker metrics | Implemented |
+| Liveness, database readiness, and Prometheus worker metrics | Implemented |
 | Processing consumer and event deduplication | Implemented and broker-tested |
 | Operator order summary API | Implemented |
 | Operator detail API | Implemented |

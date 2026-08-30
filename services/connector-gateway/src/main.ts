@@ -17,6 +17,7 @@ import { createDatabase } from "./infrastructure/database/database.js";
 import { KyselyInboundDeliveryAttemptRepository } from "./infrastructure/database/kysely-inbound-delivery-attempt-repository.js";
 import { KyselyInboundDeliveryClaimRepository } from "./infrastructure/database/kysely-inbound-delivery-claim-repository.js";
 import { KyselyInboundDeliveryRepository } from "./infrastructure/database/kysely-inbound-delivery-repository.js";
+import { KyselyDatabaseReadiness } from "./infrastructure/database/kysely-database-readiness.js";
 import { FetchIntegrationCoreOrderClient } from "./infrastructure/http/fetch-integration-core-order-client.js";
 import { readIntegrationCoreClientConfiguration } from "./infrastructure/http/integration-core-client-configuration.js";
 import { createConnectorGatewayMetrics } from "./infrastructure/observability/delivery-worker-metrics.js";
@@ -51,6 +52,7 @@ const webhookSecurityConfiguration = readMarketplaceAWebhookSecurityConfiguratio
 const deliveryWorkerConfiguration = readDeliveryWorkerConfiguration(process.env);
 const database = createDatabase(databaseConfiguration);
 const metrics = createConnectorGatewayMetrics();
+const databaseReadiness = new KyselyDatabaseReadiness(database);
 const deliveryRepository = new KyselyInboundDeliveryRepository(database);
 const receiveInboundDelivery = createReceiveInboundDeliveryUseCase({
     connectorId: readMarketplaceAConnectorId(),
@@ -64,7 +66,8 @@ const application = buildApplication({
         ),
         receiveInboundDelivery
     },
-    metrics: metrics.exporter
+    metrics: metrics.exporter,
+    readiness: () => databaseReadiness.isReady()
 });
 let deliveryWorker: DeliveryWorkerScheduler | undefined;
 

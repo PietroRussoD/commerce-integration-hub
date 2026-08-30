@@ -13,10 +13,12 @@ describe("health endpoint", () => {
         const application = buildApplication();
         applications.push(application);
 
-        const response = await application.inject({ method: "GET", url: "/health" });
+        for (const url of ["/health", "/health/live"]) {
+            const response = await application.inject({ method: "GET", url });
 
-        expect(response.statusCode).toBe(200);
-        expect(response.json()).toEqual({ status: "UP" });
+            expect(response.statusCode).toBe(200);
+            expect(response.json()).toEqual({ status: "UP" });
+        }
     });
 
     it("registers the configured provider boundary", async () => {
@@ -56,5 +58,23 @@ describe("health endpoint", () => {
         );
         expect(response.headers["cache-control"]).toBe("no-store");
         expect(response.body).toBe("gateway_test_metric 1\n");
+    });
+
+    it.each([
+        [true, 200, "UP"],
+        [false, 503, "DOWN"]
+    ] as const)("reports database readiness %s", async (ready, statusCode, status) => {
+        const application = buildApplication({
+            readiness: () => Promise.resolve(ready)
+        });
+        applications.push(application);
+
+        const response = await application.inject({ method: "GET", url: "/health/ready" });
+
+        expect(response.statusCode).toBe(statusCode);
+        expect(response.json()).toEqual({
+            checks: { database: status },
+            status
+        });
     });
 });

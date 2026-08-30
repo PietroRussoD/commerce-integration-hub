@@ -1,10 +1,14 @@
 export interface DatabaseConfiguration {
+    readonly connectionTimeoutMilliseconds: number;
     readonly connectionString: string;
     readonly maxPoolSize: number;
 }
 
+const DEFAULT_CONNECTION_TIMEOUT_MILLISECONDS = 2_000;
 const DEFAULT_MAX_POOL_SIZE = 10;
+const MAX_CONNECTION_TIMEOUT_MILLISECONDS = 30_000;
 const MAX_POOL_SIZE = 50;
+const MIN_CONNECTION_TIMEOUT_MILLISECONDS = 100;
 
 export function loadDatabaseConfiguration(
     environment: NodeJS.ProcessEnv = process.env
@@ -14,19 +18,42 @@ export function loadDatabaseConfiguration(
         throw new Error("DATABASE_URL must be configured");
     }
 
-    const configuredPoolSize = environment.DATABASE_MAX_POOL_SIZE?.trim();
-    if (configuredPoolSize === undefined || configuredPoolSize.length === 0) {
-        return { connectionString, maxPoolSize: DEFAULT_MAX_POOL_SIZE };
-    }
+    return {
+        connectionString,
+        connectionTimeoutMilliseconds: readBoundedInteger(
+            environment.DATABASE_CONNECTION_TIMEOUT_MILLISECONDS,
+            "DATABASE_CONNECTION_TIMEOUT_MILLISECONDS",
+            MIN_CONNECTION_TIMEOUT_MILLISECONDS,
+            MAX_CONNECTION_TIMEOUT_MILLISECONDS,
+            DEFAULT_CONNECTION_TIMEOUT_MILLISECONDS
+        ),
+        maxPoolSize: readBoundedInteger(
+            environment.DATABASE_MAX_POOL_SIZE,
+            "DATABASE_MAX_POOL_SIZE",
+            1,
+            MAX_POOL_SIZE,
+            DEFAULT_MAX_POOL_SIZE
+        )
+    };
+}
 
-    if (!/^\d+$/.test(configuredPoolSize)) {
-        throw new Error("DATABASE_MAX_POOL_SIZE must be an integer");
+function readBoundedInteger(
+    value: string | undefined,
+    name: string,
+    minimum: number,
+    maximum: number,
+    defaultValue: number
+): number {
+    const trimmed = value?.trim();
+    if (trimmed === undefined || trimmed.length === 0) {
+        return defaultValue;
     }
-
-    const maxPoolSize = Number(configuredPoolSize);
-    if (maxPoolSize < 1 || maxPoolSize > MAX_POOL_SIZE) {
-        throw new Error(`DATABASE_MAX_POOL_SIZE must be between 1 and ${MAX_POOL_SIZE}`);
+    if (!/^\d+$/.test(trimmed)) {
+        throw new Error(`${name} must be an integer`);
     }
-
-    return { connectionString, maxPoolSize };
+    const parsed = Number(trimmed);
+    if (parsed < minimum || parsed > maximum) {
+        throw new Error(`${name} must be between ${minimum} and ${maximum}`);
+    }
+    return parsed;
 }
