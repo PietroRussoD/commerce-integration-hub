@@ -14,9 +14,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  scan-integration-core:
+  scan-published-images:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - integration-core
+          - connector-gateway
 
     steps:
       - name: Log in to GitHub Container Registry
@@ -29,7 +35,7 @@ jobs:
       - name: Scan published container image
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/pietrorussod/commerce-integration-hub/integration-core:latest
+          image-ref: ghcr.io/pietrorussod/commerce-integration-hub/${{ matrix.image }}:latest
           scanners: vuln
           vuln-type: os,library
           severity: HIGH,CRITICAL

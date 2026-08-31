@@ -134,10 +134,10 @@ docker run --rm \
   /repo
 ```
 
-The published container is scanned with Trivy every Monday and on demand,
-instead of rebuilding and scanning it on every push. The local command and
-release-image rules are documented in the
-[Integration Core container section](services/integration-core/README.md#container-image).
+The published Integration Core and Connector Gateway images are scanned with
+Trivy every Monday and on demand instead of being rebuilt and scanned on every
+push. The local Integration Core command and release-image rules are documented
+in its [container section](services/integration-core/README.md#container-image).
 Dependabot checks Maven dependencies, GitHub Actions, the service Dockerfile,
 and Docker Compose images weekly. Minor and patch updates are grouped, while
 major updates remain isolated for manual review. Java runtime major updates are
