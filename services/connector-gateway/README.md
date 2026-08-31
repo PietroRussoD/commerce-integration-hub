@@ -48,13 +48,11 @@ Current implemented scope:
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
-conflicting bytes for the same provider event return `409`. Claiming and the
-HTTP client are independently verified but not yet composed into a scheduled
-worker. Attempt start is independently verified but not yet invoked by the
-runtime. Successful outcome persistence is independently verified, while retry
-and exhaustion persistence are also verified. Permanent and configuration
-failure transitions, expired-lease recovery, batch orchestration, and runtime
-scheduling are verified as well.
+conflicting bytes for the same provider event return `409`. The opt-in runtime
+worker composes claiming, attempt start, Integration Core forwarding, persisted
+success, retry, exhaustion, permanent failure, configuration blocking, and
+expired-lease recovery. Unit, PostgreSQL integration, and complete worker
+process tests verify those boundaries.
 
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).
@@ -83,7 +81,8 @@ a signed webhook to the Integration Core HTTP boundary and persisted completion.
 ## Database migration
 
 The gateway owns its schema and must not read Integration Core tables. Apply
-all pending Kysely migrations against its dedicated local database with:
+all pending Kysely migrations against its dedicated local database while
+running from source with:
 
 ```bash
 docker compose --profile gateway up -d connector-gateway-postgres
@@ -98,6 +97,43 @@ is shown in the repository [data model](../../docs/data-model.md), while
 records the persistence decision.
 
 ## Run
+
+From the repository root, build and run the containerized Gateway with its
+dedicated PostgreSQL database and one-shot migration job:
+
+```bash
+docker compose --profile gateway up --build --wait connector-gateway
+```
+
+The migration job must complete successfully before the Gateway starts. It is
+safe to run again because Kysely records applied migrations. The committed
+Compose configuration uses local-only webhook credentials and keeps forwarding
+disabled until an Integration Core source credential is supplied.
+
+```mermaid
+flowchart LR
+    Provider[Marketplace A]
+    Gateway[Connector Gateway]
+    Migration[One-shot migration job]
+    Database[(Gateway PostgreSQL)]
+    Core[Integration Core]
+    Probe[Compose healthcheck]
+
+    Provider -->|Signed webhook| Gateway
+    Migration -->|Apply pending schema| Database
+    Gateway -->|Receipt and delivery state| Database
+    Probe -->|GET /health/ready| Gateway
+    Gateway -.->|Worker disabled by default| Core
+```
+
+Stop the persistent services without deleting their database volume with:
+
+```bash
+docker compose --profile gateway stop connector-gateway connector-gateway-postgres
+```
+
+To run the process directly for development instead, start PostgreSQL, apply
+the migrations, and launch the TypeScript watcher:
 
 ```bash
 docker compose --profile gateway up -d connector-gateway-postgres

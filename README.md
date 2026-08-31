@@ -164,6 +164,19 @@ Then follow the [local demo](services/integration-core/README.md#local-demo) to
 provision a source credential and exercise reliable order ingestion. The
 credentials in `compose.yaml` are deliberately restricted to local development.
 
+Run the containerized Connector Gateway, its dedicated PostgreSQL database,
+and its one-shot migration job with:
+
+```bash
+docker compose --profile gateway up --build --wait connector-gateway
+```
+
+The Gateway accepts signed local `MARKETPLACE_A` webhooks on port `8081`. Its
+forwarding worker remains disabled in the committed Compose configuration until
+an Integration Core source credential is provided. See the
+[Gateway runbook](services/connector-gateway/README.md#run) for the topology,
+health endpoints, and source-development workflow.
+
 Run the operator console in a second terminal:
 
 ```bash
