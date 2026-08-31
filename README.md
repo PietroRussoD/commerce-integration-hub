@@ -72,10 +72,9 @@ The current baseline establishes:
   scheduler with overlap prevention, graceful shutdown, and bounded-cardinality
   Prometheus metrics, plus separate process liveness and PostgreSQL readiness.
 
-The `v0.4.0` release completes the first operator-console increment and its
-release verification. The `v0.5.0-SNAPSHOT` increment is introducing the
-external Node.js and TypeScript Connector Gateway. Search projections remain a
-later increment.
+The `v0.5.0` release adds the external Node.js and TypeScript Connector Gateway
+with durable webhook receipt and reliable forwarding to Integration Core.
+Search projections remain a later increment.
 
 ## Repository structure
 
@@ -206,7 +205,8 @@ checks are documented in the [accessibility plan](docs/accessibility.md).
 The precise boundary of the current implementation is documented in
 [current limitations](docs/limitations.md). The delivered behavior and its
 verification evidence are summarized in the
-[`v0.4.0` release notes](docs/releases/v0.4.0.md). Previous milestones are
-documented in the [`v0.3.0`](docs/releases/v0.3.0.md),
+[`v0.5.0` release notes](docs/releases/v0.5.0.md). Previous milestones are
+documented in the [`v0.4.0`](docs/releases/v0.4.0.md),
+[`v0.3.0`](docs/releases/v0.3.0.md),
 [`v0.2.0`](docs/releases/v0.2.0.md), and
 [`v0.1.0`](docs/releases/v0.1.0.md) release notes.
