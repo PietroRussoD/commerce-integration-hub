@@ -47,18 +47,20 @@ flowchart LR
     Source[Marketplace / ERP / partner]
     Gateway[Connector Gateway]
     Core[Integration Core]
-    Database[(PostgreSQL)]
+    GatewayDatabase[(Gateway PostgreSQL)]
+    CoreDatabase[(Core PostgreSQL)]
     Broker[Kafka / Redpanda]
     Processor[Processing consumer]
     Search[(OpenSearch)]
     UI[Operator UI]
     Source -->|Canonical HTTP today| Core
-    Source -.->|Webhook or polling| Gateway
-    Gateway -.->|Normalized HTTP command| Core
-    Core -->|Order, timeline, outbox| Database
+    Source -->|Signed webhook| Gateway
+    Gateway -->|Durable delivery state| GatewayDatabase
+    Gateway -->|Normalized HTTP command| Core
+    Core -->|Order, timeline, outbox| CoreDatabase
     Core -->|Canonical event| Broker
     Broker --> Processor
-    Processor --> Database
+    Processor --> CoreDatabase
     Processor -.-> Search
     Search -.-> UI
     UI -->|Reads and canonical demo commands| Core
@@ -97,7 +99,8 @@ integration state remain separate audited capabilities.
 
 ### Provider-specific Connector Gateway
 
-In progress. The Node.js and TypeScript gateway has a registered
+Implemented for the current `MARKETPLACE_A` webhook path. The Node.js and
+TypeScript gateway has a registered
 `MARKETPLACE_A` HTTP adapter covering exact raw-body authentication, key
 rotation, strict provider validation, canonical mapping, and receipt-command
 fingerprinting. Its Kysely-managed PostgreSQL delivery-ledger schema and
@@ -105,12 +108,12 @@ constraints are integration-tested. Its transactional repository classifies
 first receipts, equivalent replays, and conflicting content under concurrent
 requests without replacing the original delivery. The running route composes
 authentication, mapping, the receipt use case, and PostgreSQL lifecycle, and
-returns `202` only after durable commit. It does not yet forward canonical
-orders automatically or poll cursor-based provider APIs. Bounded concurrent
-claims and a typed Integration Core HTTP client are independently tested, but
-worker scheduling and fenced outcome persistence are not yet composed. The
-completed gateway will own delivery state but will not mutate authoritative
-order state.
+returns `202` only after durable commit. The opt-in worker composes bounded
+concurrent claims, fenced attempts, the typed Integration Core HTTP client,
+bounded retries, terminal outcomes, expired-lease recovery, metrics, and
+graceful shutdown. Compose currently leaves that worker disabled until a source
+credential is supplied. Cursor-based provider polling remains planned. The
+gateway owns delivery state but does not mutate authoritative order state.
 
 ### Event Subscription
 
