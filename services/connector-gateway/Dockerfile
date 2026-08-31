@@ -15,18 +15,18 @@ COPY src ./src
 
 RUN pnpm build && pnpm prune --prod
 
-FROM node:24-bookworm-slim AS runtime
+FROM gcr.io/distroless/nodejs24-debian13:nonroot AS runtime
 
 ENV NODE_ENV=production
 
 WORKDIR /app
 
-COPY --from=build --chown=node:node /app/package.json ./
-COPY --from=build --chown=node:node /app/node_modules ./node_modules
-COPY --from=build --chown=node:node /app/dist ./dist
+COPY --from=build --chown=65532:65532 /app/package.json ./
+COPY --from=build --chown=65532:65532 /app/node_modules ./node_modules
+COPY --from=build --chown=65532:65532 /app/dist ./dist
 
 EXPOSE 8081
 
-USER node
+USER nonroot:nonroot
 
-CMD ["node", "dist/main.js"]
+CMD ["dist/main.js"]
