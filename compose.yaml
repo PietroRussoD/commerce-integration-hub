@@ -34,6 +34,46 @@ services:
       timeout: 5s
       retries: 15
 
+  connector-gateway-migrate:
+    build:
+      context: services/connector-gateway
+    profiles: ["gateway"]
+    command: ["node", "dist/database-migrate.js"]
+    environment:
+      DATABASE_URL: postgresql://connector_gateway:local-development-only@connector-gateway-postgres:5432/connector_gateway
+    depends_on:
+      connector-gateway-postgres:
+        condition: service_healthy
+    restart: "no"
+
+  connector-gateway:
+    build:
+      context: services/connector-gateway
+    profiles: ["gateway"]
+    environment:
+      DATABASE_URL: postgresql://connector_gateway:local-development-only@connector-gateway-postgres:5432/connector_gateway
+      DELIVERY_WORKER_ENABLED: "false"
+      MARKETPLACE_A_WEBHOOK_CURRENT_KEY_ID: local-key
+      MARKETPLACE_A_WEBHOOK_CURRENT_SECRET_BASE64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    ports:
+      - "${CONNECTOR_GATEWAY_PORT:-8081}:8081"
+    depends_on:
+      connector-gateway-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:8081/health/ready')
+          .then(response => { if (!response.ok) process.exit(1) })
+          .catch(() => process.exit(1))
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 2s
+
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v26.2.1
     command:
