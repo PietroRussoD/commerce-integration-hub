@@ -231,3 +231,18 @@ to each process and must be summed across replicas by Prometheus. No worker,
 delivery, URL, or free-form error value is used as a metric label. The endpoint
 uses `Cache-Control: no-store`; production routing should expose it only to the
 monitoring network or an internal ingress.
+
+## Container image
+
+CI publishes the non-root distroless runtime image to:
+
+```text
+ghcr.io/pietrorussod/commerce-integration-hub/connector-gateway:latest
+ghcr.io/pietrorussod/commerce-integration-hub/connector-gateway:v<version>
+```
+
+Pull requests build without publishing, while pushes to `main` update `latest`.
+Tags matching `v*` promote the existing image without rebuilding it, but only
+when its OCI source revision is an ancestor of the tagged commit. The same tag
+therefore represents a coherent repository release even when an unchanged
+component was last built by an earlier commit included in that release.

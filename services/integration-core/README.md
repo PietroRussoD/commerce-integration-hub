@@ -477,7 +477,8 @@ Publishing rules:
 - pushes to `main` publish `latest`;
 - Git tags matching `v*` promote the existing `latest` image to the
   corresponding version tag without rebuilding it;
-- promotion fails if the image revision does not match the tagged commit.
+- promotion fails if the image has no OCI source revision or its revision is
+  not an ancestor of the tagged commit.
 
 ## Format
 

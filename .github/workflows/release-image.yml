@@ -14,13 +14,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  promote-integration-core:
+  promote-images:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - integration-core
+          - connector-gateway
     env:
-      IMAGE: ghcr.io/pietrorussod/commerce-integration-hub/integration-core
+      IMAGE: ghcr.io/pietrorussod/commerce-integration-hub/${{ matrix.image }}
 
     steps:
+      - name: Check out repository history
+        uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
         with:
@@ -33,8 +45,12 @@ jobs:
           docker pull "${IMAGE}:latest"
 
           image_revision="$(docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "${IMAGE}:latest")"
-          if [ "$image_revision" != "$GITHUB_SHA" ]; then
-            echo "The latest image was built from $image_revision, not $GITHUB_SHA."
+          if [ -z "$image_revision" ]; then
+            echo "The latest image does not declare an OCI source revision."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$image_revision" "$GITHUB_SHA"; then
+            echo "The latest image revision $image_revision is not part of release $GITHUB_SHA."
             exit 1
           fi
 
