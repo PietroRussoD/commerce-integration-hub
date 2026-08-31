@@ -52,7 +52,10 @@ services:
     profiles: ["gateway"]
     environment:
       DATABASE_URL: postgresql://connector_gateway:local-development-only@connector-gateway-postgres:5432/connector_gateway
-      DELIVERY_WORKER_ENABLED: "false"
+      DELIVERY_WORKER_ENABLED: "${CONNECTOR_GATEWAY_DELIVERY_WORKER_ENABLED:-false}"
+      DELIVERY_WORKER_ID: connector-gateway-compose
+      INTEGRATION_CORE_BASE_URL: http://integration-core:8080
+      INTEGRATION_CORE_SOURCE_API_KEY: "${INTEGRATION_CORE_SOURCE_API_KEY:-}"
       MARKETPLACE_A_WEBHOOK_CURRENT_KEY_ID: local-key
       MARKETPLACE_A_WEBHOOK_CURRENT_SECRET_BASE64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
     ports:

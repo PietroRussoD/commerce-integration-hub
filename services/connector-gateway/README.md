@@ -132,6 +132,22 @@ Stop the persistent services without deleting their database volume with:
 docker compose --profile gateway stop connector-gateway connector-gateway-postgres
 ```
 
+To exercise forwarding, first start Integration Core and provision a local
+`MARKETPLACE_A` source credential using its
+[local demo](../integration-core/README.md#local-demo). Keep the one-time API
+key outside the repository, then recreate the Gateway with its worker enabled:
+
+```bash
+export INTEGRATION_CORE_SOURCE_API_KEY="<generated-api-key>"
+
+CONNECTOR_GATEWAY_DELIVERY_WORKER_ENABLED=true \
+  docker compose --profile gateway up --build --wait connector-gateway
+```
+
+Compose passes the credential only through the Gateway process environment.
+The committed default remains `false`, so starting the Gateway without a source
+credential still supports durable webhook receipt without forwarding.
+
 To run the process directly for development instead, start PostgreSQL, apply
 the migrations, and launch the TypeScript watcher:
 
