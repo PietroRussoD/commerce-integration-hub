@@ -27,10 +27,9 @@ mistaken for available behavior.
 - The `ERP_B` polling parser, mapper, HTTP client, atomic page/checkpoint
   persistence, fenced lease lifecycle, bounded multi-page runner, configuration,
   non-overlapping scheduler, and bounded Prometheus metrics are implemented and
-  tested. The scheduler is not yet composed in `main.ts`, so the running service
-  does not poll ERP_B and the exposed polling metrics remain zero.
-  Blocked-connector persistence and a synthetic-provider process test also
-  remain outside the current runtime boundary.
+  tested. Its opt-in `main.ts` composition is implemented and remains disabled by
+  default. Blocked-connector persistence, a synthetic-provider process test, and
+  a Compose demonstration remain outside the current verified boundary.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the

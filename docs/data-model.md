@@ -261,5 +261,5 @@ version. Renewal requires the current owner/token and an unexpired lease, never
 shortens its expiry, and stops when the connector is disabled. Clean release
 also requires the current owner/token but may clear an expired lease that has
 not been reacquired. These operations do not change cursor version. The bounded
-provider runner and non-overlapping scheduler are implemented, but runtime
-composition in `main.ts` remains planned.
+provider runner, non-overlapping scheduler, and disabled-by-default runtime
+composition in `main.ts` are implemented.

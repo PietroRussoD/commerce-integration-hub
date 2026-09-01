@@ -9,6 +9,15 @@ import { createProcessInboundDeliveryBatchUseCase } from "./application/deliveri
 import { createReceiveInboundDeliveryUseCase } from "./application/deliveries/receive-inbound-delivery.js";
 import { createRecoverExpiredInboundDeliveriesUseCase } from "./application/deliveries/recover-expired-inbound-deliveries.js";
 import { createStartInboundDeliveryAttemptUseCase } from "./application/deliveries/start-inbound-delivery-attempt.js";
+import { createAcquirePollingLeaseUseCase } from "./application/polling/acquire-polling-lease.js";
+import {
+    createReleasePollingLeaseUseCase,
+    createRenewPollingLeaseUseCase
+} from "./application/polling/maintain-polling-lease.js";
+import { createProcessErpBOrderPageUseCase } from "./application/polling/process-erp-b-order-page.js";
+import { createRunErpBPollingUseCase } from "./application/polling/run-erp-b-polling.js";
+import { readErpBClientConfiguration } from "./connectors/erp-b/client-configuration.js";
+import { FetchErpBOrderPageClient } from "./connectors/erp-b/fetch-order-page-client.js";
 import { readMarketplaceAConnectorId } from "./connectors/marketplace-a/connector-configuration.js";
 import { readMarketplaceAWebhookSecurityConfiguration } from "./connectors/marketplace-a/webhook-security-configuration.js";
 import { createConfiguredMarketplaceAWebhookAuthenticator } from "./connectors/marketplace-a/webhook-security.js";
@@ -17,6 +26,8 @@ import { createDatabase } from "./infrastructure/database/database.js";
 import { KyselyInboundDeliveryAttemptRepository } from "./infrastructure/database/kysely-inbound-delivery-attempt-repository.js";
 import { KyselyInboundDeliveryClaimRepository } from "./infrastructure/database/kysely-inbound-delivery-claim-repository.js";
 import { KyselyInboundDeliveryRepository } from "./infrastructure/database/kysely-inbound-delivery-repository.js";
+import { KyselyPolledOrderPageRepository } from "./infrastructure/database/kysely-polled-order-page-repository.js";
+import { KyselyPollingLeaseRepository } from "./infrastructure/database/kysely-polling-lease-repository.js";
 import { KyselyDatabaseReadiness } from "./infrastructure/database/kysely-database-readiness.js";
 import { FetchIntegrationCoreOrderClient } from "./infrastructure/http/fetch-integration-core-order-client.js";
 import { readIntegrationCoreClientConfiguration } from "./infrastructure/http/integration-core-client-configuration.js";
@@ -29,6 +40,14 @@ import {
     createDeliveryWorkerScheduler,
     type DeliveryWorkerScheduler
 } from "./infrastructure/scheduling/delivery-worker-scheduler.js";
+import {
+    assertPollingLeaseExceedsRequestTimeout,
+    readErpBPollingConfiguration
+} from "./infrastructure/scheduling/erp-b-polling-configuration.js";
+import {
+    createErpBPollingScheduler,
+    type ErpBPollingScheduler
+} from "./infrastructure/scheduling/erp-b-polling-scheduler.js";
 
 const DEFAULT_PORT = 8081;
 const MIN_PORT = 1;
@@ -50,6 +69,7 @@ function readPort(rawPort: string | undefined): number {
 const databaseConfiguration = loadDatabaseConfiguration();
 const webhookSecurityConfiguration = readMarketplaceAWebhookSecurityConfiguration(process.env);
 const deliveryWorkerConfiguration = readDeliveryWorkerConfiguration(process.env);
+const erpBPollingConfiguration = readErpBPollingConfiguration(process.env);
 const database = createDatabase(databaseConfiguration);
 const metrics = createConnectorGatewayMetrics();
 const databaseReadiness = new KyselyDatabaseReadiness(database);
@@ -70,6 +90,7 @@ const application = buildApplication({
     readiness: () => databaseReadiness.isReady()
 });
 let deliveryWorker: DeliveryWorkerScheduler | undefined;
+let erpBPolling: ErpBPollingScheduler | undefined;
 
 if (deliveryWorkerConfiguration.enabled) {
     const coreClientConfiguration = readIntegrationCoreClientConfiguration(process.env);
@@ -120,8 +141,47 @@ if (deliveryWorkerConfiguration.enabled) {
     });
 }
 
+if (erpBPollingConfiguration.enabled) {
+    const clientConfiguration = readErpBClientConfiguration(process.env);
+    assertPollingLeaseExceedsRequestTimeout(
+        erpBPollingConfiguration.leaseDurationMilliseconds,
+        clientConfiguration.timeoutMilliseconds
+    );
+    const leaseRepository = new KyselyPollingLeaseRepository(database);
+    const pageRepository = new KyselyPolledOrderPageRepository(database);
+    const commonLeaseDependencies = {
+        repository: leaseRepository,
+        workerId: erpBPollingConfiguration.workerId
+    };
+    const runPolling = createRunErpBPollingUseCase({
+        acquireLease: createAcquirePollingLeaseUseCase({
+            ...commonLeaseDependencies,
+            createLeaseToken: randomUUID,
+            leaseDurationMilliseconds: erpBPollingConfiguration.leaseDurationMilliseconds
+        }),
+        maxPagesPerRun: erpBPollingConfiguration.maxPagesPerRun,
+        processPage: createProcessErpBOrderPageUseCase({
+            pageRepository,
+            pageSource: new FetchErpBOrderPageClient({ configuration: clientConfiguration }),
+            workerId: erpBPollingConfiguration.workerId
+        }),
+        releaseLease: createReleasePollingLeaseUseCase(commonLeaseDependencies),
+        renewLease: createRenewPollingLeaseUseCase({
+            ...commonLeaseDependencies,
+            leaseDurationMilliseconds: erpBPollingConfiguration.leaseDurationMilliseconds
+        })
+    });
+    erpBPolling = createErpBPollingScheduler({
+        connectorId: erpBPollingConfiguration.connectorId,
+        intervalMilliseconds: erpBPollingConfiguration.intervalMilliseconds,
+        logger: application.log,
+        metrics: metrics.erpBPolling,
+        runPolling
+    });
+}
+
 application.addHook("onClose", async () => {
-    await deliveryWorker?.stop();
+    await Promise.all([deliveryWorker?.stop(), erpBPolling?.stop()]);
     await database.destroy();
 });
 
@@ -145,6 +205,7 @@ try {
         port: readPort(process.env.PORT)
     });
     deliveryWorker?.start();
+    erpBPolling?.start();
 } catch (error) {
     application.log.error(error);
     process.exitCode = 1;

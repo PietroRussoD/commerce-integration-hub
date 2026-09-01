@@ -22,8 +22,9 @@ page/checkpoint repository are composed by an implemented single-page use case.
 The implemented bounded runner composes lease acquisition, multiple committed
 pages, renewal between pages, a hard page limit, and final release. Scheduled
 execution is implemented as an immediate, non-overlapping, cancellation-aware
-adapter that waits for each run before starting its interval. `main.ts`
-composition remains planned, so it is not active in the running service yet.
+adapter that waits for each run before starting its interval. `main.ts` composes
+the complete polling path only when explicitly enabled and stops it before
+closing PostgreSQL.
 Bounded run outcomes, duration, activity, committed pages, durable item outcomes,
 and last success are exported through Prometheus without identity labels.
 
