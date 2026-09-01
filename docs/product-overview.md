@@ -142,9 +142,11 @@ HTTP adapter is implemented with bounded configuration, bearer authentication,
 opaque cursor encoding, timeout/cancellation, manual redirects, bounded streamed
 responses, strict page parsing, and typed outcomes. A single-page use case now
 composes fetch, classification, poison evidence, and fenced atomic commit while
-preserving provider and persistence failures. Bounded multi-page execution and
-scheduled runtime composition remain planned. The gateway owns delivery state
-but does not mutate authoritative order state.
+preserving provider and persistence failures. The bounded multi-page runner
+acquires and releases ownership, renews only before another page, aggregates
+durable progress, and stops cleanly at its page limit. Runtime configuration,
+scheduling, outcome persistence/metrics, and process composition remain planned.
+The gateway owns delivery state but does not mutate authoritative order state.
 
 ### Event Subscription
 
@@ -183,7 +185,7 @@ external subscribers remain planned.
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
-| `ERP_B` polling foundation | Lease lifecycle and complete single-page processing implemented; bounded multi-page runtime planned |
+| `ERP_B` polling foundation | Fenced bounded multi-page run implemented; runtime scheduling and operations wiring planned |
 | OpenSearch projection | Planned |
 
 ## Non-goals

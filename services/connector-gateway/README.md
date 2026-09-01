@@ -54,7 +54,10 @@ Current implemented scope:
   enforcement, strict page parsing, and typed failure classification;
 - a single-page application use case that composes the provider adapter,
   classification, poison-item handling, and fenced atomic checkpoint commit
-  without hiding retry or lease policy inside the page boundary.
+  without hiding retry or lease policy inside the page boundary;
+- a bounded multi-page runner that acquires exclusive ownership, aggregates
+  committed progress, renews between pages, stops at a configured page limit,
+  preserves typed failures, and releases ownership in `finally`.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
@@ -64,10 +67,10 @@ success, retry, exhaustion, permanent failure, configuration blocking, and
 expired-lease recovery. Unit, PostgreSQL integration, and complete worker
 process tests verify those boundaries.
 
-The `ERP_B` HTTP adapter, page processor, and persistence boundaries are
-implemented and tested but are not yet composed into a bounded multi-page
-runtime poller. Its configuration reader accepts `ERP_B_BASE_URL`,
-`ERP_B_API_TOKEN`, and these optional bounds:
+The `ERP_B` HTTP adapter, page processor, bounded runner, and persistence
+boundaries are implemented and tested but are not yet connected to a runtime
+scheduler. Its configuration reader accepts `ERP_B_BASE_URL`, `ERP_B_API_TOKEN`,
+and these optional bounds:
 
 | Variable | Default | Range |
 | --- | ---: | ---: |
