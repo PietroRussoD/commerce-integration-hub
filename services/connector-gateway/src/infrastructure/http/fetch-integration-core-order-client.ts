@@ -4,6 +4,7 @@ import type {
     ForwardCanonicalOrderResult
 } from "../../application/forwarding/forward-canonical-order.js";
 import type { IntegrationCoreClientConfiguration } from "./integration-core-client-configuration.js";
+import { parseRetryAfter } from "./retry-after.js";
 
 const MAX_SUCCESS_RESPONSE_BYTES = 65_536;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -165,31 +166,4 @@ async function readCoreOrderId(response: Response): Promise<string | undefined> 
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-export function parseRetryAfter(
-    value: string | null,
-    currentTimeMilliseconds: number,
-    capMilliseconds: number
-): number | undefined {
-    if (value === null) {
-        return undefined;
-    }
-
-    const trimmed = value.trim();
-    if (/^(0|[1-9][0-9]*)$/.test(trimmed)) {
-        const milliseconds = Number(trimmed) * 1_000;
-        return Number.isSafeInteger(milliseconds)
-            ? Math.min(milliseconds, capMilliseconds)
-            : undefined;
-    }
-
-    const retryAtMilliseconds = Date.parse(trimmed);
-    if (!Number.isFinite(retryAtMilliseconds)) {
-        return undefined;
-    }
-    return Math.min(
-        Math.max(0, retryAtMilliseconds - currentTimeMilliseconds),
-        capMilliseconds
-    );
 }

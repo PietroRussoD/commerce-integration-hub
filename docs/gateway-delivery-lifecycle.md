@@ -17,8 +17,9 @@ canonicalization version `erp-b-provider-item-v1`, then computes SHA-256 over
 that representation. Object property insertion order cannot change the result;
 position order remains significant because it is part of the mapped order.
 Mapping version and provider-item canonicalization version are separate
-compatibility boundaries. The atomic page/checkpoint repository is implemented;
-the provider HTTP client and scheduled polling loop remain planned.
+compatibility boundaries. The bounded provider HTTP adapter and atomic
+page/checkpoint repository are implemented; scheduled polling-loop composition
+remains planned.
 
 The implemented pure page classifier converts mappable changes into ordinary
 inbound-delivery commands and mapping failures into bounded permanent-rejection

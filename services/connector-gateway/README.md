@@ -45,6 +45,13 @@ Current implemented scope:
   activity summaries, failure isolation, and graceful cancellation;
 - a Prometheus `/metrics` endpoint with Node.js runtime and bounded-cardinality
   worker cycle, duration, delivery-outcome, and recovery metrics.
+- a strict `ERP_B` page contract, canonical mapper, deterministic item
+  fingerprint, poison-item classification, and atomic page/checkpoint commit;
+- a fenced polling-lease lifecycle covering exclusive acquisition, renewal,
+  clean release, expiry recovery, and concurrent ownership;
+- a bounded `ERP_B` HTTP adapter with bearer authentication, opaque cursor
+  encoding, timeout and cancellation, manual redirects, streamed response-size
+  enforcement, strict page parsing, and typed failure classification.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
@@ -53,6 +60,20 @@ worker composes claiming, attempt start, Integration Core forwarding, persisted
 success, retry, exhaustion, permanent failure, configuration blocking, and
 expired-lease recovery. Unit, PostgreSQL integration, and complete worker
 process tests verify those boundaries.
+
+The `ERP_B` HTTP adapter and persistence boundaries are implemented and tested
+but are not yet composed into a scheduled runtime poller. Its configuration
+reader accepts `ERP_B_BASE_URL`, `ERP_B_API_TOKEN`, and these optional bounds:
+
+| Variable | Default | Range |
+| --- | ---: | ---: |
+| `ERP_B_PAGE_LIMIT` | `100` | `1..100` |
+| `ERP_B_TIMEOUT_MILLISECONDS` | `5000` | `100..30000` |
+| `ERP_B_MAX_RESPONSE_BYTES` | `8388608` | `1024..33554432` |
+| `ERP_B_RETRY_AFTER_CAP_MILLISECONDS` | `900000` | `0..3600000` |
+
+The token is sent only as an `Authorization: Bearer` header and is never part of
+the request URL, a result object, or persisted provider evidence.
 
 The runtime and framework boundary are documented in
 [ADR 0010](../../docs/decisions/0010-node-typescript-fastify-gateway.md).
