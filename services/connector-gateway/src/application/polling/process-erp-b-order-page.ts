@@ -37,6 +37,10 @@ export type ProcessErpBOrderPageResult =
           readonly outcome: "PROTOCOL_FAILURE";
       }
     | {
+          readonly errorCode: "ERP_B_NON_ADVANCING_CURSOR";
+          readonly outcome: "PROTOCOL_FAILURE";
+      }
+    | {
           readonly checkpointVersion: number;
           readonly createdDeliveries: number;
           readonly createdRejections: number;
@@ -75,6 +79,12 @@ export function createProcessErpBOrderPageUseCase({
         );
         if (fetchResult.outcome !== "PAGE_RECEIVED") {
             return fetchResult;
+        }
+        if (fetchResult.page.nextCursor === lease.cursor) {
+            return {
+                errorCode: "ERP_B_NON_ADVANCING_CURSOR",
+                outcome: "PROTOCOL_FAILURE"
+            };
         }
 
         const classification = classifyPage(fetchResult.page);

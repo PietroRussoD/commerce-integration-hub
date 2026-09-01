@@ -19,7 +19,9 @@ position order remains significant because it is part of the mapped order.
 Mapping version and provider-item canonicalization version are separate
 compatibility boundaries. The bounded provider HTTP adapter and atomic
 page/checkpoint repository are composed by an implemented single-page use case.
-Bounded multi-page and scheduled runtime composition remain planned.
+The implemented bounded runner composes lease acquisition, multiple committed
+pages, renewal between pages, a hard page limit, and final release. Scheduled
+runtime composition remains planned.
 
 The implemented pure page classifier converts mappable changes into ordinary
 inbound-delivery commands and mapping failures into bounded permanent-rejection
@@ -77,6 +79,10 @@ Renewal matches connector, owner, token, and a still-valid expiry, and uses the
 later of the existing and requested expiry so a heartbeat cannot shorten a
 lease. Release clears ownership only while owner and token still match; this
 also permits cleanup after expiry when no new poller has acquired the row.
+The runner never retries a failed page inline. It returns the typed failure to
+runtime policy, preserves counts from pages already committed, and releases its
+lease. Reaching the page limit is a successful bounded outcome: the next run
+continues from the last durable cursor.
 
 ## Current State Transition
 

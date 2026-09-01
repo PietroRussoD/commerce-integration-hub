@@ -185,6 +185,25 @@ describe("createProcessErpBOrderPageUseCase", () => {
         expect(commitPage).not.toHaveBeenCalled();
     });
 
+    it("rejects a non-advancing provider cursor without committing", async () => {
+        const commitPage = vi.fn();
+        const processPage = createUseCase({
+            pageRepository: { commitPage },
+            pageSource: {
+                fetchPage: () =>
+                    Promise.resolve(
+                        pageReceived({ ...PAGE, nextCursor: "opaque-cursor-42" })
+                    )
+            }
+        });
+
+        await expect(processPage({ lease: LEASE })).resolves.toEqual({
+            errorCode: "ERP_B_NON_ADVANCING_CURSOR",
+            outcome: "PROTOCOL_FAILURE"
+        });
+        expect(commitPage).not.toHaveBeenCalled();
+    });
+
     it.each([
         { outcome: "STALE_CHECKPOINT" },
         { outcome: "PAYLOAD_CONFLICT", externalEventId: "chg-00042" }
