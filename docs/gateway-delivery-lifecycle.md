@@ -21,7 +21,9 @@ compatibility boundaries. The bounded provider HTTP adapter and atomic
 page/checkpoint repository are composed by an implemented single-page use case.
 The implemented bounded runner composes lease acquisition, multiple committed
 pages, renewal between pages, a hard page limit, and final release. Scheduled
-runtime composition remains planned.
+execution is implemented as an immediate, non-overlapping, cancellation-aware
+adapter that waits for each run before starting its interval. `main.ts`
+composition remains planned, so it is not active in the running service yet.
 
 The implemented pure page classifier converts mappable changes into ordinary
 inbound-delivery commands and mapping failures into bounded permanent-rejection

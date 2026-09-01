@@ -57,7 +57,10 @@ Current implemented scope:
   without hiding retry or lease policy inside the page boundary;
 - a bounded multi-page runner that acquires exclusive ownership, aggregates
   committed progress, renews between pages, stops at a configured page limit,
-  preserves typed failures, and releases ownership in `finally`.
+  preserves typed failures, and releases ownership in `finally`;
+- opt-in bounded polling configuration and a non-overlapping scheduler with
+  immediate execution, post-completion intervals, typed activity logging,
+  cancellation-aware shutdown, and restart-safe lifecycle.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
@@ -68,9 +71,10 @@ expired-lease recovery. Unit, PostgreSQL integration, and complete worker
 process tests verify those boundaries.
 
 The `ERP_B` HTTP adapter, page processor, bounded runner, and persistence
-boundaries are implemented and tested but are not yet connected to a runtime
-scheduler. Its configuration reader accepts `ERP_B_BASE_URL`, `ERP_B_API_TOKEN`,
-and these optional bounds:
+boundaries are implemented and tested. Its configuration reader and scheduler
+are also implemented but are not yet composed in `main.ts`. Polling therefore
+remains disabled in the running service. The client configuration reader accepts
+`ERP_B_BASE_URL`, `ERP_B_API_TOKEN`, and these optional bounds:
 
 | Variable | Default | Range |
 | --- | ---: | ---: |
@@ -78,6 +82,13 @@ and these optional bounds:
 | `ERP_B_TIMEOUT_MILLISECONDS` | `5000` | `100..30000` |
 | `ERP_B_MAX_RESPONSE_BYTES` | `8388608` | `1024..33554432` |
 | `ERP_B_RETRY_AFTER_CAP_MILLISECONDS` | `900000` | `0..3600000` |
+
+The polling scheduler is disabled unless `ERP_B_POLLING_ENABLED=true`. When
+enabled, its reader requires `ERP_B_POLLING_WORKER_ID`; defaults are a 30-second
+interval, 60-second lease, 10 pages per run, and the seeded ERP_B connector ID.
+The maximum page count is `100`, and lease duration must leave at least five
+seconds beyond the configured provider timeout. These settings become runtime
+effective only after the pending `main.ts` composition increment.
 
 The token is sent only as an `Authorization: Bearer` header and is never part of
 the request URL, a result object, or persisted provider evidence.

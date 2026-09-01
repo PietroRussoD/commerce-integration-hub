@@ -145,8 +145,10 @@ composes fetch, classification, poison evidence, and fenced atomic commit while
 preserving provider and persistence failures. The bounded multi-page runner
 acquires and releases ownership, renews only before another page, aggregates
 durable progress, and stops cleanly at its page limit. Runtime configuration,
-scheduling, outcome persistence/metrics, and process composition remain planned.
-The gateway owns delivery state but does not mutate authoritative order state.
+and a cancellation-aware non-overlapping scheduler are implemented and opt-in.
+Process composition, outcome metrics, and configuration-block persistence remain
+planned, so polling is not active in the running service yet. The gateway owns
+delivery state but does not mutate authoritative order state.
 
 ### Event Subscription
 
@@ -185,7 +187,7 @@ external subscribers remain planned.
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
-| `ERP_B` polling foundation | Fenced bounded multi-page run implemented; runtime scheduling and operations wiring planned |
+| `ERP_B` polling foundation | Bounded run and scheduler implemented; process composition and operations metrics planned |
 | OpenSearch projection | Planned |
 
 ## Non-goals
