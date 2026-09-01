@@ -138,8 +138,11 @@ pollers cannot advance it. Pollers acquire an available or expired checkpoint
 lease through one conditional database update; concurrent workers cannot both
 acquire it. Matching owner/token checks fence renewal and clean release;
 renewal cannot revive an expired lease or shorten an existing one. The provider
-HTTP client and scheduled polling loop remain planned. The gateway owns delivery
-state but does not mutate authoritative order state.
+HTTP adapter is implemented with bounded configuration, bearer authentication,
+opaque cursor encoding, timeout/cancellation, manual redirects, bounded streamed
+responses, strict page parsing, and typed outcomes. Composition into a scheduled
+polling loop remains planned. The gateway owns delivery state but does not
+mutate authoritative order state.
 
 ### Event Subscription
 
@@ -178,7 +181,7 @@ external subscribers remain planned.
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
-| `ERP_B` polling foundation | Complete fenced lease lifecycle and atomic page commit implemented; HTTP client and polling loop planned |
+| `ERP_B` polling foundation | Lease lifecycle, bounded HTTP adapter, and atomic page commit implemented; polling-loop composition planned |
 | OpenSearch projection | Planned |
 
 ## Non-goals

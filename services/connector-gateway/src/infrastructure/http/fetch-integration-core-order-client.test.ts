@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { CanonicalOrder } from "../../application/orders/canonical-order.js";
 import {
-    FetchIntegrationCoreOrderClient,
-    parseRetryAfter
+    FetchIntegrationCoreOrderClient
 } from "./fetch-integration-core-order-client.js";
 import type { IntegrationCoreClientConfiguration } from "./integration-core-client-configuration.js";
+import { parseRetryAfter } from "./retry-after.js";
 
 const CORE_ORDER_ID = "0199037b-6400-7000-8000-000000000601";
 const SOURCE_API_KEY = "src_marketplace_a.local-secret";
