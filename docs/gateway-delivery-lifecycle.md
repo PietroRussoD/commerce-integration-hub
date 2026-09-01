@@ -44,6 +44,10 @@ sequenceDiagram
     Poller->>Repository: try acquire(connector, new lease token)
     Repository->>DB: conditional update if lease is absent or expired
     DB-->>Poller: checkpoint snapshot or unavailable
+    opt lease approaches expiry during a bounded run
+        Poller->>Repository: renew(current owner and token)
+        Repository->>DB: extend only a valid current lease
+    end
     Poller->>Repository: commit page(expected version, lease token)
     Repository->>DB: BEGIN and lock checkpoint FOR UPDATE
     Repository->>DB: verify version, owner, token, and expiry
@@ -56,6 +60,8 @@ sequenceDiagram
         DB-->>Repository: ROLLBACK
         Repository-->>Poller: stale/conflict result or infrastructure error
     end
+    Poller->>Repository: release(current owner and token)
+    Repository->>DB: clear ownership if fencing still matches
 ```
 
 Equivalent replays do not create duplicate delivery rows but still allow the
@@ -65,6 +71,10 @@ checkpoint version serialize on the row lock; exactly one advances the version.
 Lease acquisition similarly uses one conditional update, so concurrent workers
 cannot both own an available checkpoint. Reclaiming an expired lease installs a
 new token that fences the previous worker without changing the cursor version.
+Renewal matches connector, owner, token, and a still-valid expiry, and uses the
+later of the existing and requested expiry so a heartbeat cannot shorten a
+lease. Release clears ownership only while owner and token still match; this
+also permits cleanup after expiry when no new poller has acquired the row.
 
 ## Current State Transition
 

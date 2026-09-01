@@ -1,13 +1,21 @@
-import type { Kysely } from "kysely";
+import { sql, type Kysely } from "kysely";
 
 import type {
     AcquirePollingLeaseCommand,
     AcquiredPollingLease,
     PollingLeaseRepository
 } from "../../application/polling/acquire-polling-lease.js";
+import type {
+    PollingLeaseMaintenanceRepository,
+    ReleasePollingLeaseCommand,
+    RenewedPollingLease,
+    RenewPollingLeaseCommand
+} from "../../application/polling/maintain-polling-lease.js";
 import type { GatewayDatabase } from "./database.js";
 
-export class KyselyPollingLeaseRepository implements PollingLeaseRepository {
+export class KyselyPollingLeaseRepository
+    implements PollingLeaseRepository, PollingLeaseMaintenanceRepository
+{
     public constructor(private readonly database: Kysely<GatewayDatabase>) {}
 
     public async tryAcquire(
@@ -56,5 +64,53 @@ export class KyselyPollingLeaseRepository implements PollingLeaseRepository {
             leaseExpiresAt: checkpoint.lease_expires_at,
             leaseToken: checkpoint.lease_token
         };
+    }
+
+    public async renew(command: RenewPollingLeaseCommand): Promise<RenewedPollingLease | null> {
+        const checkpoint = await this.database
+            .updateTable("polling_checkpoints as checkpoint")
+            .set({
+                lease_expires_at: sql<Date>`GREATEST(lease_expires_at, ${command.leaseExpiresAt})`,
+                updated_at: command.renewedAt
+            })
+            .where("checkpoint.connector_id", "=", command.connectorId)
+            .where("checkpoint.lease_owner", "=", command.workerId)
+            .where("checkpoint.lease_token", "=", command.leaseToken)
+            .where("checkpoint.lease_expires_at", ">", command.renewedAt)
+            .where((expression) =>
+                expression.exists(
+                    expression
+                        .selectFrom("connector_configurations as connector")
+                        .select("connector.id")
+                        .whereRef("connector.id", "=", "checkpoint.connector_id")
+                        .where("connector.mode", "=", "POLLING")
+                        .where("connector.status", "=", "ACTIVE")
+                )
+            )
+            .returning("lease_expires_at")
+            .executeTakeFirst();
+
+        if (checkpoint === undefined || checkpoint.lease_expires_at === null) {
+            return null;
+        }
+        return { leaseExpiresAt: checkpoint.lease_expires_at };
+    }
+
+    public async release(command: ReleasePollingLeaseCommand): Promise<boolean> {
+        const checkpoint = await this.database
+            .updateTable("polling_checkpoints")
+            .set({
+                lease_expires_at: null,
+                lease_owner: null,
+                lease_token: null,
+                updated_at: command.releasedAt
+            })
+            .where("connector_id", "=", command.connectorId)
+            .where("lease_owner", "=", command.workerId)
+            .where("lease_token", "=", command.leaseToken)
+            .returning("connector_id")
+            .executeTakeFirst();
+
+        return checkpoint !== undefined;
     }
 }
