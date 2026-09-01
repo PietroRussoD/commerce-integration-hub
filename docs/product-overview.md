@@ -70,6 +70,22 @@ Solid connections are available in the current repository. Dashed connections
 represent planned increments and must not be interpreted as implemented runtime
 behavior.
 
+## Synthetic Providers
+
+The repository uses two fictional external providers. They contain synthetic
+data and are not references to real companies, customers, or commercial
+products:
+
+- `MARKETPLACE_A` represents a marketplace that pushes signed order webhooks;
+- `ERP_B` represents an Enterprise Resource Planning (ERP) system that exposes
+  a cursor-paginated order API and must be polled by the Connector Gateway.
+
+An ERP commonly coordinates business processes such as orders, inventory,
+purchasing, sales, invoicing, accounting, production, and logistics. This
+project models only its order-export boundary; it does not attempt to implement
+an ERP. The generic identifiers keep the demonstration independent from real
+provider brands while contrasting push and pull integration behavior.
+
 ## Integration Modes
 
 ### Canonical HTTP API
@@ -152,6 +168,7 @@ external subscribers remain planned.
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
+| `ERP_B` page contract | Strict parser implemented; mapping, HTTP polling, and checkpoints planned |
 | OpenSearch projection | Planned |
 
 ## Non-goals
