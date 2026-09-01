@@ -73,9 +73,9 @@ expired-lease recovery. Unit, PostgreSQL integration, and complete worker
 process tests verify those boundaries.
 
 The `ERP_B` HTTP adapter, page processor, bounded runner, persistence boundaries,
-configuration reader, scheduler, and metrics are implemented and tested. The
-scheduler is not yet composed in `main.ts`, so polling remains disabled in the
-running service and its exposed metrics remain zero. The client reader accepts
+configuration reader, scheduler, metrics, and `main.ts` composition are
+implemented. Polling remains disabled by default; when disabled, its exposed
+metrics remain zero and provider credentials are not read. The client accepts
 `ERP_B_BASE_URL`, `ERP_B_API_TOKEN`, and these optional bounds:
 
 | Variable | Default | Range |
@@ -97,8 +97,7 @@ configuration is:
 | `ERP_B_POLLING_MAX_PAGES_PER_RUN` | `10` | `1..100` |
 
 Lease duration must leave at least five seconds beyond the configured provider
-timeout. These settings become runtime effective only after the pending
-`main.ts` composition increment.
+timeout. The synthetic-provider process test and Compose demo remain pending.
 
 The token is sent only as an `Authorization: Bearer` header and is never part of
 the request URL, a result object, or persisted provider evidence.

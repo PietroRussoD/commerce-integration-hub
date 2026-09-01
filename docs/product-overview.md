@@ -146,9 +146,10 @@ preserving provider and persistence failures. The bounded multi-page runner
 acquires and releases ownership, renews only before another page, aggregates
 durable progress, and stops cleanly at its page limit. Runtime configuration,
 and a cancellation-aware non-overlapping scheduler are implemented and opt-in.
-Polling outcome metrics are implemented and exposed with bounded labels. Process
-composition and configuration-block persistence remain planned, so polling is
-not active in the running service yet. The gateway owns
+Polling outcome metrics are implemented and exposed with bounded labels. The
+opt-in process composition is implemented, while configuration-block persistence,
+a synthetic-provider process test, and Compose demonstration remain planned.
+The gateway owns
 delivery state but does not mutate authoritative order state.
 
 ### Event Subscription
@@ -188,7 +189,7 @@ external subscribers remain planned.
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
-| `ERP_B` polling foundation | Bounded run, scheduler, and metrics implemented; process composition planned |
+| `ERP_B` polling foundation | Bounded run, scheduler, metrics, and opt-in process composition implemented |
 | OpenSearch projection | Planned |
 
 ## Non-goals
