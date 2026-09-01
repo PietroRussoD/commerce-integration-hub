@@ -140,9 +140,11 @@ acquire it. Matching owner/token checks fence renewal and clean release;
 renewal cannot revive an expired lease or shorten an existing one. The provider
 HTTP adapter is implemented with bounded configuration, bearer authentication,
 opaque cursor encoding, timeout/cancellation, manual redirects, bounded streamed
-responses, strict page parsing, and typed outcomes. Composition into a scheduled
-polling loop remains planned. The gateway owns delivery state but does not
-mutate authoritative order state.
+responses, strict page parsing, and typed outcomes. A single-page use case now
+composes fetch, classification, poison evidence, and fenced atomic commit while
+preserving provider and persistence failures. Bounded multi-page execution and
+scheduled runtime composition remain planned. The gateway owns delivery state
+but does not mutate authoritative order state.
 
 ### Event Subscription
 
@@ -181,7 +183,7 @@ external subscribers remain planned.
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
-| `ERP_B` polling foundation | Lease lifecycle, bounded HTTP adapter, and atomic page commit implemented; polling-loop composition planned |
+| `ERP_B` polling foundation | Lease lifecycle and complete single-page processing implemented; bounded multi-page runtime planned |
 | OpenSearch projection | Planned |
 
 ## Non-goals

@@ -51,7 +51,10 @@ Current implemented scope:
   clean release, expiry recovery, and concurrent ownership;
 - a bounded `ERP_B` HTTP adapter with bearer authentication, opaque cursor
   encoding, timeout and cancellation, manual redirects, streamed response-size
-  enforcement, strict page parsing, and typed failure classification.
+  enforcement, strict page parsing, and typed failure classification;
+- a single-page application use case that composes the provider adapter,
+  classification, poison-item handling, and fenced atomic checkpoint commit
+  without hiding retry or lease policy inside the page boundary.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
@@ -61,9 +64,10 @@ success, retry, exhaustion, permanent failure, configuration blocking, and
 expired-lease recovery. Unit, PostgreSQL integration, and complete worker
 process tests verify those boundaries.
 
-The `ERP_B` HTTP adapter and persistence boundaries are implemented and tested
-but are not yet composed into a scheduled runtime poller. Its configuration
-reader accepts `ERP_B_BASE_URL`, `ERP_B_API_TOKEN`, and these optional bounds:
+The `ERP_B` HTTP adapter, page processor, and persistence boundaries are
+implemented and tested but are not yet composed into a bounded multi-page
+runtime poller. Its configuration reader accepts `ERP_B_BASE_URL`,
+`ERP_B_API_TOKEN`, and these optional bounds:
 
 | Variable | Default | Range |
 | --- | ---: | ---: |
