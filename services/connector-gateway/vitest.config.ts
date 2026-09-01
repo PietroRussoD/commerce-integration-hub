@@ -15,6 +15,7 @@ export default defineConfig({
                 "src/infrastructure/database/kysely-inbound-delivery-attempt-repository.ts",
                 "src/infrastructure/database/kysely-inbound-delivery-claim-repository.ts",
                 "src/infrastructure/database/kysely-inbound-delivery-repository.ts",
+                "src/infrastructure/database/kysely-polled-order-page-repository.ts",
                 "src/infrastructure/database/migrations/**/*.ts",
                 "src/infrastructure/database/migrator.ts"
             ],

@@ -17,8 +17,8 @@ canonicalization version `erp-b-provider-item-v1`, then computes SHA-256 over
 that representation. Object property insertion order cannot change the result;
 position order remains significant because it is part of the mapped order.
 Mapping version and provider-item canonicalization version are separate
-compatibility boundaries. HTTP polling and atomic page/checkpoint persistence
-remain planned.
+compatibility boundaries. The atomic page/checkpoint repository is implemented;
+the provider HTTP client and scheduled polling loop remain planned.
 
 The implemented pure page classifier converts mappable changes into ordinary
 inbound-delivery commands and mapping failures into bounded permanent-rejection
@@ -31,7 +31,34 @@ Migration `006` adds the seeded `ERP_B` polling checkpoint and permits a null
 canonical payload only for a terminal poison item carrying one of the bounded
 mapping error codes. The forwarding claim query excludes null canonical
 payloads explicitly. Atomic persistence of a classified page and checkpoint is
-not implemented yet.
+implemented and PostgreSQL integration-tested.
+
+## Polled Page Commit
+
+```mermaid
+sequenceDiagram
+    participant Poller
+    participant Repository
+    participant DB as Gateway PostgreSQL
+
+    Poller->>Repository: commit page(expected version, lease token)
+    Repository->>DB: BEGIN and lock checkpoint FOR UPDATE
+    Repository->>DB: verify version, owner, token, and expiry
+    Repository->>DB: insert deliveries and terminal poison records
+    Repository->>DB: advance cursor and version
+    alt complete page is valid
+        DB-->>Repository: COMMIT
+        Repository-->>Poller: COMMITTED
+    else stale ownership, payload conflict, or database failure
+        DB-->>Repository: ROLLBACK
+        Repository-->>Poller: stale/conflict result or infrastructure error
+    end
+```
+
+Equivalent replays do not create duplicate delivery rows but still allow the
+page cursor to advance. A reused provider identity with a different fingerprint
+rolls back earlier inserts from that page. Concurrent commits for the same
+checkpoint version serialize on the row lock; exactly one advances the version.
 
 ## Current State Transition
 
