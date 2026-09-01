@@ -4,6 +4,22 @@ This document describes the implemented claim, attempt, completion, and recovery
 boundaries. The Integration Core HTTP adapter, application batch worker, and
 non-overlapping runtime scheduler are implemented and tested.
 
+## Provider Delivery Identity
+
+`MARKETPLACE_A` identifies a delivery by its provider event ID and fingerprints
+the exact signed webhook bytes. Byte-level differences therefore remain visible
+even when two JSON documents would parse to equivalent values.
+
+`ERP_B` extracts individual changes from a polled page, so no independently
+signed raw body exists for one delivery. Its receipt command reconstructs a
+fixed-key JSON representation containing every validated provider field and
+canonicalization version `erp-b-provider-item-v1`, then computes SHA-256 over
+that representation. Object property insertion order cannot change the result;
+position order remains significant because it is part of the mapped order.
+Mapping version and provider-item canonicalization version are separate
+compatibility boundaries. HTTP polling and atomic page/checkpoint persistence
+remain planned.
+
 ## Current State Transition
 
 ```mermaid
