@@ -7,6 +7,7 @@ import {
 } from "@prometheus-io/client";
 
 import type { ProcessInboundDeliveryBatchResult } from "../../application/deliveries/process-inbound-delivery-batch.js";
+import type { RunErpBPollingResult } from "../../application/polling/run-erp-b-polling.js";
 import type { RecoverExpiredInboundDeliveriesResult } from "../../application/deliveries/recover-expired-inbound-deliveries.js";
 
 const CYCLE_OUTCOMES = ["cancelled", "completed", "failed"] as const;
@@ -19,9 +20,24 @@ const DELIVERY_OUTCOMES = [
     "stale_claim"
 ] as const;
 const RECOVERY_OUTCOMES = ["recovered", "stale_claim"] as const;
+const POLLING_RUN_OUTCOMES = [
+    "cancelled",
+    "completed",
+    "failed",
+    "lease_lost",
+    "lease_unavailable",
+    "page_failed",
+    "page_limit_reached"
+] as const;
+const POLLING_ITEM_OUTCOMES = [
+    "created_delivery",
+    "created_rejection",
+    "equivalent_replay"
+] as const;
 
 type CycleOutcome = (typeof CYCLE_OUTCOMES)[number];
 type DeliveryOutcome = (typeof DELIVERY_OUTCOMES)[number];
+type PollingRunOutcome = (typeof POLLING_RUN_OUTCOMES)[number];
 
 export interface DeliveryWorkerCycleMetricsResult {
     readonly processing: ProcessInboundDeliveryBatchResult;
@@ -38,6 +54,13 @@ export interface DeliveryWorkerMetrics {
     recordFailed(durationSeconds: number): void;
 }
 
+export interface ErpBPollingMetrics {
+    recordCancelled(durationSeconds: number): void;
+    recordFailed(durationSeconds: number): void;
+    recordResult(result: RunErpBPollingResult, durationSeconds: number): void;
+    runStarted(): void;
+}
+
 export interface MetricsExporter {
     readonly contentType: string;
     metrics(): Promise<string>;
@@ -45,6 +68,7 @@ export interface MetricsExporter {
 
 export interface ConnectorGatewayMetrics {
     readonly deliveryWorker: DeliveryWorkerMetrics;
+    readonly erpBPolling: ErpBPollingMetrics;
     readonly exporter: MetricsExporter;
 }
 
@@ -91,6 +115,40 @@ export function createConnectorGatewayMetrics({
         name: "connector_gateway_delivery_worker_recovery_total",
         registers: [registry]
     });
+    const pollingRuns = new Counter({
+        help: "Number of ERP_B polling runs by terminal outcome",
+        labelNames: ["outcome"] as const,
+        name: "connector_gateway_erp_b_polling_runs_total",
+        registers: [registry]
+    });
+    const pollingRunDuration = new Histogram({
+        buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60],
+        help: "ERP_B polling run duration in seconds",
+        labelNames: ["outcome"] as const,
+        name: "connector_gateway_erp_b_polling_run_duration_seconds",
+        registers: [registry]
+    });
+    const pollingRunActive = new Gauge({
+        help: "Whether an ERP_B polling run is currently active",
+        name: "connector_gateway_erp_b_polling_run_active",
+        registers: [registry]
+    });
+    const pollingLastSuccessful = new Gauge({
+        help: "Unix timestamp of the last successful ERP_B polling run",
+        name: "connector_gateway_erp_b_polling_last_successful_unixtime",
+        registers: [registry]
+    });
+    const pollingPages = new Counter({
+        help: "Number of ERP_B pages committed by polling runs",
+        name: "connector_gateway_erp_b_polling_pages_committed_total",
+        registers: [registry]
+    });
+    const pollingItems = new Counter({
+        help: "Number of ERP_B items observed by durable polling outcome",
+        labelNames: ["outcome"] as const,
+        name: "connector_gateway_erp_b_polling_items_total",
+        registers: [registry]
+    });
 
     for (const outcome of CYCLE_OUTCOMES) {
         cycles.inc({ outcome }, 0);
@@ -102,14 +160,31 @@ export function createConnectorGatewayMetrics({
     for (const outcome of RECOVERY_OUTCOMES) {
         recoveryEvents.inc({ outcome }, 0);
     }
+    for (const outcome of POLLING_RUN_OUTCOMES) {
+        pollingRuns.inc({ outcome }, 0);
+        pollingRunDuration.zero({ outcome });
+    }
+    for (const outcome of POLLING_ITEM_OUTCOMES) {
+        pollingItems.inc({ outcome }, 0);
+    }
     cycleActive.set(0);
     lastCompleted.set(0);
+    pollingRunActive.set(0);
+    pollingLastSuccessful.set(0);
+    pollingPages.inc(0);
 
     const finishCycle = (outcome: CycleOutcome, durationSeconds: number): void => {
         assertNonnegativeFinite(durationSeconds, "durationSeconds");
         cycles.inc({ outcome });
         cycleDuration.observe({ outcome }, durationSeconds);
         cycleActive.set(0);
+    };
+
+    const finishPollingRun = (outcome: PollingRunOutcome, durationSeconds: number): void => {
+        assertNonnegativeFinite(durationSeconds, "durationSeconds");
+        pollingRuns.inc({ outcome });
+        pollingRunDuration.observe({ outcome }, durationSeconds);
+        pollingRunActive.set(0);
     };
 
     return {
@@ -135,8 +210,59 @@ export function createConnectorGatewayMetrics({
                 finishCycle("failed", durationSeconds);
             }
         },
+        erpBPolling: {
+            recordCancelled(durationSeconds): void {
+                finishPollingRun("cancelled", durationSeconds);
+            },
+            recordFailed(durationSeconds): void {
+                finishPollingRun("failed", durationSeconds);
+            },
+            recordResult(result, durationSeconds): void {
+                const outcome = pollingRunOutcome(result);
+                if ("pagesCommitted" in result) {
+                    validatePollingProgress(result);
+                    pollingPages.inc(result.pagesCommitted);
+                    pollingItems.inc({ outcome: "created_delivery" }, result.createdDeliveries);
+                    pollingItems.inc({ outcome: "created_rejection" }, result.createdRejections);
+                    pollingItems.inc({ outcome: "equivalent_replay" }, result.equivalentReplays);
+                }
+                finishPollingRun(outcome, durationSeconds);
+                if (result.outcome === "COMPLETED" || result.outcome === "PAGE_LIMIT_REACHED") {
+                    pollingLastSuccessful.set(currentTimeMilliseconds() / 1_000);
+                }
+            },
+            runStarted(): void {
+                pollingRunActive.set(1);
+            }
+        },
         exporter: registry
     };
+}
+
+function pollingRunOutcome(result: RunErpBPollingResult): PollingRunOutcome {
+    const outcomes: Readonly<Record<RunErpBPollingResult["outcome"], PollingRunOutcome>> = {
+        COMPLETED: "completed",
+        LEASE_LOST: "lease_lost",
+        LEASE_UNAVAILABLE: "lease_unavailable",
+        PAGE_FAILED: "page_failed",
+        PAGE_LIMIT_REACHED: "page_limit_reached"
+    };
+    return outcomes[result.outcome];
+}
+
+function validatePollingProgress(
+    result: Extract<RunErpBPollingResult, { readonly pagesCommitted: number }>
+): void {
+    for (const [name, value] of Object.entries({
+        createdDeliveries: result.createdDeliveries,
+        createdRejections: result.createdRejections,
+        equivalentReplays: result.equivalentReplays,
+        pagesCommitted: result.pagesCommitted
+    })) {
+        if (!Number.isSafeInteger(value) || value < 0) {
+            throw new Error(`${name} must be a nonnegative safe integer`);
+        }
+    }
 }
 
 function recordDeliveryOutcomes(

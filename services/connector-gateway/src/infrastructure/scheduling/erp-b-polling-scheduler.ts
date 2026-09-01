@@ -2,6 +2,7 @@ import type {
     RunErpBPollingResult,
     RunErpBPollingUseCase
 } from "../../application/polling/run-erp-b-polling.js";
+import type { ErpBPollingMetrics } from "../observability/connector-gateway-metrics.js";
 
 interface ErpBPollingLogger {
     error(context: { readonly err: unknown }, message: string): void;
@@ -11,8 +12,10 @@ interface ErpBPollingLogger {
 
 export interface ErpBPollingSchedulerDependencies {
     readonly connectorId: string;
+    readonly currentTimeMilliseconds?: () => number;
     readonly intervalMilliseconds: number;
     readonly logger: ErpBPollingLogger;
+    readonly metrics: ErpBPollingMetrics;
     readonly runPolling: RunErpBPollingUseCase;
 }
 
@@ -23,8 +26,10 @@ export interface ErpBPollingScheduler {
 
 export function createErpBPollingScheduler({
     connectorId,
+    currentTimeMilliseconds = performance.now.bind(performance),
     intervalMilliseconds,
     logger,
+    metrics,
     runPolling
 }: ErpBPollingSchedulerDependencies): ErpBPollingScheduler {
     let abortController: AbortController | undefined;
@@ -34,15 +39,31 @@ export function createErpBPollingScheduler({
 
     const executeRun = (): void => {
         const signal = abortController!.signal;
+        const startedAtMilliseconds = currentTimeMilliseconds();
+        metrics.runStarted();
         activeRun = runPolling({ connectorId, signal })
             .then((result) => {
+                const durationSeconds = elapsedSeconds(
+                    startedAtMilliseconds,
+                    currentTimeMilliseconds()
+                );
                 if (!signal.aborted) {
+                    metrics.recordResult(result, durationSeconds);
                     logResult(logger, result);
+                } else {
+                    metrics.recordCancelled(durationSeconds);
                 }
             })
             .catch((error: unknown) => {
+                const durationSeconds = elapsedSeconds(
+                    startedAtMilliseconds,
+                    currentTimeMilliseconds()
+                );
                 if (!signal.aborted) {
+                    metrics.recordFailed(durationSeconds);
                     logger.error({ err: error }, "ERP_B polling run failed");
+                } else {
+                    metrics.recordCancelled(durationSeconds);
                 }
             })
             .finally(() => {
@@ -72,6 +93,10 @@ export function createErpBPollingScheduler({
             await activeRun;
         }
     };
+}
+
+function elapsedSeconds(startedAtMilliseconds: number, completedAtMilliseconds: number): number {
+    return Math.max(0, completedAtMilliseconds - startedAtMilliseconds) / 1_000;
 }
 
 function logResult(logger: ErpBPollingLogger, result: RunErpBPollingResult): void {

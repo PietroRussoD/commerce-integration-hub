@@ -20,7 +20,7 @@ import { KyselyInboundDeliveryRepository } from "./infrastructure/database/kysel
 import { KyselyDatabaseReadiness } from "./infrastructure/database/kysely-database-readiness.js";
 import { FetchIntegrationCoreOrderClient } from "./infrastructure/http/fetch-integration-core-order-client.js";
 import { readIntegrationCoreClientConfiguration } from "./infrastructure/http/integration-core-client-configuration.js";
-import { createConnectorGatewayMetrics } from "./infrastructure/observability/delivery-worker-metrics.js";
+import { createConnectorGatewayMetrics } from "./infrastructure/observability/connector-gateway-metrics.js";
 import {
     assertLeaseExceedsForwardingTimeout,
     readDeliveryWorkerConfiguration

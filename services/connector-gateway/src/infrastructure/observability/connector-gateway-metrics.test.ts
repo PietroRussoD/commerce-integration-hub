@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { createConnectorGatewayMetrics } from "./delivery-worker-metrics.js";
+import { createConnectorGatewayMetrics } from "./connector-gateway-metrics.js";
+import type { RunErpBPollingResult } from "../../application/polling/run-erp-b-polling.js";
 
 const CYCLE_RESULT = {
     processing: {
@@ -140,5 +141,128 @@ describe("createConnectorGatewayMetrics", () => {
                 0
             )
         ).toThrow("processing counts must reconcile");
+    });
+
+    it("records ERP_B polling progress with bounded labels", async () => {
+        const metrics = createConnectorGatewayMetrics({
+            currentTimeMilliseconds: () => 1_788_116_400_000
+        });
+        const result: RunErpBPollingResult = {
+            checkpointVersion: 4,
+            createdDeliveries: 3,
+            createdRejections: 1,
+            cursor: "opaque-cursor-43",
+            equivalentReplays: 2,
+            outcome: "COMPLETED",
+            pagesCommitted: 2
+        };
+
+        metrics.erpBPolling.runStarted();
+        expect(await metrics.exporter.metrics()).toContain(
+            "connector_gateway_erp_b_polling_run_active 1"
+        );
+
+        metrics.erpBPolling.recordResult(result, 0.5);
+        const exposition = await metrics.exporter.metrics();
+
+        expect(exposition).toContain(
+            'connector_gateway_erp_b_polling_runs_total{outcome="completed"} 1'
+        );
+        expect(exposition).toContain(
+            'connector_gateway_erp_b_polling_run_duration_seconds_sum{outcome="completed"} 0.5'
+        );
+        expect(exposition).toContain("connector_gateway_erp_b_polling_run_active 0");
+        expect(exposition).toContain(
+            "connector_gateway_erp_b_polling_last_successful_unixtime 1788116400"
+        );
+        expect(exposition).toContain("connector_gateway_erp_b_polling_pages_committed_total 2");
+        expect(exposition).toContain(
+            'connector_gateway_erp_b_polling_items_total{outcome="created_delivery"} 3'
+        );
+        expect(exposition).toContain(
+            'connector_gateway_erp_b_polling_items_total{outcome="created_rejection"} 1'
+        );
+        expect(exposition).toContain(
+            'connector_gateway_erp_b_polling_items_total{outcome="equivalent_replay"} 2'
+        );
+    });
+
+    it.each([
+        [{ outcome: "LEASE_UNAVAILABLE" } satisfies RunErpBPollingResult, "lease_unavailable"],
+        [
+            {
+                createdDeliveries: 0,
+                createdRejections: 0,
+                equivalentReplays: 0,
+                outcome: "LEASE_LOST",
+                pagesCommitted: 0
+            } satisfies RunErpBPollingResult,
+            "lease_lost"
+        ],
+        [
+            {
+                createdDeliveries: 0,
+                createdRejections: 0,
+                equivalentReplays: 0,
+                failure: { errorCode: "ERP_B_TIMEOUT", outcome: "RETRYABLE_FAILURE" },
+                outcome: "PAGE_FAILED",
+                pagesCommitted: 0
+            } satisfies RunErpBPollingResult,
+            "page_failed"
+        ],
+        [
+            {
+                checkpointVersion: 2,
+                createdDeliveries: 0,
+                createdRejections: 0,
+                cursor: "next",
+                equivalentReplays: 0,
+                outcome: "PAGE_LIMIT_REACHED",
+                pagesCommitted: 1
+            } satisfies RunErpBPollingResult,
+            "page_limit_reached"
+        ]
+    ] as const)("records polling result $1", async (result, expectedOutcome) => {
+        const metrics = createConnectorGatewayMetrics();
+
+        metrics.erpBPolling.recordResult(result, 0);
+
+        expect(await metrics.exporter.metrics()).toContain(
+            `connector_gateway_erp_b_polling_runs_total{outcome="${expectedOutcome}"} 1`
+        );
+    });
+
+    it("records failed and cancelled polling runs", async () => {
+        const metrics = createConnectorGatewayMetrics();
+
+        metrics.erpBPolling.recordFailed(1.5);
+        metrics.erpBPolling.recordCancelled(0.25);
+        const exposition = await metrics.exporter.metrics();
+
+        expect(exposition).toContain(
+            'connector_gateway_erp_b_polling_runs_total{outcome="failed"} 1'
+        );
+        expect(exposition).toContain(
+            'connector_gateway_erp_b_polling_runs_total{outcome="cancelled"} 1'
+        );
+    });
+
+    it.each([-1, 1.5])("rejects invalid polling count %s", (pagesCommitted) => {
+        const metrics = createConnectorGatewayMetrics();
+
+        expect(() =>
+            metrics.erpBPolling.recordResult(
+                {
+                    checkpointVersion: 2,
+                    createdDeliveries: 0,
+                    createdRejections: 0,
+                    cursor: "next",
+                    equivalentReplays: 0,
+                    outcome: "PAGE_LIMIT_REACHED",
+                    pagesCommitted
+                },
+                0
+            )
+        ).toThrow("pagesCommitted must be a nonnegative safe integer");
     });
 });

@@ -24,6 +24,8 @@ pages, renewal between pages, a hard page limit, and final release. Scheduled
 execution is implemented as an immediate, non-overlapping, cancellation-aware
 adapter that waits for each run before starting its interval. `main.ts`
 composition remains planned, so it is not active in the running service yet.
+Bounded run outcomes, duration, activity, committed pages, durable item outcomes,
+and last success are exported through Prometheus without identity labels.
 
 The implemented pure page classifier converts mappable changes into ordinary
 inbound-delivery commands and mapping failures into bounded permanent-rejection

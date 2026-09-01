@@ -1,6 +1,6 @@
 import type { ProcessInboundDeliveryBatchResult } from "../../application/deliveries/process-inbound-delivery-batch.js";
 import type { RecoverExpiredInboundDeliveriesResult } from "../../application/deliveries/recover-expired-inbound-deliveries.js";
-import type { DeliveryWorkerMetrics } from "../observability/delivery-worker-metrics.js";
+import type { DeliveryWorkerMetrics } from "../observability/connector-gateway-metrics.js";
 
 interface DeliveryWorkerLogger {
     error(context: { readonly err: unknown }, message: string): void;
