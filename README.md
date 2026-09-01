@@ -70,11 +70,16 @@ The current baseline establishes:
   redirect handling, response validation, and retry classification, composed by
   a bounded application batch worker and an opt-in recovery-first runtime
   scheduler with overlap prevention, graceful shutdown, and bounded-cardinality
-  Prometheus metrics, plus separate process liveness and PostgreSQL readiness.
+  Prometheus metrics, plus separate process liveness and PostgreSQL readiness;
+- an in-progress `ERP_B` polling path with strict page mapping, atomic
+  page/checkpoint persistence, fenced leases, a bounded HTTP client and
+  multi-page runner, and an opt-in non-overlapping scheduler. Runtime composition
+  and polling metrics remain pending.
 
 The `v0.5.0` release adds the external Node.js and TypeScript Connector Gateway
 with durable webhook receipt and reliable forwarding to Integration Core.
-Search projections remain a later increment.
+Development now targets `v0.6.0` polling and operations. Search projections
+remain a later increment.
 
 ## Repository structure
 

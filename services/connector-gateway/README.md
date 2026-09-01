@@ -44,7 +44,7 @@ Current implemented scope:
 - an opt-in non-overlapping runtime scheduler with recovery-first cycles,
   activity summaries, failure isolation, and graceful cancellation;
 - a Prometheus `/metrics` endpoint with Node.js runtime and bounded-cardinality
-  worker cycle, duration, delivery-outcome, and recovery metrics.
+  worker cycle, duration, delivery-outcome, and recovery metrics;
 - a strict `ERP_B` page contract, canonical mapper, deterministic item
   fingerprint, poison-item classification, and atomic page/checkpoint commit;
 - a fenced polling-lease lifecycle covering exclusive acquisition, renewal,
@@ -83,12 +83,20 @@ remains disabled in the running service. The client configuration reader accepts
 | `ERP_B_MAX_RESPONSE_BYTES` | `8388608` | `1024..33554432` |
 | `ERP_B_RETRY_AFTER_CAP_MILLISECONDS` | `900000` | `0..3600000` |
 
-The polling scheduler is disabled unless `ERP_B_POLLING_ENABLED=true`. When
-enabled, its reader requires `ERP_B_POLLING_WORKER_ID`; defaults are a 30-second
-interval, 60-second lease, 10 pages per run, and the seeded ERP_B connector ID.
-The maximum page count is `100`, and lease duration must leave at least five
-seconds beyond the configured provider timeout. These settings become runtime
-effective only after the pending `main.ts` composition increment.
+The polling scheduler is disabled unless `ERP_B_POLLING_ENABLED=true`. Its
+configuration is:
+
+| Variable | Default | Range or requirement |
+| --- | --- | --- |
+| `ERP_B_CONNECTOR_ID` | seeded ERP_B connector ID | canonical UUID |
+| `ERP_B_POLLING_WORKER_ID` | none | required when enabled; 1..100 characters |
+| `ERP_B_POLLING_INTERVAL_MILLISECONDS` | `30000` | `100..300000` |
+| `ERP_B_POLLING_LEASE_DURATION_MILLISECONDS` | `60000` | `1000..300000` |
+| `ERP_B_POLLING_MAX_PAGES_PER_RUN` | `10` | `1..100` |
+
+Lease duration must leave at least five seconds beyond the configured provider
+timeout. These settings become runtime effective only after the pending
+`main.ts` composition increment.
 
 The token is sent only as an `Authorization: Bearer` header and is never part of
 the request URL, a result object, or persisted provider evidence.
