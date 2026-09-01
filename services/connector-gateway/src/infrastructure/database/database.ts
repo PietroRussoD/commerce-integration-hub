@@ -44,7 +44,11 @@ export interface InboundDeliveriesTable {
         Record<string, unknown>,
         Record<string, unknown>
     >;
-    readonly canonical_payload: JSONColumnType<CanonicalOrder, CanonicalOrder, CanonicalOrder>;
+    readonly canonical_payload: JSONColumnType<
+        CanonicalOrder | null,
+        CanonicalOrder | null,
+        CanonicalOrder | null
+    >;
     readonly mapping_version: string;
     readonly status: Generated<InboundDeliveryStatus>;
     readonly attempt_count: Generated<number>;
@@ -61,6 +65,19 @@ export interface InboundDeliveriesTable {
     readonly updated_at: Generated<Date>;
     readonly completed_at: Date | null;
     readonly payload_expires_at: Generated<Date>;
+}
+
+export interface PollingCheckpointsTable {
+    readonly connector_id: string;
+    readonly cursor: string | null;
+    readonly version: Generated<number>;
+    readonly lease_owner: string | null;
+    readonly lease_token: string | null;
+    readonly lease_expires_at: Date | null;
+    readonly last_polled_at: Date | null;
+    readonly last_successful_poll_at: Date | null;
+    readonly created_at: Generated<Date>;
+    readonly updated_at: Generated<Date>;
 }
 
 export interface DeliveryAttemptsTable {
@@ -81,6 +98,7 @@ export interface GatewayDatabase {
     readonly connector_configurations: ConnectorConfigurationsTable;
     readonly delivery_attempts: DeliveryAttemptsTable;
     readonly inbound_deliveries: InboundDeliveriesTable;
+    readonly polling_checkpoints: PollingCheckpointsTable;
 }
 
 export function createDatabase(configuration: DatabaseConfiguration): Kysely<GatewayDatabase> {

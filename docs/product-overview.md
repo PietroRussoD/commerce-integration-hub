@@ -172,7 +172,7 @@ external subscribers remain planned.
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
-| `ERP_B` page contract | Parser, mapping, item fingerprint, and page classification implemented; HTTP polling and checkpoints planned |
+| `ERP_B` polling foundation | Page classification and constrained checkpoint/poison-item storage implemented; HTTP polling and atomic page commit planned |
 | OpenSearch projection | Planned |
 
 ## Non-goals

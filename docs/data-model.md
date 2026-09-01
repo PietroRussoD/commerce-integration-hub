@@ -137,6 +137,7 @@ core.
 ```mermaid
 erDiagram
     connector_configurations ||--o{ inbound_deliveries : receives
+    connector_configurations ||--o| polling_checkpoints : owns
     inbound_deliveries ||--o{ delivery_attempts : records
 
     connector_configurations {
@@ -190,6 +191,19 @@ erDiagram
         integer duration_ms
         char trace_id
     }
+
+    polling_checkpoints {
+        uuid connector_id PK,FK
+        varchar cursor
+        integer version
+        varchar lease_owner
+        uuid lease_token
+        timestamptz lease_expires_at
+        timestamptz last_polled_at
+        timestamptz last_successful_poll_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
 ```
 
 `connector_id` and `external_event_id` form the delivery idempotency key. A
@@ -201,6 +215,20 @@ and HTTP status values. Active states are `RECEIVED`, `FORWARDING`, and
 `BLOCKED_CONFIGURATION`, and `EXHAUSTED`. A lifecycle constraint requires lease
 ownership only while forwarding and `completed_at` only for terminal rows. A
 partial index orders dispatchable rows by their next attempt and receipt times.
+
+`canonical_payload` is nullable only for an `ERP_B` poison item stored directly
+as `PERMANENT_FAILURE` with one of the bounded mapping error codes. All
+forwardable states still require a canonical payload, and the claim query also
+excludes null payloads explicitly. This allows the polling cursor to advance
+past a permanently unmappable item without making it eligible for forwarding.
+
+`polling_checkpoints` has one row per configured polling connector. A null
+cursor represents the initial request. Version supports compare-and-swap
+updates, while lease owner, token, and expiry are either all absent or all
+present with a future expiry. Poll/success timestamps are constrained so a
+success cannot occur after the most recent poll. Migration `006` seeds the
+synthetic `ERP_B` connector and its initial checkpoint; the atomic page-write
+repository remains a later increment.
 
 The claim adapter locks only eligible delivery rows with `SKIP LOCKED`, assigns
 one lease token to a bounded batch, and commits before network work begins. The
