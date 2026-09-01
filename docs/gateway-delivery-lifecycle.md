@@ -27,6 +27,12 @@ one page collapse to one record. A duplicate ID with a different item
 fingerprint rejects the entire page, preventing a later checkpoint transaction
 from advancing across ambiguous provider evidence.
 
+Migration `006` adds the seeded `ERP_B` polling checkpoint and permits a null
+canonical payload only for a terminal poison item carrying one of the bounded
+mapping error codes. The forwarding claim query excludes null canonical
+payloads explicitly. Atomic persistence of a classified page and checkpoint is
+not implemented yet.
+
 ## Current State Transition
 
 ```mermaid

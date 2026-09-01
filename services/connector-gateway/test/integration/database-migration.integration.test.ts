@@ -13,6 +13,7 @@ const CONNECTOR_B_ID = "0199037b-6400-7000-8000-000000000202";
 const DELIVERY_A_ID = "0199037b-6400-7000-8000-000000000203";
 const DELIVERY_B_ID = "0199037b-6400-7000-8000-000000000204";
 const DELIVERY_C_ID = "0199037b-6400-7000-8000-000000000205";
+const ERP_B_CONNECTOR_ID = "0199037b-6400-7000-8000-000000000002";
 const PAYLOAD_HASH = "a".repeat(64);
 
 describe("connector gateway database migration", () => {
@@ -57,6 +58,10 @@ describe("connector gateway database migration", () => {
             expect.objectContaining({
                 migrationName: "005_align_delivery_lifecycle_states",
                 status: "Success"
+            }),
+            expect.objectContaining({
+                migrationName: "006_add_erp_b_polling_storage",
+                status: "Success"
             })
         ]);
         expect(secondRun).toEqual([]);
@@ -65,14 +70,20 @@ describe("connector gateway database migration", () => {
             SELECT table_name
             FROM information_schema.tables
             WHERE table_schema = 'public'
-              AND table_name IN ('connector_configurations', 'delivery_attempts', 'inbound_deliveries')
+              AND table_name IN (
+                  'connector_configurations',
+                  'delivery_attempts',
+                  'inbound_deliveries',
+                  'polling_checkpoints'
+              )
             ORDER BY table_name
         `.execute(database);
 
         expect(tables.rows.map(({ table_name: tableName }) => tableName)).toEqual([
             "connector_configurations",
             "delivery_attempts",
-            "inbound_deliveries"
+            "inbound_deliveries",
+            "polling_checkpoints"
         ]);
 
         const seededConnector = await database
@@ -85,6 +96,116 @@ describe("connector gateway database migration", () => {
             provider: "MARKETPLACE_A",
             secret_reference: "env:MARKETPLACE_A_WEBHOOK_CURRENT_SECRET_BASE64"
         });
+
+        const seededPollingConnector = await database
+            .selectFrom("connector_configurations as connector")
+            .innerJoin("polling_checkpoints as checkpoint", "checkpoint.connector_id", "connector.id")
+            .select([
+                "connector.id",
+                "connector.mode",
+                "connector.provider",
+                "connector.schedule",
+                "checkpoint.cursor",
+                "checkpoint.version"
+            ])
+            .where("connector.id", "=", ERP_B_CONNECTOR_ID)
+            .executeTakeFirstOrThrow();
+        expect(seededPollingConnector).toEqual({
+            id: ERP_B_CONNECTOR_ID,
+            mode: "POLLING",
+            provider: "ERP_B",
+            schedule: "interval:PT30S",
+            cursor: null,
+            version: 1
+        });
+    });
+
+    it("enforces polling checkpoint cursor, lease and time invariants", async () => {
+        const updatedAt = new Date("2026-09-01T08:00:00.000Z");
+
+        await expect(
+            database
+                .updateTable("polling_checkpoints")
+                .set({ lease_owner: "poller-a", updated_at: updatedAt })
+                .where("connector_id", "=", ERP_B_CONNECTOR_ID)
+                .execute()
+        ).rejects.toMatchObject({ code: "23514" });
+
+        await expect(
+            database
+                .updateTable("polling_checkpoints")
+                .set({ cursor: "   ", updated_at: updatedAt })
+                .where("connector_id", "=", ERP_B_CONNECTOR_ID)
+                .execute()
+        ).rejects.toMatchObject({ code: "23514" });
+
+        await expect(
+            database
+                .updateTable("polling_checkpoints")
+                .set({
+                    last_polled_at: updatedAt,
+                    last_successful_poll_at: new Date("2026-09-01T08:00:01.000Z"),
+                    updated_at: updatedAt
+                })
+                .where("connector_id", "=", ERP_B_CONNECTOR_ID)
+                .execute()
+        ).rejects.toMatchObject({ code: "23514" });
+
+        await expect(
+            database
+                .updateTable("polling_checkpoints")
+                .set({
+                    cursor: "opaque-cursor-43",
+                    last_polled_at: updatedAt,
+                    last_successful_poll_at: updatedAt,
+                    lease_owner: "poller-a",
+                    lease_token: "0199037b-6400-7000-8000-000000000301",
+                    lease_expires_at: new Date("2026-09-01T08:01:00.000Z"),
+                    updated_at: updatedAt,
+                    version: 2
+                })
+                .where("connector_id", "=", ERP_B_CONNECTOR_ID)
+                .executeTakeFirst()
+        ).resolves.toBeDefined();
+    });
+
+    it("allows only bounded permanent ERP_B rejections without a canonical payload", async () => {
+        const rejectedDelivery = {
+            ...inboundDelivery("0199037b-6400-7000-8000-000000000302", ERP_B_CONNECTOR_ID),
+            canonical_payload: null,
+            completed_at: new Date("2026-09-01T08:00:00.000Z"),
+            error_code: "ERP_B_UNSUPPORTED_CURRENCY",
+            external_event_id: "chg-poison-1",
+            status: "PERMANENT_FAILURE" as const
+        };
+
+        await expect(
+            database.insertInto("inbound_deliveries").values(rejectedDelivery).execute()
+        ).resolves.toBeDefined();
+
+        await expect(
+            database
+                .insertInto("inbound_deliveries")
+                .values({
+                    ...rejectedDelivery,
+                    id: "0199037b-6400-7000-8000-000000000303",
+                    error_code: null,
+                    external_event_id: "chg-poison-2"
+                })
+                .execute()
+        ).rejects.toMatchObject({ code: "23514" });
+
+        await expect(
+            database
+                .insertInto("inbound_deliveries")
+                .values({
+                    ...rejectedDelivery,
+                    id: "0199037b-6400-7000-8000-000000000304",
+                    error_code: "UNBOUNDED_PROVIDER_ERROR",
+                    external_event_id: "chg-poison-3"
+                })
+                .execute()
+        ).rejects.toMatchObject({ code: "23514" });
     });
 
     it("enforces the delivery-attempt lifecycle", async () => {

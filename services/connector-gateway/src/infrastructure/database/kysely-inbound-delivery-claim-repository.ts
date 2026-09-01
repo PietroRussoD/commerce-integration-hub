@@ -5,7 +5,7 @@ import type {
 } from "../../application/deliveries/claim-inbound-deliveries.js";
 import type { GatewayDatabase } from "./database.js";
 
-import type { Kysely } from "kysely";
+import type { Kysely, NotNull } from "kysely";
 
 export class KyselyInboundDeliveryClaimRepository implements InboundDeliveryClaimRepository {
     public constructor(private readonly database: Kysely<GatewayDatabase>) {}
@@ -27,6 +27,7 @@ export class KyselyInboundDeliveryClaimRepository implements InboundDeliveryClai
                     "delivery.canonical_payload"
                 ])
                 .where("delivery.status", "in", ["RECEIVED", "RETRY_WAIT"])
+                .where("delivery.canonical_payload", "is not", null)
                 .where("delivery.next_attempt_at", "<=", command.claimedAt)
                 .where("connector.status", "=", "ACTIVE")
                 .orderBy("delivery.next_attempt_at", "asc")
@@ -34,6 +35,7 @@ export class KyselyInboundDeliveryClaimRepository implements InboundDeliveryClai
                 .forUpdate("delivery")
                 .skipLocked()
                 .limit(command.limit)
+                .$narrowType<{ canonical_payload: NotNull }>()
                 .execute();
 
             if (candidates.length === 0) {
