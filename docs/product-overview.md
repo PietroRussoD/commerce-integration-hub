@@ -128,7 +128,8 @@ returns `202` only after durable commit. The opt-in worker composes bounded
 concurrent claims, fenced attempts, the typed Integration Core HTTP client,
 bounded retries, terminal outcomes, expired-lease recovery, metrics, and
 graceful shutdown. Compose currently leaves that worker disabled until a source
-credential is supplied. Cursor-based provider polling remains planned. The
+credential is supplied. The strict `ERP_B` page parser and canonical mapper are
+implemented, while HTTP polling and checkpoint persistence remain planned. The
 gateway owns delivery state but does not mutate authoritative order state.
 
 ### Event Subscription
@@ -168,7 +169,7 @@ external subscribers remain planned.
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
-| `ERP_B` page contract | Strict parser implemented; mapping, HTTP polling, and checkpoints planned |
+| `ERP_B` page contract | Strict parser and canonical mapping implemented; HTTP polling and checkpoints planned |
 | OpenSearch projection | Planned |
 
 ## Non-goals
