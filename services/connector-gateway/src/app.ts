@@ -1,6 +1,6 @@
 import Fastify, { type FastifyInstance } from "fastify";
 
-import type { MetricsExporter } from "./infrastructure/observability/delivery-worker-metrics.js";
+import type { MetricsExporter } from "./infrastructure/observability/connector-gateway-metrics.js";
 import {
     type MarketplaceAWebhookRouteOptions,
     marketplaceAWebhookRoute

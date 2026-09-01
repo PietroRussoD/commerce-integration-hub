@@ -60,7 +60,9 @@ Current implemented scope:
   preserves typed failures, and releases ownership in `finally`;
 - opt-in bounded polling configuration and a non-overlapping scheduler with
   immediate execution, post-completion intervals, typed activity logging,
-  cancellation-aware shutdown, and restart-safe lifecycle.
+  cancellation-aware shutdown, and restart-safe lifecycle;
+- zero-initialized, bounded-cardinality ERP_B run, duration, activity, progress,
+  and last-success metrics exposed through the existing `/metrics` endpoint.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
@@ -70,10 +72,10 @@ success, retry, exhaustion, permanent failure, configuration blocking, and
 expired-lease recovery. Unit, PostgreSQL integration, and complete worker
 process tests verify those boundaries.
 
-The `ERP_B` HTTP adapter, page processor, bounded runner, and persistence
-boundaries are implemented and tested. Its configuration reader and scheduler
-are also implemented but are not yet composed in `main.ts`. Polling therefore
-remains disabled in the running service. The client configuration reader accepts
+The `ERP_B` HTTP adapter, page processor, bounded runner, persistence boundaries,
+configuration reader, scheduler, and metrics are implemented and tested. The
+scheduler is not yet composed in `main.ts`, so polling remains disabled in the
+running service and its exposed metrics remain zero. The client reader accepts
 `ERP_B_BASE_URL`, `ERP_B_API_TOKEN`, and these optional bounds:
 
 | Variable | Default | Range |

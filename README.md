@@ -73,8 +73,8 @@ The current baseline establishes:
   Prometheus metrics, plus separate process liveness and PostgreSQL readiness;
 - an in-progress `ERP_B` polling path with strict page mapping, atomic
   page/checkpoint persistence, fenced leases, a bounded HTTP client and
-  multi-page runner, and an opt-in non-overlapping scheduler. Runtime composition
-  and polling metrics remain pending.
+  multi-page runner, an opt-in non-overlapping scheduler, and bounded Prometheus
+  metrics. Runtime composition remains pending.
 
 The `v0.5.0` release adds the external Node.js and TypeScript Connector Gateway
 with durable webhook receipt and reliable forwarding to Integration Core.

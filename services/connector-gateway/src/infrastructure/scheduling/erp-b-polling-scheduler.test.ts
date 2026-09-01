@@ -45,6 +45,8 @@ describe("createErpBPollingScheduler", () => {
             { result: COMPLETED },
             "ERP_B polling run completed"
         );
+        expect(dependencies.metrics.runStarted).toHaveBeenCalledTimes(1);
+        expect(dependencies.metrics.recordResult).toHaveBeenCalledWith(COMPLETED, 0);
 
         await vi.advanceTimersByTimeAsync(1_000);
         expect(dependencies.runPolling).toHaveBeenCalledTimes(2);
@@ -61,6 +63,10 @@ describe("createErpBPollingScheduler", () => {
 
         expect(dependencies.logger.info).not.toHaveBeenCalled();
         expect(dependencies.logger.warn).not.toHaveBeenCalled();
+        expect(dependencies.metrics.recordResult).toHaveBeenCalledWith(
+            { outcome: "LEASE_UNAVAILABLE" },
+            0
+        );
         await scheduler.stop();
     });
 
@@ -126,6 +132,7 @@ describe("createErpBPollingScheduler", () => {
             { err: failure },
             "ERP_B polling run failed"
         );
+        expect(dependencies.metrics.recordFailed).toHaveBeenCalledWith(0);
         await vi.advanceTimersByTimeAsync(1_000);
         expect(dependencies.runPolling).toHaveBeenCalledTimes(2);
         await scheduler.stop();
@@ -154,6 +161,7 @@ describe("createErpBPollingScheduler", () => {
         expect(dependencies.logger.info).not.toHaveBeenCalled();
         expect(dependencies.logger.warn).not.toHaveBeenCalled();
         expect(dependencies.logger.error).not.toHaveBeenCalled();
+        expect(dependencies.metrics.recordCancelled).toHaveBeenCalledWith(0);
     });
 
     it("suppresses an exception produced while stopping", async () => {
@@ -168,6 +176,7 @@ describe("createErpBPollingScheduler", () => {
         await stopping;
 
         expect(dependencies.logger.error).not.toHaveBeenCalled();
+        expect(dependencies.metrics.recordCancelled).toHaveBeenCalledWith(0);
     });
 
     it("cancels a pending timer and permits restart", async () => {
@@ -185,6 +194,20 @@ describe("createErpBPollingScheduler", () => {
         expect(dependencies.runPolling).toHaveBeenCalledTimes(2);
         await scheduler.stop();
     });
+
+    it("clamps duration if the injected monotonic clock moves backwards", async () => {
+        const dependencies = createDependencies();
+        dependencies.currentTimeMilliseconds
+            .mockReturnValueOnce(100)
+            .mockReturnValueOnce(50);
+        const scheduler = createErpBPollingScheduler(dependencies);
+
+        scheduler.start();
+        await flushPromises();
+
+        expect(dependencies.metrics.recordResult).toHaveBeenCalledWith(COMPLETED, 0);
+        await scheduler.stop();
+    });
 });
 
 function createDependencies() {
@@ -195,6 +218,13 @@ function createDependencies() {
             error: vi.fn(),
             info: vi.fn(),
             warn: vi.fn()
+        },
+        currentTimeMilliseconds: vi.fn(() => 0),
+        metrics: {
+            recordCancelled: vi.fn(),
+            recordFailed: vi.fn(),
+            recordResult: vi.fn(),
+            runStarted: vi.fn()
         },
         runPolling: vi.fn<RunErpBPollingUseCase>().mockResolvedValue(COMPLETED)
     };
