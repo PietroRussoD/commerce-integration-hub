@@ -1,6 +1,6 @@
 # Current Limitations
 
-This document defines the implemented boundary of the current release. It keeps
+This document defines the boundary of the current implementation. It keeps
 the public description precise and prevents planned capabilities from being
 mistaken for available behavior.
 
@@ -13,24 +13,30 @@ mistaken for available behavior.
   validation, mapping, durable receipt, and replay/conflict classification. Its
   schema and repository are tested against PostgreSQL, including concurrent
   receipt. Bounded concurrent claiming, fencing, and Integration Core HTTP
-  outcome classification are implemented. Atomic fenced attempt start is also
-  verified independently, together with successful `DELIVERED` completion, but
-  claims are not scheduled. Retry and exhaustion outcomes are persisted by an
-  independently tested adapter; permanent and configuration failures are also
-  persisted. Expired claims are recovered with fenced retry or exhaustion
-  transitions. The application batch worker composes the complete forwarding
+  outcome classification are implemented. Atomic fenced attempt start and
+  successful `DELIVERED` completion are verified independently. Retry and
+  exhaustion outcomes are persisted by an independently tested adapter;
+  permanent and configuration failures are also persisted. Expired claims are
+  recovered with fenced retry or exhaustion transitions. The application batch
+  worker composes the complete forwarding
   path. Its opt-in runtime scheduler executes recovery-first cycles without
   overlap and supports graceful cancellation. Prometheus exposes bounded worker
   cycle, duration, processing, and recovery metrics. The complete forwarding
   process and metric exposition are covered by an automated PostgreSQL-backed
   integration test.
+- The `ERP_B` polling parser, mapper, HTTP client, atomic page/checkpoint
+  persistence, fenced lease lifecycle, bounded multi-page runner, configuration,
+  and non-overlapping scheduler are implemented and tested. The scheduler is not
+  yet composed in `main.ts`, so the running service does not poll ERP_B. Polling
+  metrics, blocked-connector persistence, and a synthetic-provider process test
+  also remain outside the current runtime boundary.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the
   scheduled claim-publish-transition and expired-claim recovery cycles are
   implemented. Invalid or retry-exhausted `OrderReceived.v1` deliveries are
-  routed to a Kafka dead-letter topic. Operator replay tooling is outside this
-  release.
+  routed to a Kafka dead-letter topic. Operator replay tooling is not
+  implemented.
 
 ## API and Operations
 
@@ -61,6 +67,6 @@ mistaken for available behavior.
 - Orders support `EUR`, `GBP`, and `USD`. Values remain in their original
   currency; foreign-exchange conversion is not performed.
 
-These constraints are deliberate release boundaries. Later increments must add
+These constraints are deliberate implementation boundaries. Later increments must add
 their own tests, operational evidence, and architecture decisions before the
 corresponding capability is claimed.
