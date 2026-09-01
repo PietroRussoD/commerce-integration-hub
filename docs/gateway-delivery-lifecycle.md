@@ -18,8 +18,8 @@ that representation. Object property insertion order cannot change the result;
 position order remains significant because it is part of the mapped order.
 Mapping version and provider-item canonicalization version are separate
 compatibility boundaries. The bounded provider HTTP adapter and atomic
-page/checkpoint repository are implemented; scheduled polling-loop composition
-remains planned.
+page/checkpoint repository are composed by an implemented single-page use case.
+Bounded multi-page and scheduled runtime composition remain planned.
 
 The implemented pure page classifier converts mappable changes into ordinary
 inbound-delivery commands and mapping failures into bounded permanent-rejection
@@ -49,6 +49,7 @@ sequenceDiagram
         Poller->>Repository: renew(current owner and token)
         Repository->>DB: extend only a valid current lease
     end
+    Poller->>Poller: fetch and classify one strict provider page
     Poller->>Repository: commit page(expected version, lease token)
     Repository->>DB: BEGIN and lock checkpoint FOR UPDATE
     Repository->>DB: verify version, owner, token, and expiry
