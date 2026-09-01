@@ -20,6 +20,13 @@ Mapping version and provider-item canonicalization version are separate
 compatibility boundaries. HTTP polling and atomic page/checkpoint persistence
 remain planned.
 
+The implemented pure page classifier converts mappable changes into ordinary
+inbound-delivery commands and mapping failures into bounded permanent-rejection
+records with stable `ERP_B_*` error codes. Equivalent duplicate change IDs in
+one page collapse to one record. A duplicate ID with a different item
+fingerprint rejects the entire page, preventing a later checkpoint transaction
+from advancing across ambiguous provider evidence.
+
 ## Current State Transition
 
 ```mermaid

@@ -9,17 +9,16 @@ export interface MappedErpBOrderChange {
     readonly canonicalOrder: CanonicalOrder;
 }
 
+export type ErpBOrderChangeMappingFailureReason =
+    | "invalid_identifier"
+    | "unsupported_currency"
+    | "duplicate_position_id"
+    | "non_positive_quantity"
+    | "total_mismatch";
+
 export type ErpBOrderChangeMappingResult =
     | { mapped: true; value: MappedErpBOrderChange }
-    | {
-          mapped: false;
-          reason:
-              | "invalid_identifier"
-              | "unsupported_currency"
-              | "duplicate_position_id"
-              | "non_positive_quantity"
-              | "total_mismatch";
-      };
+    | { mapped: false; reason: ErpBOrderChangeMappingFailureReason };
 
 export function mapErpBOrderChange(
     change: ErpBOrderChangePayload

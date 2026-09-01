@@ -6,14 +6,15 @@ import type { ErpBOrderChangePayload } from "./order-page-parser.js";
 
 export const ERP_B_PROVIDER_ITEM_CANONICALIZATION_VERSION = "erp-b-provider-item-v1";
 
-export function createErpBInboundDeliveryCommand(
-    change: ErpBOrderChangePayload,
-    mappedChange: MappedErpBOrderChange
-): ReceiveInboundDeliveryCommand {
-    if (change.changeId !== mappedChange.providerEventId) {
-        throw new Error("ERP_B change identity does not match its canonical mapping");
-    }
+export interface ErpBProviderItemEvidence {
+    readonly externalEventId: string;
+    readonly providerPayloadHash: string;
+    readonly providerPayloadJson: string;
+}
 
+export function createErpBProviderItemEvidence(
+    change: ErpBOrderChangePayload
+): ErpBProviderItemEvidence {
     const providerPayloadJson = JSON.stringify({
         canonicalizationVersion: ERP_B_PROVIDER_ITEM_CANONICALIZATION_VERSION,
         changeId: change.changeId,
@@ -29,9 +30,22 @@ export function createErpBInboundDeliveryCommand(
     });
 
     return {
-        externalEventId: mappedChange.providerEventId,
+        externalEventId: change.changeId,
         providerPayloadHash: createHash("sha256").update(providerPayloadJson).digest("hex"),
-        providerPayloadJson,
+        providerPayloadJson
+    };
+}
+
+export function createErpBInboundDeliveryCommand(
+    evidence: ErpBProviderItemEvidence,
+    mappedChange: MappedErpBOrderChange
+): ReceiveInboundDeliveryCommand {
+    if (evidence.externalEventId !== mappedChange.providerEventId) {
+        throw new Error("ERP_B change identity does not match its canonical mapping");
+    }
+
+    return {
+        ...evidence,
         mappingVersion: mappedChange.mappingVersion,
         canonicalOrder: mappedChange.canonicalOrder
     };
