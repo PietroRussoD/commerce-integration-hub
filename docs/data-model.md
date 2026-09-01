@@ -257,4 +257,8 @@ close both records and configuration rejection blocks an active connector.
 Polling checkpoint acquisition is implemented as a conditional update that
 accepts only an active polling connector with no lease or an expired lease. It
 replaces expired ownership with a new fencing token without changing the cursor
-version. Renewal, clean release, and the scheduled provider loop remain planned.
+version. Renewal requires the current owner/token and an unexpired lease, never
+shortens its expiry, and stops when the connector is disabled. Clean release
+also requires the current owner/token but may clear an expired lease that has
+not been reacquired. These operations do not change cursor version. The
+scheduled provider loop remains planned.

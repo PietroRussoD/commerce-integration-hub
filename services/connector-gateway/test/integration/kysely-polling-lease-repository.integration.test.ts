@@ -10,6 +10,8 @@ import { KyselyPollingLeaseRepository } from "../../src/infrastructure/database/
 const CONNECTOR_ID = "0199037b-6400-7000-8000-000000000002";
 const ACQUIRED_AT = new Date("2026-09-01T09:00:00.000Z");
 const LEASE_EXPIRES_AT = new Date("2026-09-01T09:01:00.000Z");
+const RENEWED_AT = new Date("2026-09-01T09:00:30.000Z");
+const RENEWED_EXPIRES_AT = new Date("2026-09-01T09:01:30.000Z");
 
 describe("KyselyPollingLeaseRepository", () => {
     let container: StartedPostgreSqlContainer;
@@ -115,6 +117,101 @@ describe("KyselyPollingLeaseRepository", () => {
         });
     });
 
+    it("renews the current unexpired lease without changing checkpoint version", async () => {
+        await repository.tryAcquire(command("000000000407"));
+
+        await expect(repository.renew(renewCommand("000000000407"))).resolves.toEqual({
+            leaseExpiresAt: RENEWED_EXPIRES_AT
+        });
+        await expect(storedLease()).resolves.toMatchObject({
+            lease_expires_at: RENEWED_EXPIRES_AT,
+            lease_owner: "poller-a",
+            lease_token: "0199037b-6400-7000-8000-000000000407",
+            version: 1
+        });
+    });
+
+    it("does not shorten a lease when the requested renewal expires earlier", async () => {
+        await repository.tryAcquire(command("000000000408"));
+
+        await expect(
+            repository.renew({
+                ...renewCommand("000000000408"),
+                leaseExpiresAt: new Date("2026-09-01T09:00:45.000Z")
+            })
+        ).resolves.toEqual({ leaseExpiresAt: LEASE_EXPIRES_AT });
+        await expect(storedLease()).resolves.toMatchObject({
+            lease_expires_at: LEASE_EXPIRES_AT
+        });
+    });
+
+    it.each([
+        ["stale owner", { workerId: "poller-b" }],
+        ["stale token", { leaseToken: "0199037b-6400-7000-8000-000000000499" }],
+        ["expired lease", { renewedAt: LEASE_EXPIRES_AT }]
+    ] as const)("rejects renewal for a %s", async (_case, overrides) => {
+        await repository.tryAcquire(command("000000000409"));
+
+        await expect(
+            repository.renew({ ...renewCommand("000000000409"), ...overrides })
+        ).resolves.toBeNull();
+        await expect(storedLease()).resolves.toMatchObject({
+            lease_expires_at: LEASE_EXPIRES_AT,
+            lease_owner: "poller-a",
+            lease_token: "0199037b-6400-7000-8000-000000000409"
+        });
+    });
+
+    it("rejects renewal after the connector is disabled", async () => {
+        await repository.tryAcquire(command("000000000410"));
+        await database
+            .updateTable("connector_configurations")
+            .set({ status: "DISABLED", updated_at: RENEWED_AT })
+            .where("id", "=", CONNECTOR_ID)
+            .execute();
+
+        await expect(repository.renew(renewCommand("000000000410"))).resolves.toBeNull();
+    });
+
+    it("releases the matching lease without changing checkpoint version", async () => {
+        await repository.tryAcquire(command("000000000411"));
+
+        await expect(repository.release(releaseCommand("000000000411"))).resolves.toBe(true);
+        await expect(storedLease()).resolves.toMatchObject({
+            lease_expires_at: null,
+            lease_owner: null,
+            lease_token: null,
+            version: 1
+        });
+    });
+
+    it.each([
+        ["stale owner", { workerId: "poller-b" }],
+        ["stale token", { leaseToken: "0199037b-6400-7000-8000-000000000499" }]
+    ] as const)("does not release ownership with a %s", async (_case, overrides) => {
+        await repository.tryAcquire(command("000000000412"));
+
+        await expect(
+            repository.release({ ...releaseCommand("000000000412"), ...overrides })
+        ).resolves.toBe(false);
+        await expect(storedLease()).resolves.toMatchObject({
+            lease_owner: "poller-a",
+            lease_token: "0199037b-6400-7000-8000-000000000412"
+        });
+    });
+
+    it("allows the matching owner to clear an expired lease", async () => {
+        await repository.tryAcquire(command("000000000413"));
+
+        await expect(
+            repository.release({
+                ...releaseCommand("000000000413"),
+                releasedAt: LEASE_EXPIRES_AT
+            })
+        ).resolves.toBe(true);
+        await expect(storedLease()).resolves.toMatchObject({ lease_owner: null });
+    });
+
     function command(
         tokenSuffix: string,
         workerId = "poller-a"
@@ -125,6 +222,25 @@ describe("KyselyPollingLeaseRepository", () => {
             leaseExpiresAt: LEASE_EXPIRES_AT,
             leaseToken: `0199037b-6400-7000-8000-${tokenSuffix}`,
             workerId
+        };
+    }
+
+    function renewCommand(tokenSuffix: string): Parameters<typeof repository.renew>[0] {
+        return {
+            connectorId: CONNECTOR_ID,
+            leaseExpiresAt: RENEWED_EXPIRES_AT,
+            leaseToken: `0199037b-6400-7000-8000-${tokenSuffix}`,
+            renewedAt: RENEWED_AT,
+            workerId: "poller-a"
+        };
+    }
+
+    function releaseCommand(tokenSuffix: string): Parameters<typeof repository.release>[0] {
+        return {
+            connectorId: CONNECTOR_ID,
+            leaseToken: `0199037b-6400-7000-8000-${tokenSuffix}`,
+            releasedAt: RENEWED_AT,
+            workerId: "poller-a"
         };
     }
 
