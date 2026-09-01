@@ -134,9 +134,11 @@ classifier separates forwardable changes from durable poison-item evidence,
 collapses equivalent in-page duplicates, and rejects conflicting identities.
 Its transactional page repository stores both outcomes and advances the fenced
 checkpoint atomically, while equivalent replays remain idempotent and stale
-pollers cannot advance it. The provider HTTP client and scheduled polling loop
-remain planned. The gateway owns delivery state but does not mutate
-authoritative order state.
+pollers cannot advance it. Pollers acquire an available or expired checkpoint
+lease through one conditional database update; concurrent workers cannot both
+acquire it. Lease renewal/release, the provider HTTP client, and the scheduled
+polling loop remain planned. The gateway owns delivery state but does not
+mutate authoritative order state.
 
 ### Event Subscription
 
@@ -175,7 +177,7 @@ external subscribers remain planned.
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
-| `ERP_B` polling foundation | Classification, poison-item storage, and fenced atomic page commit implemented; HTTP client and polling loop planned |
+| `ERP_B` polling foundation | Exclusive lease acquisition and fenced atomic page commit implemented; renewal, HTTP client, and polling loop planned |
 | OpenSearch projection | Planned |
 
 ## Non-goals
