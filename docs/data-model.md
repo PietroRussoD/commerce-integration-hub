@@ -227,8 +227,10 @@ cursor represents the initial request. Version supports compare-and-swap
 updates, while lease owner, token, and expiry are either all absent or all
 present with a future expiry. Poll/success timestamps are constrained so a
 success cannot occur after the most recent poll. Migration `006` seeds the
-synthetic `ERP_B` connector and its initial checkpoint; the atomic page-write
-repository remains a later increment.
+synthetic `ERP_B` connector and its initial checkpoint. The page repository
+locks this row, verifies its version and unexpired lease, stores every accepted
+or rejected item, and advances the cursor in one transaction. A stale owner,
+payload conflict, or database failure rolls back the complete page.
 
 The claim adapter locks only eligible delivery rows with `SKIP LOCKED`, assigns
 one lease token to a bounded batch, and commits before network work begins. The
@@ -252,4 +254,5 @@ counter. Successful completion atomically closes the current attempt and moves
 the delivery to `DELIVERED`. Retryable completion atomically schedules
 `RETRY_WAIT` or terminates as `EXHAUSTED`; permanent and configuration failures
 close both records and configuration rejection blocks an active connector.
-Polling checkpoints remain planned.
+Polling checkpoint acquisition and the scheduled provider loop remain planned;
+the fenced atomic page commit is implemented.

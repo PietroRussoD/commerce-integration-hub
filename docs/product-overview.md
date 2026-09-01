@@ -132,8 +132,11 @@ credential is supplied. The strict `ERP_B` page parser, canonical mapper,
 versioned per-item fingerprint, and page classifier are implemented. The
 classifier separates forwardable changes from durable poison-item evidence,
 collapses equivalent in-page duplicates, and rejects conflicting identities.
-HTTP polling and checkpoint persistence remain planned. The gateway owns
-delivery state but does not mutate authoritative order state.
+Its transactional page repository stores both outcomes and advances the fenced
+checkpoint atomically, while equivalent replays remain idempotent and stale
+pollers cannot advance it. The provider HTTP client and scheduled polling loop
+remain planned. The gateway owns delivery state but does not mutate
+authoritative order state.
 
 ### Event Subscription
 
@@ -172,7 +175,7 @@ external subscribers remain planned.
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
-| `ERP_B` polling foundation | Page classification and constrained checkpoint/poison-item storage implemented; HTTP polling and atomic page commit planned |
+| `ERP_B` polling foundation | Classification, poison-item storage, and fenced atomic page commit implemented; HTTP client and polling loop planned |
 | OpenSearch projection | Planned |
 
 ## Non-goals
