@@ -254,5 +254,7 @@ counter. Successful completion atomically closes the current attempt and moves
 the delivery to `DELIVERED`. Retryable completion atomically schedules
 `RETRY_WAIT` or terminates as `EXHAUSTED`; permanent and configuration failures
 close both records and configuration rejection blocks an active connector.
-Polling checkpoint acquisition and the scheduled provider loop remain planned;
-the fenced atomic page commit is implemented.
+Polling checkpoint acquisition is implemented as a conditional update that
+accepts only an active polling connector with no lease or an expired lease. It
+replaces expired ownership with a new fencing token without changing the cursor
+version. Renewal, clean release, and the scheduled provider loop remain planned.

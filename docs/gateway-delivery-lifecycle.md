@@ -41,6 +41,9 @@ sequenceDiagram
     participant Repository
     participant DB as Gateway PostgreSQL
 
+    Poller->>Repository: try acquire(connector, new lease token)
+    Repository->>DB: conditional update if lease is absent or expired
+    DB-->>Poller: checkpoint snapshot or unavailable
     Poller->>Repository: commit page(expected version, lease token)
     Repository->>DB: BEGIN and lock checkpoint FOR UPDATE
     Repository->>DB: verify version, owner, token, and expiry
@@ -59,6 +62,9 @@ Equivalent replays do not create duplicate delivery rows but still allow the
 page cursor to advance. A reused provider identity with a different fingerprint
 rolls back earlier inserts from that page. Concurrent commits for the same
 checkpoint version serialize on the row lock; exactly one advances the version.
+Lease acquisition similarly uses one conditional update, so concurrent workers
+cannot both own an available checkpoint. Reclaiming an expired lease installs a
+new token that fences the previous worker without changing the cursor version.
 
 ## Current State Transition
 
