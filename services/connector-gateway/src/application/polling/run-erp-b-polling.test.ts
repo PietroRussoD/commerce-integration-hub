@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { AcquirePollingLeaseUseCase } from "./acquire-polling-lease.js";
+import type { BlockPollingConnectorUseCase } from "./block-polling-connector.js";
 import type {
     ReleasePollingLeaseUseCase,
     RenewPollingLeaseUseCase
@@ -158,6 +159,60 @@ describe("createRunErpBPollingUseCase", () => {
         expect(releaseLease).toHaveBeenCalledOnce();
     });
 
+    it("blocks the connector after provider authentication is rejected", async () => {
+        const blockConnector = vi.fn<BlockPollingConnectorUseCase>().mockResolvedValue(true);
+        const failure = {
+            errorCode: "ERP_B_AUTHENTICATION_REJECTED" as const,
+            httpStatus: 401 as const,
+            outcome: "BLOCKED_CONFIGURATION" as const
+        };
+        const run = createUseCase({
+            blockConnector,
+            processPage: processPageMock().mockResolvedValue(failure)
+        });
+
+        await expect(run({ connectorId: CONNECTOR_ID })).resolves.toMatchObject({
+            failure,
+            outcome: "PAGE_FAILED"
+        });
+        expect(blockConnector).toHaveBeenCalledWith({
+            connectorId: CONNECTOR_ID,
+            leaseToken: LEASE_TOKEN
+        });
+    });
+
+    it("reports lease loss when a stale poller cannot block the connector", async () => {
+        const run = createUseCase({
+            blockConnector: vi.fn<BlockPollingConnectorUseCase>().mockResolvedValue(false),
+            processPage: processPageMock().mockResolvedValue({
+                errorCode: "ERP_B_AUTHENTICATION_REJECTED",
+                httpStatus: 403,
+                outcome: "BLOCKED_CONFIGURATION"
+            })
+        });
+
+        await expect(run({ connectorId: CONNECTOR_ID })).resolves.toMatchObject({
+            outcome: "LEASE_LOST",
+            pagesCommitted: 0
+        });
+    });
+
+    it("does not block the connector for a retryable provider failure", async () => {
+        const blockConnector = vi.fn<BlockPollingConnectorUseCase>();
+        const run = createUseCase({
+            blockConnector,
+            processPage: processPageMock().mockResolvedValue({
+                errorCode: "ERP_B_TIMEOUT",
+                outcome: "RETRYABLE_FAILURE"
+            })
+        });
+
+        await expect(run({ connectorId: CONNECTOR_ID })).resolves.toMatchObject({
+            outcome: "PAGE_FAILED"
+        });
+        expect(blockConnector).not.toHaveBeenCalled();
+    });
+
     it("reports lease loss when the page commit is stale", async () => {
         const run = createUseCase({
             processPage: processPageMock().mockResolvedValue({
@@ -221,6 +276,7 @@ function createUseCase(
 ): ReturnType<typeof createRunErpBPollingUseCase> {
     return createRunErpBPollingUseCase({
         acquireLease: vi.fn<AcquirePollingLeaseUseCase>().mockResolvedValue(ACQUIRED_LEASE),
+        blockConnector: vi.fn<BlockPollingConnectorUseCase>().mockResolvedValue(true),
         maxPagesPerRun: 10,
         processPage: processPageMock().mockResolvedValue(FINAL_PAGE),
         releaseLease: releaseLeaseMock().mockResolvedValue(true),

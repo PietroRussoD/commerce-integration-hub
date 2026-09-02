@@ -371,7 +371,8 @@ export class KyselyInboundDeliveryAttemptRepository
                     .updateTable("connector_configurations")
                     .set({
                         status: "BLOCKED_CONFIGURATION",
-                        updated_at: command.completedAt
+                        updated_at: command.completedAt,
+                        version: sql`version + 1`
                     })
                     .where("id", "=", delivery.connector_id)
                     .where("status", "=", "ACTIVE")

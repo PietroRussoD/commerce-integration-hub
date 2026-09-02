@@ -41,7 +41,7 @@ describe("KyselyInboundDeliveryAttemptRepository", () => {
         await database.deleteFrom("inbound_deliveries").execute();
         await database
             .updateTable("connector_configurations")
-            .set({ status: "ACTIVE" })
+            .set({ status: "ACTIVE", version: 1 })
             .where("id", "=", CONNECTOR_ID)
             .execute();
     });
@@ -421,10 +421,14 @@ describe("KyselyInboundDeliveryAttemptRepository", () => {
         await expect(
             database
                 .selectFrom("connector_configurations")
-                .select("status")
+                .select(["status", "updated_at", "version"])
                 .where("id", "=", CONNECTOR_ID)
                 .executeTakeFirstOrThrow()
-        ).resolves.toEqual({ status: "BLOCKED_CONFIGURATION" });
+        ).resolves.toEqual({
+            status: "BLOCKED_CONFIGURATION",
+            updated_at: new Date("2026-08-30T09:00:00.125Z"),
+            version: 2
+        });
     });
 
     it("does not replace an administrative connector disable", async () => {
