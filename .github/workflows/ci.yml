@@ -38,10 +38,12 @@ jobs:
           filters: |
             connector_gateway:
               - "services/connector-gateway/**"
+              - "tools/provider-simulator/**"
+              - "compose.yaml"
               - ".github/workflows/ci.yml"
             integration_core:
               - "services/integration-core/**"
-              - "docker-compose.yml"
+              - "compose.yaml"
               - ".github/workflows/ci.yml"
             operator_console:
               - "apps/operator-console/**"
@@ -83,7 +85,9 @@ jobs:
           version: 11.23.0
           runtime: node@24
           cache: true
-          cache-dependency-path: services/connector-gateway/pnpm-lock.yaml
+          cache-dependency-path: |
+            services/connector-gateway/pnpm-lock.yaml
+            tools/provider-simulator/pnpm-lock.yaml
           package-json-file: services/connector-gateway/package.json
           install: false
 
@@ -95,6 +99,14 @@ jobs:
 
       - name: Test connector gateway migrations
         run: pnpm test:integration
+
+      - name: Install provider simulator dependencies
+        working-directory: tools/provider-simulator
+        run: pnpm install --frozen-lockfile
+
+      - name: Check provider simulator
+        working-directory: tools/provider-simulator
+        run: pnpm check
 
       - name: Upload connector gateway coverage
         if: always()

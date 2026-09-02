@@ -2,6 +2,23 @@ version: 2
 
 updates:
   - package-ecosystem: npm
+    directory: /tools/provider-simulator
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Rome
+    open-pull-requests-limit: 3
+    groups:
+      npm-minor-and-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: npm
     directory: /services/connector-gateway
     schedule:
       interval: weekly
@@ -92,6 +109,27 @@ updates:
 
   - package-ecosystem: docker
     directory: /services/connector-gateway
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Rome
+    open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: node
+        update-types:
+          - version-update:semver-major
+    groups:
+      docker-minor-and-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: docker
+    directory: /tools/provider-simulator
     schedule:
       interval: weekly
       day: monday
