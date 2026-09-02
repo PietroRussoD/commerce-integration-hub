@@ -1,0 +1,34 @@
+{
+    "name": "@commerce-integration-hub/provider-simulator",
+    "private": true,
+    "version": "0.1.0",
+    "packageManager": "pnpm@11.23.0",
+    "type": "module",
+    "engines": {
+        "node": ">=24 <27"
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json",
+        "check": "pnpm lint && pnpm type-check && pnpm test:coverage && pnpm build",
+        "dev": "tsx watch src/main.ts",
+        "lint": "eslint .",
+        "start": "node dist/main.js",
+        "test": "vitest run",
+        "test:coverage": "vitest run --coverage",
+        "type-check": "tsc --noEmit"
+    },
+    "dependencies": {
+        "fastify": "5.12.1"
+    },
+    "devDependencies": {
+        "@eslint/js": "10.0.1",
+        "@types/node": "26.4.0",
+        "@vitest/coverage-v8": "4.1.11",
+        "eslint": "10.9.1",
+        "globals": "17.11.0",
+        "tsx": "4.23.12",
+        "typescript": "6.0.3",
+        "typescript-eslint": "8.68.0",
+        "vitest": "4.1.11"
+    }
+}
