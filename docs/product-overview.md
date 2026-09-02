@@ -146,10 +146,12 @@ preserving provider and persistence failures. The bounded multi-page runner
 acquires and releases ownership, renews only before another page, aggregates
 durable progress, and stops cleanly at its page limit. Runtime configuration,
 and a cancellation-aware non-overlapping scheduler are implemented and opt-in.
-Polling outcome metrics are implemented and exposed with bounded labels. The
-opt-in process composition and fenced configuration-block persistence are
-implemented. A PostgreSQL-backed process test and deterministic Compose provider
-verify the complete two-page polling path. The gateway owns
+Polling outcome metrics are implemented and exposed with bounded labels. An
+optional Compose profile collects Core and Gateway metrics in Prometheus and
+provisions a repository-owned Grafana operations dashboard. The opt-in process
+composition and fenced configuration-block persistence are implemented. A
+PostgreSQL-backed process test and deterministic Compose provider verify the
+complete two-page polling path. The gateway owns
 delivery state but does not mutate authoritative order state.
 
 ### Event Subscription
@@ -183,7 +185,7 @@ external subscribers remain planned.
 | Kafka publisher adapter | Implemented and broker-tested |
 | Scheduled outbox dispatch | Implemented |
 | Scheduled expired-claim recovery | Implemented |
-| Liveness, database readiness, and Prometheus worker metrics | Implemented |
+| Liveness, database readiness, metrics, and local operations dashboard | Implemented |
 | Processing consumer and event deduplication | Implemented and broker-tested |
 | Operator order summary API | Implemented |
 | Operator detail API | Implemented |

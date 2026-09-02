@@ -40,6 +40,8 @@ The current baseline establishes:
 - read-only operator order summary and detail endpoints backed by PostgreSQL;
 - scheduled outbox dispatch and expired-claim recovery;
 - Prometheus metrics for outbox outcomes and scheduler execution;
+- an optional version-controlled Prometheus and Grafana local operations
+  dashboard;
 - source API-key authentication, administrative provisioning and revocation,
   with source-owned order access;
 - correlation IDs propagated through HTTP, persistence, and structured logs;
@@ -95,6 +97,7 @@ services/
   integration-core/  Kotlin/Quarkus authoritative order service
 tools/
   provider-simulator/ Deterministic local external-provider fixture
+observability/        Local Prometheus and Grafana configuration
 ```
 
 ## Build
@@ -207,6 +210,16 @@ pnpm dev
 
 Open [http://localhost:5173](http://localhost:5173). The simulator accepts the
 source API key created by the local demo and keeps it only in page memory.
+
+Start the optional version-controlled operations dashboard with:
+
+```bash
+docker compose --profile observability up -d prometheus grafana
+```
+
+Open [Grafana](http://localhost:3000), or see the
+[local observability runbook](observability/README.md) for the complete topology
+and Prometheus target status.
 
 See [Integration Core](services/integration-core/README.md) for service-level
 architecture and operational details. The current PostgreSQL structure is shown
