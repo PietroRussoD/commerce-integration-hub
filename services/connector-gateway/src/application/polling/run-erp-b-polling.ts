@@ -2,6 +2,7 @@ import type {
     AcquiredPollingLease,
     AcquirePollingLeaseUseCase
 } from "./acquire-polling-lease.js";
+import type { BlockPollingConnectorUseCase } from "./block-polling-connector.js";
 import type {
     PollingLeaseIdentity,
     ReleasePollingLeaseUseCase,
@@ -46,6 +47,7 @@ export type RunErpBPollingResult =
 
 export interface RunErpBPollingDependencies {
     readonly acquireLease: AcquirePollingLeaseUseCase;
+    readonly blockConnector: BlockPollingConnectorUseCase;
     readonly maxPagesPerRun: number;
     readonly processPage: ProcessErpBOrderPageUseCase;
     readonly releaseLease: ReleasePollingLeaseUseCase;
@@ -58,6 +60,7 @@ export type RunErpBPollingUseCase = (
 
 export function createRunErpBPollingUseCase({
     acquireLease,
+    blockConnector,
     maxPagesPerRun,
     processPage,
     releaseLease,
@@ -103,6 +106,15 @@ export function createRunErpBPollingUseCase({
             );
             if (pageResult.outcome === "STALE_CHECKPOINT") {
                 return { ...progress, outcome: "LEASE_LOST" };
+            }
+            if (pageResult.outcome === "BLOCKED_CONFIGURATION") {
+                const blocked = await blockConnector({
+                    connectorId: currentLease.connectorId,
+                    leaseToken: currentLease.leaseToken
+                });
+                return blocked
+                    ? { ...progress, failure: pageResult, outcome: "PAGE_FAILED" }
+                    : { ...progress, outcome: "LEASE_LOST" };
             }
             if (pageResult.outcome !== "PAGE_COMMITTED") {
                 return { ...progress, failure: pageResult, outcome: "PAGE_FAILED" };

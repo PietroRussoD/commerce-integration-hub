@@ -10,6 +10,7 @@ import { createReceiveInboundDeliveryUseCase } from "./application/deliveries/re
 import { createRecoverExpiredInboundDeliveriesUseCase } from "./application/deliveries/recover-expired-inbound-deliveries.js";
 import { createStartInboundDeliveryAttemptUseCase } from "./application/deliveries/start-inbound-delivery-attempt.js";
 import { createAcquirePollingLeaseUseCase } from "./application/polling/acquire-polling-lease.js";
+import { createBlockPollingConnectorUseCase } from "./application/polling/block-polling-connector.js";
 import {
     createReleasePollingLeaseUseCase,
     createRenewPollingLeaseUseCase
@@ -159,6 +160,7 @@ if (erpBPollingConfiguration.enabled) {
             createLeaseToken: randomUUID,
             leaseDurationMilliseconds: erpBPollingConfiguration.leaseDurationMilliseconds
         }),
+        blockConnector: createBlockPollingConnectorUseCase(commonLeaseDependencies),
         maxPagesPerRun: erpBPollingConfiguration.maxPagesPerRun,
         processPage: createProcessErpBOrderPageUseCase({
             pageRepository,

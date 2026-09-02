@@ -6,6 +6,10 @@ import type {
     PollingLeaseRepository
 } from "../../application/polling/acquire-polling-lease.js";
 import type {
+    BlockPollingConnectorCommand,
+    PollingConnectorRepository
+} from "../../application/polling/block-polling-connector.js";
+import type {
     PollingLeaseMaintenanceRepository,
     ReleasePollingLeaseCommand,
     RenewedPollingLease,
@@ -14,7 +18,10 @@ import type {
 import type { GatewayDatabase } from "./database.js";
 
 export class KyselyPollingLeaseRepository
-    implements PollingLeaseRepository, PollingLeaseMaintenanceRepository
+    implements
+        PollingConnectorRepository,
+        PollingLeaseRepository,
+        PollingLeaseMaintenanceRepository
 {
     public constructor(private readonly database: Kysely<GatewayDatabase>) {}
 
@@ -112,5 +119,38 @@ export class KyselyPollingLeaseRepository
             .executeTakeFirst();
 
         return checkpoint !== undefined;
+    }
+
+    public blockConfiguration(command: BlockPollingConnectorCommand): Promise<boolean> {
+        return this.database.transaction().execute(async (transaction) => {
+            const checkpoint = await transaction
+                .selectFrom("polling_checkpoints")
+                .select("connector_id")
+                .where("connector_id", "=", command.connectorId)
+                .where("lease_owner", "=", command.workerId)
+                .where("lease_token", "=", command.leaseToken)
+                .where("lease_expires_at", ">", command.blockedAt)
+                .forUpdate()
+                .executeTakeFirst();
+
+            if (checkpoint === undefined) {
+                return false;
+            }
+
+            const connector = await transaction
+                .updateTable("connector_configurations")
+                .set({
+                    status: "BLOCKED_CONFIGURATION",
+                    updated_at: command.blockedAt,
+                    version: sql`version + 1`
+                })
+                .where("id", "=", checkpoint.connector_id)
+                .where("mode", "=", "POLLING")
+                .where("status", "=", "ACTIVE")
+                .returning("id")
+                .executeTakeFirst();
+
+            return connector !== undefined;
+        });
     }
 }

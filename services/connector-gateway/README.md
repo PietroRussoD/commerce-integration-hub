@@ -58,6 +58,8 @@ Current implemented scope:
 - a bounded multi-page runner that acquires exclusive ownership, aggregates
   committed progress, renews between pages, stops at a configured page limit,
   preserves typed failures, and releases ownership in `finally`;
+- fenced connector blocking after an `ERP_B` authentication rejection, so a
+  stale poller cannot disable the connector and later runs stop at acquisition;
 - opt-in bounded polling configuration and a non-overlapping scheduler with
   immediate execution, post-completion intervals, typed activity logging,
   cancellation-aware shutdown, and restart-safe lifecycle;

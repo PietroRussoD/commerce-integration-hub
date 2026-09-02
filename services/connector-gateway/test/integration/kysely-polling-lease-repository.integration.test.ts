@@ -32,7 +32,7 @@ describe("KyselyPollingLeaseRepository", () => {
     beforeEach(async () => {
         await database
             .updateTable("connector_configurations")
-            .set({ status: "ACTIVE", updated_at: ACQUIRED_AT })
+            .set({ status: "ACTIVE", updated_at: ACQUIRED_AT, version: 1 })
             .where("id", "=", CONNECTOR_ID)
             .execute();
         await clearLease();
@@ -212,6 +212,54 @@ describe("KyselyPollingLeaseRepository", () => {
         await expect(storedLease()).resolves.toMatchObject({ lease_owner: null });
     });
 
+    it("blocks an active polling connector under its current lease", async () => {
+        await repository.tryAcquire(command("000000000414"));
+
+        await expect(
+            repository.blockConfiguration(blockCommand("000000000414"))
+        ).resolves.toBe(true);
+        await expect(storedConnector()).resolves.toMatchObject({
+            status: "BLOCKED_CONFIGURATION",
+            updated_at: RENEWED_AT,
+            version: 2
+        });
+        await expect(repository.release(releaseCommand("000000000414"))).resolves.toBe(true);
+        await expect(repository.tryAcquire(command("000000000415"))).resolves.toBeNull();
+    });
+
+    it.each([
+        ["stale owner", { workerId: "poller-b" }],
+        ["stale token", { leaseToken: "0199037b-6400-7000-8000-000000000499" }],
+        ["expired lease", { blockedAt: LEASE_EXPIRES_AT }]
+    ] as const)("does not block the connector with a %s", async (_case, overrides) => {
+        await repository.tryAcquire(command("000000000416"));
+
+        await expect(
+            repository.blockConfiguration({ ...blockCommand("000000000416"), ...overrides })
+        ).resolves.toBe(false);
+        await expect(storedConnector()).resolves.toMatchObject({
+            status: "ACTIVE",
+            version: 1
+        });
+    });
+
+    it("does not overwrite a connector disabled during its lease", async () => {
+        await repository.tryAcquire(command("000000000417"));
+        await database
+            .updateTable("connector_configurations")
+            .set({ status: "DISABLED", updated_at: RENEWED_AT })
+            .where("id", "=", CONNECTOR_ID)
+            .execute();
+
+        await expect(
+            repository.blockConfiguration(blockCommand("000000000417"))
+        ).resolves.toBe(false);
+        await expect(storedConnector()).resolves.toMatchObject({
+            status: "DISABLED",
+            version: 1
+        });
+    });
+
     function command(
         tokenSuffix: string,
         workerId = "poller-a"
@@ -244,6 +292,17 @@ describe("KyselyPollingLeaseRepository", () => {
         };
     }
 
+    function blockCommand(
+        tokenSuffix: string
+    ): Parameters<typeof repository.blockConfiguration>[0] {
+        return {
+            blockedAt: RENEWED_AT,
+            connectorId: CONNECTOR_ID,
+            leaseToken: `0199037b-6400-7000-8000-${tokenSuffix}`,
+            workerId: "poller-a"
+        };
+    }
+
     async function clearLease(): Promise<void> {
         await database
             .updateTable("polling_checkpoints")
@@ -262,6 +321,14 @@ describe("KyselyPollingLeaseRepository", () => {
             .selectFrom("polling_checkpoints")
             .select(["lease_owner", "lease_token", "lease_expires_at", "version"])
             .where("connector_id", "=", CONNECTOR_ID)
+            .executeTakeFirstOrThrow();
+    }
+
+    async function storedConnector() {
+        return database
+            .selectFrom("connector_configurations")
+            .select(["status", "updated_at", "version"])
+            .where("id", "=", CONNECTOR_ID)
             .executeTakeFirstOrThrow();
     }
 });

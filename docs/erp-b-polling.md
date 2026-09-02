@@ -103,13 +103,16 @@ flowchart TD
     Classify[Parse and classify complete page]
     Content{Page content}
     Commit[Commit records and checkpoint]
+    Block[Block active connector under current lease]
     Continue{More pages and budget remains?}
     Stop[Release lease and report outcome]
 
     Fetch --> Transport
     Transport -->|Success| Classify
     Transport -->|Timeout, unavailable, rate limited| Stop
-    Transport -->|401 or 403| Stop
+    Transport -->|401 or 403| Block
+    Block -->|Current lease still valid| Stop
+    Block -->|Stale lease| Stop
     Classify --> Content
     Content -->|Valid items or bounded poison items| Commit
     Content -->|Malformed page or conflicting identity| Stop
@@ -124,9 +127,11 @@ evidence, so it does not block the rest of a valid page. A malformed page or two
 different payloads using the same provider change ID is ambiguous at page level
 and therefore prevents the checkpoint from advancing.
 
-Persisting connector `BLOCKED_CONFIGURATION` after an `ERP_B` `401` or `403`
-is the next planned reliability increment. The current typed outcome stops the
-run, but does not yet disable later scheduled attempts.
+An `ERP_B` `401` or `403` moves an active polling connector to
+`BLOCKED_CONFIGURATION` only when the requesting worker still owns its
+unexpired lease. The connector version increments, the lease is released, and
+later scheduled runs cannot acquire it. A concurrently disabled connector is
+never overwritten.
 
 ## Related Documentation
 

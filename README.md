@@ -74,7 +74,8 @@ The current baseline establishes:
 - an in-progress `ERP_B` polling path with strict page mapping, atomic
   page/checkpoint persistence, fenced leases, a bounded HTTP client and
   multi-page runner, an opt-in non-overlapping scheduler, and bounded Prometheus
-  metrics, composed as a disabled-by-default runtime path and verified by a
+  metrics, plus fenced connector blocking after provider authentication failure,
+  composed as a disabled-by-default runtime path and verified by a
   PostgreSQL-backed synthetic-provider process test and a reproducible Compose
   demonstration.
 
