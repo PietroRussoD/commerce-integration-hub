@@ -99,7 +99,8 @@ configuration is:
 | `ERP_B_POLLING_MAX_PAGES_PER_RUN` | `10` | `1..100` |
 
 Lease duration must leave at least five seconds beyond the configured provider
-timeout. The Compose provider demonstration remains pending.
+timeout. Compose supplies local-only values and keeps polling disabled by
+default.
 
 The token is sent only as an `Authorization: Bearer` header and is never part of
 the request URL, a result object, or persisted provider evidence.
@@ -159,12 +160,13 @@ docker compose --profile gateway up --build --wait connector-gateway
 
 The migration job must complete successfully before the Gateway starts. It is
 safe to run again because Kysely records applied migrations. The committed
-Compose configuration uses local-only webhook credentials and keeps forwarding
-disabled until an Integration Core source credential is supplied.
+Compose configuration uses local-only credentials and keeps forwarding and
+polling disabled until explicitly enabled.
 
 ```mermaid
 flowchart LR
     Provider[Marketplace A]
+    Erp[ERP_B provider simulator]
     Gateway[Connector Gateway]
     Migration[One-shot migration job]
     Database[(Gateway PostgreSQL)]
@@ -172,17 +174,33 @@ flowchart LR
     Probe[Compose healthcheck]
 
     Provider -->|Signed webhook| Gateway
+    Erp -->|Cursor pages| Gateway
     Migration -->|Apply pending schema| Database
     Gateway -->|Receipt and delivery state| Database
     Probe -->|GET /health/ready| Gateway
-    Gateway -.->|Worker disabled by default| Core
+    Gateway -.->|Workers disabled by default| Core
 ```
 
 Stop the persistent services without deleting their database volume with:
 
 ```bash
-docker compose --profile gateway stop connector-gateway connector-gateway-postgres
+docker compose --profile gateway stop connector-gateway provider-simulator connector-gateway-postgres
 ```
+
+### ERP_B polling demo
+
+The `gateway` profile starts the deterministic provider simulator on
+[http://localhost:8083](http://localhost:8083). Enable polling with:
+
+```bash
+CONNECTOR_GATEWAY_ERP_B_POLLING_ENABLED=true \
+  docker compose --profile gateway up --build --wait connector-gateway
+```
+
+The first run requests two pages and stores two forwardable deliveries plus one
+`ERP_B_UNSUPPORTED_CURRENCY` poison record. Inspect polling metrics at
+[http://localhost:8081/metrics](http://localhost:8081/metrics). The simulator is
+a local test tool; it is not included in either production service image.
 
 To exercise forwarding, first start Integration Core and provision a local
 `MARKETPLACE_A` source credential using its

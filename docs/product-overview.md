@@ -147,9 +147,9 @@ acquires and releases ownership, renews only before another page, aggregates
 durable progress, and stops cleanly at its page limit. Runtime configuration,
 and a cancellation-aware non-overlapping scheduler are implemented and opt-in.
 Polling outcome metrics are implemented and exposed with bounded labels. The
-opt-in process composition is implemented, while configuration-block persistence,
-and a Compose demonstration remain planned. A PostgreSQL-backed process test
-verifies the complete two-page polling path. The gateway owns
+opt-in process composition is implemented, while configuration-block persistence
+remains planned. A PostgreSQL-backed process test and deterministic Compose
+provider verify the complete two-page polling path. The gateway owns
 delivery state but does not mutate authoritative order state.
 
 ### Event Subscription
