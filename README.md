@@ -214,6 +214,8 @@ The currently supported domain transitions are shown in the
 [order lifecycle](docs/order-lifecycle.md).
 The current Connector Gateway claim boundary is shown in the
 [gateway delivery lifecycle](docs/gateway-delivery-lifecycle.md).
+The cursor, lease, page-commit, and simulator interactions for `ERP_B` are shown
+in the dedicated [polling diagrams](docs/erp-b-polling.md).
 The developing publisher state machine is shown in the
 [outbox lifecycle diagrams](docs/outbox-lifecycle.md).
 Significant design choices are recorded in the

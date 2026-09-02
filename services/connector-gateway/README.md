@@ -200,7 +200,9 @@ CONNECTOR_GATEWAY_ERP_B_POLLING_ENABLED=true \
 The first run requests two pages and stores two forwardable deliveries plus one
 `ERP_B_UNSUPPORTED_CURRENCY` poison record. Inspect polling metrics at
 [http://localhost:8081/metrics](http://localhost:8081/metrics). The simulator is
-a local test tool; it is not included in either production service image.
+a local test tool; it is not included in either production service image. The
+complete cursor, lease, classification, and atomic-commit flow is shown in the
+[`ERP_B` polling diagrams](../../docs/erp-b-polling.md).
 
 To exercise forwarding, first start Integration Core and provision a local
 `MARKETPLACE_A` source credential using its
