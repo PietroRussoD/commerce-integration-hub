@@ -75,8 +75,8 @@ The current baseline establishes:
   page/checkpoint persistence, fenced leases, a bounded HTTP client and
   multi-page runner, an opt-in non-overlapping scheduler, and bounded Prometheus
   metrics, composed as a disabled-by-default runtime path and verified by a
-  PostgreSQL-backed synthetic-provider process test. The Compose demonstration
-  remains pending.
+  PostgreSQL-backed synthetic-provider process test and a reproducible Compose
+  demonstration.
 
 The `v0.5.0` release adds the external Node.js and TypeScript Connector Gateway
 with durable webhook receipt and reliable forwarding to Integration Core.
@@ -91,6 +91,8 @@ apps/
 services/
   connector-gateway/ Node.js and TypeScript provider-facing adapter
   integration-core/  Kotlin/Quarkus authoritative order service
+tools/
+  provider-simulator/ Deterministic local external-provider fixture
 ```
 
 ## Build
@@ -118,6 +120,14 @@ cd services/connector-gateway
 pnpm install --frozen-lockfile
 pnpm check
 pnpm test:integration
+```
+
+Validate the provider simulator:
+
+```bash
+cd tools/provider-simulator
+pnpm install --frozen-lockfile
+pnpm check
 ```
 
 The Playwright browser suite runs locally against an automatically started Vite
@@ -179,7 +189,9 @@ docker compose --profile gateway up --build --wait connector-gateway
 
 The Gateway accepts signed local `MARKETPLACE_A` webhooks on port `8081`. Its
 forwarding worker remains disabled in the committed Compose configuration until
-an Integration Core source credential is provided. See the
+an Integration Core source credential is provided. The same profile starts the
+provider simulator on port `8083`; ERP_B polling remains disabled unless
+`CONNECTOR_GATEWAY_ERP_B_POLLING_ENABLED=true` is supplied. See the
 [Gateway runbook](services/connector-gateway/README.md#run) for the topology,
 health endpoints, and source-development workflow.
 

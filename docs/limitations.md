@@ -30,7 +30,8 @@ mistaken for available behavior.
   tested. Its opt-in `main.ts` composition is implemented and remains disabled by
   default. A synthetic-provider process test verifies the complete two-page path,
   durable outcomes, metrics, lease release, and shutdown. Blocked-connector
-  persistence and a Compose demonstration remain outside the current boundary.
+  persistence remains outside the current boundary. The Compose provider is a
+  deterministic local fixture rather than a production dependency.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the
