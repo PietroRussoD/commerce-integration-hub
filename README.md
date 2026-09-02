@@ -98,6 +98,7 @@ services/
 tools/
   provider-simulator/ Deterministic local external-provider fixture
 observability/        Local Prometheus and Grafana configuration
+scripts/              Reproducible release-level local verification
 ```
 
 ## Build
@@ -220,6 +221,13 @@ docker compose --profile observability up -d prometheus grafana
 Open [Grafana](http://localhost:3000), or see the
 [local observability runbook](observability/README.md) for the complete topology
 and Prometheus target status.
+
+Verify the complete `v0.6` polling and observability topology in an isolated,
+self-cleaning Compose project with:
+
+```bash
+./scripts/verify-v0.6-compose.sh
+```
 
 See [Integration Core](services/integration-core/README.md) for service-level
 architecture and operational details. The current PostgreSQL structure is shown
