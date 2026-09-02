@@ -66,6 +66,15 @@ export interface MetricsExporter {
     metrics(): Promise<string>;
 }
 
+export interface DeliveryBacklogSnapshot {
+    readonly eligibleDeliveries: number;
+    readonly oldestEligibleReceivedAt: Date | null;
+}
+
+export interface DeliveryBacklogSource {
+    readDeliveryBacklog(observedAt: Date): Promise<DeliveryBacklogSnapshot>;
+}
+
 export interface ConnectorGatewayMetrics {
     readonly deliveryWorker: DeliveryWorkerMetrics;
     readonly erpBPolling: ErpBPollingMetrics;
@@ -73,9 +82,11 @@ export interface ConnectorGatewayMetrics {
 }
 
 export function createConnectorGatewayMetrics({
-    currentTimeMilliseconds = Date.now
+    currentTimeMilliseconds = Date.now,
+    deliveryBacklogSource
 }: {
     readonly currentTimeMilliseconds?: () => number;
+    readonly deliveryBacklogSource?: DeliveryBacklogSource;
 } = {}): ConnectorGatewayMetrics {
     const registry = new Registry();
     collectDefaultMetrics({ prefix: "connector_gateway_", register: registry });
@@ -113,6 +124,16 @@ export function createConnectorGatewayMetrics({
         help: "Number of expired delivery claims observed by recovery outcome",
         labelNames: ["outcome"] as const,
         name: "connector_gateway_delivery_worker_recovery_total",
+        registers: [registry]
+    });
+    const deliveryBacklogOldestAge = new Gauge({
+        help: "Age in seconds of the oldest delivery currently eligible for forwarding",
+        name: "connector_gateway_delivery_backlog_oldest_age_seconds",
+        registers: [registry]
+    });
+    const deliveryBacklog = new Gauge({
+        help: "Number of deliveries currently eligible for forwarding",
+        name: "connector_gateway_delivery_backlog",
         registers: [registry]
     });
     const pollingRuns = new Counter({
@@ -172,6 +193,8 @@ export function createConnectorGatewayMetrics({
     pollingRunActive.set(0);
     pollingLastSuccessful.set(0);
     pollingPages.inc(0);
+    deliveryBacklog.set(0);
+    deliveryBacklogOldestAge.set(0);
 
     const finishCycle = (outcome: CycleOutcome, durationSeconds: number): void => {
         assertNonnegativeFinite(durationSeconds, "durationSeconds");
@@ -235,7 +258,30 @@ export function createConnectorGatewayMetrics({
                 pollingRunActive.set(1);
             }
         },
-        exporter: registry
+        exporter: {
+            contentType: registry.contentType,
+            async metrics(): Promise<string> {
+                if (deliveryBacklogSource !== undefined) {
+                    const observedAtMilliseconds = currentTimeMilliseconds();
+                    const snapshot = await deliveryBacklogSource.readDeliveryBacklog(
+                        new Date(observedAtMilliseconds)
+                    );
+                    validateDeliveryBacklogSnapshot(snapshot);
+                    deliveryBacklog.set(snapshot.eligibleDeliveries);
+                    deliveryBacklogOldestAge.set(
+                        snapshot.oldestEligibleReceivedAt === null
+                            ? 0
+                            : Math.max(
+                                  0,
+                                  (observedAtMilliseconds -
+                                      snapshot.oldestEligibleReceivedAt.getTime()) /
+                                      1_000
+                              )
+                    );
+                }
+                return registry.metrics();
+            }
+        }
     };
 }
 
@@ -305,6 +351,24 @@ function validateCycleResult(result: DeliveryWorkerCycleMetricsResult): void {
             result.processing.staleClaims
     ) {
         throw new Error("processing counts must reconcile");
+    }
+}
+
+function validateDeliveryBacklogSnapshot(snapshot: DeliveryBacklogSnapshot): void {
+    if (!Number.isSafeInteger(snapshot.eligibleDeliveries) || snapshot.eligibleDeliveries < 0) {
+        throw new Error("eligibleDeliveries must be a nonnegative safe integer");
+    }
+    if (
+        snapshot.oldestEligibleReceivedAt !== null &&
+        Number.isNaN(snapshot.oldestEligibleReceivedAt.getTime())
+    ) {
+        throw new Error("oldestEligibleReceivedAt must be a valid date or null");
+    }
+    if (snapshot.eligibleDeliveries === 0 && snapshot.oldestEligibleReceivedAt !== null) {
+        throw new Error("an empty backlog cannot have an oldest delivery");
+    }
+    if (snapshot.eligibleDeliveries > 0 && snapshot.oldestEligibleReceivedAt === null) {
+        throw new Error("a non-empty backlog must have an oldest delivery");
     }
 }
 

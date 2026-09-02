@@ -29,9 +29,10 @@ mistaken for available behavior.
   non-overlapping scheduler, and bounded Prometheus metrics are implemented and
   tested. Its opt-in `main.ts` composition is implemented and remains disabled by
   default. A synthetic-provider process test verifies the complete two-page path,
-  durable outcomes, metrics, lease release, and shutdown. Blocked-connector
-  persistence remains outside the current boundary. The Compose provider is a
-  deterministic local fixture rather than a production dependency.
+  durable outcomes, metrics, lease release, and shutdown. Provider `401`/`403`
+  responses block an active connector only under its current unexpired fenced
+  lease; later polling acquisition stops. The Compose provider is a deterministic
+  local fixture rather than a production dependency.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the
@@ -54,7 +55,8 @@ mistaken for available behavior.
   local development and portfolio demonstrations, not production operation.
 - Liveness and PostgreSQL readiness checks, structured logs, correlation IDs,
   Prometheus runtime metrics,
-  and bounded outbox and Gateway-worker outcome metrics are available.
+  bounded outbox and Gateway-worker outcome metrics, and database-backed
+  eligible-delivery backlog count and age are available.
   Distributed tracing, alerting rules, and production dashboards are not.
   Deployment must restrict `/metrics` to trusted monitoring infrastructure.
 - Raw provider payloads are not retained by the canonical API.

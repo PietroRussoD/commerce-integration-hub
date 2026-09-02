@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createConnectorGatewayMetrics } from "./connector-gateway-metrics.js";
 import type { RunErpBPollingResult } from "../../application/polling/run-erp-b-polling.js";
@@ -20,6 +20,82 @@ const CYCLE_RESULT = {
 };
 
 describe("createConnectorGatewayMetrics", () => {
+    it("collects the current durable delivery backlog", async () => {
+        const readDeliveryBacklog = vi.fn().mockResolvedValue({
+            eligibleDeliveries: 2,
+            oldestEligibleReceivedAt: new Date("2026-08-30T08:59:00.000Z")
+        });
+        const metrics = createConnectorGatewayMetrics({
+            currentTimeMilliseconds: () => Date.parse("2026-08-30T09:00:00.000Z"),
+            deliveryBacklogSource: { readDeliveryBacklog }
+        });
+
+        const exposition = await metrics.exporter.metrics();
+
+        expect(readDeliveryBacklog).toHaveBeenCalledWith(
+            new Date("2026-08-30T09:00:00.000Z")
+        );
+        expect(exposition).toContain("connector_gateway_delivery_backlog 2");
+        expect(exposition).toContain(
+            "connector_gateway_delivery_backlog_oldest_age_seconds 60"
+        );
+    });
+
+    it.each([
+        [null, 0],
+        [new Date("2026-08-30T09:01:00.000Z"), 1]
+    ] as const)("reports zero backlog age for oldest value %s", async (oldest, count) => {
+        const metrics = createConnectorGatewayMetrics({
+            currentTimeMilliseconds: () => Date.parse("2026-08-30T09:00:00.000Z"),
+            deliveryBacklogSource: {
+                readDeliveryBacklog: () =>
+                    Promise.resolve({
+                        eligibleDeliveries: count,
+                        oldestEligibleReceivedAt: oldest
+                    })
+            }
+        });
+
+        expect(await metrics.exporter.metrics()).toContain(
+            "connector_gateway_delivery_backlog_oldest_age_seconds 0"
+        );
+    });
+
+    it.each([
+        [{ eligibleDeliveries: -1, oldestEligibleReceivedAt: null }, "eligibleDeliveries"],
+        [{ eligibleDeliveries: 1.5, oldestEligibleReceivedAt: null }, "eligibleDeliveries"],
+        [
+            { eligibleDeliveries: 1, oldestEligibleReceivedAt: new Date(Number.NaN) },
+            "oldestEligibleReceivedAt"
+        ],
+        [
+            {
+                eligibleDeliveries: 0,
+                oldestEligibleReceivedAt: new Date("2026-08-30T08:59:00.000Z")
+            },
+            "an empty backlog"
+        ],
+        [{ eligibleDeliveries: 1, oldestEligibleReceivedAt: null }, "a non-empty backlog"]
+    ] as const)("rejects an invalid backlog snapshot: %s", async (snapshot, message) => {
+        const metrics = createConnectorGatewayMetrics({
+            deliveryBacklogSource: {
+                readDeliveryBacklog: () => Promise.resolve(snapshot)
+            }
+        });
+
+        await expect(metrics.exporter.metrics()).rejects.toThrow(message);
+    });
+
+    it("fails the scrape when the durable backlog cannot be read", async () => {
+        const metrics = createConnectorGatewayMetrics({
+            deliveryBacklogSource: {
+                readDeliveryBacklog: () => Promise.reject(new Error("database unavailable"))
+            }
+        });
+
+        await expect(metrics.exporter.metrics()).rejects.toThrow("database unavailable");
+    });
+
     it("records bounded worker outcomes in Prometheus format", async () => {
         const metrics = createConnectorGatewayMetrics({
             currentTimeMilliseconds: () => 1_788_116_400_000

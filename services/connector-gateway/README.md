@@ -298,13 +298,17 @@ replicas.
 - cycles and durations by `completed`, `failed`, or `cancelled` outcome;
 - active-cycle state and last successful cycle timestamp;
 - claimed deliveries and fixed processing outcomes;
-- recovered and stale expired claims.
+- recovered and stale expired claims;
+- the current database-backed eligible backlog and the age of its oldest
+  delivery, refreshed once per Prometheus scrape.
 
 Node.js runtime metrics use the `connector_gateway_` prefix. Counters are local
-to each process and must be summed across replicas by Prometheus. No worker,
-delivery, URL, or free-form error value is used as a metric label. The endpoint
-uses `Cache-Control: no-store`; production routing should expose it only to the
-monitoring network or an internal ingress.
+to each process and must be summed across replicas by Prometheus. Backlog gauges
+come from the shared PostgreSQL ledger and must not be summed across replicas.
+No worker, delivery, URL, or free-form error value is used as a metric label.
+The endpoint uses `Cache-Control: no-store`; production routing should expose it
+only to the monitoring network or an internal ingress. A database failure makes
+the scrape fail rather than publishing stale backlog values.
 
 ## Container image
 
