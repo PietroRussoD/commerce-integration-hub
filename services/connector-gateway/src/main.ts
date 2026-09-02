@@ -30,7 +30,7 @@ import { KyselyInboundDeliveryRepository } from "./infrastructure/database/kysel
 import { KyselyPolledOrderPageRepository } from "./infrastructure/database/kysely-polled-order-page-repository.js";
 import { KyselyPollingLeaseRepository } from "./infrastructure/database/kysely-polling-lease-repository.js";
 import { KyselyDatabaseReadiness } from "./infrastructure/database/kysely-database-readiness.js";
-import { KyselyDeliveryBacklogSource } from "./infrastructure/database/kysely-delivery-backlog-source.js";
+import { KyselyOperationalMetricsSource } from "./infrastructure/database/kysely-operational-metrics-source.js";
 import { FetchIntegrationCoreOrderClient } from "./infrastructure/http/fetch-integration-core-order-client.js";
 import { readIntegrationCoreClientConfiguration } from "./infrastructure/http/integration-core-client-configuration.js";
 import { createConnectorGatewayMetrics } from "./infrastructure/observability/connector-gateway-metrics.js";
@@ -74,7 +74,7 @@ const deliveryWorkerConfiguration = readDeliveryWorkerConfiguration(process.env)
 const erpBPollingConfiguration = readErpBPollingConfiguration(process.env);
 const database = createDatabase(databaseConfiguration);
 const metrics = createConnectorGatewayMetrics({
-    deliveryBacklogSource: new KyselyDeliveryBacklogSource(database)
+    operationalMetricsSource: new KyselyOperationalMetricsSource(database)
 });
 const databaseReadiness = new KyselyDatabaseReadiness(database);
 const deliveryRepository = new KyselyInboundDeliveryRepository(database);

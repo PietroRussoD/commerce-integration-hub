@@ -75,7 +75,8 @@ The current baseline establishes:
   page/checkpoint persistence, fenced leases, a bounded HTTP client and
   multi-page runner, an opt-in non-overlapping scheduler, and bounded Prometheus
   metrics, plus fenced connector blocking after provider authentication failure,
-  composed as a disabled-by-default runtime path and verified by a
+  persistent backlog, connector-state, and checkpoint-age gauges, composed as a
+  disabled-by-default runtime path and verified by a
   PostgreSQL-backed synthetic-provider process test and a reproducible Compose
   demonstration.
 

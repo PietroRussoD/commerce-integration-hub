@@ -34,6 +34,7 @@ const POLLING_ITEM_OUTCOMES = [
     "created_rejection",
     "equivalent_replay"
 ] as const;
+const CONNECTOR_STATUSES = ["active", "blocked_configuration", "disabled"] as const;
 
 type CycleOutcome = (typeof CYCLE_OUTCOMES)[number];
 type DeliveryOutcome = (typeof DELIVERY_OUTCOMES)[number];
@@ -66,13 +67,17 @@ export interface MetricsExporter {
     metrics(): Promise<string>;
 }
 
-export interface DeliveryBacklogSnapshot {
+export interface GatewayOperationalSnapshot {
+    readonly activeConnectors: number;
+    readonly blockedConnectors: number;
+    readonly disabledConnectors: number;
     readonly eligibleDeliveries: number;
+    readonly lastSuccessfulPollAt: Date | null;
     readonly oldestEligibleReceivedAt: Date | null;
 }
 
-export interface DeliveryBacklogSource {
-    readDeliveryBacklog(observedAt: Date): Promise<DeliveryBacklogSnapshot>;
+export interface GatewayOperationalMetricsSource {
+    readOperationalSnapshot(observedAt: Date): Promise<GatewayOperationalSnapshot>;
 }
 
 export interface ConnectorGatewayMetrics {
@@ -83,10 +88,10 @@ export interface ConnectorGatewayMetrics {
 
 export function createConnectorGatewayMetrics({
     currentTimeMilliseconds = Date.now,
-    deliveryBacklogSource
+    operationalMetricsSource
 }: {
     readonly currentTimeMilliseconds?: () => number;
-    readonly deliveryBacklogSource?: DeliveryBacklogSource;
+    readonly operationalMetricsSource?: GatewayOperationalMetricsSource;
 } = {}): ConnectorGatewayMetrics {
     const registry = new Registry();
     collectDefaultMetrics({ prefix: "connector_gateway_", register: registry });
@@ -136,6 +141,12 @@ export function createConnectorGatewayMetrics({
         name: "connector_gateway_delivery_backlog",
         registers: [registry]
     });
+    const connectorConfigurations = new Gauge({
+        help: "Number of connector configurations by current status",
+        labelNames: ["status"] as const,
+        name: "connector_gateway_connector_configurations",
+        registers: [registry]
+    });
     const pollingRuns = new Counter({
         help: "Number of ERP_B polling runs by terminal outcome",
         labelNames: ["outcome"] as const,
@@ -157,6 +168,11 @@ export function createConnectorGatewayMetrics({
     const pollingLastSuccessful = new Gauge({
         help: "Unix timestamp of the last successful ERP_B polling run",
         name: "connector_gateway_erp_b_polling_last_successful_unixtime",
+        registers: [registry]
+    });
+    const pollingCheckpointAge = new Gauge({
+        help: "Age in seconds of the latest durable successful ERP_B polling checkpoint",
+        name: "connector_gateway_erp_b_polling_checkpoint_age_seconds",
         registers: [registry]
     });
     const pollingPages = new Counter({
@@ -188,10 +204,14 @@ export function createConnectorGatewayMetrics({
     for (const outcome of POLLING_ITEM_OUTCOMES) {
         pollingItems.inc({ outcome }, 0);
     }
+    for (const status of CONNECTOR_STATUSES) {
+        connectorConfigurations.set({ status }, 0);
+    }
     cycleActive.set(0);
     lastCompleted.set(0);
     pollingRunActive.set(0);
     pollingLastSuccessful.set(0);
+    pollingCheckpointAge.set(0);
     pollingPages.inc(0);
     deliveryBacklog.set(0);
     deliveryBacklogOldestAge.set(0);
@@ -261,12 +281,12 @@ export function createConnectorGatewayMetrics({
         exporter: {
             contentType: registry.contentType,
             async metrics(): Promise<string> {
-                if (deliveryBacklogSource !== undefined) {
+                if (operationalMetricsSource !== undefined) {
                     const observedAtMilliseconds = currentTimeMilliseconds();
-                    const snapshot = await deliveryBacklogSource.readDeliveryBacklog(
+                    const snapshot = await operationalMetricsSource.readOperationalSnapshot(
                         new Date(observedAtMilliseconds)
                     );
-                    validateDeliveryBacklogSnapshot(snapshot);
+                    validateOperationalSnapshot(snapshot);
                     deliveryBacklog.set(snapshot.eligibleDeliveries);
                     deliveryBacklogOldestAge.set(
                         snapshot.oldestEligibleReceivedAt === null
@@ -275,6 +295,33 @@ export function createConnectorGatewayMetrics({
                                   0,
                                   (observedAtMilliseconds -
                                       snapshot.oldestEligibleReceivedAt.getTime()) /
+                                      1_000
+                              )
+                    );
+                    connectorConfigurations.set(
+                        { status: "active" },
+                        snapshot.activeConnectors
+                    );
+                    connectorConfigurations.set(
+                        { status: "blocked_configuration" },
+                        snapshot.blockedConnectors
+                    );
+                    connectorConfigurations.set(
+                        { status: "disabled" },
+                        snapshot.disabledConnectors
+                    );
+                    pollingLastSuccessful.set(
+                        snapshot.lastSuccessfulPollAt === null
+                            ? 0
+                            : snapshot.lastSuccessfulPollAt.getTime() / 1_000
+                    );
+                    pollingCheckpointAge.set(
+                        snapshot.lastSuccessfulPollAt === null
+                            ? 0
+                            : Math.max(
+                                  0,
+                                  (observedAtMilliseconds -
+                                      snapshot.lastSuccessfulPollAt.getTime()) /
                                       1_000
                               )
                     );
@@ -354,15 +401,24 @@ function validateCycleResult(result: DeliveryWorkerCycleMetricsResult): void {
     }
 }
 
-function validateDeliveryBacklogSnapshot(snapshot: DeliveryBacklogSnapshot): void {
-    if (!Number.isSafeInteger(snapshot.eligibleDeliveries) || snapshot.eligibleDeliveries < 0) {
-        throw new Error("eligibleDeliveries must be a nonnegative safe integer");
+function validateOperationalSnapshot(snapshot: GatewayOperationalSnapshot): void {
+    for (const [name, value] of Object.entries({
+        activeConnectors: snapshot.activeConnectors,
+        blockedConnectors: snapshot.blockedConnectors,
+        disabledConnectors: snapshot.disabledConnectors,
+        eligibleDeliveries: snapshot.eligibleDeliveries
+    })) {
+        if (!Number.isSafeInteger(value) || value < 0) {
+            throw new Error(`${name} must be a nonnegative safe integer`);
+        }
     }
-    if (
-        snapshot.oldestEligibleReceivedAt !== null &&
-        Number.isNaN(snapshot.oldestEligibleReceivedAt.getTime())
-    ) {
-        throw new Error("oldestEligibleReceivedAt must be a valid date or null");
+    for (const [name, value] of Object.entries({
+        lastSuccessfulPollAt: snapshot.lastSuccessfulPollAt,
+        oldestEligibleReceivedAt: snapshot.oldestEligibleReceivedAt
+    })) {
+        if (value !== null && Number.isNaN(value.getTime())) {
+            throw new Error(`${name} must be a valid date or null`);
+        }
     }
     if (snapshot.eligibleDeliveries === 0 && snapshot.oldestEligibleReceivedAt !== null) {
         throw new Error("an empty backlog cannot have an oldest delivery");

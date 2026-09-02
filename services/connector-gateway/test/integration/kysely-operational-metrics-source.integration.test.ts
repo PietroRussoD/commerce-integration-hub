@@ -8,16 +8,16 @@ import {
     type GatewayDatabase,
     type InboundDeliveryStatus
 } from "../../src/infrastructure/database/database.js";
-import { KyselyDeliveryBacklogSource } from "../../src/infrastructure/database/kysely-delivery-backlog-source.js";
+import { KyselyOperationalMetricsSource } from "../../src/infrastructure/database/kysely-operational-metrics-source.js";
 import { migrateToLatest } from "../../src/infrastructure/database/migrator.js";
 
 const CONNECTOR_ID = readMarketplaceAConnectorId({});
 const OBSERVED_AT = new Date("2026-09-02T09:00:00.000Z");
 
-describe("KyselyDeliveryBacklogSource", () => {
+describe("KyselyOperationalMetricsSource", () => {
     let container: StartedPostgreSqlContainer;
     let database: Kysely<GatewayDatabase>;
-    let source: KyselyDeliveryBacklogSource;
+    let source: KyselyOperationalMetricsSource;
 
     beforeAll(async () => {
         container = await new PostgreSqlContainer("postgres:18.3").start();
@@ -27,11 +27,15 @@ describe("KyselyDeliveryBacklogSource", () => {
             maxPoolSize: 4
         });
         await migrateToLatest(database);
-        source = new KyselyDeliveryBacklogSource(database);
+        source = new KyselyOperationalMetricsSource(database);
     });
 
     beforeEach(async () => {
         await database.deleteFrom("inbound_deliveries").execute();
+        await database
+            .updateTable("polling_checkpoints")
+            .set({ last_polled_at: null, last_successful_poll_at: null })
+            .execute();
         await database
             .updateTable("connector_configurations")
             .set({ status: "ACTIVE" })
@@ -50,8 +54,20 @@ describe("KyselyDeliveryBacklogSource", () => {
         await insertDelivery("000000000803", "future", "RECEIVED", -180, 60, true);
         await insertDelivery("000000000804", "poison", "PERMANENT_FAILURE", -240, -120, false);
 
-        await expect(source.readDeliveryBacklog(OBSERVED_AT)).resolves.toEqual({
+        await database
+            .updateTable("polling_checkpoints")
+            .set({
+                last_polled_at: offsetDate(-180),
+                last_successful_poll_at: offsetDate(-180)
+            })
+            .execute();
+
+        await expect(source.readOperationalSnapshot(OBSERVED_AT)).resolves.toEqual({
+            activeConnectors: 2,
+            blockedConnectors: 0,
+            disabledConnectors: 0,
             eligibleDeliveries: 2,
+            lastSuccessfulPollAt: new Date("2026-09-02T08:57:00.000Z"),
             oldestEligibleReceivedAt: new Date("2026-09-02T08:58:00.000Z")
         });
     });
@@ -64,8 +80,12 @@ describe("KyselyDeliveryBacklogSource", () => {
             .where("id", "=", CONNECTOR_ID)
             .execute();
 
-        await expect(source.readDeliveryBacklog(OBSERVED_AT)).resolves.toEqual({
+        await expect(source.readOperationalSnapshot(OBSERVED_AT)).resolves.toEqual({
+            activeConnectors: 1,
+            blockedConnectors: 1,
+            disabledConnectors: 0,
             eligibleDeliveries: 0,
+            lastSuccessfulPollAt: null,
             oldestEligibleReceivedAt: null
         });
     });
