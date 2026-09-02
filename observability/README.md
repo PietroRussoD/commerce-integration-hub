@@ -38,3 +38,21 @@ editing them in the UI. Prometheus retains local samples for 24 hours.
 
 Services that are not running appear as `DOWN` targets. This does not prevent
 Prometheus or Grafana from starting.
+
+## Reproducible smoke test
+
+Run the release-level smoke test from any directory:
+
+```bash
+./scripts/verify-v0.6-compose.sh
+```
+
+The script requires Docker, `curl`, and `jq`. It builds the Integration Core,
+starts an isolated Compose project on dedicated high ports, enables the
+deterministic ERP_B polling path, and verifies application readiness, both
+Prometheus targets, durable polling evidence, and Grafana provisioning. It then
+removes its containers, network, and volumes.
+
+Set `KEEP_SMOKE_STACK=true` to retain the isolated stack for inspection after a
+run, including for failure diagnosis. The script never reuses the ordinary
+development volumes.
