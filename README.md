@@ -74,8 +74,9 @@ The current baseline establishes:
 - an in-progress `ERP_B` polling path with strict page mapping, atomic
   page/checkpoint persistence, fenced leases, a bounded HTTP client and
   multi-page runner, an opt-in non-overlapping scheduler, and bounded Prometheus
-  metrics, composed as a disabled-by-default runtime path. A synthetic-provider
-  process test and Compose demonstration remain pending.
+  metrics, composed as a disabled-by-default runtime path and verified by a
+  PostgreSQL-backed synthetic-provider process test. The Compose demonstration
+  remains pending.
 
 The `v0.5.0` release adds the external Node.js and TypeScript Connector Gateway
 with durable webhook receipt and reliable forwarding to Integration Core.

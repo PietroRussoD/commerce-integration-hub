@@ -75,7 +75,9 @@ process tests verify those boundaries.
 The `ERP_B` HTTP adapter, page processor, bounded runner, persistence boundaries,
 configuration reader, scheduler, metrics, and `main.ts` composition are
 implemented. Polling remains disabled by default; when disabled, its exposed
-metrics remain zero and provider credentials are not read. The client accepts
+metrics remain zero and provider credentials are not read. A PostgreSQL-backed
+process test verifies two provider pages, cursor progression, durable valid and
+poison outcomes, metrics, lease release, and graceful shutdown. The client accepts
 `ERP_B_BASE_URL`, `ERP_B_API_TOKEN`, and these optional bounds:
 
 | Variable | Default | Range |
@@ -97,7 +99,7 @@ configuration is:
 | `ERP_B_POLLING_MAX_PAGES_PER_RUN` | `10` | `1..100` |
 
 Lease duration must leave at least five seconds beyond the configured provider
-timeout. The synthetic-provider process test and Compose demo remain pending.
+timeout. The Compose provider demonstration remains pending.
 
 The token is sent only as an `Authorization: Bearer` header and is never part of
 the request URL, a result object, or persisted provider evidence.
@@ -125,6 +127,8 @@ Unit tests and coverage stay fast and container-free. `test:integration`
 starts PostgreSQL 18.3 with Testcontainers and verifies migrations, critical
 constraints, repositories, durable receipt, and the complete worker process from
 a signed webhook to the Integration Core HTTP boundary and persisted completion.
+It also runs the complete ERP_B polling process against a local synthetic HTTP
+provider.
 
 ## Database migration
 

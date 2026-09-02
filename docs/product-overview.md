@@ -148,8 +148,8 @@ durable progress, and stops cleanly at its page limit. Runtime configuration,
 and a cancellation-aware non-overlapping scheduler are implemented and opt-in.
 Polling outcome metrics are implemented and exposed with bounded labels. The
 opt-in process composition is implemented, while configuration-block persistence,
-a synthetic-provider process test, and Compose demonstration remain planned.
-The gateway owns
+and a Compose demonstration remain planned. A PostgreSQL-backed process test
+verifies the complete two-page polling path. The gateway owns
 delivery state but does not mutate authoritative order state.
 
 ### Event Subscription
