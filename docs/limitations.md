@@ -28,8 +28,9 @@ mistaken for available behavior.
   persistence, fenced lease lifecycle, bounded multi-page runner, configuration,
   non-overlapping scheduler, and bounded Prometheus metrics are implemented and
   tested. Its opt-in `main.ts` composition is implemented and remains disabled by
-  default. Blocked-connector persistence, a synthetic-provider process test, and
-  a Compose demonstration remain outside the current verified boundary.
+  default. A synthetic-provider process test verifies the complete two-page path,
+  durable outcomes, metrics, lease release, and shutdown. Blocked-connector
+  persistence and a Compose demonstration remain outside the current boundary.
 - PostgreSQL is the only authoritative store. OpenSearch projections and
   reconciliation are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the
