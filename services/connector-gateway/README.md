@@ -300,15 +300,19 @@ replicas.
 - claimed deliveries and fixed processing outcomes;
 - recovered and stale expired claims;
 - the current database-backed eligible backlog and the age of its oldest
-  delivery, refreshed once per Prometheus scrape.
+  delivery;
+- connector configuration counts for the fixed `active`,
+  `blocked_configuration`, and `disabled` states;
+- the durable latest successful ERP_B checkpoint timestamp and its current age.
 
 Node.js runtime metrics use the `connector_gateway_` prefix. Counters are local
-to each process and must be summed across replicas by Prometheus. Backlog gauges
-come from the shared PostgreSQL ledger and must not be summed across replicas.
+to each process and must be summed across replicas by Prometheus. Operational
+gauges come from one PostgreSQL snapshot per scrape and must not be summed across
+replicas. The checkpoint timestamp remains meaningful after a process restart.
 No worker, delivery, URL, or free-form error value is used as a metric label.
 The endpoint uses `Cache-Control: no-store`; production routing should expose it
 only to the monitoring network or an internal ingress. A database failure makes
-the scrape fail rather than publishing stale backlog values.
+the scrape fail rather than publishing stale operational values.
 
 ## Container image
 

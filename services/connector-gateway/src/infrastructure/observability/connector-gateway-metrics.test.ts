@@ -18,26 +18,53 @@ const CYCLE_RESULT = {
         staleClaims: 1
     }
 };
+const EMPTY_OPERATIONAL_SNAPSHOT = {
+    activeConnectors: 2,
+    blockedConnectors: 0,
+    disabledConnectors: 0,
+    eligibleDeliveries: 0,
+    lastSuccessfulPollAt: null,
+    oldestEligibleReceivedAt: null
+};
 
 describe("createConnectorGatewayMetrics", () => {
     it("collects the current durable delivery backlog", async () => {
-        const readDeliveryBacklog = vi.fn().mockResolvedValue({
+        const readOperationalSnapshot = vi.fn().mockResolvedValue({
+            ...EMPTY_OPERATIONAL_SNAPSHOT,
+            activeConnectors: 1,
+            blockedConnectors: 1,
             eligibleDeliveries: 2,
+            lastSuccessfulPollAt: new Date("2026-08-30T08:58:00.000Z"),
             oldestEligibleReceivedAt: new Date("2026-08-30T08:59:00.000Z")
         });
         const metrics = createConnectorGatewayMetrics({
             currentTimeMilliseconds: () => Date.parse("2026-08-30T09:00:00.000Z"),
-            deliveryBacklogSource: { readDeliveryBacklog }
+            operationalMetricsSource: { readOperationalSnapshot }
         });
 
         const exposition = await metrics.exporter.metrics();
 
-        expect(readDeliveryBacklog).toHaveBeenCalledWith(
+        expect(readOperationalSnapshot).toHaveBeenCalledWith(
             new Date("2026-08-30T09:00:00.000Z")
         );
         expect(exposition).toContain("connector_gateway_delivery_backlog 2");
         expect(exposition).toContain(
             "connector_gateway_delivery_backlog_oldest_age_seconds 60"
+        );
+        expect(exposition).toContain(
+            'connector_gateway_connector_configurations{status="active"} 1'
+        );
+        expect(exposition).toContain(
+            'connector_gateway_connector_configurations{status="blocked_configuration"} 1'
+        );
+        expect(exposition).toContain(
+            'connector_gateway_connector_configurations{status="disabled"} 0'
+        );
+        expect(exposition).toContain(
+            "connector_gateway_erp_b_polling_last_successful_unixtime 1788080280"
+        );
+        expect(exposition).toContain(
+            "connector_gateway_erp_b_polling_checkpoint_age_seconds 120"
         );
     });
 
@@ -47,39 +74,57 @@ describe("createConnectorGatewayMetrics", () => {
     ] as const)("reports zero backlog age for oldest value %s", async (oldest, count) => {
         const metrics = createConnectorGatewayMetrics({
             currentTimeMilliseconds: () => Date.parse("2026-08-30T09:00:00.000Z"),
-            deliveryBacklogSource: {
-                readDeliveryBacklog: () =>
+            operationalMetricsSource: {
+                readOperationalSnapshot: () =>
                     Promise.resolve({
+                        ...EMPTY_OPERATIONAL_SNAPSHOT,
                         eligibleDeliveries: count,
+                        lastSuccessfulPollAt: oldest,
                         oldestEligibleReceivedAt: oldest
                     })
             }
         });
 
-        expect(await metrics.exporter.metrics()).toContain(
+        const exposition = await metrics.exporter.metrics();
+        expect(exposition).toContain(
             "connector_gateway_delivery_backlog_oldest_age_seconds 0"
+        );
+        expect(exposition).toContain(
+            "connector_gateway_erp_b_polling_checkpoint_age_seconds 0"
         );
     });
 
     it.each([
-        [{ eligibleDeliveries: -1, oldestEligibleReceivedAt: null }, "eligibleDeliveries"],
-        [{ eligibleDeliveries: 1.5, oldestEligibleReceivedAt: null }, "eligibleDeliveries"],
+        [{ ...EMPTY_OPERATIONAL_SNAPSHOT, activeConnectors: -1 }, "activeConnectors"],
+        [{ ...EMPTY_OPERATIONAL_SNAPSHOT, blockedConnectors: 1.5 }, "blockedConnectors"],
         [
-            { eligibleDeliveries: 1, oldestEligibleReceivedAt: new Date(Number.NaN) },
+            { ...EMPTY_OPERATIONAL_SNAPSHOT, lastSuccessfulPollAt: new Date(Number.NaN) },
+            "lastSuccessfulPollAt"
+        ],
+        [
+            {
+                ...EMPTY_OPERATIONAL_SNAPSHOT,
+                eligibleDeliveries: 1,
+                oldestEligibleReceivedAt: new Date(Number.NaN)
+            },
             "oldestEligibleReceivedAt"
         ],
         [
             {
+                ...EMPTY_OPERATIONAL_SNAPSHOT,
                 eligibleDeliveries: 0,
                 oldestEligibleReceivedAt: new Date("2026-08-30T08:59:00.000Z")
             },
             "an empty backlog"
         ],
-        [{ eligibleDeliveries: 1, oldestEligibleReceivedAt: null }, "a non-empty backlog"]
+        [
+            { ...EMPTY_OPERATIONAL_SNAPSHOT, eligibleDeliveries: 1 },
+            "a non-empty backlog"
+        ]
     ] as const)("rejects an invalid backlog snapshot: %s", async (snapshot, message) => {
         const metrics = createConnectorGatewayMetrics({
-            deliveryBacklogSource: {
-                readDeliveryBacklog: () => Promise.resolve(snapshot)
+            operationalMetricsSource: {
+                readOperationalSnapshot: () => Promise.resolve(snapshot)
             }
         });
 
@@ -88,8 +133,9 @@ describe("createConnectorGatewayMetrics", () => {
 
     it("fails the scrape when the durable backlog cannot be read", async () => {
         const metrics = createConnectorGatewayMetrics({
-            deliveryBacklogSource: {
-                readDeliveryBacklog: () => Promise.reject(new Error("database unavailable"))
+            operationalMetricsSource: {
+                readOperationalSnapshot: () =>
+                    Promise.reject(new Error("database unavailable"))
             }
         });
 
