@@ -25,6 +25,8 @@ const evidenceFactSchema = z
     name: z.enum([
       "ATTEMPT_NUMBER",
       "CHECKPOINT_VERSION",
+      "CONNECTOR_STATE",
+      "CONNECTOR_VERSION",
       "CURSOR",
       "DELIVERY_STATE",
       "ERROR_CODE",

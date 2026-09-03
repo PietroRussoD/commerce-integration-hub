@@ -34,10 +34,12 @@ Gateway delivery and attempt state from Gateway PostgreSQL, and order, outbox,
 timeline, and processing state from Core PostgreSQL. The poison-item trace
 combines the same HTTP evidence with the durable rejection and checkpoint state
 from Gateway PostgreSQL; it also verifies that no delivery attempt or Core order
-exists. Equal-millisecond events use a stable causal priority; elapsed time
-otherwise comes from recorded timestamps.
+exists. The authentication-rejection trace combines the observed provider `401`
+with the blocked connector version and released polling lease; it verifies that
+no delivery or Core order exists. Equal-millisecond events use a stable causal
+priority; elapsed time otherwise comes from recorded timestamps.
 
-## Generate The Success Trace
+## Generate The Traces
 
 Docker, Java 25, Maven, pnpm, curl, jq, and sed must be available. From the
 repository root run:
@@ -45,6 +47,7 @@ repository root run:
 ```bash
 ./scripts/capture-v0.7-erp-b-success.sh
 ./scripts/capture-v0.7-erp-b-poison-item.sh
+./scripts/capture-v0.7-erp-b-authentication-rejection.sh
 ```
 
 Each runner writes its matching artifact below
@@ -68,5 +71,5 @@ credential exists only in the runner process and the disposable Core database.
 
 The artifact is a reproducible portfolio and learning surface, not an audit log,
 distributed trace, monitoring backend, or proof of production latency. Capture
-currently supports the ERP_B success and poison-item scenarios. Capturing the
-authentication rejection remains part of `v0.7.0`.
+currently supports the ERP_B success, poison-item, and authentication-rejection
+scenarios. The accessible visual player remains part of `v0.7.0`.
