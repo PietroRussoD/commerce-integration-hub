@@ -55,6 +55,15 @@ Each runner writes its matching artifact below
 and removes its isolated Compose resources. Set `KEEP_FLOW_TRACE_STACK=true`
 only while diagnosing a failed local capture.
 
+## Playback Time
+
+The player retains each recorded `offsetMs` for inspection but uses a separate
+presentation timeline. Every transition is clamped between 600 and 1,600 ms so
+that millisecond failure paths remain visible and long operational waits do not
+stall the demonstration. A pure state transition function owns play, pause,
+restart, elapsed-time advancement, completion, and manual step selection; React
+will only schedule time and render the resulting state.
+
 ## Contract And Sanitization
 
 `FlowTrace` schema version `1.0` accepts a closed set of scenario IDs,
