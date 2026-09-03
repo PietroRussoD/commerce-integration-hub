@@ -150,6 +150,23 @@
         "REJECTED": "Rifiutato",
         "BLOCKED": "Bloccato"
       }
+    },
+    "stepDetails": {
+      "step": "Passaggio {{sequence}}",
+      "phase": "Fase",
+      "kind": "Operazione",
+      "source": "Origine",
+      "destination": "Destinazione",
+      "outcome": "Esito",
+      "evidence": "Evidenze registrate",
+      "noEvidence": "Nessuna evidenza registrata per questo passaggio.",
+      "kinds": {
+        "INTERACTION": "Interazione",
+        "PERSISTENCE": "Persistenza",
+        "STATE_TRANSITION": "Cambio di stato",
+        "MESSAGE": "Messaggio",
+        "OUTCOME": "Esito"
+      }
     }
   },
   "simulator": {
