@@ -131,6 +131,25 @@
         "DATABASE": "Database",
         "MESSAGE_BROKER": "Broker"
       }
+    },
+    "timeline": {
+      "ariaLabel": "Event sequence",
+      "title": "Timeline",
+      "progress": "Step {{current}} of {{total}}",
+      "stepLabel": "Step {{sequence}}, {{eventType}}, {{status}}",
+      "phases": {
+        "POLLING": "Polling",
+        "RECEIPT": "Receipt",
+        "FORWARDING": "Forwarding",
+        "PROCESSING": "Processing",
+        "COMPLETION": "Completion"
+      },
+      "status": {
+        "INFORMATIONAL": "Informational",
+        "SUCCEEDED": "Succeeded",
+        "REJECTED": "Rejected",
+        "BLOCKED": "Blocked"
+      }
     }
   },
   "simulator": {

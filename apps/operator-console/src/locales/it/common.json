@@ -131,6 +131,25 @@
         "DATABASE": "Database",
         "MESSAGE_BROKER": "Broker"
       }
+    },
+    "timeline": {
+      "ariaLabel": "Sequenza degli eventi",
+      "title": "Sequenza",
+      "progress": "Passaggio {{current}} di {{total}}",
+      "stepLabel": "Passaggio {{sequence}}, {{eventType}}, {{status}}",
+      "phases": {
+        "POLLING": "Interrogazione",
+        "RECEIPT": "Ricezione",
+        "FORWARDING": "Inoltro",
+        "PROCESSING": "Elaborazione",
+        "COMPLETION": "Completamento"
+      },
+      "status": {
+        "INFORMATIONAL": "Informativo",
+        "SUCCEEDED": "Completato",
+        "REJECTED": "Rifiutato",
+        "BLOCKED": "Bloccato"
+      }
     }
   },
   "simulator": {
