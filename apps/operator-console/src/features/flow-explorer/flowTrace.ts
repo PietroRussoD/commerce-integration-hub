@@ -1,6 +1,13 @@
 import { z } from "zod";
 
 export const flowTraceSchemaVersion = "1.0" as const;
+export const flowTraceScenarioIds = [
+  "erp-b-success",
+  "erp-b-poison-item",
+  "erp-b-authentication-rejection",
+] as const;
+
+export type FlowTraceScenarioId = (typeof flowTraceScenarioIds)[number];
 
 const identifierSchema = z.string().regex(/^[a-z][a-z0-9-]{0,63}$/);
 const evidenceValueSchema = z.string().trim().min(1).max(120);
@@ -77,7 +84,7 @@ export const flowTraceSchema = z
     traceId: identifierSchema,
     scenario: z
       .object({
-        id: z.enum(["erp-b-success", "erp-b-poison-item", "erp-b-authentication-rejection"]),
+        id: z.enum(flowTraceScenarioIds),
         sourceSystem: z.literal("ERP_B"),
         outcome: scenarioOutcomeSchema,
       })
