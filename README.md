@@ -84,8 +84,8 @@ The current baseline establishes:
 
 The `v0.6.0` release adds cursor-based ERP polling, fenced coordination,
 durable operational metrics, and a reproducible local observability stack.
-Development next targets the integration flow explorer. Search projections
-remain a later increment.
+Development now targets the `v0.7.0` integration flow explorer. Search
+projections remain a later increment.
 
 ## Repository structure
 
