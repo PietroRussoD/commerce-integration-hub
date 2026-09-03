@@ -7,8 +7,12 @@ afterEach(cleanup);
 
 test.each([
   ["READY", "bg-emerald-50"],
+  ["SUCCEEDED", "bg-emerald-50"],
   ["PROCESSING", "bg-amber-50"],
+  ["BLOCKED", "bg-amber-50"],
   ["FAILED", "bg-red-50"],
+  ["REJECTED", "bg-red-50"],
+  ["INFORMATIONAL", "bg-sky-50"],
   ["UNKNOWN", "bg-zinc-100"],
 ])("uses the expected color for %s", (status, colorClassName) => {
   render(<StatusBadge status={status}>{status}</StatusBadge>);

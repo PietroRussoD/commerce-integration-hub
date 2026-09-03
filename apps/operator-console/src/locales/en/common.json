@@ -150,6 +150,23 @@
         "REJECTED": "Rejected",
         "BLOCKED": "Blocked"
       }
+    },
+    "stepDetails": {
+      "step": "Step {{sequence}}",
+      "phase": "Phase",
+      "kind": "Operation",
+      "source": "Source",
+      "destination": "Destination",
+      "outcome": "Outcome",
+      "evidence": "Recorded evidence",
+      "noEvidence": "No evidence was recorded for this step.",
+      "kinds": {
+        "INTERACTION": "Interaction",
+        "PERSISTENCE": "Persistence",
+        "STATE_TRANSITION": "State transition",
+        "MESSAGE": "Message",
+        "OUTCOME": "Outcome"
+      }
     }
   },
   "simulator": {

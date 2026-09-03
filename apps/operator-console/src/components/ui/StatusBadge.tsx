@@ -1,11 +1,14 @@
 import { type ReactNode } from "react";
 
 const statusClassNames: Record<string, string> = {
+  INFORMATIONAL: "bg-sky-50 text-sky-800 ring-sky-600/20",
   RECEIVED: "bg-sky-50 text-sky-800 ring-sky-600/20",
   PROCESSING: "bg-amber-50 text-amber-800 ring-amber-600/20",
   STARTED: "bg-amber-50 text-amber-800 ring-amber-600/20",
+  BLOCKED: "bg-amber-50 text-amber-800 ring-amber-600/20",
   READY: "bg-emerald-50 text-emerald-800 ring-emerald-600/20",
   SUCCEEDED: "bg-emerald-50 text-emerald-800 ring-emerald-600/20",
+  REJECTED: "bg-red-50 text-red-800 ring-red-600/20",
   FAILED: "bg-red-50 text-red-800 ring-red-600/20",
 };
 
