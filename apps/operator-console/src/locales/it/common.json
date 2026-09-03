@@ -185,6 +185,24 @@
         "pause": "Metti in pausa il flusso",
         "next": "Passaggio successivo"
       }
+    },
+    "scenarios": {
+      "title": "Scenario registrato",
+      "description": "Scegli una traccia deterministica acquisita dallo stack di integrazione in esecuzione.",
+      "items": {
+        "erp-b-success": {
+          "title": "Consegna completata",
+          "description": "Gli ordini ERP_B vengono normalizzati, salvati, pubblicati ed elaborati correttamente."
+        },
+        "erp-b-poison-item": {
+          "title": "Elemento non elaborabile",
+          "description": "Un elemento non supportato viene rifiutato mentre il checkpoint avanza in sicurezza."
+        },
+        "erp-b-authentication-rejection": {
+          "title": "Autenticazione rifiutata",
+          "description": "Credenziali ERP_B non valide bloccano il connettore senza perdere il checkpoint."
+        }
+      }
     }
   },
   "simulator": {
