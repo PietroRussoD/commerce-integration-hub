@@ -115,6 +115,24 @@
       "inProgress": "In progress"
     }
   },
+  "flowExplorer": {
+    "stage": {
+      "ariaLabel": "Integration flow participants",
+      "activeEvent": "Active event",
+      "step": "Step {{sequence}}",
+      "source": "Source",
+      "destination": "Destination",
+      "result": "Result",
+      "outcome": "Outcome",
+      "inactive": "Inactive",
+      "kinds": {
+        "EXTERNAL_SYSTEM": "External",
+        "SERVICE": "Service",
+        "DATABASE": "Database",
+        "MESSAGE_BROKER": "Broker"
+      }
+    }
+  },
   "simulator": {
     "title": "Simulator",
     "scenarios": {
