@@ -52,6 +52,7 @@ services:
     profiles: ["gateway"]
     environment:
       PROVIDER_SIMULATOR_ERP_B_API_TOKEN: local-erp-b-token
+      PROVIDER_SIMULATOR_ERP_B_SCENARIO: "${PROVIDER_SIMULATOR_ERP_B_SCENARIO:-MIXED}"
     ports:
       - "${PROVIDER_SIMULATOR_PORT:-8083}:8080"
     healthcheck:

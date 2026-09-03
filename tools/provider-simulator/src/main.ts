@@ -4,6 +4,7 @@ import { readProviderSimulatorConfiguration } from "./configuration.js";
 const configuration = readProviderSimulatorConfiguration();
 const application = buildProviderSimulator({
     erpBApiToken: configuration.erpBApiToken,
+    erpBScenario: configuration.erpBScenario,
     logger: true
 });
 

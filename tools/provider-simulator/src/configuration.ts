@@ -2,9 +2,13 @@ const DEFAULT_HOST = "0.0.0.0";
 const DEFAULT_PORT = 8080;
 const MAX_PORT = 65_535;
 const TOKEN_PATTERN = /^[A-Za-z0-9._~+/-]+=*$/;
+const ERP_B_SCENARIOS = ["MIXED", "SUCCESS", "POISON_ITEM"] as const;
+
+export type ErpBSimulationScenario = (typeof ERP_B_SCENARIOS)[number];
 
 export interface ProviderSimulatorConfiguration {
     readonly erpBApiToken: string;
+    readonly erpBScenario: ErpBSimulationScenario;
     readonly host: string;
     readonly port: number;
 }
@@ -14,9 +18,18 @@ export function readProviderSimulatorConfiguration(
 ): ProviderSimulatorConfiguration {
     return {
         erpBApiToken: readToken(environment.PROVIDER_SIMULATOR_ERP_B_API_TOKEN),
+        erpBScenario: readErpBScenario(environment.PROVIDER_SIMULATOR_ERP_B_SCENARIO),
         host: readHost(environment.HOST),
         port: readPort(environment.PORT)
     };
+}
+
+function readErpBScenario(value: string | undefined): ErpBSimulationScenario {
+    const scenario = value ?? "MIXED";
+    if (!ERP_B_SCENARIOS.some((candidate) => candidate === scenario)) {
+        throw new Error(`PROVIDER_SIMULATOR_ERP_B_SCENARIO must be one of: ${ERP_B_SCENARIOS.join(", ")}`);
+    }
+    return scenario as ErpBSimulationScenario;
 }
 
 function readToken(value: string | undefined): string {
