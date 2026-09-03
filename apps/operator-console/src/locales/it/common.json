@@ -167,6 +167,24 @@
         "MESSAGE": "Messaggio",
         "OUTCOME": "Esito"
       }
+    },
+    "playback": {
+      "ariaLabel": "Controlli di riproduzione del flusso",
+      "title": "Riproduzione",
+      "progress": "Passaggio {{current}} di {{total}}",
+      "progressLabel": "Avanzamento della riproduzione del flusso",
+      "status": {
+        "PLAYING": "In riproduzione",
+        "PAUSED": "In pausa",
+        "COMPLETED": "Completata"
+      },
+      "actions": {
+        "restart": "Riavvia la riproduzione",
+        "previous": "Passaggio precedente",
+        "play": "Riproduci il flusso",
+        "pause": "Metti in pausa il flusso",
+        "next": "Passaggio successivo"
+      }
     }
   },
   "simulator": {

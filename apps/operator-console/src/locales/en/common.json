@@ -167,6 +167,24 @@
         "MESSAGE": "Message",
         "OUTCOME": "Outcome"
       }
+    },
+    "playback": {
+      "ariaLabel": "Flow playback controls",
+      "title": "Playback",
+      "progress": "Step {{current}} of {{total}}",
+      "progressLabel": "Flow playback progress",
+      "status": {
+        "PLAYING": "Playing",
+        "PAUSED": "Paused",
+        "COMPLETED": "Completed"
+      },
+      "actions": {
+        "restart": "Restart playback",
+        "previous": "Previous step",
+        "play": "Play playback",
+        "pause": "Pause playback",
+        "next": "Next step"
+      }
     }
   },
   "simulator": {
