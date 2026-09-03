@@ -31,9 +31,11 @@ sequenceDiagram
 
 The success trace derives its HTTP timing from structured simulator logs,
 Gateway delivery and attempt state from Gateway PostgreSQL, and order, outbox,
-timeline, and processing state from Core PostgreSQL. Equal-millisecond events
-use a stable causal priority; elapsed time otherwise comes from recorded
-timestamps.
+timeline, and processing state from Core PostgreSQL. The poison-item trace
+combines the same HTTP evidence with the durable rejection and checkpoint state
+from Gateway PostgreSQL; it also verifies that no delivery attempt or Core order
+exists. Equal-millisecond events use a stable causal priority; elapsed time
+otherwise comes from recorded timestamps.
 
 ## Generate The Success Trace
 
@@ -42,10 +44,11 @@ repository root run:
 
 ```bash
 ./scripts/capture-v0.7-erp-b-success.sh
+./scripts/capture-v0.7-erp-b-poison-item.sh
 ```
 
-The runner writes
-`apps/operator-console/public/flow-traces/v1/erp-b-success.json`, validates it,
+Each runner writes its matching artifact below
+`apps/operator-console/public/flow-traces/v1`, validates every captured artifact,
 and removes its isolated Compose resources. Set `KEEP_FLOW_TRACE_STACK=true`
 only while diagnosing a failed local capture.
 
@@ -65,5 +68,5 @@ credential exists only in the runner process and the disposable Core database.
 
 The artifact is a reproducible portfolio and learning surface, not an audit log,
 distributed trace, monitoring backend, or proof of production latency. Capture
-currently supports only the ERP_B success scenario. Poison-item and
-authentication-rejection capture remain part of `v0.7.0`.
+currently supports the ERP_B success and poison-item scenarios. Capturing the
+authentication rejection remains part of `v0.7.0`.

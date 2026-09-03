@@ -1,0 +1,138 @@
+{
+  "schemaVersion": "1.0",
+  "traceId": "erp-b-poison-item-v1",
+  "scenario": {
+    "id": "erp-b-poison-item",
+    "sourceSystem": "ERP_B",
+    "outcome": "COMPLETED_WITH_REJECTIONS"
+  },
+  "capturedAt": "2026-09-03T17:01:09.000Z",
+  "durationMs": 37,
+  "participants": [
+    {
+      "id": "erp-b",
+      "kind": "EXTERNAL_SYSTEM",
+      "label": "ERP_B"
+    },
+    {
+      "id": "connector-gateway",
+      "kind": "SERVICE",
+      "label": "Connector Gateway"
+    },
+    {
+      "id": "gateway-database",
+      "kind": "DATABASE",
+      "label": "Gateway PostgreSQL"
+    }
+  ],
+  "steps": [
+    {
+      "id": "request-page",
+      "phase": "POLLING",
+      "kind": "INTERACTION",
+      "eventType": "ERP_PAGE_REQUESTED",
+      "sourceParticipantId": "connector-gateway",
+      "status": "INFORMATIONAL",
+      "evidence": [
+        {
+          "name": "HTTP_METHOD",
+          "value": "GET"
+        },
+        {
+          "name": "CURSOR",
+          "value": "initial"
+        }
+      ],
+      "targetParticipantId": "erp-b",
+      "sequence": 1,
+      "offsetMs": 0
+    },
+    {
+      "id": "receive-page",
+      "phase": "POLLING",
+      "kind": "INTERACTION",
+      "eventType": "ERP_PAGE_RECEIVED",
+      "sourceParticipantId": "erp-b",
+      "status": "SUCCEEDED",
+      "evidence": [
+        {
+          "name": "HTTP_STATUS",
+          "value": "200"
+        },
+        {
+          "name": "ITEM_COUNT",
+          "value": "1"
+        },
+        {
+          "name": "NEXT_CURSOR",
+          "value": "cursor-1"
+        }
+      ],
+      "targetParticipantId": "connector-gateway",
+      "sequence": 2,
+      "offsetMs": 2
+    },
+    {
+      "id": "persist-rejection",
+      "phase": "RECEIPT",
+      "kind": "PERSISTENCE",
+      "eventType": "ERP_ITEM_REJECTED",
+      "sourceParticipantId": "connector-gateway",
+      "status": "REJECTED",
+      "evidence": [
+        {
+          "name": "DELIVERY_STATE",
+          "value": "PERMANENT_FAILURE"
+        },
+        {
+          "name": "ERROR_CODE",
+          "value": "ERP_B_UNSUPPORTED_CURRENCY"
+        }
+      ],
+      "targetParticipantId": "gateway-database",
+      "sequence": 3,
+      "offsetMs": 37
+    },
+    {
+      "id": "commit-page",
+      "phase": "RECEIPT",
+      "kind": "PERSISTENCE",
+      "eventType": "ERP_PAGE_COMMITTED",
+      "sourceParticipantId": "connector-gateway",
+      "status": "SUCCEEDED",
+      "evidence": [
+        {
+          "name": "NEXT_CURSOR",
+          "value": "cursor-1"
+        },
+        {
+          "name": "CHECKPOINT_VERSION",
+          "value": "2"
+        }
+      ],
+      "targetParticipantId": "gateway-database",
+      "sequence": 4,
+      "offsetMs": 37
+    },
+    {
+      "id": "scenario-completed",
+      "phase": "COMPLETION",
+      "kind": "OUTCOME",
+      "eventType": "SCENARIO_COMPLETED_WITH_REJECTIONS",
+      "sourceParticipantId": "connector-gateway",
+      "status": "REJECTED",
+      "evidence": [
+        {
+          "name": "ITEM_COUNT",
+          "value": "1"
+        },
+        {
+          "name": "ERROR_CODE",
+          "value": "ERP_B_UNSUPPORTED_CURRENCY"
+        }
+      ],
+      "sequence": 5,
+      "offsetMs": 37
+    }
+  ]
+}
