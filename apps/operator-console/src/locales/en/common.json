@@ -185,6 +185,24 @@
         "pause": "Pause playback",
         "next": "Next step"
       }
+    },
+    "scenarios": {
+      "title": "Recorded scenario",
+      "description": "Choose a deterministic trace captured from the running integration stack.",
+      "items": {
+        "erp-b-success": {
+          "title": "Successful delivery",
+          "description": "ERP_B orders are normalized, persisted, published and processed successfully."
+        },
+        "erp-b-poison-item": {
+          "title": "Poison item",
+          "description": "An unsupported item is rejected while the page checkpoint advances safely."
+        },
+        "erp-b-authentication-rejection": {
+          "title": "Authentication rejection",
+          "description": "Invalid ERP_B credentials block the connector without losing its checkpoint."
+        }
+      }
     }
   },
   "simulator": {
