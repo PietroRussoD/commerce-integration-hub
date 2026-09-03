@@ -8,7 +8,7 @@ describe("readProviderSimulatorConfiguration", () => {
             readProviderSimulatorConfiguration({
                 PROVIDER_SIMULATOR_ERP_B_API_TOKEN: "local-token"
             })
-        ).toEqual({ erpBApiToken: "local-token", host: "0.0.0.0", port: 8080 });
+        ).toEqual({ erpBApiToken: "local-token", erpBScenario: "MIXED", host: "0.0.0.0", port: 8080 });
     });
 
     it("accepts explicit host and port", () => {
@@ -16,9 +16,28 @@ describe("readProviderSimulatorConfiguration", () => {
             readProviderSimulatorConfiguration({
                 HOST: "127.0.0.1",
                 PORT: "18083",
-                PROVIDER_SIMULATOR_ERP_B_API_TOKEN: "local-token"
+                PROVIDER_SIMULATOR_ERP_B_API_TOKEN: "local-token",
+                PROVIDER_SIMULATOR_ERP_B_SCENARIO: "SUCCESS"
             })
-        ).toMatchObject({ host: "127.0.0.1", port: 18083 });
+        ).toMatchObject({ erpBScenario: "SUCCESS", host: "127.0.0.1", port: 18083 });
+    });
+
+    it.each(["MIXED", "SUCCESS", "POISON_ITEM"])("accepts the %s ERP_B scenario", (scenario) => {
+        expect(
+            readProviderSimulatorConfiguration({
+                PROVIDER_SIMULATOR_ERP_B_API_TOKEN: "local-token",
+                PROVIDER_SIMULATOR_ERP_B_SCENARIO: scenario
+            }).erpBScenario
+        ).toBe(scenario);
+    });
+
+    it.each(["", "success", "UNKNOWN"])("rejects the %s ERP_B scenario", (scenario) => {
+        expect(() =>
+            readProviderSimulatorConfiguration({
+                PROVIDER_SIMULATOR_ERP_B_API_TOKEN: "local-token",
+                PROVIDER_SIMULATOR_ERP_B_SCENARIO: scenario
+            })
+        ).toThrow("PROVIDER_SIMULATOR_ERP_B_SCENARIO must be one of: MIXED, SUCCESS, POISON_ITEM");
     });
 
     it.each([undefined, "", "token with spaces", "a".repeat(2_049)])(

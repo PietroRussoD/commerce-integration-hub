@@ -17,6 +17,10 @@ valid and poison fixtures through cursor pagination. See the
 [`ERP_B` polling diagrams](../../docs/erp-b-polling.md) for how those pages move
 through the Gateway and become durable delivery and checkpoint records.
 
+`PROVIDER_SIMULATOR_ERP_B_SCENARIO` selects `MIXED` (the default), `SUCCESS`, or
+`POISON_ITEM`. The isolated modes are intended for reproducible Flow Explorer
+capture runs; they remain local tool configuration and are not Gateway controls.
+
 ## Validate
 
 ```bash

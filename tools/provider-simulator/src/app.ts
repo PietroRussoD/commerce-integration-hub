@@ -2,6 +2,8 @@ import { timingSafeEqual } from "node:crypto";
 
 import Fastify, { type FastifyInstance } from "fastify";
 
+import type { ErpBSimulationScenario } from "./configuration.js";
+
 const CURSOR_PATTERN = /^cursor-([0-9]{1,9})$/;
 const CHANGES = [
     {
@@ -48,6 +50,14 @@ const CHANGES = [
     }
 ] as const;
 
+type ErpBChange = (typeof CHANGES)[number];
+
+const CHANGES_BY_SCENARIO = {
+    MIXED: CHANGES,
+    SUCCESS: [CHANGES[0], CHANGES[2]],
+    POISON_ITEM: [CHANGES[1]]
+} as const satisfies Record<ErpBSimulationScenario, readonly ErpBChange[]>;
+
 interface ErpBQuery {
     readonly cursor?: string;
     readonly limit: number;
@@ -55,14 +65,17 @@ interface ErpBQuery {
 
 export interface ProviderSimulatorOptions {
     readonly erpBApiToken: string;
+    readonly erpBScenario?: ErpBSimulationScenario;
     readonly logger?: boolean;
 }
 
 export function buildProviderSimulator({
     erpBApiToken,
+    erpBScenario = "MIXED",
     logger = false
 }: ProviderSimulatorOptions): FastifyInstance {
     const application = Fastify({ logger });
+    const changes = CHANGES_BY_SCENARIO[erpBScenario];
 
     application.get("/health", () => ({ status: "UP" }));
     application.get<{ Querystring: ErpBQuery }>(
@@ -91,7 +104,7 @@ export function buildProviderSimulator({
                 reply.code(400);
                 return { error: "invalid_cursor" };
             }
-            return page(offset, request.query.limit);
+            return page(changes, offset, request.query.limit);
         }
     );
 
@@ -116,11 +129,11 @@ function parseCursor(cursor: string | undefined): number | null {
     return match === null ? null : Number(match[1]);
 }
 
-function page(offset: number, limit: number) {
-    const items = CHANGES.slice(offset, offset + limit);
+function page(changes: readonly ErpBChange[], offset: number, limit: number) {
+    const items = changes.slice(offset, offset + limit);
     const nextOffset = items.length === 0 ? offset + 1 : offset + items.length;
     return {
-        hasMore: nextOffset < CHANGES.length,
+        hasMore: nextOffset < changes.length,
         items,
         nextCursor: `cursor-${nextOffset}`
     };

@@ -55,6 +55,19 @@ describe("provider simulator", () => {
         ).resolves.toEqual({ hasMore: false, items: [], nextCursor: "cursor-4" });
     });
 
+    it.each([
+        { scenario: "SUCCESS", expectedChangeIds: ["chg-demo-001", "chg-demo-003"] },
+        { scenario: "POISON_ITEM", expectedChangeIds: ["chg-demo-002"] }
+    ] as const)("isolates the $scenario ERP_B scenario", async ({ scenario, expectedChangeIds }) => {
+        const application = createApplication(scenario);
+
+        const result = await requestPage(application, "/erp-b/v1/orders?limit=10");
+
+        expect(result.hasMore).toBe(false);
+        expect(result.items.map((item) => item.changeId)).toEqual(expectedChangeIds);
+        expect(result.nextCursor).toBe(`cursor-${expectedChangeIds.length}`);
+    });
+
     it("rejects malformed or unsupported query parameters", async () => {
         const application = createApplication();
         const invalidCursor = await application.inject({
@@ -74,8 +87,12 @@ describe("provider simulator", () => {
     });
 });
 
-function createApplication() {
-    const application = buildProviderSimulator({ erpBApiToken: API_TOKEN });
+function createApplication(erpBScenario?: "MIXED" | "SUCCESS" | "POISON_ITEM") {
+    const options =
+        erpBScenario === undefined
+            ? { erpBApiToken: API_TOKEN }
+            : { erpBApiToken: API_TOKEN, erpBScenario };
+    const application = buildProviderSimulator(options);
     applications.push(application);
     return application;
 }
