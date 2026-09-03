@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "1.0",
+  "traceId": "erp-b-authentication-rejection-v1",
+  "scenario": {
+    "id": "erp-b-authentication-rejection",
+    "sourceSystem": "ERP_B",
+    "outcome": "BLOCKED_CONFIGURATION"
+  },
+  "capturedAt": "2026-09-03T17:27:57.000Z",
+  "durationMs": 10,
+  "participants": [
+    {
+      "id": "erp-b",
+      "kind": "EXTERNAL_SYSTEM",
+      "label": "ERP_B"
+    },
+    {
+      "id": "connector-gateway",
+      "kind": "SERVICE",
+      "label": "Connector Gateway"
+    },
+    {
+      "id": "gateway-database",
+      "kind": "DATABASE",
+      "label": "Gateway PostgreSQL"
+    }
+  ],
+  "steps": [
+    {
+      "id": "request-page",
+      "phase": "POLLING",
+      "kind": "INTERACTION",
+      "eventType": "ERP_PAGE_REQUESTED",
+      "sourceParticipantId": "connector-gateway",
+      "status": "INFORMATIONAL",
+      "evidence": [
+        {
+          "name": "HTTP_METHOD",
+          "value": "GET"
+        },
+        {
+          "name": "CURSOR",
+          "value": "initial"
+        }
+      ],
+      "targetParticipantId": "erp-b",
+      "sequence": 1,
+      "offsetMs": 0
+    },
+    {
+      "id": "reject-authentication",
+      "phase": "POLLING",
+      "kind": "INTERACTION",
+      "eventType": "ERP_AUTHENTICATION_REJECTED",
+      "sourceParticipantId": "erp-b",
+      "status": "BLOCKED",
+      "evidence": [
+        {
+          "name": "HTTP_STATUS",
+          "value": "401"
+        },
+        {
+          "name": "ERROR_CODE",
+          "value": "ERP_B_AUTHENTICATION_REJECTED"
+        }
+      ],
+      "targetParticipantId": "connector-gateway",
+      "sequence": 2,
+      "offsetMs": 1
+    },
+    {
+      "id": "block-connector",
+      "phase": "POLLING",
+      "kind": "STATE_TRANSITION",
+      "eventType": "CONNECTOR_CONFIGURATION_BLOCKED",
+      "sourceParticipantId": "connector-gateway",
+      "status": "BLOCKED",
+      "evidence": [
+        {
+          "name": "CONNECTOR_STATE",
+          "value": "BLOCKED_CONFIGURATION"
+        },
+        {
+          "name": "CONNECTOR_VERSION",
+          "value": "2"
+        }
+      ],
+      "targetParticipantId": "gateway-database",
+      "sequence": 3,
+      "offsetMs": 6
+    },
+    {
+      "id": "release-lease",
+      "phase": "POLLING",
+      "kind": "PERSISTENCE",
+      "eventType": "POLLING_LEASE_RELEASED",
+      "sourceParticipantId": "connector-gateway",
+      "status": "SUCCEEDED",
+      "evidence": [
+        {
+          "name": "CURSOR",
+          "value": "initial"
+        },
+        {
+          "name": "CHECKPOINT_VERSION",
+          "value": "1"
+        }
+      ],
+      "targetParticipantId": "gateway-database",
+      "sequence": 4,
+      "offsetMs": 10
+    },
+    {
+      "id": "scenario-blocked",
+      "phase": "COMPLETION",
+      "kind": "OUTCOME",
+      "eventType": "SCENARIO_BLOCKED_CONFIGURATION",
+      "sourceParticipantId": "connector-gateway",
+      "status": "BLOCKED",
+      "evidence": [
+        {
+          "name": "CONNECTOR_STATE",
+          "value": "BLOCKED_CONFIGURATION"
+        },
+        {
+          "name": "ERROR_CODE",
+          "value": "ERP_B_AUTHENTICATION_REJECTED"
+        }
+      ],
+      "sequence": 5,
+      "offsetMs": 10
+    }
+  ]
+}

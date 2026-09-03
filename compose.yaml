@@ -77,7 +77,7 @@ services:
       DATABASE_URL: postgresql://connector_gateway:local-development-only@connector-gateway-postgres:5432/connector_gateway
       DELIVERY_WORKER_ENABLED: "${CONNECTOR_GATEWAY_DELIVERY_WORKER_ENABLED:-false}"
       DELIVERY_WORKER_ID: connector-gateway-compose
-      ERP_B_API_TOKEN: local-erp-b-token
+      ERP_B_API_TOKEN: "${CONNECTOR_GATEWAY_ERP_B_API_TOKEN:-local-erp-b-token}"
       ERP_B_BASE_URL: http://provider-simulator:8080
       ERP_B_PAGE_LIMIT: "2"
       ERP_B_POLLING_ENABLED: "${CONNECTOR_GATEWAY_ERP_B_POLLING_ENABLED:-false}"
