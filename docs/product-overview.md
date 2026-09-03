@@ -191,7 +191,7 @@ external subscribers remain planned.
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
-| `ERP_B` polling foundation | Bounded run, scheduler, metrics, and opt-in process composition implemented |
+| `ERP_B` polling adapter | Implemented and process-tested |
 | OpenSearch projection | Planned |
 
 ## Non-goals

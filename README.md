@@ -9,8 +9,8 @@ problem being solved, intended users, integration modes, and delivery roadmap.
 ## Current status
 
 The repository currently contains the Kotlin Integration Core, the React and
-TypeScript operator console, and the in-progress Node.js and TypeScript Connector
-Gateway. The core owns a currency-aware order aggregate, HTTP
+TypeScript operator console, and the Node.js and TypeScript Connector Gateway.
+The core owns a currency-aware order aggregate, HTTP
 ingestion and retrieval, and a PostgreSQL schema managed with Flyway and
 accessed through a jOOQ repository adapter. It persists complete orders and
 classifies equivalent and conflicting replays using a versioned canonical
@@ -73,7 +73,7 @@ The current baseline establishes:
   a bounded application batch worker and an opt-in recovery-first runtime
   scheduler with overlap prevention, graceful shutdown, and bounded-cardinality
   Prometheus metrics, plus separate process liveness and PostgreSQL readiness;
-- an in-progress `ERP_B` polling path with strict page mapping, atomic
+- an `ERP_B` polling path with strict page mapping, atomic
   page/checkpoint persistence, fenced leases, a bounded HTTP client and
   multi-page runner, an opt-in non-overlapping scheduler, and bounded Prometheus
   metrics, plus fenced connector blocking after provider authentication failure,
@@ -82,9 +82,9 @@ The current baseline establishes:
   PostgreSQL-backed synthetic-provider process test and a reproducible Compose
   demonstration.
 
-The `v0.5.0` release adds the external Node.js and TypeScript Connector Gateway
-with durable webhook receipt and reliable forwarding to Integration Core.
-Development now targets `v0.6.0` polling and operations. Search projections
+The `v0.6.0` release adds cursor-based ERP polling, fenced coordination,
+durable operational metrics, and a reproducible local observability stack.
+Development next targets the integration flow explorer. Search projections
 remain a later increment.
 
 ## Repository structure
@@ -249,8 +249,9 @@ checks are documented in the [accessibility plan](docs/accessibility.md).
 The precise boundary of the current implementation is documented in
 [current limitations](docs/limitations.md). The delivered behavior and its
 verification evidence are summarized in the
-[`v0.5.0` release notes](docs/releases/v0.5.0.md). Previous milestones are
-documented in the [`v0.4.0`](docs/releases/v0.4.0.md),
+[`v0.6.0` release notes](docs/releases/v0.6.0.md). Previous milestones are
+documented in the [`v0.5.0`](docs/releases/v0.5.0.md),
+[`v0.4.0`](docs/releases/v0.4.0.md),
 [`v0.3.0`](docs/releases/v0.3.0.md),
 [`v0.2.0`](docs/releases/v0.2.0.md), and
 [`v0.1.0`](docs/releases/v0.1.0.md) release notes.
