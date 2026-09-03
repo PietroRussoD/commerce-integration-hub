@@ -62,7 +62,9 @@ presentation timeline. Every transition is clamped between 600 and 1,600 ms so
 that millisecond failure paths remain visible and long operational waits do not
 stall the demonstration. A pure state transition function owns play, pause,
 restart, elapsed-time advancement, completion, and manual step selection; React
-will only schedule time and render the resulting state.
+only schedules animation frames and renders the resulting state. The system
+`prefers-reduced-motion` setting suppresses autoplay while preserving manual
+step selection and playback controls.
 
 ## Contract And Sanitization
 
