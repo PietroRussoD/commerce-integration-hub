@@ -1,0 +1,239 @@
+{
+  "schemaVersion": "1.0",
+  "traceId": "erp-b-success-v1",
+  "scenario": {
+    "id": "erp-b-success",
+    "sourceSystem": "ERP_B",
+    "outcome": "SUCCEEDED"
+  },
+  "capturedAt": "2026-09-03T07:20:58.000Z",
+  "durationMs": 4779,
+  "correlationId": "492e4c8b-64dc-4f97-9dfa-f95a24e8ceb5",
+  "participants": [
+    {
+      "id": "erp-b",
+      "kind": "EXTERNAL_SYSTEM",
+      "label": "ERP_B"
+    },
+    {
+      "id": "connector-gateway",
+      "kind": "SERVICE",
+      "label": "Connector Gateway"
+    },
+    {
+      "id": "gateway-database",
+      "kind": "DATABASE",
+      "label": "Gateway PostgreSQL"
+    },
+    {
+      "id": "integration-core",
+      "kind": "SERVICE",
+      "label": "Integration Core"
+    },
+    {
+      "id": "core-database",
+      "kind": "DATABASE",
+      "label": "Core PostgreSQL"
+    },
+    {
+      "id": "kafka",
+      "kind": "MESSAGE_BROKER",
+      "label": "Kafka / Redpanda"
+    }
+  ],
+  "steps": [
+    {
+      "id": "request-page",
+      "phase": "POLLING",
+      "kind": "INTERACTION",
+      "eventType": "ERP_PAGE_REQUESTED",
+      "sourceParticipantId": "connector-gateway",
+      "status": "INFORMATIONAL",
+      "evidence": [
+        {
+          "name": "HTTP_METHOD",
+          "value": "GET"
+        },
+        {
+          "name": "CURSOR",
+          "value": "initial"
+        }
+      ],
+      "targetParticipantId": "erp-b",
+      "sequence": 1,
+      "offsetMs": 0
+    },
+    {
+      "id": "receive-page",
+      "phase": "POLLING",
+      "kind": "INTERACTION",
+      "eventType": "ERP_PAGE_RECEIVED",
+      "sourceParticipantId": "erp-b",
+      "status": "SUCCEEDED",
+      "evidence": [
+        {
+          "name": "HTTP_STATUS",
+          "value": "200"
+        },
+        {
+          "name": "ITEM_COUNT",
+          "value": "2"
+        },
+        {
+          "name": "NEXT_CURSOR",
+          "value": "cursor-2"
+        }
+      ],
+      "targetParticipantId": "connector-gateway",
+      "sequence": 2,
+      "offsetMs": 3
+    },
+    {
+      "id": "commit-page",
+      "phase": "RECEIPT",
+      "kind": "PERSISTENCE",
+      "eventType": "ERP_PAGE_COMMITTED",
+      "sourceParticipantId": "connector-gateway",
+      "status": "SUCCEEDED",
+      "evidence": [
+        {
+          "name": "NEXT_CURSOR",
+          "value": "cursor-2"
+        },
+        {
+          "name": "CHECKPOINT_VERSION",
+          "value": "2"
+        }
+      ],
+      "targetParticipantId": "gateway-database",
+      "sequence": 3,
+      "offsetMs": 40
+    },
+    {
+      "id": "forward-order",
+      "phase": "FORWARDING",
+      "kind": "INTERACTION",
+      "eventType": "CANONICAL_ORDER_FORWARDED",
+      "sourceParticipantId": "connector-gateway",
+      "status": "INFORMATIONAL",
+      "evidence": [
+        {
+          "name": "HTTP_METHOD",
+          "value": "POST"
+        },
+        {
+          "name": "ATTEMPT_NUMBER",
+          "value": "1"
+        }
+      ],
+      "targetParticipantId": "integration-core",
+      "sequence": 4,
+      "offsetMs": 2030
+    },
+    {
+      "id": "persist-order",
+      "phase": "RECEIPT",
+      "kind": "PERSISTENCE",
+      "eventType": "CANONICAL_ORDER_PERSISTED",
+      "sourceParticipantId": "integration-core",
+      "status": "SUCCEEDED",
+      "evidence": [
+        {
+          "name": "ORDER_STATUS",
+          "value": "RECEIVED"
+        }
+      ],
+      "targetParticipantId": "core-database",
+      "sequence": 5,
+      "offsetMs": 2521
+    },
+    {
+      "id": "complete-delivery",
+      "phase": "FORWARDING",
+      "kind": "STATE_TRANSITION",
+      "eventType": "DELIVERY_COMPLETED",
+      "sourceParticipantId": "integration-core",
+      "status": "SUCCEEDED",
+      "evidence": [
+        {
+          "name": "HTTP_STATUS",
+          "value": "201"
+        },
+        {
+          "name": "DELIVERY_STATE",
+          "value": "DELIVERED"
+        }
+      ],
+      "targetParticipantId": "connector-gateway",
+      "sequence": 6,
+      "offsetMs": 3131
+    },
+    {
+      "id": "publish-order-event",
+      "phase": "PROCESSING",
+      "kind": "MESSAGE",
+      "eventType": "ORDER_EVENT_PUBLISHED",
+      "sourceParticipantId": "integration-core",
+      "status": "SUCCEEDED",
+      "evidence": [
+        {
+          "name": "EVENT_TYPE",
+          "value": "OrderReceived"
+        }
+      ],
+      "targetParticipantId": "kafka",
+      "sequence": 7,
+      "offsetMs": 4255
+    },
+    {
+      "id": "consume-order-event",
+      "phase": "PROCESSING",
+      "kind": "MESSAGE",
+      "eventType": "ORDER_EVENT_CONSUMED",
+      "sourceParticipantId": "kafka",
+      "status": "SUCCEEDED",
+      "evidence": [
+        {
+          "name": "ATTEMPT_NUMBER",
+          "value": "1"
+        }
+      ],
+      "targetParticipantId": "integration-core",
+      "sequence": 8,
+      "offsetMs": 4702
+    },
+    {
+      "id": "complete-processing",
+      "phase": "PROCESSING",
+      "kind": "PERSISTENCE",
+      "eventType": "ORDER_PROCESSING_COMPLETED",
+      "sourceParticipantId": "integration-core",
+      "status": "SUCCEEDED",
+      "evidence": [
+        {
+          "name": "ORDER_STATUS",
+          "value": "READY"
+        }
+      ],
+      "targetParticipantId": "core-database",
+      "sequence": 9,
+      "offsetMs": 4779
+    },
+    {
+      "id": "scenario-completed",
+      "phase": "COMPLETION",
+      "kind": "OUTCOME",
+      "eventType": "SCENARIO_COMPLETED",
+      "sourceParticipantId": "integration-core",
+      "status": "SUCCEEDED",
+      "evidence": [
+        {
+          "name": "ORDER_STATUS",
+          "value": "READY"
+        }
+      ],
+      "sequence": 10,
+      "offsetMs": 4779
+    }
+  ]
+}
