@@ -239,6 +239,8 @@ The current Connector Gateway claim boundary is shown in the
 [gateway delivery lifecycle](docs/gateway-delivery-lifecycle.md).
 The cursor, lease, page-commit, and simulator interactions for `ERP_B` are shown
 in the dedicated [polling diagrams](docs/erp-b-polling.md).
+The sanitized real-scenario capture boundary and replay contract are documented
+in the [Integration Flow Explorer guide](docs/flow-explorer.md).
 The developing publisher state machine is shown in the
 [outbox lifecycle diagrams](docs/outbox-lifecycle.md).
 Significant design choices are recorded in the
