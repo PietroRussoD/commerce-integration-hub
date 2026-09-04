@@ -66,6 +66,23 @@ only schedules animation frames and renders the resulting state. The system
 `prefers-reduced-motion` setting suppresses autoplay while preserving manual
 step selection and playback controls.
 
+## Console Replay
+
+Start the Operator Console with `pnpm dev` from `apps/operator-console`, then
+open `/flow-explorer`. The route is lazy-loaded so its player and runtime
+validation code do not enlarge the initial Orders or Simulator bundle.
+
+The page reads only the committed artifacts below
+`apps/operator-console/public/flow-traces/v1`. Scenario selection loads a new
+trace and resets playback; the participant stage, keyboard-operable timeline,
+controls, and evidence panel render the same active step. Loading and retry
+states cover unavailable artifacts. The console supports English and Italian.
+
+Run `pnpm test:e2e` from `apps/operator-console` to exercise the actual browser
+route with reduced motion, scenario selection, timeline keyboard navigation,
+recorded rejection evidence, and a 320 px overflow check. Browser-level tests
+remain local by design and are not part of GitHub Actions.
+
 ## Contract And Sanitization
 
 `FlowTrace` schema version `1.0` accepts a closed set of scenario IDs,
@@ -83,4 +100,4 @@ credential exists only in the runner process and the disposable Core database.
 The artifact is a reproducible portfolio and learning surface, not an audit log,
 distributed trace, monitoring backend, or proof of production latency. Capture
 currently supports the ERP_B success, poison-item, and authentication-rejection
-scenarios. The accessible visual player remains part of `v0.7.0`.
+scenarios. The accessible visual player is delivered within `v0.7.0`.
