@@ -45,7 +45,7 @@ export function FlowStage({ activeStep, participants }: FlowStageProps) {
           {activeStep.eventType}
         </p>
 
-        <div className="mt-4 grid grid-cols-[minmax(0,1fr)_minmax(5rem,2fr)_minmax(0,1fr)] items-center gap-3">
+        <div className="mt-4 grid grid-cols-[minmax(0,1fr)_minmax(3rem,1fr)_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(5rem,2fr)_minmax(0,1fr)]">
           <ConnectionEndpoint label={source.label} role={t("flowExplorer.stage.source")} />
           <div aria-hidden="true" className="flex min-w-0 items-center text-app-brand-primary">
             <span className="h-px min-w-0 flex-1 bg-current" />

@@ -1,6 +1,7 @@
 {
   "shell": {
     "skipToContent": "Vai al contenuto principale",
+    "loading": "Caricamento pagina",
     "console": {
       "commerceOperations": "Operazioni commerciali",
       "operator": "Console operativa"
@@ -8,7 +9,8 @@
     "navigation": {
       "label": "Navigazione principale",
       "orders": "Ordini",
-      "simulator": "Simulatore"
+      "simulator": "Simulatore",
+      "flowExplorer": "Esplorazione flussi"
     },
     "language": {
       "label": "Lingua",
@@ -116,6 +118,13 @@
     }
   },
   "flowExplorer": {
+    "page": {
+      "title": "Esplorazione flussi",
+      "description": "Riproduci tracce di integrazione deterministiche e analizza ogni transizione operativa.",
+      "loading": "Caricamento del flusso registrato",
+      "error": "Impossibile caricare il flusso registrato",
+      "retry": "Riprova"
+    },
     "stage": {
       "ariaLabel": "Partecipanti al flusso di integrazione",
       "activeEvent": "Evento attivo",

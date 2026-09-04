@@ -28,6 +28,7 @@ test("renders navigation inside the operator shell", async () => {
   expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
   expect(screen.getByRole("main")).toHaveAttribute("tabindex", "-1");
   expect(screen.getByRole("link", { name: "Orders" })).toHaveAttribute("href", "/orders");
+  expect(screen.getByRole("link", { name: "Flow Explorer" })).toHaveAttribute("href", "/flow-explorer");
   expect(screen.getByRole("link", { name: "Simulator" })).toHaveAttribute("aria-current", "page");
 });
 
@@ -91,6 +92,10 @@ test("renders shell navigation in Italian when supplied with the Italian locale"
 
   const navigation = await screen.findByRole("navigation", { name: "Navigazione principale" });
   expect(within(navigation).getByRole("link", { name: "Ordini" })).toHaveAttribute("href", "/orders");
+  expect(within(navigation).getByRole("link", { name: "Esplorazione flussi" })).toHaveAttribute(
+    "href",
+    "/flow-explorer",
+  );
   expect(within(navigation).getByRole("link", { name: "Simulatore" })).toHaveAttribute("aria-current", "page");
   expect(screen.getByText("Console operativa")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Vai al contenuto principale" })).toHaveAttribute("href", "#main-content");

@@ -1,6 +1,7 @@
 {
   "shell": {
     "skipToContent": "Skip to main content",
+    "loading": "Loading page",
     "console": {
       "commerceOperations": "Commerce operations",
       "operator": "Operator console"
@@ -8,7 +9,8 @@
     "navigation": {
       "label": "Primary navigation",
       "orders": "Orders",
-      "simulator": "Simulator"
+      "simulator": "Simulator",
+      "flowExplorer": "Flow Explorer"
     },
     "language": {
       "label": "Language",
@@ -116,6 +118,13 @@
     }
   },
   "flowExplorer": {
+    "page": {
+      "title": "Flow Explorer",
+      "description": "Replay deterministic integration traces and inspect each operational transition.",
+      "loading": "Loading recorded flow",
+      "error": "Unable to load the recorded flow",
+      "retry": "Retry"
+    },
     "stage": {
       "ariaLabel": "Integration flow participants",
       "activeEvent": "Active event",
