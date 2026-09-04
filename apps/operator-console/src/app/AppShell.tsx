@@ -49,13 +49,15 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
       <div className="mx-auto grid max-w-screen-2xl md:grid-cols-[232px_minmax(0,1fr)]">
         <nav
           aria-label={t("shell.navigation.label")}
-          className="sticky top-16 z-20 border-b border-app-border bg-app-surface px-3 py-2 md:h-[calc(100vh-4rem)] md:border-r md:border-b-0 md:px-4 md:py-6"
+          className="sticky top-16 z-20 min-w-0 border-b border-app-border bg-app-surface px-3 py-2 md:h-[calc(100vh-4rem)] md:border-r md:border-b-0 md:px-4 md:py-6"
         >
           <ul className="flex gap-1 md:flex-col">
             {navigation.map(({ to, labelKey, icon: Icon }) => (
               <li key={to} className="min-w-0 flex-1 md:flex-none">
                 <NavLink
                   to={to}
+                  aria-label={t(labelKey)}
+                  title={t(labelKey)}
                   className={({ isActive }) =>
                     [
                       "flex h-10 items-center justify-center gap-2.5 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus md:justify-start",
@@ -66,7 +68,7 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
                   }
                 >
                   <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
-                  <span className="truncate">{t(labelKey)}</span>
+                  <span className="truncate max-[359px]:sr-only">{t(labelKey)}</span>
                 </NavLink>
               </li>
             ))}

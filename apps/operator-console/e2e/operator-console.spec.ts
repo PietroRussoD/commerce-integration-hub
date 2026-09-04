@@ -89,6 +89,36 @@ test("supports keyboard skip navigation without mobile page overflow", async ({ 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
 
+test("replays a recorded rejection through the Flow Explorer", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/flow-explorer");
+
+  await expect(page.getByRole("heading", { name: "Flow Explorer" })).toBeVisible();
+  await expect(page.getByRole("radio", { name: "Successful delivery" })).toBeChecked();
+
+  await page.getByText("Poison item", { exact: true }).click();
+  await expect(page.getByRole("radio", { name: "Poison item" })).toBeChecked();
+
+  const rejectedStep = page.getByRole("button", {
+    name: "Step 3, ERP_ITEM_REJECTED, Rejected",
+  });
+  await rejectedStep.click();
+  await expect(page.getByRole("heading", { name: "ERP_ITEM_REJECTED" })).toBeVisible();
+  await expect(page.getByText("ERP_B_UNSUPPORTED_CURRENCY")).toBeVisible();
+  await expect(page.getByRole("listitem", { name: "Gateway PostgreSQL, Destination" })).toBeVisible();
+
+  await rejectedStep.focus();
+  await page.keyboard.press("End");
+  const terminalStep = page.getByRole("button", {
+    name: "Step 5, SCENARIO_COMPLETED_WITH_REJECTIONS, Rejected",
+  });
+  await expect(terminalStep).toBeFocused();
+  await expect(page.getByRole("heading", { name: "SCENARIO_COMPLETED_WITH_REJECTIONS" })).toBeVisible();
+
+  await page.setViewportSize({ width: 320, height: 800 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});
+
 async function mockOperatorApi(page: Page) {
   await page.route("**/api/v1/operator/orders?**", async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(orderPage) });

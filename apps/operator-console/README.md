@@ -1,9 +1,10 @@
 # Operator Console
 
 React and TypeScript console for inspecting Commerce Integration Hub operations.
-It provides a paginated order list, operational order details, and a controlled
-canonical-ingestion simulator. API types are generated from the Integration
-Core OpenAPI document and all HTTP access is isolated behind a tested client.
+It provides a paginated order list, operational order details, a controlled
+canonical-ingestion simulator, and a Flow Explorer that replays recorded
+integration evidence. API types are generated from the Integration Core OpenAPI
+document and all HTTP access is isolated behind a tested client.
 
 ## Prerequisites
 
@@ -26,6 +27,19 @@ backend during development with `VITE_INTEGRATION_CORE_PROXY_TARGET`.
 Open [http://localhost:5173](http://localhost:5173) after Vite starts. The order
 list and detail views use the read-only operator API. The simulator requires a
 source API key provisioned by the Integration Core administrative CLI.
+
+## Flow Explorer
+
+Open [http://localhost:5173/flow-explorer](http://localhost:5173/flow-explorer)
+to replay the committed, sanitized FlowTrace artifacts. Select a scenario, use
+the playback controls or timeline, and inspect the active participant transition
+and captured technical evidence. The page reads versioned static artifacts; it
+does not trigger live integration activity or expose production control APIs.
+
+Autoplay respects the system reduced-motion setting. Timeline steps support
+arrow keys, `Home`, and `End` for keyboard inspection. Capture provenance,
+contract boundaries, and regeneration commands are documented in the
+[Flow Explorer guide](../../docs/flow-explorer.md).
 
 ## Component development
 
@@ -87,8 +101,9 @@ pnpm check:api
 pnpm check
 ```
 
-Browser-level tests use Playwright with Chromium and deterministic mocked API
-responses. Install the browser once, then run the suite locally:
+Browser-level tests use Playwright with Chromium. Operator API calls have
+deterministic mocked responses and the Flow Explorer reads committed trace
+artifacts. Install the browser once, then run the suite locally:
 
 ```bash
 pnpm test:e2e:install
