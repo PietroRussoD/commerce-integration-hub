@@ -1,6 +1,7 @@
 import { Navigate, type RouteObject } from "react-router-dom";
 
 import { AppShell } from "./AppShell";
+import { RouteLoading } from "./RouteLoading";
 import { OrderDetailPage } from "../pages/orders/OrderDetailPage";
 import { OrdersPage } from "../pages/orders/OrdersPage";
 import { SimulatorPage } from "../pages/simulator/SimulatorPage";
@@ -15,6 +16,14 @@ export function createAppRoutes(brandTheme: BrandTheme = defaultBrandTheme): Rou
         { path: "/orders", element: <OrdersPage /> },
         { path: "/orders/:orderId", element: <OrderDetailPage /> },
         { path: "/simulator", element: <SimulatorPage /> },
+        {
+          path: "/flow-explorer",
+          hydrateFallbackElement: <RouteLoading />,
+          lazy: async () => {
+            const { FlowExplorerPage } = await import("../pages/flow-explorer/FlowExplorerPage");
+            return { Component: FlowExplorerPage };
+          },
+        },
       ],
     },
   ];
