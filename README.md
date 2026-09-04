@@ -82,10 +82,9 @@ The current baseline establishes:
   PostgreSQL-backed synthetic-provider process test and a reproducible Compose
   demonstration.
 
-The `v0.6.0` release adds cursor-based ERP polling, fenced coordination,
-durable operational metrics, and a reproducible local observability stack.
-Development now targets the `v0.7.0` integration flow explorer. Search
-projections remain a later increment.
+The `v0.7.0` release adds a sanitized, evidence-backed Integration Flow
+Explorer to the operator console. OpenSearch projections remain a later
+increment.
 
 ## Repository structure
 
@@ -251,8 +250,9 @@ checks are documented in the [accessibility plan](docs/accessibility.md).
 The precise boundary of the current implementation is documented in
 [current limitations](docs/limitations.md). The delivered behavior and its
 verification evidence are summarized in the
-[`v0.6.0` release notes](docs/releases/v0.6.0.md). Previous milestones are
-documented in the [`v0.5.0`](docs/releases/v0.5.0.md),
+[`v0.7.0` release notes](docs/releases/v0.7.0.md). Previous milestones are
+documented in the [`v0.6.0`](docs/releases/v0.6.0.md),
+[`v0.5.0`](docs/releases/v0.5.0.md),
 [`v0.4.0`](docs/releases/v0.4.0.md),
 [`v0.3.0`](docs/releases/v0.3.0.md),
 [`v0.2.0`](docs/releases/v0.2.0.md), and

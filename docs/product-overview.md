@@ -14,7 +14,7 @@ items, timeline entries, and processing attempts. Search projections and
 controlled production retries remain later increments. The current operator API
 exposes read-only order summary and detail views backed by the authoritative
 PostgreSQL state, and the console also provides a controlled local ingestion
-simulator.
+simulator and a replay of sanitized local flow evidence.
 
 ## Problem
 
@@ -190,6 +190,7 @@ external subscribers remain planned.
 | Operator order summary API | Implemented |
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
+| Integration Flow Explorer | Sanitized local evidence replay implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
 | `ERP_B` polling adapter | Implemented and process-tested |
 | OpenSearch projection | Planned |
