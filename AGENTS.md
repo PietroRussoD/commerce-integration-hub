@@ -5,8 +5,9 @@
 - Implement one acceptance-tested increment at a time.
 - Keep the main branch buildable and accurately documented.
 - Do not add infrastructure or abstractions for hypothetical future needs.
-- Do not implement Kafka, OpenSearch, Node.js, React, authentication, or cloud
-  deployment before the corresponding roadmap increment.
+- Do not implement a capability before its roadmap increment. The
+  [capability status](docs/product-overview.md#capability-status) table records
+  what is implemented and what is still planned.
 
 ## Design priorities
 
@@ -44,5 +45,30 @@ pnpm check:api
 pnpm check
 ```
 
+Run from `services/connector-gateway`:
+
+```bash
+pnpm check
+pnpm test:integration
+```
+
+Run from `tools/provider-simulator`:
+
+```bash
+pnpm check
+```
+
+Run from the repository root:
+
+```bash
+./scripts/check-module-versions.sh
+```
+
 Before committing, review the complete diff for secrets, proprietary data,
 generated artifacts, and documentation that claims unimplemented behavior.
+
+## Releases
+
+Every module carries the same repository version. The
+[release process](docs/releases/README.md) documents that policy and the steps
+that produce a release.
