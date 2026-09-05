@@ -44,8 +44,8 @@ class KafkaOutboxEventPublisherBrokerIT {
     }
 
     @Test
-    fun `publishes OrderReady version 1 to its dedicated topic`() {
-        assertPublished(outboundEvent(eventType = "OrderReady"), orderReadyTopic)
+    fun `publishes OrderReady version 2 to its dedicated topic`() {
+        assertPublished(outboundEvent(eventType = "OrderReady", eventVersion = 2), orderReadyTopic)
     }
 
     private fun assertPublished(
@@ -65,6 +65,7 @@ class KafkaOutboxEventPublisherBrokerIT {
             assertEquals("order-123", value["payload"]["orderId"].textValue())
             assertEquals(event.eventId.toString(), record.headerValue("event-id"))
             assertEquals(event.eventType, record.headerValue("event-type"))
+            assertEquals(event.eventVersion.toString(), record.headerValue("event-version"))
             assertEquals(event.correlationId.toString(), record.headerValue("correlation-id"))
         }
     }
@@ -85,12 +86,15 @@ class KafkaOutboxEventPublisherBrokerIT {
     private fun org.apache.kafka.clients.consumer.ConsumerRecord<String, String>.headerValue(name: String): String =
         String(headers().lastHeader(name).value(), StandardCharsets.UTF_8)
 
-    private fun outboundEvent(eventType: String): OutboundIntegrationEvent =
+    private fun outboundEvent(
+        eventType: String,
+        eventVersion: Int = 1,
+    ): OutboundIntegrationEvent =
         OutboundIntegrationEvent(
             envelopeVersion = 1,
             eventId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f61"),
             eventType = eventType,
-            eventVersion = 1,
+            eventVersion = eventVersion,
             aggregateType = "ORDER",
             aggregateId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f52"),
             correlationId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f55"),

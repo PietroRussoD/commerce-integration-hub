@@ -77,7 +77,7 @@ class ProcessOrderReceivedUseCaseTest {
         assertEquals(listOf(generatedIds[1], generatedIds[2]), fixture.timelineEntries.map { it.id })
         assertEquals(generatedIds[3], fixture.pendingEvents.single().id)
         assertEquals("OrderReady", fixture.pendingEvents.single().eventType)
-        assertEquals(1, fixture.pendingEvents.single().eventVersion)
+        assertEquals(2, fixture.pendingEvents.single().eventVersion)
         assertEquals("{\"status\":\"READY\"}", fixture.pendingEvents.single().payload)
         assertEquals(correlationId, fixture.pendingEvents.single().correlationId)
     }

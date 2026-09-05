@@ -22,7 +22,9 @@ orders and timeline entries.
 
 The Kafka consumer executes this path after receiving `OrderReceived.v1`. Inbox
 deduplication, the state transitions, processing attempt, timeline entries, and
-the pending `OrderReady.v1` outbox event share one PostgreSQL transaction. A
+the pending `OrderReady.v2` outbox event share one PostgreSQL transaction. The
+ready payload includes the persisted aggregate version so downstream read
+models can reject an older order snapshot. A
 duplicate event is a successful no-op.
 
 ## Kafka processing

@@ -63,7 +63,7 @@ class JooqOutboxEventRepositoryIT {
         assertEquals("ORDER", record.aggregateType)
         assertEquals(event.aggregateId, record.aggregateId)
         assertEquals("OrderReady", record.eventType)
-        assertEquals(1, record.eventVersion)
+        assertEquals(2, record.eventVersion)
         assertEquals(objectMapper.readTree(payload), objectMapper.readTree(record.payload?.data()))
         assertEquals(event.correlationId, record.correlationId)
         assertEquals(event.createdAt, record.createdAt?.toInstant())

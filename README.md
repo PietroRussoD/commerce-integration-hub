@@ -36,7 +36,7 @@ The current baseline establishes:
 - idempotent Kafka consumption with bounded retries, dead-letter routing, and
   transactional order processing;
 - a broker-backed end-to-end test from authenticated HTTP ingestion to the
-  `OrderReady.v1` event;
+  versioned `OrderReady` event;
 - read-only operator order summary and detail endpoints backed by PostgreSQL;
 - scheduled outbox dispatch and expired-claim recovery;
 - Prometheus metrics for outbox outcomes and scheduler execution;

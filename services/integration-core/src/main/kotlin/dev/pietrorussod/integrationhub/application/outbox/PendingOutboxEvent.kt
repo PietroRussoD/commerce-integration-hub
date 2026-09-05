@@ -27,7 +27,7 @@ data class PendingOutboxEvent private constructor(
                 aggregateType = "ORDER",
                 aggregateId = event.order.id.value,
                 eventType = "OrderReady",
-                eventVersion = 1,
+                eventVersion = 2,
                 payload = payload,
                 correlationId = event.correlationId,
                 createdAt = event.occurredAt,
