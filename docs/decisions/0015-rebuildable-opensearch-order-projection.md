@@ -58,3 +58,10 @@ index lifecycle, projection metrics, and reconciliation/reindex operations.
 Search is eventually consistent and must expose projection state or lag rather
 than implying read-your-writes behavior. Future order state transitions require
 an explicit aggregate version before stale-event rejection can be guaranteed.
+
+## Follow-up
+
+[ADR 0016](0016-version-order-state-and-evolve-ready-event.md) supplies the
+explicit aggregate version this decision requires and moves the projection
+source to `OrderReady.v2`. The consumer described above must read the versioned
+event rather than `OrderReady.v1`.

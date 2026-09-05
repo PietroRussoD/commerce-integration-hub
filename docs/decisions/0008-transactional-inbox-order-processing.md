@@ -70,3 +70,8 @@ policy before the consumer could be considered operationally complete.
 subsequently implemented retry, permanent failure, and dead-letter policy. It
 complements this transaction and deduplication decision; audited operator replay
 remains future work.
+
+[ADR 0016](0016-version-order-state-and-evolve-ready-event.md) later replaced
+the `OrderReady.v1` event published by this transaction with `OrderReady.v2`,
+which carries the order aggregate version. The transaction and deduplication
+decision recorded here is unchanged.
