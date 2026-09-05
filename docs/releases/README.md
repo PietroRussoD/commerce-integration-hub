@@ -18,7 +18,9 @@ add release tooling and a compatibility matrix without answering a question
 anyone asks.
 
 The consequence is that a module version carries no information on its own. It
-states which repository release the module belongs to, nothing more.
+states which repository release the module belongs to, nothing more. The
+decision and its alternatives are recorded in
+[ADR 0017](../decisions/0017-single-repository-version.md).
 
 ## Producing a release
 
