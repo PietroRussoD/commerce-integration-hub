@@ -10,7 +10,8 @@ order-state events arriving out of order. The existing `OrderReady.v1` schema
 has an event schema version, but does not identify the version of the order
 state represented by its payload. Event ID, publication time, and Kafka offset
 cannot safely substitute for an aggregate version across replay, retention, or
-reindexing.
+reindexing. The projection itself is defined in
+[ADR 0015](0015-rebuildable-opensearch-order-projection.md).
 
 ## Decision
 
