@@ -256,4 +256,6 @@ documented in the [`v0.6.0`](docs/releases/v0.6.0.md),
 [`v0.4.0`](docs/releases/v0.4.0.md),
 [`v0.3.0`](docs/releases/v0.3.0.md),
 [`v0.2.0`](docs/releases/v0.2.0.md), and
-[`v0.1.0`](docs/releases/v0.1.0.md) release notes.
+[`v0.1.0`](docs/releases/v0.1.0.md) release notes. The versioning policy
+and the steps that produce a release are documented in the
+[release process](docs/releases/README.md).
