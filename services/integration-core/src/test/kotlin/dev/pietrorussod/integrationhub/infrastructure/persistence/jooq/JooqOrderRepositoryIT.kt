@@ -81,6 +81,7 @@ class JooqOrderRepositoryIT {
         )
         assertEquals(payloadFingerprint.value, orderRecord.payloadFingerprint)
         assertEquals(payloadFingerprint.canonicalizationVersion, orderRecord.payloadFingerprintVersion)
+        assertEquals(1, orderRecord.aggregateVersion)
         assertEquals(1, dslContext.fetchCount(INTEGRATION_EVENTS))
         assertEquals(1, dslContext.fetchCount(OUTBOX_EVENTS))
 
@@ -113,7 +114,7 @@ class JooqOrderRepositoryIT {
         insert(received)
         val processing = received.startProcessing()
 
-        val updated = repository.updateStatus(processing, OrderStatus.RECEIVED)
+        val updated = repository.updateStatus(processing, OrderStatus.RECEIVED, received.aggregateVersion)
 
         assertTrue(updated)
         assertEquals(processing, repository.findById(received.id))
@@ -124,13 +125,43 @@ class JooqOrderRepositoryIT {
         val received = order(id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
         insert(received)
         val processing = received.startProcessing()
-        val ready = processing.markReady()
-        repository.updateStatus(processing, OrderStatus.RECEIVED)
+        repository.updateStatus(processing, OrderStatus.RECEIVED, received.aggregateVersion)
 
-        val staleUpdate = repository.updateStatus(ready, OrderStatus.RECEIVED)
+        val staleUpdate = repository.updateStatus(processing, OrderStatus.RECEIVED, received.aggregateVersion)
 
         assertFalse(staleUpdate)
         assertEquals(processing, repository.findById(received.id))
+    }
+
+    @Test
+    fun `does not overwrite an order with a stale aggregate version`() {
+        val received = order(id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
+        insert(received)
+        val processing = received.startProcessing()
+        repository.updateStatus(processing, OrderStatus.RECEIVED, received.aggregateVersion)
+
+        dslContext
+            .update(ORDERS)
+            .set(ORDERS.AGGREGATE_VERSION, 3)
+            .where(ORDERS.ID.eq(received.id.value))
+            .execute()
+
+        val staleUpdate =
+            repository.updateStatus(
+                processing.markReady(),
+                OrderStatus.PROCESSING,
+                processing.aggregateVersion,
+            )
+
+        assertFalse(staleUpdate)
+        assertEquals(
+            3,
+            dslContext
+                .select(ORDERS.AGGREGATE_VERSION)
+                .from(ORDERS)
+                .fetchSingle()
+                .value1(),
+        )
     }
 
     @Test

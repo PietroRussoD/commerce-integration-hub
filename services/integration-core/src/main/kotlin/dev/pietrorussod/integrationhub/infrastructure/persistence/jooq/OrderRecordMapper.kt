@@ -36,6 +36,8 @@ internal fun OrdersRecord.toDomain(
             OrderStatus.valueOf(
                 requireNotNull(status) { "Persisted order status must not be null" },
             ),
+        aggregateVersion =
+            requireNotNull(aggregateVersion) { "Persisted order aggregate version must not be null" },
         receivedAt = requireNotNull(receivedAt) { "Persisted received timestamp must not be null" }.toInstant(),
     )
 

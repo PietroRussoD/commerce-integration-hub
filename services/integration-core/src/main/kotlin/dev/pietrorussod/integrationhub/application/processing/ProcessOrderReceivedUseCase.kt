@@ -47,7 +47,13 @@ class ProcessOrderReceivedUseCase(
             )
 
         processingAttemptRepository.create(attempt)
-        if (!orderRepository.updateStatus(processingOrder, OrderStatus.RECEIVED)) {
+        if (
+            !orderRepository.updateStatus(
+                order = processingOrder,
+                expectedStatus = OrderStatus.RECEIVED,
+                expectedAggregateVersion = receivedOrder.aggregateVersion,
+            )
+        ) {
             throw OrderProcessingStateConflictException(command.orderId, OrderStatus.RECEIVED)
         }
         orderTimelineRepository.append(
@@ -61,7 +67,13 @@ class ProcessOrderReceivedUseCase(
 
         val completedAt = clock.instant()
         val readyOrder = processingOrder.markReady()
-        if (!orderRepository.updateStatus(readyOrder, OrderStatus.PROCESSING)) {
+        if (
+            !orderRepository.updateStatus(
+                order = readyOrder,
+                expectedStatus = OrderStatus.PROCESSING,
+                expectedAggregateVersion = processingOrder.aggregateVersion,
+            )
+        ) {
             throw OrderProcessingStateConflictException(command.orderId, OrderStatus.PROCESSING)
         }
         orderTimelineRepository.append(

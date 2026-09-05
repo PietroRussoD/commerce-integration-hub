@@ -28,5 +28,6 @@ interface OrderRepository {
     fun updateStatus(
         order: Order,
         expectedStatus: OrderStatus,
+        expectedAggregateVersion: Long,
     ): Boolean
 }

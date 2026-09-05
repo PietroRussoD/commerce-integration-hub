@@ -21,12 +21,15 @@ class JooqCodeGenerationTest {
         assertFalse(ORDERS.PAYLOAD_FINGERPRINT.dataType.nullable())
         assertEquals(Short::class.javaObjectType, ORDERS.PAYLOAD_FINGERPRINT_VERSION.dataType.type)
         assertFalse(ORDERS.PAYLOAD_FINGERPRINT_VERSION.dataType.nullable())
+        assertEquals(Long::class.javaObjectType, ORDERS.AGGREGATE_VERSION.dataType.type)
+        assertFalse(ORDERS.AGGREGATE_VERSION.dataType.nullable())
         assertEquals(OffsetDateTime::class.java, ORDERS.RECEIVED_AT.dataType.type)
         assertFalse(ORDERS.ID.dataType.nullable())
         assertEquals("pk_orders", ORDERS.primaryKey.name)
         assertEquals(listOf("uk_orders_source_identity"), ORDERS.uniqueKeys.map { it.name })
         assertEquals(
             setOf(
+                "ck_orders_aggregate_version_positive",
                 "ck_orders_currency",
                 "ck_orders_payload_fingerprint_format",
                 "ck_orders_payload_fingerprint_version",
