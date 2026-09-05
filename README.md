@@ -83,8 +83,8 @@ The current baseline establishes:
   demonstration.
 
 The `v0.7.0` release adds a sanitized, evidence-backed Integration Flow
-Explorer to the operator console. OpenSearch projections remain a later
-increment.
+Explorer to the operator console. Development now targets the `v0.8.0`
+operational search projection; PostgreSQL remains the source of truth.
 
 ## Repository structure
 
