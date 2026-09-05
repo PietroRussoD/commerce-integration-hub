@@ -29,7 +29,7 @@ class PendingOutboxEventTest {
         assertEquals("ORDER", pendingEvent.aggregateType)
         assertEquals(source.order.id.value, pendingEvent.aggregateId)
         assertEquals("OrderReady", pendingEvent.eventType)
-        assertEquals(1, pendingEvent.eventVersion)
+        assertEquals(2, pendingEvent.eventVersion)
         assertEquals(payload, pendingEvent.payload)
         assertEquals(source.correlationId, pendingEvent.correlationId)
         assertEquals(source.occurredAt, pendingEvent.createdAt)

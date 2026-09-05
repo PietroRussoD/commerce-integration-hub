@@ -10,15 +10,16 @@ import java.time.Instant
 import java.util.UUID
 
 @ApplicationScoped
-class OrderReadyV1PayloadSerializer
+class OrderReadyV2PayloadSerializer
     @Inject
     constructor(
         private val objectMapper: ObjectMapper,
     ) : OrderReadyPayloadSerializer {
         override fun serialize(event: OrderReadyEvent): String =
             objectMapper.writeValueAsString(
-                OrderReadyV1Payload(
+                OrderReadyV2Payload(
                     orderId = event.order.id.value,
+                    aggregateVersion = event.order.aggregateVersion,
                     sourceSystem = event.order.sourceSystem.value,
                     externalOrderId = event.order.externalOrderId.value,
                     currency = event.order.currency.name,
@@ -28,7 +29,7 @@ class OrderReadyV1PayloadSerializer
                     readyAt = event.occurredAt,
                     items =
                         event.order.items.map { item ->
-                            OrderReadyV1ItemPayload(
+                            OrderReadyV2ItemPayload(
                                 externalLineId = item.externalLineId,
                                 sku = item.sku,
                                 description = item.description,
@@ -41,8 +42,9 @@ class OrderReadyV1PayloadSerializer
                 ),
             )
 
-        private data class OrderReadyV1Payload(
+        private data class OrderReadyV2Payload(
             val orderId: UUID,
+            val aggregateVersion: Long,
             val sourceSystem: String,
             val externalOrderId: String,
             val currency: String,
@@ -50,10 +52,10 @@ class OrderReadyV1PayloadSerializer
             val status: String,
             val receivedAt: Instant,
             val readyAt: Instant,
-            val items: List<OrderReadyV1ItemPayload>,
+            val items: List<OrderReadyV2ItemPayload>,
         )
 
-        private data class OrderReadyV1ItemPayload(
+        private data class OrderReadyV2ItemPayload(
             val externalLineId: String?,
             val sku: String,
             val description: String?,

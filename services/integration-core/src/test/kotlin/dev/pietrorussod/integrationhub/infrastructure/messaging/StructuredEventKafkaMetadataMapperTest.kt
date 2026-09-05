@@ -13,7 +13,7 @@ class StructuredEventKafkaMetadataMapperTest {
     private val mapper =
         StructuredEventKafkaMetadataMapper(
             orderReceivedTopic = "integration.order.received.v1",
-            orderReadyTopic = "integration.order.ready.v1",
+            orderReadyTopic = "integration.order.ready.v2",
         )
 
     @Test
@@ -33,10 +33,10 @@ class StructuredEventKafkaMetadataMapperTest {
     }
 
     @Test
-    fun `routes OrderReady version 1 to its dedicated topic`() {
-        val metadata = mapper.map(structuredEvent().copy(eventType = "OrderReady"))
+    fun `routes OrderReady version 2 to its dedicated topic`() {
+        val metadata = mapper.map(structuredEvent().copy(eventType = "OrderReady", eventVersion = 2))
 
-        assertEquals("integration.order.ready.v1", metadata.topic)
+        assertEquals("integration.order.ready.v2", metadata.topic)
     }
 
     @Test

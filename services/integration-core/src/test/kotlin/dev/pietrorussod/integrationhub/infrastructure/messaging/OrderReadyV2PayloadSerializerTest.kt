@@ -17,27 +17,28 @@ import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
 
-class OrderReadyV1PayloadSerializerTest {
+class OrderReadyV2PayloadSerializerTest {
     private val objectMapper =
         ObjectMapper()
             .findAndRegisterModules()
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-    private val serializer = OrderReadyV1PayloadSerializer(objectMapper)
+    private val serializer = OrderReadyV2PayloadSerializer(objectMapper)
     private val receivedAt = Instant.parse("2026-08-21T08:00:00Z")
     private val readyAt = receivedAt.plusSeconds(2)
 
     @Test
-    fun `serializes a self-contained ready order payload`() {
+    fun `serializes a self-contained ready order payload with its aggregate version`() {
         val event = readyEvent()
 
         val payload = objectMapper.readTree(serializer.serialize(event))
 
-        assertEquals(9, payload.size())
+        assertEquals(10, payload.size())
         assertEquals(
             event.order.id.value
                 .toString(),
             payload["orderId"].textValue(),
         )
+        assertEquals(3, payload["aggregateVersion"].longValue())
         assertEquals("marketplace-a", payload["sourceSystem"].textValue())
         assertEquals("order-1001", payload["externalOrderId"].textValue())
         assertEquals("EUR", payload["currency"].textValue())

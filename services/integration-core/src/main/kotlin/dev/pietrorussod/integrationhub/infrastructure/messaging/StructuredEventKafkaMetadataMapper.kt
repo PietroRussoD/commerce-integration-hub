@@ -39,7 +39,7 @@ class StructuredEventKafkaMetadataMapper
             when (event.eventType to event.eventVersion) {
                 ORDER_RECEIVED_V1 -> orderReceivedTopic
 
-                ORDER_READY_V1 -> orderReadyTopic
+                ORDER_READY_V2 -> orderReadyTopic
 
                 else -> throw IllegalArgumentException(
                     "No Kafka topic configured for ${event.eventType}.v${event.eventVersion}",
@@ -56,6 +56,6 @@ class StructuredEventKafkaMetadataMapper
             const val CONTENT_TYPE_HEADER = "content-type"
             const val JSON_CONTENT_TYPE = "application/json"
             val ORDER_RECEIVED_V1 = "OrderReceived" to 1
-            val ORDER_READY_V1 = "OrderReady" to 1
+            val ORDER_READY_V2 = "OrderReady" to 2
         }
     }

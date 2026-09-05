@@ -80,7 +80,7 @@ class TransactionalOrderReceivedProcessorIT {
         val outboxEvent = dslContext.selectFrom(OUTBOX_EVENTS).fetchSingle()
         assertEquals(orderId, outboxEvent.aggregateId)
         assertEquals("OrderReady", outboxEvent.eventType)
-        assertEquals(1, outboxEvent.eventVersion)
+        assertEquals(2, outboxEvent.eventVersion)
         assertEquals("PENDING", outboxEvent.status)
         assertEquals(0, outboxEvent.publishAttempts)
         assertEquals(correlationId, outboxEvent.correlationId)

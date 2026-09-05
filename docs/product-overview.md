@@ -160,7 +160,8 @@ Available for the current internal processing scope. The Integration Core
 publishes versioned canonical events through Kafka-compatible infrastructure
 and processes `OrderReceived.v1` idempotently.
 The consumer records attempts and timeline entries transactionally, transitions
-successful orders to `READY`, and emits `OrderReady.v1`. Search projection and
+successful orders to `READY`, and emits `OrderReady.v2` with the order aggregate
+version. Search projection and
 external subscribers remain planned.
 
 ## Reliability Model
