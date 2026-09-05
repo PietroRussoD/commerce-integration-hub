@@ -32,6 +32,7 @@ class OrderTest {
         assertEquals(externalOrderId, order.externalOrderId)
         assertEquals(Currency.EUR, order.currency)
         assertEquals(OrderStatus.RECEIVED, order.status)
+        assertEquals(1, order.aggregateVersion)
         assertEquals(items, order.items)
         assertEquals(Money.of(BigDecimal("39.98"), Currency.EUR), order.totalAmount)
         assertEquals(receivedAt, order.receivedAt)
@@ -44,7 +45,9 @@ class OrderTest {
         val readyOrder = processingOrder.markReady()
 
         assertEquals(OrderStatus.PROCESSING, processingOrder.status)
+        assertEquals(2, processingOrder.aggregateVersion)
         assertEquals(OrderStatus.READY, readyOrder.status)
+        assertEquals(3, readyOrder.aggregateVersion)
     }
 
     @Test

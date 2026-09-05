@@ -52,6 +52,7 @@ class JooqOrderRepository
                     .set(ORDERS.PAYLOAD_FINGERPRINT, payloadFingerprint.value)
                     .set(ORDERS.PAYLOAD_FINGERPRINT_VERSION, payloadFingerprint.canonicalizationVersion)
                     .set(ORDERS.STATUS, order.status.name)
+                    .set(ORDERS.AGGREGATE_VERSION, order.aggregateVersion)
                     .set(ORDERS.RECEIVED_AT, order.receivedAt.atOffset(ZoneOffset.UTC))
                     .onConflict(ORDERS.SOURCE_SYSTEM, ORDERS.EXTERNAL_ORDER_ID)
                     .doNothing()
@@ -111,16 +112,23 @@ class JooqOrderRepository
         override fun updateStatus(
             order: Order,
             expectedStatus: OrderStatus,
+            expectedAggregateVersion: Long,
         ): Boolean {
             require(order.status != expectedStatus) {
                 "New order status must differ from the expected status"
+            }
+            require(expectedAggregateVersion > 0) { "Expected aggregate version must be positive" }
+            require(order.aggregateVersion == expectedAggregateVersion + 1) {
+                "New order aggregate version must increment the expected version by one"
             }
 
             return dslContext
                 .update(ORDERS)
                 .set(ORDERS.STATUS, order.status.name)
+                .set(ORDERS.AGGREGATE_VERSION, order.aggregateVersion)
                 .where(ORDERS.ID.eq(order.id.value))
                 .and(ORDERS.STATUS.eq(expectedStatus.name))
+                .and(ORDERS.AGGREGATE_VERSION.eq(expectedAggregateVersion))
                 .execute() == 1
         }
 

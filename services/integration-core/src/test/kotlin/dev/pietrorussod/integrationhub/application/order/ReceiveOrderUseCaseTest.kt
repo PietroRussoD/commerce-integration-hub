@@ -248,6 +248,7 @@ class ReceiveOrderUseCaseTest {
         override fun updateStatus(
             order: Order,
             expectedStatus: OrderStatus,
+            expectedAggregateVersion: Long,
         ): Boolean {
             require(order.status != expectedStatus) {
                 "New order status must differ from the expected status"

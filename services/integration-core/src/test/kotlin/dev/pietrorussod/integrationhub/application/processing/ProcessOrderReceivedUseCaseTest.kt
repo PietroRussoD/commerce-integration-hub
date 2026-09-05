@@ -216,6 +216,7 @@ class ProcessOrderReceivedUseCaseTest {
         override fun updateStatus(
             order: Order,
             expectedStatus: OrderStatus,
+            expectedAggregateVersion: Long,
         ): Boolean {
             if (expectedStatus == rejectedExpectedStatus) return false
             if (this.order.id != order.id || this.order.status != expectedStatus) return false

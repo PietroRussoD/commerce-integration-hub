@@ -12,20 +12,25 @@ data class Order private constructor(
     val items: List<OrderItem>,
     val totalAmount: Money,
     val status: OrderStatus,
+    val aggregateVersion: Long,
     val receivedAt: Instant,
 ) {
+    init {
+        require(aggregateVersion > 0) { "Order aggregate version must be positive" }
+    }
+
     fun startProcessing(): Order {
         check(status == OrderStatus.RECEIVED) {
             "Order processing can only start from RECEIVED status"
         }
-        return copy(status = OrderStatus.PROCESSING)
+        return copy(status = OrderStatus.PROCESSING, aggregateVersion = nextAggregateVersion())
     }
 
     fun markReady(): Order {
         check(status == OrderStatus.PROCESSING) {
             "An order can only become ready from PROCESSING status"
         }
-        return copy(status = OrderStatus.READY)
+        return copy(status = OrderStatus.READY, aggregateVersion = nextAggregateVersion())
     }
 
     companion object {
@@ -52,6 +57,7 @@ data class Order private constructor(
                 items = validatedItems,
                 totalAmount = totalAmount,
                 status = OrderStatus.RECEIVED,
+                aggregateVersion = INITIAL_AGGREGATE_VERSION,
                 receivedAt = receivedAt,
             )
         }
@@ -64,6 +70,7 @@ data class Order private constructor(
             items: List<OrderItem>,
             totalAmount: Money,
             status: OrderStatus,
+            aggregateVersion: Long,
             receivedAt: Instant,
         ): Order {
             val validatedItems = validateItems(currency, items)
@@ -79,9 +86,12 @@ data class Order private constructor(
                 items = validatedItems,
                 totalAmount = totalAmount,
                 status = status,
+                aggregateVersion = aggregateVersion,
                 receivedAt = receivedAt,
             )
         }
+
+        private const val INITIAL_AGGREGATE_VERSION = 1L
 
         private fun validateItems(
             currency: Currency,
@@ -138,4 +148,11 @@ data class Order private constructor(
             }
         }
     }
+
+    private fun nextAggregateVersion(): Long =
+        try {
+            Math.addExact(aggregateVersion, 1)
+        } catch (exception: ArithmeticException) {
+            throw IllegalStateException("Order aggregate version cannot be incremented", exception)
+        }
 }
