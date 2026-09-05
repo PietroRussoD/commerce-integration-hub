@@ -33,6 +33,8 @@ implementation chronology.
   age, equal-jitter delays, and capped `Retry-After` scheduling.
 - [ADR 0015](0015-rebuildable-opensearch-order-projection.md): rebuildable
   OpenSearch order projection with PostgreSQL authority and alias-based reindex.
+- [ADR 0016](0016-version-order-state-and-evolve-ready-event.md): persisted
+  aggregate versions and `OrderReady.v2` for stale-event protection.
 
 Accepted records are not edited to hide a later change of direction. Later
 extensions or replacements are recorded in a new ADR and linked to the earlier
