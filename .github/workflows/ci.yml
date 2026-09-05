@@ -61,6 +61,21 @@ jobs:
           --no-banner
           /repo
 
+  module-versions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Verify that every module declares the same version
+        run: ./scripts/check-module-versions.sh
+
   connector-gateway:
     needs: changes
     if: needs.changes.outputs.connector_gateway == 'true'
