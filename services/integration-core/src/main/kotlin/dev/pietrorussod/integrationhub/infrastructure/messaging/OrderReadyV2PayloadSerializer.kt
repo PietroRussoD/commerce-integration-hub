@@ -5,9 +5,6 @@ import dev.pietrorussod.integrationhub.application.processing.OrderReadyEvent
 import dev.pietrorussod.integrationhub.application.processing.OrderReadyPayloadSerializer
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
-import java.math.BigDecimal
-import java.time.Instant
-import java.util.UUID
 
 @ApplicationScoped
 class OrderReadyV2PayloadSerializer
@@ -41,27 +38,4 @@ class OrderReadyV2PayloadSerializer
                         },
                 ),
             )
-
-        private data class OrderReadyV2Payload(
-            val orderId: UUID,
-            val aggregateVersion: Long,
-            val sourceSystem: String,
-            val externalOrderId: String,
-            val currency: String,
-            val totalAmount: BigDecimal,
-            val status: String,
-            val receivedAt: Instant,
-            val readyAt: Instant,
-            val items: List<OrderReadyV2ItemPayload>,
-        )
-
-        private data class OrderReadyV2ItemPayload(
-            val externalLineId: String?,
-            val sku: String,
-            val description: String?,
-            val quantity: BigDecimal,
-            val unitPrice: BigDecimal,
-            val lineAmount: BigDecimal,
-            val position: Int,
-        )
     }
