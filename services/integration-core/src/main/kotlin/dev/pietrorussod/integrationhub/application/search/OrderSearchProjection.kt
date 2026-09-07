@@ -6,5 +6,5 @@ interface OrderSearchProjection {
 
 enum class OrderSearchProjectionWriteOutcome {
     APPLIED,
-    IGNORED_STALE_VERSION,
+    IGNORED_NON_NEWER_VERSION,
 }
