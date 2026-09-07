@@ -3,6 +3,7 @@ package dev.pietrorussod.integrationhub.infrastructure.search
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.inject.Disposes
 import jakarta.enterprise.inject.Produces
+import jakarta.inject.Singleton
 import org.apache.hc.core5.http.HttpHost
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.opensearch.client.opensearch.OpenSearchClient
@@ -13,7 +14,7 @@ import java.net.URI
 @ApplicationScoped
 class OpenSearchClientConfiguration {
     @Produces
-    @ApplicationScoped
+    @Singleton
     fun transport(
         @ConfigProperty(name = "integration-hub.opensearch.url") url: String,
     ): ApacheHttpClient5Transport {
@@ -22,7 +23,7 @@ class OpenSearchClientConfiguration {
     }
 
     @Produces
-    @ApplicationScoped
+    @Singleton
     fun openSearchClient(transport: ApacheHttpClient5Transport): OpenSearchClient = OpenSearchClient(transport)
 
     fun close(
