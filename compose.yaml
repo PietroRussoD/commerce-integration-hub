@@ -159,7 +159,8 @@ services:
         for topic in
         integration.order.received.v1
         integration.order.ready.v2
-        integration.order.received.dlq.v1;
+        integration.order.received.dlq.v1
+        integration.order.ready.search.dlq.v2;
         do
           rpk topic create "$${topic}" --brokers redpanda:9092 --partitions 3 --replicas 1 ||
           rpk topic describe "$${topic}" --brokers redpanda:9092 >/dev/null ||
@@ -191,11 +192,15 @@ services:
       DB_PASSWORD: local-development-only
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       OPENSEARCH_URL: http://opensearch:9200
+      ORDER_SEARCH_PROJECTION_ENABLED: "${ORDER_SEARCH_PROJECTION_ENABLED:-false}"
       OUTBOX_WORKER_ID: integration-core-compose
       INTEGRATION_HUB_SECURITY_SOURCE_CREDENTIAL_PEPPERS: "1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
     ports:
       - "${INTEGRATION_CORE_PORT:-8080}:8080"
     depends_on:
+      opensearch:
+        condition: service_healthy
+        required: false
       postgres:
         condition: service_healthy
       redpanda-init:
