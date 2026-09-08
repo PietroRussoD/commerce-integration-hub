@@ -16,5 +16,6 @@ class MetricsEndpointIT {
             .statusCode(200)
             .body(containsString("integration_hub_outbox_dispatch_events_total"))
             .body(containsString("integration_hub_outbox_recovery_events_total"))
+            .body(containsString("integration_hub_order_search_projection_events_total"))
     }
 }
