@@ -5,6 +5,15 @@ import java.time.Instant
 interface OrderSearchProjectionReconciliationStateRepository {
     fun current(): OrderSearchProjectionReconciliationState
 
+    fun tryAcquireLease(
+        owner: String,
+        token: java.util.UUID,
+        acquiredAt: Instant,
+        expiresAt: Instant,
+    ): OrderSearchProjectionReconciliationState?
+
+    fun releaseLease(token: java.util.UUID): Boolean
+
     fun advance(
         expectedVersion: Long,
         cursor: ReadyOrderSearchDocumentCursor,
@@ -20,6 +29,7 @@ interface OrderSearchProjectionReconciliationStateRepository {
 data class OrderSearchProjectionReconciliationState(
     val version: Long,
     val cursor: ReadyOrderSearchDocumentCursor?,
+    val lease: OrderSearchProjectionReconciliationLease?,
     val currentRun: OrderSearchProjectionReconciliationProgress,
     val lastCompletedRun: OrderSearchProjectionReconciliationCompletedRun?,
 ) {
@@ -28,6 +38,16 @@ data class OrderSearchProjectionReconciliationState(
         require((cursor == null) == currentRun.isEmpty) {
             "Order search reconciliation cursor must be present exactly while a run has progress"
         }
+    }
+}
+
+data class OrderSearchProjectionReconciliationLease(
+    val owner: String,
+    val token: java.util.UUID,
+    val expiresAt: Instant,
+) {
+    init {
+        require(owner.isNotBlank()) { "Order search reconciliation lease owner must not be blank" }
     }
 }
 

@@ -1,9 +1,7 @@
 package dev.pietrorussod.integrationhub.application.search
 
-import jakarta.enterprise.context.ApplicationScoped
 import java.time.Clock
 
-@ApplicationScoped
 class RunOrderSearchProjectionReconciliationUseCase(
     private val reconciliationStateRepository: OrderSearchProjectionReconciliationStateRepository,
     private val reconcileOrderSearchProjection: ReconcileOrderSearchProjectionUseCase,

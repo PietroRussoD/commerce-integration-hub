@@ -2,6 +2,7 @@ package dev.pietrorussod.integrationhub.infrastructure.persistence.jooq
 
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationBatchResult
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationCompletedRun
+import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationLease
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationProgress
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationState
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationStateRepository
@@ -12,6 +13,7 @@ import jakarta.inject.Inject
 import org.jooq.DSLContext
 import java.time.Instant
 import java.time.ZoneOffset
+import java.util.UUID
 
 @ApplicationScoped
 class JooqOrderSearchProjectionReconciliationStateRepository
@@ -26,6 +28,40 @@ class JooqOrderSearchProjectionReconciliationStateRepository
                     .where(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.PROJECTION_NAME.eq(PROJECTION_NAME))
                     .fetchOne(),
             ) { "Order search reconciliation state must be initialized" }.toState()
+
+        override fun tryAcquireLease(
+            owner: String,
+            token: UUID,
+            acquiredAt: Instant,
+            expiresAt: Instant,
+        ): OrderSearchProjectionReconciliationState? {
+            require(owner.isNotBlank()) { "Order search reconciliation lease owner must not be blank" }
+            require(expiresAt.isAfter(acquiredAt)) { "Order search reconciliation lease expiry must be after acquisition" }
+
+            val acquired =
+                dslContext
+                    .update(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE)
+                    .set(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.LEASE_OWNER, owner)
+                    .set(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.LEASE_TOKEN, token)
+                    .set(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.LEASE_EXPIRES_AT, expiresAt.atOffset(ZoneOffset.UTC))
+                    .where(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.PROJECTION_NAME.eq(PROJECTION_NAME))
+                    .and(
+                        ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.LEASE_EXPIRES_AT.isNull
+                            .or(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.LEASE_EXPIRES_AT.le(acquiredAt.atOffset(ZoneOffset.UTC))),
+                    ).execute() == 1
+
+            return if (acquired) current() else null
+        }
+
+        override fun releaseLease(token: UUID): Boolean =
+            dslContext
+                .update(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE)
+                .setNull(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.LEASE_OWNER)
+                .setNull(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.LEASE_TOKEN)
+                .setNull(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.LEASE_EXPIRES_AT)
+                .where(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.PROJECTION_NAME.eq(PROJECTION_NAME))
+                .and(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.LEASE_TOKEN.eq(token))
+                .execute() == 1
 
         override fun advance(
             expectedVersion: Long,
@@ -107,6 +143,17 @@ class JooqOrderSearchProjectionReconciliationStateRepository
                         ReadyOrderSearchDocumentCursor(
                             receivedAt = requireNotNull(cursorReceivedAt).toInstant(),
                             orderId = requireNotNull(cursorOrderId),
+                        )
+                    },
+                lease =
+                    get(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.LEASE_TOKEN)?.let { token ->
+                        OrderSearchProjectionReconciliationLease(
+                            owner = requireNotNull(get(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.LEASE_OWNER)),
+                            token = token,
+                            expiresAt =
+                                requireNotNull(
+                                    get(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.LEASE_EXPIRES_AT),
+                                ).toInstant(),
                         )
                     },
                 currentRun = currentRun,

@@ -84,6 +84,7 @@ class RunOrderSearchProjectionReconciliationUseCaseTest {
         OrderSearchProjectionReconciliationState(
             version = version,
             cursor = null,
+            lease = null,
             currentRun = OrderSearchProjectionReconciliationProgress(0, 0, 0),
             lastCompletedRun = null,
         )
@@ -126,6 +127,15 @@ class RunOrderSearchProjectionReconciliationUseCaseTest {
         var completedAt: Instant? = null
 
         override fun current(): OrderSearchProjectionReconciliationState = state
+
+        override fun tryAcquireLease(
+            owner: String,
+            token: UUID,
+            acquiredAt: Instant,
+            expiresAt: Instant,
+        ): OrderSearchProjectionReconciliationState? = error("Not used")
+
+        override fun releaseLease(token: UUID): Boolean = error("Not used")
 
         override fun advance(
             expectedVersion: Long,

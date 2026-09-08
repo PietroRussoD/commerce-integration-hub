@@ -2,6 +2,7 @@ package dev.pietrorussod.integrationhub.infrastructure.persistence.jooq
 
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationBatchResult
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationCompletedRun
+import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationLease
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationProgress
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationState
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationStateRepository
@@ -68,6 +69,7 @@ class JooqOrderSearchProjectionReconciliationStateRepositoryIT {
             OrderSearchProjectionReconciliationState(
                 version = 2,
                 cursor = null,
+                lease = null,
                 currentRun = OrderSearchProjectionReconciliationProgress(0, 0, 0),
                 lastCompletedRun =
                     OrderSearchProjectionReconciliationCompletedRun(
@@ -79,10 +81,56 @@ class JooqOrderSearchProjectionReconciliationStateRepositoryIT {
         )
     }
 
+    @Test
+    fun `acquires an expired lease and releases only its own token`() {
+        val acquiredAt = Instant.parse("2026-09-08T08:00:00Z")
+        val firstToken = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6fb101")
+        val firstLease =
+            requireNotNull(
+                repository.tryAcquireLease(
+                    owner = "instance-a",
+                    token = firstToken,
+                    acquiredAt = acquiredAt,
+                    expiresAt = acquiredAt.plusSeconds(30),
+                ),
+            )
+
+        assertEquals(
+            OrderSearchProjectionReconciliationLease("instance-a", firstToken, acquiredAt.plusSeconds(30)),
+            firstLease.lease,
+        )
+        assertEquals(
+            null,
+            repository.tryAcquireLease(
+                owner = "instance-b",
+                token = UUID.randomUUID(),
+                acquiredAt = acquiredAt.plusSeconds(10),
+                expiresAt = acquiredAt.plusSeconds(40),
+            ),
+        )
+        assertFalse(repository.releaseLease(UUID.randomUUID()))
+
+        val secondToken = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6fb102")
+        assertEquals(
+            secondToken,
+            requireNotNull(
+                repository.tryAcquireLease(
+                    owner = "instance-b",
+                    token = secondToken,
+                    acquiredAt = acquiredAt.plusSeconds(31),
+                    expiresAt = acquiredAt.plusSeconds(61),
+                ),
+            ).lease?.token,
+        )
+        assertFalse(repository.releaseLease(firstToken))
+        assertTrue(repository.releaseLease(secondToken))
+    }
+
     private fun initialState(): OrderSearchProjectionReconciliationState =
         OrderSearchProjectionReconciliationState(
             version = 0,
             cursor = null,
+            lease = null,
             currentRun = OrderSearchProjectionReconciliationProgress(0, 0, 0),
             lastCompletedRun = null,
         )
