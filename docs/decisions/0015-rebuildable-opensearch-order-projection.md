@@ -64,8 +64,9 @@ Reconciliation pages through authoritative READY orders using a durable cursor.
 A PostgreSQL lease and a fencing token prevent concurrent instances from
 advancing the same checkpoint; a crashed owner can be replaced once its lease
 expires. Each scheduled tick processes at most one bounded page and is disabled
-by default. Full reindexing and persisted projection-lag metrics remain future
-work.
+by default. Prometheus records bounded run outcomes, document outcomes, and
+duration without order or worker identity labels. Full reindexing and persisted
+projection-lag metrics remain future work.
 
 ## Follow-up
 

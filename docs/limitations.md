@@ -61,10 +61,11 @@ mistaken for available behavior.
   operation, auditing, or distributed tracing.
 - Liveness and PostgreSQL readiness checks, structured logs, correlation IDs,
   Prometheus runtime metrics,
-  bounded outbox, order-search-projection, and Gateway-worker outcome metrics, and database-backed
-  eligible-delivery backlog, connector-state, and polling-checkpoint gauges are
-  available. A version-controlled Prometheus and Grafana profile provides a
-  local operations dashboard.
+  bounded outbox, order-search-projection, reconciliation, and Gateway-worker
+  outcome metrics, and database-backed eligible-delivery backlog,
+  connector-state, and polling-checkpoint gauges are available. A
+  version-controlled Prometheus and Grafana profile provides a local operations
+  dashboard.
   Distributed tracing, alerting rules, and production monitoring are not.
   Deployment must restrict `/metrics` to trusted monitoring infrastructure.
 - Raw provider payloads are not retained by the canonical API.

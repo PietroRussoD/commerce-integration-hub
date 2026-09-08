@@ -39,7 +39,8 @@ The current baseline establishes:
   versioned `OrderReady` event;
 - read-only operator order summary and detail endpoints backed by PostgreSQL;
 - scheduled outbox dispatch and expired-claim recovery;
-- Prometheus metrics for outbox outcomes and scheduler execution;
+- Prometheus metrics for outbox outcomes, scheduler execution, and bounded
+  search-projection reconciliation outcomes, documents, and duration;
 - an optional version-controlled Prometheus and Grafana local operations
   dashboard;
 - source API-key authentication, administrative provisioning and revocation,
