@@ -30,6 +30,15 @@ object OpenSearchOrderIndexDefinition {
 
     fun isVersionedOrderIndex(indexName: String): Boolean = indexName.matches(VERSIONED_INDEX_NAME)
 
+    fun nextVersionedOrderIndex(indexName: String): String {
+        require(isVersionedOrderIndex(indexName)) {
+            "Order search index must use the orders-vN naming convention"
+        }
+
+        val version = indexName.removePrefix("orders-v").toLong()
+        return "orders-v${Math.addExact(version, 1)}"
+    }
+
     private fun createRequest(
         indexName: String,
         attachReadAlias: Boolean,
