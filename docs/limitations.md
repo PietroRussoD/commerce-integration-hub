@@ -34,9 +34,10 @@ mistaken for available behavior.
   lease; later polling acquisition stops. The Compose provider is a deterministic
   local fixture rather than a production dependency.
 - PostgreSQL is the only authoritative store. The OpenSearch order projection,
-  read-only operator search API, and availability status API are implemented,
-  but reconciliation, full reindexing, and persisted projection lag/state are
-  not.
+  read-only operator search API, availability status API, and bounded
+  PostgreSQL-backed reconciliation are implemented. Reconciliation has a
+  durable checkpoint and lease, but is disabled by default. Full reindexing and
+  persisted projection-lag metrics are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the
   scheduled claim-publish-transition and expired-claim recovery cycles are
   implemented. Invalid or retry-exhausted `OrderReceived.v1` deliveries are
@@ -52,11 +53,12 @@ mistaken for available behavior.
   API exposes read-only summaries and details across sources. Cross-source
   administration, functional dashboards, and authenticated operator roles are
   not implemented. The operator console exposes a paginated summary,
-  operational details, a controlled canonical-ingestion simulator, and a
-  Flow Explorer that replays three committed sanitized local traces. The
-  simulator keeps its source API key only in page memory. The simulator and
-  Flow Explorer are intended for local development and portfolio
-  demonstrations, not production operation, auditing, or distributed tracing.
+  operational details, real search-projection availability and reconciliation
+  state, a controlled canonical-ingestion simulator, and a Flow Explorer that
+  replays three committed sanitized local traces. The simulator keeps its
+  source API key only in page memory. The simulator and Flow Explorer are
+  intended for local development and portfolio demonstrations, not production
+  operation, auditing, or distributed tracing.
 - Liveness and PostgreSQL readiness checks, structured logs, correlation IDs,
   Prometheus runtime metrics,
   bounded outbox, order-search-projection, and Gateway-worker outcome metrics, and database-backed

@@ -1,6 +1,7 @@
 package dev.pietrorussod.integrationhub.infrastructure.search
 
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionAvailability
+import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationStateRepository
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionStatus
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionStatusProvider
 import jakarta.enterprise.context.ApplicationScoped
@@ -15,15 +16,24 @@ class OpenSearchOrderSearchProjectionStatusProvider
     @Inject
     constructor(
         private val client: OpenSearchClient,
+        private val reconciliationStateRepository: OrderSearchProjectionReconciliationStateRepository,
         @param:ConfigProperty(name = "mp.messaging.incoming.order-ready-search-in.enabled")
         private val consumerEnabled: Boolean,
     ) : OrderSearchProjectionStatusProvider {
-        override fun status(): OrderSearchProjectionStatus =
-            OrderSearchProjectionStatus(
+        override fun status(): OrderSearchProjectionStatus {
+            val reconciliationState = reconciliationStateRepository.current()
+            val lastCompletedRun = reconciliationState.lastCompletedRun
+            return OrderSearchProjectionStatus(
                 consumerEnabled = consumerEnabled,
                 readAlias = OpenSearchOrderIndexDefinition.READ_ALIAS,
                 availability = availability(),
+                reconciliationInProgress = !reconciliationState.currentRun.isEmpty,
+                lastReconciliationCompletedAt = lastCompletedRun?.completedAt,
+                lastReconciliationScannedCount = lastCompletedRun?.progress?.scannedCount,
+                lastReconciliationAppliedCount = lastCompletedRun?.progress?.appliedCount,
+                lastReconciliationIgnoredCount = lastCompletedRun?.progress?.ignoredNonNewerVersionCount,
             )
+        }
 
         private fun availability(): OrderSearchProjectionAvailability =
             try {

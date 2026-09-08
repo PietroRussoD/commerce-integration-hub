@@ -1,6 +1,12 @@
 import { afterEach, expect, test, vi } from "vitest";
 
-import { getOperatorOrder, IntegrationCoreApiError, listOperatorOrders, receiveOrder } from "./integrationCoreClient";
+import {
+  getOperatorOrder,
+  getOperatorOrderSearchProjectionStatus,
+  IntegrationCoreApiError,
+  listOperatorOrders,
+  receiveOrder,
+} from "./integrationCoreClient";
 
 const receiveOrderRequest = {
   externalId: "ORDER-42",
@@ -81,6 +87,32 @@ test("rejects unsuccessful operator order detail responses", async () => {
   await expect(getOperatorOrder({ orderId: "missing-order" })).rejects.toThrow(
     "Operator order detail request failed with status 404",
   );
+});
+
+test("requests the operator search projection status", async () => {
+  const responseBody = {
+    consumerEnabled: true,
+    readAlias: "orders-read",
+    availability: "AVAILABLE",
+    reconciliationInProgress: false,
+    lastReconciliationCompletedAt: "2026-09-08T08:00:00Z",
+    lastReconciliationScannedCount: 20,
+    lastReconciliationAppliedCount: 3,
+    lastReconciliationIgnoredCount: 17,
+  };
+  const fetchMock = vi.fn().mockResolvedValue(
+    new Response(JSON.stringify(responseBody), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(getOperatorOrderSearchProjectionStatus()).resolves.toEqual(responseBody);
+  expect(fetchMock).toHaveBeenCalledWith("/api/v1/operator/orders/search/status", {
+    headers: { Accept: "application/json" },
+    signal: undefined,
+  });
 });
 
 test.each([

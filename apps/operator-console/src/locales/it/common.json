@@ -47,7 +47,24 @@
     "empty": "Nessun ordine trovato",
     "loading": "Caricamento ordini",
     "error": "Impossibile caricare gli ordini",
-    "pagination": "{{first}}-{{last}} di {{total}}"
+    "pagination": "{{first}}-{{last}} di {{total}}",
+    "searchProjection": {
+      "title": "Proiezione di ricerca",
+      "description": "Stato operativo del read model degli ordini ricostruibile.",
+      "loading": "Caricamento stato della proiezione di ricerca",
+      "unavailable": "Lo stato della proiezione di ricerca non è al momento disponibile.",
+      "alias": "Alias di lettura",
+      "reconciliation": "Riconciliazione",
+      "inProgress": "In corso",
+      "notRun": "Non ancora eseguita",
+      "lastCompleted": "Completata {{completedAt}}: {{scanned}} analizzati, {{applied}} applicati",
+      "availability": {
+        "label": "Disponibilità",
+        "available": "Disponibile",
+        "notInitialized": "Non inizializzata",
+        "unavailable": "Non disponibile"
+      }
+    }
   },
   "orderDetail": {
     "title": "Dettagli ordine",
