@@ -3,21 +3,37 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { type ReactNode } from "react";
 import { I18nextProvider } from "react-i18next";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-import { listOperatorOrders } from "../../api/integrationCoreClient";
+import { getOperatorOrderSearchProjectionStatus, listOperatorOrders } from "../../api/integrationCoreClient";
 import { createAppI18n, type SupportedLocale } from "../../i18n/i18n";
 import { expectNoAccessibilityViolations } from "../../test/accessibility";
 import { OrdersPage } from "./OrdersPage";
 
 vi.mock("../../api/integrationCoreClient", () => ({
+  getOperatorOrderSearchProjectionStatus: vi.fn(),
   listOperatorOrders: vi.fn(),
 }));
 
+const getOperatorOrderSearchProjectionStatusMock = vi.mocked(getOperatorOrderSearchProjectionStatus);
 const listOperatorOrdersMock = vi.mocked(listOperatorOrders);
+
+beforeEach(() => {
+  getOperatorOrderSearchProjectionStatusMock.mockResolvedValue({
+    consumerEnabled: true,
+    readAlias: "orders-read",
+    availability: "AVAILABLE",
+    reconciliationInProgress: false,
+    lastReconciliationCompletedAt: "2026-09-08T08:00:00Z",
+    lastReconciliationScannedCount: 20,
+    lastReconciliationAppliedCount: 3,
+    lastReconciliationIgnoredCount: 17,
+  });
+});
 
 afterEach(() => {
   cleanup();
+  getOperatorOrderSearchProjectionStatusMock.mockReset();
   listOperatorOrdersMock.mockReset();
 });
 
@@ -49,6 +65,9 @@ test("renders operator order summaries returned by the API", async () => {
     "/orders/018f38c2-1b95-7cc4-bb89-72d26a6f9f88",
   );
   expect(screen.getByText("Marketplace A")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Search projection" })).toBeInTheDocument();
+  expect(screen.getByText("Available")).toBeInTheDocument();
+  expect(screen.getByText("orders-read")).toBeInTheDocument();
   expect(screen.getByRole("row", { name: /ORDER-42.*Ready/i })).toBeInTheDocument();
   expect(screen.getByText("1-1 of 1")).toBeInTheDocument();
   expect(listOperatorOrdersMock).toHaveBeenCalledWith(
@@ -109,6 +128,7 @@ test("renders translated labels and locale-aware values in Italian", async () =>
 
   expect(screen.getByRole("heading", { name: "Ordini" })).toBeInTheDocument();
   expect(await screen.findByText("ORDER-42")).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Proiezione di ricerca" })).toBeInTheDocument();
   expect(screen.getByLabelText("Stato")).toBeInTheDocument();
   expect(screen.getByRole("row", { name: /ORDER-42.*Pronto/i })).toBeInTheDocument();
   expect(screen.getByText("1-1 di 1")).toBeInTheDocument();

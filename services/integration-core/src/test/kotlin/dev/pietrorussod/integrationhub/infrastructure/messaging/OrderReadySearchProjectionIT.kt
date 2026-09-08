@@ -99,6 +99,7 @@ class OrderReadySearchProjectionIT {
             .body("consumerEnabled", equalTo(true))
             .body("readAlias", equalTo(OpenSearchOrderIndexDefinition.READ_ALIAS))
             .body("availability", equalTo("AVAILABLE"))
+            .body("reconciliationInProgress", equalTo(false))
     }
 
     @Test

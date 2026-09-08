@@ -146,6 +146,11 @@ components:
       - consumerEnabled
       - readAlias
       - availability
+      - reconciliationInProgress
+      - lastReconciliationCompletedAt
+      - lastReconciliationScannedCount
+      - lastReconciliationAppliedCount
+      - lastReconciliationIgnoredCount
       properties:
         consumerEnabled:
           type: boolean
@@ -153,6 +158,27 @@ components:
           type: string
         availability:
           type: string
+        reconciliationInProgress:
+          type: boolean
+        lastReconciliationCompletedAt:
+          anyOf:
+          - $ref: "#/components/schemas/Instant"
+          - type: "null"
+        lastReconciliationScannedCount:
+          type:
+          - integer
+          - "null"
+          format: int64
+        lastReconciliationAppliedCount:
+          type:
+          - integer
+          - "null"
+          format: int64
+        lastReconciliationIgnoredCount:
+          type:
+          - integer
+          - "null"
+          format: int64
     OperatorOrderSearchResponse:
       type: object
       required:

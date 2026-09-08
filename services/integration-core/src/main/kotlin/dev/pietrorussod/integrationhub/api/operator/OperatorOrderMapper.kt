@@ -58,6 +58,11 @@ fun OrderSearchProjectionStatus.toResponse(): OperatorOrderSearchProjectionStatu
         consumerEnabled = consumerEnabled,
         readAlias = readAlias,
         availability = availability.name,
+        reconciliationInProgress = reconciliationInProgress,
+        lastReconciliationCompletedAt = lastReconciliationCompletedAt,
+        lastReconciliationScannedCount = lastReconciliationScannedCount,
+        lastReconciliationAppliedCount = lastReconciliationAppliedCount,
+        lastReconciliationIgnoredCount = lastReconciliationIgnoredCount,
     )
 
 private fun OrderSearchHit.toResponse(): OperatorOrderSearchHitResponse =

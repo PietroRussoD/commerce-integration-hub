@@ -38,6 +38,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/operator/orders/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search projected orders for operator inspection */
+        get: operations["searchOperatorOrders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/operator/orders/search/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get order search projection availability */
+        get: operations["getOrderSearchProjectionStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/operator/orders/{orderId}": {
         parameters: {
             query?: never;
@@ -122,6 +156,42 @@ export interface components {
         };
         OperatorOrderListResponse: {
             items: components["schemas"]["OperatorOrderSummaryResponse"][];
+            /** Format: int32 */
+            limit: number;
+            /** Format: int32 */
+            offset: number;
+            /** Format: int64 */
+            total: number;
+        };
+        OperatorOrderSearchHitResponse: {
+            id: components["schemas"]["UUID"];
+            /** Format: int64 */
+            aggregateVersion: number;
+            sourceSystem: string;
+            externalOrderId: string;
+            status: string;
+            currency: string;
+            totalAmount: string;
+            receivedAt: components["schemas"]["Instant"];
+            readyAt: components["schemas"]["Instant"];
+            itemSkus: string[];
+            itemDescriptions: string[];
+        };
+        OperatorOrderSearchProjectionStatusResponse: {
+            consumerEnabled: boolean;
+            readAlias: string;
+            availability: string;
+            reconciliationInProgress: boolean;
+            lastReconciliationCompletedAt: components["schemas"]["Instant"] | null;
+            /** Format: int64 */
+            lastReconciliationScannedCount: number | null;
+            /** Format: int64 */
+            lastReconciliationAppliedCount: number | null;
+            /** Format: int64 */
+            lastReconciliationIgnoredCount: number | null;
+        };
+        OperatorOrderSearchResponse: {
+            items: components["schemas"]["OperatorOrderSearchHitResponse"][];
             /** Format: int32 */
             limit: number;
             /** Format: int32 */
@@ -274,6 +344,76 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    searchOperatorOrders: {
+        parameters: {
+            query: {
+                /** @description Exact ISO 4217 currency code */
+                currency: string | null;
+                /** @description Exact external order ID */
+                externalOrderId: string | null;
+                /** @description Maximum number of items to return */
+                limit: number;
+                /** @description Number of items to skip */
+                offset: number;
+                /** @description Free text matched against item descriptions */
+                q: string | null;
+                /** @description Exclusive ISO-8601 receipt timestamp */
+                receivedAtBefore: string | null;
+                /** @description Inclusive ISO-8601 receipt timestamp */
+                receivedAtFrom: string | null;
+                /** @description Exact item SKU */
+                sku: string | null;
+                /** @description Exact source system */
+                sourceSystem: string | null;
+                /** @description Exact order status */
+                status: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Projected orders searched */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorOrderSearchResponse"];
+                };
+            };
+            /** @description Invalid operator order search query */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    getOrderSearchProjectionStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Order search projection status returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorOrderSearchProjectionStatusResponse"];
                 };
             };
         };

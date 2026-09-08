@@ -6,6 +6,9 @@ export type OperatorOrderPage =
 export type OperatorOrderDetail =
   paths["/api/v1/operator/orders/{orderId}"]["get"]["responses"]["200"]["content"]["application/json"];
 
+export type OperatorOrderSearchProjectionStatus =
+  paths["/api/v1/operator/orders/search/status"]["get"]["responses"]["200"]["content"]["application/json"];
+
 export type ReceiveOrderRequest =
   paths["/api/v1/orders"]["post"]["requestBody"]["content"]["application/json"];
 
@@ -49,6 +52,10 @@ export interface GetOperatorOrderParameters {
   signal?: AbortSignal;
 }
 
+export interface GetOperatorOrderSearchProjectionStatusParameters {
+  signal?: AbortSignal;
+}
+
 export async function listOperatorOrders({
   status,
   limit,
@@ -85,6 +92,21 @@ export async function getOperatorOrder({ orderId, signal }: GetOperatorOrderPara
   }
 
   return response.json() as Promise<OperatorOrderDetail>;
+}
+
+export async function getOperatorOrderSearchProjectionStatus({
+  signal,
+}: GetOperatorOrderSearchProjectionStatusParameters = {}): Promise<OperatorOrderSearchProjectionStatus> {
+  const response = await fetch("/api/v1/operator/orders/search/status", {
+    headers: { Accept: "application/json" },
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Operator order search projection status request failed with status ${response.status}`);
+  }
+
+  return response.json() as Promise<OperatorOrderSearchProjectionStatus>;
 }
 
 export async function receiveOrder({

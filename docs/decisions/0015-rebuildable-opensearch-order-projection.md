@@ -57,8 +57,15 @@ version-aware index lifecycle, and read-only search. Search is eventually
 consistent and must not imply read-your-writes behavior. Bounded outcome
 metrics record successful, stale/duplicate, invalid, and failed projection
 attempts. A read-only status API reports whether the projection consumer is
-enabled and whether the read alias is available. Reconciliation, reindexing,
-and durable projection-lag state remain future work.
+enabled, whether the read alias is available, and the latest completed
+reconciliation outcomes.
+
+Reconciliation pages through authoritative READY orders using a durable cursor.
+A PostgreSQL lease and a fencing token prevent concurrent instances from
+advancing the same checkpoint; a crashed owner can be replaced once its lease
+expires. Each scheduled tick processes at most one bounded page and is disabled
+by default. Full reindexing and persisted projection-lag metrics remain future
+work.
 
 ## Follow-up
 

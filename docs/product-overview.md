@@ -198,7 +198,7 @@ external subscribers remain planned.
 | Integration Flow Explorer | Sanitized local evidence replay implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
 | `ERP_B` polling adapter | Implemented and process-tested |
-| OpenSearch projection, operator search API, outcome metrics, and availability API | Implemented; reconciliation, reindexing, and persisted projection lag remain planned |
+| OpenSearch projection, operator search API, outcome metrics, availability API, and bounded reconciliation | Implemented; full reindexing and persisted projection-lag metrics remain planned |
 
 ## Non-goals
 

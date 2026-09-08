@@ -47,7 +47,24 @@
     "empty": "No orders found",
     "loading": "Loading orders",
     "error": "Unable to load orders",
-    "pagination": "{{first}}-{{last}} of {{total}}"
+    "pagination": "{{first}}-{{last}} of {{total}}",
+    "searchProjection": {
+      "title": "Search projection",
+      "description": "Operational state of the rebuildable order search read model.",
+      "loading": "Loading search projection status",
+      "unavailable": "Search projection status is currently unavailable.",
+      "alias": "Read alias",
+      "reconciliation": "Reconciliation",
+      "inProgress": "In progress",
+      "notRun": "Not run yet",
+      "lastCompleted": "Completed {{completedAt}}: {{scanned}} scanned, {{applied}} applied",
+      "availability": {
+        "label": "Availability",
+        "available": "Available",
+        "notInitialized": "Not initialized",
+        "unavailable": "Unavailable"
+      }
+    }
   },
   "orderDetail": {
     "title": "Order details",

@@ -4,12 +4,18 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { listOperatorOrders, type ListOperatorOrdersParameters, type OperatorOrderPage } from "../../api/integrationCoreClient";
+import {
+  getOperatorOrderSearchProjectionStatus,
+  listOperatorOrders,
+  type ListOperatorOrdersParameters,
+  type OperatorOrderPage,
+} from "../../api/integrationCoreClient";
 import { IconButton } from "../../components/ui/IconButton";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatLabel, formatMoney } from "./orderFormatters";
+import { SearchProjectionStatus } from "./SearchProjectionStatus";
 
 const PAGE_SIZE = 25;
 const statusOptions = ["ALL", "RECEIVED", "PROCESSING", "READY"] as const;
@@ -37,6 +43,14 @@ export function OrdersPage() {
       }),
     placeholderData: keepPreviousData,
   });
+  const searchProjectionQuery = useQuery({
+    queryKey: ["operator-order-search-projection-status"],
+    queryFn: ({ signal }) => getOperatorOrderSearchProjectionStatus({ signal }),
+  });
+
+  async function refresh() {
+    await Promise.all([query.refetch(), searchProjectionQuery.refetch()]);
+  }
 
   return (
     <section aria-labelledby="orders-heading">
@@ -64,11 +78,25 @@ export function OrdersPage() {
               </select>
             </label>
 
-            <IconButton label={t("orders.actions.refresh")} onClick={() => void query.refetch()} disabled={query.isFetching}>
-              <RefreshCw aria-hidden="true" size={17} className={query.isFetching ? "animate-spin" : undefined} />
+            <IconButton
+              label={t("orders.actions.refresh")}
+              onClick={() => void refresh()}
+              disabled={query.isFetching || searchProjectionQuery.isFetching}
+            >
+              <RefreshCw
+                aria-hidden="true"
+                size={17}
+                className={query.isFetching || searchProjectionQuery.isFetching ? "animate-spin" : undefined}
+              />
             </IconButton>
           </div>
         }
+      />
+
+      <SearchProjectionStatus
+        status={searchProjectionQuery.data}
+        isPending={searchProjectionQuery.isPending}
+        isError={searchProjectionQuery.isError}
       />
 
       <div className="mt-5 overflow-hidden rounded-md border border-app-border bg-app-surface">

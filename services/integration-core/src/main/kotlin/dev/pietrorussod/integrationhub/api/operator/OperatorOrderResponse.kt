@@ -47,6 +47,11 @@ data class OperatorOrderSearchProjectionStatusResponse(
     val consumerEnabled: Boolean,
     val readAlias: String,
     val availability: String,
+    val reconciliationInProgress: Boolean,
+    val lastReconciliationCompletedAt: Instant?,
+    val lastReconciliationScannedCount: Long?,
+    val lastReconciliationAppliedCount: Long?,
+    val lastReconciliationIgnoredCount: Long?,
 )
 
 data class OperatorOrderDetailResponse(
