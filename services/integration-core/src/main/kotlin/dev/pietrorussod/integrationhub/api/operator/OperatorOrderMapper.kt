@@ -8,6 +8,7 @@ import dev.pietrorussod.integrationhub.application.operator.OperatorOrderTimelin
 import dev.pietrorussod.integrationhub.application.operator.OperatorProcessingAttempt
 import dev.pietrorussod.integrationhub.application.search.OrderSearchHit
 import dev.pietrorussod.integrationhub.application.search.OrderSearchPage
+import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionStatus
 
 fun OperatorOrderPage.toResponse(): OperatorOrderListResponse =
     OperatorOrderListResponse(
@@ -50,6 +51,13 @@ fun OrderSearchPage.toResponse(): OperatorOrderSearchResponse =
         limit = limit,
         offset = offset,
         total = total,
+    )
+
+fun OrderSearchProjectionStatus.toResponse(): OperatorOrderSearchProjectionStatusResponse =
+    OperatorOrderSearchProjectionStatusResponse(
+        consumerEnabled = consumerEnabled,
+        readAlias = readAlias,
+        availability = availability.name,
     )
 
 private fun OrderSearchHit.toResponse(): OperatorOrderSearchHitResponse =

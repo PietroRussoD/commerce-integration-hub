@@ -43,6 +43,12 @@ data class OperatorOrderSearchHitResponse(
     val itemDescriptions: List<String>,
 )
 
+data class OperatorOrderSearchProjectionStatusResponse(
+    val consumerEnabled: Boolean,
+    val readAlias: String,
+    val availability: String,
+)
+
 data class OperatorOrderDetailResponse(
     val id: UUID,
     val sourceSystem: String,

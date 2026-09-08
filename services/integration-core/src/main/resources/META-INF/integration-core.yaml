@@ -140,6 +140,19 @@ components:
           type: array
           items:
             type: string
+    OperatorOrderSearchProjectionStatusResponse:
+      type: object
+      required:
+      - consumerEnabled
+      - readAlias
+      - availability
+      properties:
+        consumerEnabled:
+          type: boolean
+        readAlias:
+          type: string
+        availability:
+          type: string
     OperatorOrderSearchResponse:
       type: object
       required:
@@ -581,6 +594,19 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetails"
+      tags:
+      - Operator Order Search Resource
+  /api/v1/operator/orders/search/status:
+    get:
+      summary: Get order search projection availability
+      operationId: getOrderSearchProjectionStatus
+      responses:
+        "200":
+          description: Order search projection status returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorOrderSearchProjectionStatusResponse"
       tags:
       - Operator Order Search Resource
   /api/v1/operator/orders/{orderId}:

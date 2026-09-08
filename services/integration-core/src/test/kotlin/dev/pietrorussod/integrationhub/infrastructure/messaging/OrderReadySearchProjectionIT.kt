@@ -88,6 +88,20 @@ class OrderReadySearchProjectionIT {
     }
 
     @Test
+    fun `reports the available order search projection through the operator API`() {
+        indexBootstrap.ensureReadAlias()
+
+        given()
+            .`when`()
+            .get("/api/v1/operator/orders/search/status")
+            .then()
+            .statusCode(200)
+            .body("consumerEnabled", equalTo(true))
+            .body("readAlias", equalTo(OpenSearchOrderIndexDefinition.READ_ALIAS))
+            .body("availability", equalTo("AVAILABLE"))
+    }
+
+    @Test
     fun `keeps the newest order aggregate version`() {
         val current = event(aggregateVersion = 3, externalOrderId = "ORDER-3")
         val duplicate = event(current.aggregateId, aggregateVersion = 3, externalOrderId = "DUPLICATE")

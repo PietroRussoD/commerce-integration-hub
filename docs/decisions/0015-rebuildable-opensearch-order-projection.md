@@ -56,7 +56,9 @@ The Core gains an external OpenSearch dependency, a dedicated consumer group,
 version-aware index lifecycle, and read-only search. Search is eventually
 consistent and must not imply read-your-writes behavior. Bounded outcome
 metrics record successful, stale/duplicate, invalid, and failed projection
-attempts. Reconciliation, reindexing, and projection status remain future work.
+attempts. A read-only status API reports whether the projection consumer is
+enabled and whether the read alias is available. Reconciliation, reindexing,
+and durable projection-lag state remain future work.
 
 ## Follow-up
 

@@ -4,6 +4,7 @@ import dev.pietrorussod.integrationhub.api.problem.PROBLEM_JSON
 import dev.pietrorussod.integrationhub.api.problem.ProblemDetails
 import dev.pietrorussod.integrationhub.api.problem.ProblemFieldError
 import dev.pietrorussod.integrationhub.api.problem.toResponse
+import dev.pietrorussod.integrationhub.application.search.GetOrderSearchProjectionStatusUseCase
 import dev.pietrorussod.integrationhub.application.search.SearchOrdersQuery
 import dev.pietrorussod.integrationhub.application.search.SearchOrdersUseCase
 import dev.pietrorussod.integrationhub.domain.order.Currency
@@ -30,7 +31,18 @@ import java.time.Instant
 @Produces(MediaType.APPLICATION_JSON)
 class OperatorOrderSearchResource(
     private val searchOrdersUseCase: SearchOrdersUseCase,
+    private val getOrderSearchProjectionStatusUseCase: GetOrderSearchProjectionStatusUseCase,
 ) {
+    @GET
+    @Path("/status")
+    @Operation(operationId = "getOrderSearchProjectionStatus", summary = "Get order search projection availability")
+    @APIResponse(
+        responseCode = "200",
+        description = "Order search projection status returned",
+        content = [Content(schema = Schema(implementation = OperatorOrderSearchProjectionStatusResponse::class))],
+    )
+    fun status(): Response = Response.ok(getOrderSearchProjectionStatusUseCase.get().toResponse()).build()
+
     @GET
     @Operation(operationId = "searchOperatorOrders", summary = "Search projected orders for operator inspection")
     @APIResponses(
