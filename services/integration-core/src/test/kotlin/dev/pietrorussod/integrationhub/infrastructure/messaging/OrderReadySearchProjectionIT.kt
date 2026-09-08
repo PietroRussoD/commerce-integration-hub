@@ -3,6 +3,12 @@ package dev.pietrorussod.integrationhub.infrastructure.messaging
 import com.fasterxml.jackson.databind.ObjectMapper
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjection
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionWriteOutcome
+import dev.pietrorussod.integrationhub.application.search.OrderSearchRepository
+import dev.pietrorussod.integrationhub.application.search.SearchOrdersQuery
+import dev.pietrorussod.integrationhub.domain.order.Currency
+import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
+import dev.pietrorussod.integrationhub.domain.order.OrderStatus
+import dev.pietrorussod.integrationhub.domain.order.SourceSystem
 import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchOrderIndexBootstrap
 import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchOrderIndexBootstrapOutcome
 import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchOrderIndexDefinition
@@ -53,6 +59,9 @@ class OrderReadySearchProjectionIT {
 
     @Inject
     lateinit var projection: OrderSearchProjection
+
+    @Inject
+    lateinit var orderSearchRepository: OrderSearchRepository
 
     @ConfigProperty(name = "kafka.bootstrap.servers")
     lateinit var bootstrapServers: String
@@ -112,6 +121,40 @@ class OrderReadySearchProjectionIT {
         assertEquals("order-1001", stored.getString("externalOrderId"))
         assertEquals("READY", stored.getString("status"))
         assertEquals("SKU-1", stored.getJsonArray("itemSkus").getString(0))
+    }
+
+    @Test
+    fun `searches projected orders through the read alias`() {
+        val event = event(externalOrderId = "SEARCH-1001")
+        assertEquals(OrderSearchProjectionWriteOutcome.APPLIED, projection.upsert(messageMapper.map(event)))
+        openSearchClient.indices().refresh { request -> request.index(OpenSearchOrderIndexDefinition.READ_ALIAS) }
+
+        val page =
+            orderSearchRepository.search(
+                SearchOrdersQuery(
+                    text = "test item",
+                    sourceSystem = SourceSystem.from("marketplace-a"),
+                    externalOrderId = ExternalOrderId.from("SEARCH-1001"),
+                    status = OrderStatus.READY,
+                    currency = Currency.EUR,
+                    sku = "SKU-1",
+                    receivedAtFrom = Instant.parse("2026-09-07T08:00:00Z"),
+                    receivedAtBefore = Instant.parse("2026-09-08T08:00:00Z"),
+                    limit = 20,
+                    offset = 0,
+                ),
+            )
+
+        assertEquals(1, page.total)
+        assertEquals(event.aggregateId, page.items.single().orderId)
+        assertEquals(
+            "SEARCH-1001",
+            page.items
+                .single()
+                .externalOrderId.value,
+        )
+        assertEquals(listOf("SKU-1"), page.items.single().itemSkus)
+        assertEquals(listOf("Test item"), page.items.single().itemDescriptions)
     }
 
     @Test
