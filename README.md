@@ -187,6 +187,19 @@ Then follow the [local demo](services/integration-core/README.md#local-demo) to
 provision a source credential and exercise reliable order ingestion. The
 credentials in `compose.yaml` are deliberately restricted to local development.
 
+Start the optional OpenSearch projection and its bounded reconciliation job
+with:
+
+```bash
+ORDER_SEARCH_PROJECTION_ENABLED=true ORDER_SEARCH_RECONCILIATION_ENABLED=true docker compose --profile search up --build --wait
+```
+
+The base Compose stack does not start OpenSearch, and both runtime paths remain
+disabled by default. The profile creates `orders-read` on the first projected
+order; reconciliation then pages through authoritative READY orders every 30
+seconds. Inspect its live availability and latest completed checkpoint at
+`GET /api/v1/operator/orders/search/status`.
+
 Run the containerized Connector Gateway, its dedicated PostgreSQL database,
 and its one-shot migration job with:
 

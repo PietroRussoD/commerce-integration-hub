@@ -36,8 +36,10 @@ mistaken for available behavior.
 - PostgreSQL is the only authoritative store. The OpenSearch order projection,
   read-only operator search API, availability status API, and bounded
   PostgreSQL-backed reconciliation are implemented. Reconciliation has a
-  durable checkpoint and lease, but is disabled by default. Full reindexing and
-  persisted projection-lag metrics are not implemented.
+  durable checkpoint and lease, but is disabled by default. The local Compose
+  path enables it only through explicit environment variables together with the
+  `search` profile. Full reindexing and persisted projection-lag metrics are
+  not implemented.
 - The transactional outbox is persisted atomically with each new order, and the
   scheduled claim-publish-transition and expired-claim recovery cycles are
   implemented. Invalid or retry-exhausted `OrderReceived.v1` deliveries are
