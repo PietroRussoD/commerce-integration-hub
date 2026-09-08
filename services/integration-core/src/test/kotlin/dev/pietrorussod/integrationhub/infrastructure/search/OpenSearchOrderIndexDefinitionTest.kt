@@ -53,4 +53,10 @@ class OpenSearchOrderIndexDefinitionTest {
             OpenSearchOrderIndexDefinition.createCandidateRequest(OpenSearchOrderIndexDefinition.INDEX_NAME)
         }
     }
+
+    @Test
+    fun `increments the versioned index name`() {
+        assertEquals("orders-v2", OpenSearchOrderIndexDefinition.nextVersionedOrderIndex("orders-v1"))
+        assertEquals("orders-v11", OpenSearchOrderIndexDefinition.nextVersionedOrderIndex("orders-v10"))
+    }
 }

@@ -32,4 +32,12 @@ class OpenSearchOrderIndexLifecycleTest {
         }
         assertFalse(OpenSearchOrderIndexDefinition.isVersionedOrderIndex("orders-next"))
     }
+
+    @Test
+    fun `plans the first available candidate index after the active version`() {
+        assertEquals(
+            "orders-v3",
+            OpenSearchOrderIndexLifecycle.nextAvailableCandidate("orders-v1") { index -> index == "orders-v2" },
+        )
+    }
 }
