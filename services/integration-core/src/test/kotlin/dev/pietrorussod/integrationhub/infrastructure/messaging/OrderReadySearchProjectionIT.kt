@@ -18,6 +18,7 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.QuarkusTestProfile
 import io.quarkus.test.junit.TestProfile
+import io.restassured.RestAssured.given
 import jakarta.inject.Inject
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -28,6 +29,7 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.eclipse.microprofile.config.inject.ConfigProperty
+import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -155,6 +157,46 @@ class OrderReadySearchProjectionIT {
         )
         assertEquals(listOf("SKU-1"), page.items.single().itemSkus)
         assertEquals(listOf("Test item"), page.items.single().itemDescriptions)
+    }
+
+    @Test
+    fun `exposes projected order search through the operator API`() {
+        val event = event(externalOrderId = "HTTP-1001")
+        assertEquals(OrderSearchProjectionWriteOutcome.APPLIED, projection.upsert(messageMapper.map(event)))
+        openSearchClient.indices().refresh { request -> request.index(OpenSearchOrderIndexDefinition.READ_ALIAS) }
+
+        given()
+            .queryParam("q", "test item")
+            .queryParam("sourceSystem", "marketplace-a")
+            .queryParam("externalOrderId", "HTTP-1001")
+            .queryParam("status", "ready")
+            .queryParam("currency", "eur")
+            .queryParam("sku", "SKU-1")
+            .queryParam("receivedAtFrom", "2026-09-07T08:00:00Z")
+            .queryParam("receivedAtBefore", "2026-09-08T08:00:00Z")
+            .`when`()
+            .get("/api/v1/operator/orders/search")
+            .then()
+            .statusCode(200)
+            .body("items.size()", equalTo(1))
+            .body("items[0].id", equalTo(event.aggregateId.toString()))
+            .body("items[0].aggregateVersion", equalTo(3))
+            .body("items[0].externalOrderId", equalTo("HTTP-1001"))
+            .body("items[0].itemSkus", equalTo(listOf("SKU-1")))
+            .body("total", equalTo(1))
+    }
+
+    @Test
+    fun `rejects invalid operator search parameters`() {
+        given()
+            .queryParam("sku", " ")
+            .`when`()
+            .get("/api/v1/operator/orders/search")
+            .then()
+            .statusCode(400)
+            .contentType("application/problem+json")
+            .body("code", equalTo("INVALID_OPERATOR_ORDER_SEARCH_QUERY"))
+            .body("errors[0].field", equalTo("sku"))
     }
 
     @Test

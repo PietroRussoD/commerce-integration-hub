@@ -22,6 +22,27 @@ data class OperatorOrderSummaryResponse(
     val processingAttempts: Int,
 )
 
+data class OperatorOrderSearchResponse(
+    val items: List<OperatorOrderSearchHitResponse>,
+    val limit: Int,
+    val offset: Int,
+    val total: Long,
+)
+
+data class OperatorOrderSearchHitResponse(
+    val id: UUID,
+    val aggregateVersion: Long,
+    val sourceSystem: String,
+    val externalOrderId: String,
+    val status: String,
+    val currency: String,
+    val totalAmount: String,
+    val receivedAt: Instant,
+    val readyAt: Instant,
+    val itemSkus: List<String>,
+    val itemDescriptions: List<String>,
+)
+
 data class OperatorOrderDetailResponse(
     val id: UUID,
     val sourceSystem: String,

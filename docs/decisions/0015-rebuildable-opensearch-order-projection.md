@@ -7,7 +7,7 @@
 
 Operators need flexible search without making the authoritative PostgreSQL
 schema, its query shapes, or its availability the read-path contract. The
-existing Integration Core already publishes `OrderReady.v1` through the
+existing Integration Core already publishes `OrderReady.v2` through the
 transactional outbox to Kafka. A projection must tolerate duplicate delivery,
 restarts, and OpenSearch outages without changing completed order processing.
 
@@ -20,7 +20,7 @@ Keep PostgreSQL as the authoritative order store. Add an OpenSearch read model
 inside the Integration Core's infrastructure boundary, behind application ports
 for projection writes, search reads, reconciliation, and reindexing.
 
-A dedicated Kafka consumer group consumes `OrderReady.v1`. Its document ID is
+A dedicated Kafka consumer group consumes `OrderReady.v2`. Its document ID is
 the canonical `orderId`, so repeated delivery updates the same document rather
 than creating duplicates. Projection failure is isolated from the completed
 order transaction and follows the consumer's bounded retry and failure policy.
@@ -31,9 +31,8 @@ authoritative PostgreSQL data, validates it, and switches the read alias only
 after successful completion. OpenSearch can therefore be deleted and rebuilt.
 
 Event schema version and aggregate version remain separate concepts. The
-current `OrderReady.v1` event is sufficient for the present one-way
-`RECEIVED` to `READY` lifecycle, but the projection must not claim stale-event
-ordering until an explicit aggregate-version decision is implemented.
+projection stores the aggregate version and atomically ignores equal or older
+events, preventing duplicate and stale deliveries from overwriting newer state.
 
 ## Alternatives
 
@@ -54,14 +53,11 @@ ordering until an explicit aggregate-version decision is implemented.
 ## Consequences
 
 The Core gains an external OpenSearch dependency, a dedicated consumer group,
-index lifecycle, projection metrics, and reconciliation/reindex operations.
-Search is eventually consistent and must expose projection state or lag rather
-than implying read-your-writes behavior. Future order state transitions require
-an explicit aggregate version before stale-event rejection can be guaranteed.
+version-aware index lifecycle, and read-only search. Search is eventually
+consistent and must not imply read-your-writes behavior. Reconciliation,
+reindexing, projection status, and projection metrics remain future work.
 
 ## Follow-up
 
 [ADR 0016](0016-version-order-state-and-evolve-ready-event.md) supplies the
-explicit aggregate version this decision requires and moves the projection
-source to `OrderReady.v2`. The consumer described above must read the versioned
-event rather than `OrderReady.v1`.
+aggregate-version contract and moves the projection source to `OrderReady.v2`.

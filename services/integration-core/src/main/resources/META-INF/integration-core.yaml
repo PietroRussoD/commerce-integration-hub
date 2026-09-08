@@ -98,6 +98,69 @@ components:
         total:
           type: integer
           format: int64
+    OperatorOrderSearchHitResponse:
+      type: object
+      required:
+      - id
+      - aggregateVersion
+      - sourceSystem
+      - externalOrderId
+      - status
+      - currency
+      - totalAmount
+      - receivedAt
+      - readyAt
+      - itemSkus
+      - itemDescriptions
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        aggregateVersion:
+          type: integer
+          format: int64
+        sourceSystem:
+          type: string
+        externalOrderId:
+          type: string
+        status:
+          type: string
+        currency:
+          type: string
+        totalAmount:
+          type: string
+        receivedAt:
+          $ref: "#/components/schemas/Instant"
+        readyAt:
+          $ref: "#/components/schemas/Instant"
+        itemSkus:
+          type: array
+          items:
+            type: string
+        itemDescriptions:
+          type: array
+          items:
+            type: string
+    OperatorOrderSearchResponse:
+      type: object
+      required:
+      - items
+      - limit
+      - offset
+      - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperatorOrderSearchHitResponse"
+        limit:
+          type: integer
+          format: int32
+        offset:
+          type: integer
+          format: int32
+        total:
+          type: integer
+          format: int64
     OperatorOrderSummaryResponse:
       type: object
       required:
@@ -422,6 +485,104 @@ paths:
                 $ref: "#/components/schemas/ProblemDetails"
       tags:
       - Operator Order Resource
+  /api/v1/operator/orders/search:
+    get:
+      summary: Search projected orders for operator inspection
+      operationId: searchOperatorOrders
+      parameters:
+      - description: Exact ISO 4217 currency code
+        name: currency
+        in: query
+        schema:
+          type:
+          - string
+          - "null"
+        required: true
+      - description: Exact external order ID
+        name: externalOrderId
+        in: query
+        schema:
+          type:
+          - string
+          - "null"
+        required: true
+      - description: Maximum number of items to return
+        schema:
+          type: integer
+          default: 25
+        name: limit
+        in: query
+        required: true
+      - description: Number of items to skip
+        schema:
+          type: integer
+          default: 0
+        name: offset
+        in: query
+        required: true
+      - description: Free text matched against item descriptions
+        name: q
+        in: query
+        schema:
+          type:
+          - string
+          - "null"
+        required: true
+      - description: Exclusive ISO-8601 receipt timestamp
+        name: receivedAtBefore
+        in: query
+        schema:
+          type:
+          - string
+          - "null"
+        required: true
+      - description: Inclusive ISO-8601 receipt timestamp
+        name: receivedAtFrom
+        in: query
+        schema:
+          type:
+          - string
+          - "null"
+        required: true
+      - description: Exact item SKU
+        name: sku
+        in: query
+        schema:
+          type:
+          - string
+          - "null"
+        required: true
+      - description: Exact source system
+        name: sourceSystem
+        in: query
+        schema:
+          type:
+          - string
+          - "null"
+        required: true
+      - description: Exact order status
+        name: status
+        in: query
+        schema:
+          type:
+          - string
+          - "null"
+        required: true
+      responses:
+        "200":
+          description: Projected orders searched
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorOrderSearchResponse"
+        "400":
+          description: Invalid operator order search query
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+      tags:
+      - Operator Order Search Resource
   /api/v1/operator/orders/{orderId}:
     get:
       summary: Get an order for operator inspection
