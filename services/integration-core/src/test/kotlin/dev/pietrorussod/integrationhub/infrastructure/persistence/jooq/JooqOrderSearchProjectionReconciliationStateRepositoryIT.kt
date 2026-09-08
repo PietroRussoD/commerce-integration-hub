@@ -52,8 +52,10 @@ class JooqOrderSearchProjectionReconciliationStateRepositoryIT {
             )
 
         assertEquals(initialState(), repository.current())
-        assertTrue(repository.advance(expectedVersion = 0, cursor = cursor, batch = batch))
-        assertFalse(repository.advance(expectedVersion = 0, cursor = cursor, batch = batch))
+        val leaseToken = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6fb000")
+        repository.tryAcquireLease("instance-a", leaseToken, Instant.EPOCH, Instant.EPOCH.plusSeconds(30))
+        assertTrue(repository.advance(expectedVersion = 0, leaseToken = leaseToken, cursor = cursor, batch = batch))
+        assertFalse(repository.advance(expectedVersion = 0, leaseToken = leaseToken, cursor = cursor, batch = batch))
 
         val advanced = repository.current()
         assertEquals(1, advanced.version)
@@ -62,8 +64,8 @@ class JooqOrderSearchProjectionReconciliationStateRepositoryIT {
         assertEquals(null, advanced.lastCompletedRun)
 
         val completedAt = Instant.parse("2026-09-08T08:05:00Z")
-        assertTrue(repository.complete(expectedVersion = advanced.version, completedAt = completedAt))
-        assertFalse(repository.complete(expectedVersion = advanced.version, completedAt = completedAt))
+        assertTrue(repository.complete(expectedVersion = advanced.version, leaseToken = leaseToken, completedAt = completedAt))
+        assertFalse(repository.complete(expectedVersion = advanced.version, leaseToken = leaseToken, completedAt = completedAt))
 
         assertEquals(
             OrderSearchProjectionReconciliationState(

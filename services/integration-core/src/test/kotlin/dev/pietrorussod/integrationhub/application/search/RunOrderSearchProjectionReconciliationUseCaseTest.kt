@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.UUID
@@ -21,7 +22,7 @@ class RunOrderSearchProjectionReconciliationUseCaseTest {
         val stateRepository = RecordingStateRepository(state)
         val useCase = useCase(stateRepository, listOf(document))
 
-        val result = useCase.run(batchSize = 25)
+        val result = useCase.run(owner = "instance-a", leaseDuration = Duration.ofSeconds(30), batchSize = 25)
 
         assertEquals(
             OrderSearchProjectionReconciliationRunResult.Advanced(
@@ -39,7 +40,7 @@ class RunOrderSearchProjectionReconciliationUseCaseTest {
         val stateRepository = RecordingStateRepository(state(version = 5))
         val useCase = useCase(stateRepository, emptyList())
 
-        val result = useCase.run(batchSize = 25)
+        val result = useCase.run(owner = "instance-a", leaseDuration = Duration.ofSeconds(30), batchSize = 25)
 
         assertEquals(OrderSearchProjectionReconciliationRunResult.Completed, result)
         assertEquals(5, stateRepository.completedExpectedVersion)
@@ -51,7 +52,11 @@ class RunOrderSearchProjectionReconciliationUseCaseTest {
         val document = document("018f38c2-1b95-7cc4-bb89-72d26a6fc002")
         val stateRepository = RecordingStateRepository(state(version = 6), advanceResult = false)
 
-        val result = useCase(stateRepository, listOf(document)).run(batchSize = 25)
+        val result =
+            useCase(
+                stateRepository,
+                listOf(document),
+            ).run(owner = "instance-a", leaseDuration = Duration.ofSeconds(30), batchSize = 25)
 
         assertEquals(OrderSearchProjectionReconciliationRunResult.StateChanged, result)
     }
@@ -133,12 +138,13 @@ class RunOrderSearchProjectionReconciliationUseCaseTest {
             token: UUID,
             acquiredAt: Instant,
             expiresAt: Instant,
-        ): OrderSearchProjectionReconciliationState? = error("Not used")
+        ): OrderSearchProjectionReconciliationState? = state.copy(lease = OrderSearchProjectionReconciliationLease(owner, token, expiresAt))
 
-        override fun releaseLease(token: UUID): Boolean = error("Not used")
+        override fun releaseLease(token: UUID): Boolean = true
 
         override fun advance(
             expectedVersion: Long,
+            leaseToken: UUID,
             cursor: ReadyOrderSearchDocumentCursor,
             batch: OrderSearchProjectionReconciliationBatchResult,
         ): Boolean {
@@ -149,6 +155,7 @@ class RunOrderSearchProjectionReconciliationUseCaseTest {
 
         override fun complete(
             expectedVersion: Long,
+            leaseToken: UUID,
             completedAt: Instant,
         ): Boolean {
             completedExpectedVersion = expectedVersion

@@ -65,6 +65,7 @@ class JooqOrderSearchProjectionReconciliationStateRepository
 
         override fun advance(
             expectedVersion: Long,
+            leaseToken: UUID,
             cursor: ReadyOrderSearchDocumentCursor,
             batch: OrderSearchProjectionReconciliationBatchResult,
         ): Boolean {
@@ -91,11 +92,13 @@ class JooqOrderSearchProjectionReconciliationStateRepository
                     ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.VERSION.plus(1L),
                 ).where(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.PROJECTION_NAME.eq(PROJECTION_NAME))
                 .and(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.VERSION.eq(expectedVersion))
+                .and(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.LEASE_TOKEN.eq(leaseToken))
                 .execute() == 1
         }
 
         override fun complete(
             expectedVersion: Long,
+            leaseToken: UUID,
             completedAt: Instant,
         ): Boolean =
             dslContext
@@ -120,6 +123,7 @@ class JooqOrderSearchProjectionReconciliationStateRepository
                     ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.VERSION.plus(1L),
                 ).where(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.PROJECTION_NAME.eq(PROJECTION_NAME))
                 .and(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.VERSION.eq(expectedVersion))
+                .and(ORDER_SEARCH_PROJECTION_RECONCILIATION_STATE.LEASE_TOKEN.eq(leaseToken))
                 .execute() == 1
 
         private fun org.jooq.Record.toState(): OrderSearchProjectionReconciliationState {

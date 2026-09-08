@@ -16,12 +16,14 @@ interface OrderSearchProjectionReconciliationStateRepository {
 
     fun advance(
         expectedVersion: Long,
+        leaseToken: java.util.UUID,
         cursor: ReadyOrderSearchDocumentCursor,
         batch: OrderSearchProjectionReconciliationBatchResult,
     ): Boolean
 
     fun complete(
         expectedVersion: Long,
+        leaseToken: java.util.UUID,
         completedAt: Instant,
     ): Boolean
 }
