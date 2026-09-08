@@ -6,6 +6,8 @@ import dev.pietrorussod.integrationhub.application.operator.OperatorOrderPage
 import dev.pietrorussod.integrationhub.application.operator.OperatorOrderSummary
 import dev.pietrorussod.integrationhub.application.operator.OperatorOrderTimelineEntry
 import dev.pietrorussod.integrationhub.application.operator.OperatorProcessingAttempt
+import dev.pietrorussod.integrationhub.application.search.OrderSearchHit
+import dev.pietrorussod.integrationhub.application.search.OrderSearchPage
 
 fun OperatorOrderPage.toResponse(): OperatorOrderListResponse =
     OperatorOrderListResponse(
@@ -40,6 +42,29 @@ fun OperatorOrderDetail.toResponse(): OperatorOrderDetailResponse =
         items = items.map { it.toResponse() },
         timeline = timeline.map { it.toResponse() },
         processingAttempts = processingAttempts.map { it.toResponse() },
+    )
+
+fun OrderSearchPage.toResponse(): OperatorOrderSearchResponse =
+    OperatorOrderSearchResponse(
+        items = items.map { it.toResponse() },
+        limit = limit,
+        offset = offset,
+        total = total,
+    )
+
+private fun OrderSearchHit.toResponse(): OperatorOrderSearchHitResponse =
+    OperatorOrderSearchHitResponse(
+        id = orderId,
+        aggregateVersion = aggregateVersion,
+        sourceSystem = sourceSystem.value,
+        externalOrderId = externalOrderId.value,
+        status = status.name,
+        currency = currency.name,
+        totalAmount = totalAmount.toPlainString(),
+        receivedAt = receivedAt,
+        readyAt = readyAt,
+        itemSkus = itemSkus,
+        itemDescriptions = itemDescriptions,
     )
 
 private fun OperatorOrderItem.toResponse(): OperatorOrderItemResponse =
