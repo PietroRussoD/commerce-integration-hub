@@ -2,6 +2,7 @@ package dev.pietrorussod.integrationhub.infrastructure.search
 
 import dev.pietrorussod.integrationhub.application.search.OrderSearchDocument
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionWriteOutcome
+import dev.pietrorussod.integrationhub.application.search.OrderSearchReindexDocumentWriter
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.opensearch.client.json.JsonData
@@ -14,7 +15,12 @@ class OpenSearchOrderSearchDocumentWriter
     @Inject
     constructor(
         private val client: OpenSearchClient,
-    ) {
+    ) : OrderSearchReindexDocumentWriter {
+        override fun upsert(
+            document: OrderSearchDocument,
+            candidateIndex: String,
+        ): OrderSearchProjectionWriteOutcome = upsert(document, OpenSearchOrderSearchWriteTarget.candidateIndex(candidateIndex))
+
         fun upsert(
             document: OrderSearchDocument,
             target: OpenSearchOrderSearchWriteTarget,
