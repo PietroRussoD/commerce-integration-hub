@@ -1,6 +1,7 @@
 package dev.pietrorussod.integrationhub.infrastructure.messaging
 
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjection
+import dev.pietrorussod.integrationhub.infrastructure.observability.OrderSearchProjectionMetrics
 import io.smallrye.reactive.messaging.annotations.Blocking
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
@@ -15,6 +16,7 @@ class OrderReadySearchProjectionKafkaConsumer
     constructor(
         private val messageMapper: OrderReadyMessageMapper,
         private val projection: OrderSearchProjection,
+        private val metrics: OrderSearchProjectionMetrics,
     ) {
         @Incoming(CHANNEL_NAME)
         @Acknowledgment(Acknowledgment.Strategy.POST_PROCESSING)
@@ -29,7 +31,15 @@ class OrderReadySearchProjectionKafkaConsumer
             abortOn = [InvalidOrderReadyEventException::class],
         )
         fun consume(event: StructuredEvent) {
-            projection.upsert(messageMapper.map(event))
+            try {
+                metrics.recordProjection(projection.upsert(messageMapper.map(event)))
+            } catch (exception: InvalidOrderReadyEventException) {
+                metrics.recordInvalidEvent()
+                throw exception
+            } catch (exception: Exception) {
+                metrics.recordFailedAttempt()
+                throw exception
+            }
         }
 
         private companion object {

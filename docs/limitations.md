@@ -58,7 +58,7 @@ mistaken for available behavior.
   demonstrations, not production operation, auditing, or distributed tracing.
 - Liveness and PostgreSQL readiness checks, structured logs, correlation IDs,
   Prometheus runtime metrics,
-  bounded outbox and Gateway-worker outcome metrics, and database-backed
+  bounded outbox, order-search-projection, and Gateway-worker outcome metrics, and database-backed
   eligible-delivery backlog, connector-state, and polling-checkpoint gauges are
   available. A version-controlled Prometheus and Grafana profile provides a
   local operations dashboard.

@@ -54,8 +54,9 @@ events, preventing duplicate and stale deliveries from overwriting newer state.
 
 The Core gains an external OpenSearch dependency, a dedicated consumer group,
 version-aware index lifecycle, and read-only search. Search is eventually
-consistent and must not imply read-your-writes behavior. Reconciliation,
-reindexing, projection status, and projection metrics remain future work.
+consistent and must not imply read-your-writes behavior. Bounded outcome
+metrics record successful, stale/duplicate, invalid, and failed projection
+attempts. Reconciliation, reindexing, and projection status remain future work.
 
 ## Follow-up
 

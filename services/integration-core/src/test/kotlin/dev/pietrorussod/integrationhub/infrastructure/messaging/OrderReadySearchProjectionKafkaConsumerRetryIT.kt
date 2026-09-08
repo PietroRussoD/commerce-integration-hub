@@ -8,6 +8,7 @@ import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionW
 import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.OrderStatus
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
+import dev.pietrorussod.integrationhub.infrastructure.observability.OrderSearchProjectionMetrics
 import io.quarkus.test.InjectMock
 import io.quarkus.test.junit.QuarkusTest
 import jakarta.inject.Inject
@@ -30,6 +31,9 @@ class OrderReadySearchProjectionKafkaConsumerRetryIT {
     @InjectMock
     lateinit var projection: OrderSearchProjection
 
+    @InjectMock
+    lateinit var metrics: OrderSearchProjectionMetrics
+
     @Test
     fun `retries transient projection failures and eventually succeeds`() {
         val event = event()
@@ -49,6 +53,8 @@ class OrderReadySearchProjectionKafkaConsumerRetryIT {
         consumer.consume(event)
 
         assertEquals(3, invocationCount)
+        Mockito.verify(metrics).recordProjection(OrderSearchProjectionWriteOutcome.APPLIED)
+        Mockito.verify(metrics, Mockito.times(2)).recordFailedAttempt()
     }
 
     @Test
@@ -64,6 +70,7 @@ class OrderReadySearchProjectionKafkaConsumerRetryIT {
         }
         Mockito.verify(messageMapper, Mockito.times(1)).map(event)
         Mockito.verifyNoInteractions(projection)
+        Mockito.verify(metrics).recordInvalidEvent()
     }
 
     private fun event(): StructuredEvent {
