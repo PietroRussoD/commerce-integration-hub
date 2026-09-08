@@ -15,7 +15,7 @@ object OpenSearchOrderIndexDefinition {
         )
 
     fun createCandidateRequest(indexName: String): CreateIndexRequest {
-        require(indexName.matches(VERSIONED_INDEX_NAME)) {
+        require(isVersionedOrderIndex(indexName)) {
             "Order search candidate index must use the orders-vN naming convention"
         }
         require(indexName != INDEX_NAME) {
@@ -27,6 +27,8 @@ object OpenSearchOrderIndexDefinition {
             attachReadAlias = false,
         )
     }
+
+    fun isVersionedOrderIndex(indexName: String): Boolean = indexName.matches(VERSIONED_INDEX_NAME)
 
     private fun createRequest(
         indexName: String,
