@@ -28,6 +28,14 @@ class OpenSearchOrderSearchWriteTargetProviderTest {
     }
 
     @Test
+    fun `writes only through the stable alias while the candidate is being prepared`() {
+        assertEquals(
+            listOf(OpenSearchOrderSearchWriteTarget.activeReadAlias()),
+            OpenSearchOrderSearchWriteTargetProvider.buildTargets(state(OrderSearchReindexPhase.PREPARING)),
+        )
+    }
+
+    @Test
     fun `treats a dual write as applied when either target advances`() {
         assertEquals(
             OrderSearchProjectionWriteOutcome.APPLIED,

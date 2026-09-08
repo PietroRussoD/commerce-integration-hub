@@ -29,6 +29,11 @@ interface OrderSearchReindexStateRepository {
         progress: OrderSearchReindexProgress,
     ): Boolean
 
+    fun markRebuilding(
+        expectedVersion: Long,
+        leaseToken: UUID,
+    ): Boolean
+
     fun markReadyForCutover(
         expectedVersion: Long,
         leaseToken: UUID,
@@ -73,6 +78,7 @@ data class OrderSearchReindexState(
 
 enum class OrderSearchReindexPhase {
     IDLE,
+    PREPARING,
     REBUILDING,
     READY_FOR_CUTOVER,
 }
