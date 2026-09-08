@@ -15,6 +15,13 @@ interface OrderSearchReindexStateRepository {
         expiresAt: Instant,
     ): OrderSearchReindexState?
 
+    fun tryAcquireLease(
+        owner: String,
+        token: UUID,
+        acquiredAt: Instant,
+        expiresAt: Instant,
+    ): OrderSearchReindexState?
+
     fun advance(
         expectedVersion: Long,
         leaseToken: UUID,
