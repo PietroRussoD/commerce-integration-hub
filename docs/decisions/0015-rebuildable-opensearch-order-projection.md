@@ -72,3 +72,5 @@ projection-lag metrics remain future work.
 
 [ADR 0016](0016-version-order-state-and-evolve-ready-event.md) supplies the
 aggregate-version contract and moves the projection source to `OrderReady.v2`.
+[ADR 0018](0018-safe-opensearch-reindex-cutover.md) defines the safe rebuild
+and alias-cutover protocol for the future reindex operation.

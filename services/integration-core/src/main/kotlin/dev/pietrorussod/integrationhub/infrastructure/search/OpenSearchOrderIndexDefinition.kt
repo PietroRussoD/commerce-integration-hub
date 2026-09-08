@@ -9,15 +9,41 @@ object OpenSearchOrderIndexDefinition {
     const val READ_ALIAS = "orders-read"
 
     fun createRequest(): CreateIndexRequest =
+        createRequest(
+            indexName = INDEX_NAME,
+            attachReadAlias = true,
+        )
+
+    fun createCandidateRequest(indexName: String): CreateIndexRequest {
+        require(indexName.matches(VERSIONED_INDEX_NAME)) {
+            "Order search candidate index must use the orders-vN naming convention"
+        }
+        require(indexName != INDEX_NAME) {
+            "Order search candidate index must differ from the initial index"
+        }
+
+        return createRequest(
+            indexName = indexName,
+            attachReadAlias = false,
+        )
+    }
+
+    private fun createRequest(
+        indexName: String,
+        attachReadAlias: Boolean,
+    ): CreateIndexRequest =
         CreateIndexRequest
             .Builder()
-            .index(INDEX_NAME)
+            .index(indexName)
             .settings { settings ->
                 settings
                     .numberOfShards(1)
                     .numberOfReplicas(0)
-            }.aliases(READ_ALIAS) { alias -> alias.isWriteIndex(true) }
-            .mappings { mappings ->
+            }.apply {
+                if (attachReadAlias) {
+                    aliases(READ_ALIAS) { alias -> alias.isWriteIndex(true) }
+                }
+            }.mappings { mappings ->
                 mappings
                     .dynamic(DynamicMapping.Strict)
                     .properties("orderId", keywordProperty())
@@ -42,4 +68,6 @@ object OpenSearchOrderIndexDefinition {
     private fun dateProperty(): Property = Property.of { property -> property.date { date -> date } }
 
     private fun textProperty(): Property = Property.of { property -> property.text { text -> text } }
+
+    private val VERSIONED_INDEX_NAME = Regex("orders-v[1-9][0-9]*")
 }

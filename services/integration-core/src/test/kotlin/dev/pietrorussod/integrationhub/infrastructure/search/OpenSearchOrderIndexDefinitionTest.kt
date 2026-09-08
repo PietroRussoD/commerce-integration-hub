@@ -2,6 +2,7 @@ package dev.pietrorussod.integrationhub.infrastructure.search
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -32,5 +33,24 @@ class OpenSearchOrderIndexDefinitionTest {
         assertTrue(properties.getValue("itemSkus").isKeyword)
         assertTrue(properties.getValue("itemDescriptions").isText)
         assertFalse(properties.containsKey("items"))
+    }
+
+    @Test
+    fun `creates a versioned candidate without the read alias`() {
+        val request = OpenSearchOrderIndexDefinition.createCandidateRequest("orders-v2")
+
+        assertEquals("orders-v2", request.index())
+        assertFalse(request.aliases().containsKey(OpenSearchOrderIndexDefinition.READ_ALIAS))
+        assertEquals("strict", requireNotNull(requireNotNull(request.mappings()).dynamic()).jsonValue())
+    }
+
+    @Test
+    fun `rejects invalid candidate index names`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            OpenSearchOrderIndexDefinition.createCandidateRequest("orders-next")
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            OpenSearchOrderIndexDefinition.createCandidateRequest(OpenSearchOrderIndexDefinition.INDEX_NAME)
+        }
     }
 }
