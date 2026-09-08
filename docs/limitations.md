@@ -33,9 +33,10 @@ mistaken for available behavior.
   responses block an active connector only under its current unexpired fenced
   lease; later polling acquisition stops. The Compose provider is a deterministic
   local fixture rather than a production dependency.
-- PostgreSQL is the only authoritative store. The OpenSearch order projection
-  and read-only operator search API are implemented, but reconciliation,
-  full reindexing, and projection-status APIs are not.
+- PostgreSQL is the only authoritative store. The OpenSearch order projection,
+  read-only operator search API, and availability status API are implemented,
+  but reconciliation, full reindexing, and persisted projection lag/state are
+  not.
 - The transactional outbox is persisted atomically with each new order, and the
   scheduled claim-publish-transition and expired-claim recovery cycles are
   implemented. Invalid or retry-exhausted `OrderReceived.v1` deliveries are
