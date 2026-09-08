@@ -12,6 +12,7 @@ class OpenSearchOrderSearchProjection
     constructor(
         private val documentWriter: OpenSearchOrderSearchDocumentWriter,
         private val indexBootstrap: OpenSearchOrderIndexBootstrap,
+        private val writeTargetProvider: OpenSearchOrderSearchWriteTargetProvider,
     ) : OrderSearchProjection {
         @Volatile
         private var indexReady = false
@@ -20,7 +21,8 @@ class OpenSearchOrderSearchProjection
 
         override fun upsert(document: OrderSearchDocument): OrderSearchProjectionWriteOutcome {
             ensureIndexReady()
-            return documentWriter.upsert(document, OpenSearchOrderSearchWriteTarget.activeReadAlias())
+            val outcomes = writeTargetProvider.targets().map { target -> documentWriter.upsert(document, target) }
+            return outcomes.reduce(::combineOutcomes)
         }
 
         private fun ensureIndexReady() {
@@ -34,5 +36,20 @@ class OpenSearchOrderSearchProjection
                     indexReady = true
                 }
             }
+        }
+
+        companion object {
+            internal fun combineOutcomes(
+                first: OrderSearchProjectionWriteOutcome,
+                second: OrderSearchProjectionWriteOutcome,
+            ): OrderSearchProjectionWriteOutcome =
+                if (
+                    first == OrderSearchProjectionWriteOutcome.APPLIED ||
+                    second == OrderSearchProjectionWriteOutcome.APPLIED
+                ) {
+                    OrderSearchProjectionWriteOutcome.APPLIED
+                } else {
+                    OrderSearchProjectionWriteOutcome.IGNORED_NON_NEWER_VERSION
+                }
         }
     }
