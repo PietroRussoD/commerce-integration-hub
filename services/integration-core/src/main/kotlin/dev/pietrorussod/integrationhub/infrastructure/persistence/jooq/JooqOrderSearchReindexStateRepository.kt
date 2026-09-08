@@ -46,7 +46,7 @@ class JooqOrderSearchReindexStateRepository
                     .update(ORDER_SEARCH_REINDEX_STATE)
                     .set(ORDER_SEARCH_REINDEX_STATE.SOURCE_INDEX, sourceIndex)
                     .set(ORDER_SEARCH_REINDEX_STATE.CANDIDATE_INDEX, candidateIndex)
-                    .set(ORDER_SEARCH_REINDEX_STATE.PHASE, OrderSearchReindexPhase.REBUILDING.name)
+                    .set(ORDER_SEARCH_REINDEX_STATE.PHASE, OrderSearchReindexPhase.PREPARING.name)
                     .set(ORDER_SEARCH_REINDEX_STATE.LEASE_OWNER, owner)
                     .set(ORDER_SEARCH_REINDEX_STATE.LEASE_TOKEN, token)
                     .set(ORDER_SEARCH_REINDEX_STATE.LEASE_EXPIRES_AT, expiresAt.atOffset(ZoneOffset.UTC))
@@ -107,6 +107,20 @@ class JooqOrderSearchReindexStateRepository
                 .and(ORDER_SEARCH_REINDEX_STATE.LEASE_TOKEN.eq(leaseToken))
                 .execute() == 1
         }
+
+        override fun markRebuilding(
+            expectedVersion: Long,
+            leaseToken: UUID,
+        ): Boolean =
+            dslContext
+                .update(ORDER_SEARCH_REINDEX_STATE)
+                .set(ORDER_SEARCH_REINDEX_STATE.PHASE, OrderSearchReindexPhase.REBUILDING.name)
+                .set(ORDER_SEARCH_REINDEX_STATE.VERSION, ORDER_SEARCH_REINDEX_STATE.VERSION.plus(1L))
+                .where(ORDER_SEARCH_REINDEX_STATE.OPERATION_NAME.eq(OPERATION_NAME))
+                .and(ORDER_SEARCH_REINDEX_STATE.PHASE.eq(OrderSearchReindexPhase.PREPARING.name))
+                .and(ORDER_SEARCH_REINDEX_STATE.VERSION.eq(expectedVersion))
+                .and(ORDER_SEARCH_REINDEX_STATE.LEASE_TOKEN.eq(leaseToken))
+                .execute() == 1
 
         override fun markReadyForCutover(
             expectedVersion: Long,

@@ -51,7 +51,7 @@ class JooqOrderSearchReindexStateRepositoryIT {
             )
 
         assertEquals(1, started.version)
-        assertEquals(OrderSearchReindexPhase.REBUILDING, started.phase)
+        assertEquals(OrderSearchReindexPhase.PREPARING, started.phase)
         assertEquals("orders-v1", started.sourceIndex)
         assertEquals("orders-v2", started.candidateIndex)
 
@@ -60,9 +60,13 @@ class JooqOrderSearchReindexStateRepositoryIT {
                 receivedAt = Instant.parse("2026-09-08T08:01:00Z"),
                 orderId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6fb202"),
             )
+        assertTrue(repository.markRebuilding(started.version, leaseToken))
+        val rebuilding = repository.current()
+        assertEquals(OrderSearchReindexPhase.REBUILDING, rebuilding.phase)
+
         assertTrue(
             repository.advance(
-                expectedVersion = started.version,
+                expectedVersion = rebuilding.version,
                 leaseToken = leaseToken,
                 cursor = cursor,
                 progress = OrderSearchReindexProgress(4, 3, 1),
@@ -70,7 +74,7 @@ class JooqOrderSearchReindexStateRepositoryIT {
         )
         assertFalse(
             repository.advance(
-                expectedVersion = started.version,
+                expectedVersion = rebuilding.version,
                 leaseToken = leaseToken,
                 cursor = cursor,
                 progress = OrderSearchReindexProgress(4, 3, 1),
@@ -78,7 +82,7 @@ class JooqOrderSearchReindexStateRepositoryIT {
         )
 
         val rebuilt = repository.current()
-        assertEquals(2, rebuilt.version)
+        assertEquals(3, rebuilt.version)
         assertEquals(cursor, rebuilt.cursor)
         assertEquals(OrderSearchReindexProgress(4, 3, 1), rebuilt.progress)
         assertTrue(repository.markReadyForCutover(rebuilt.version, leaseToken))
@@ -88,7 +92,7 @@ class JooqOrderSearchReindexStateRepositoryIT {
         assertTrue(repository.completeCutover(ready.version, leaseToken))
 
         val completed = repository.current()
-        assertEquals(4, completed.version)
+        assertEquals(5, completed.version)
         assertEquals(OrderSearchReindexPhase.IDLE, completed.phase)
         assertNull(completed.sourceIndex)
         assertNull(completed.candidateIndex)
