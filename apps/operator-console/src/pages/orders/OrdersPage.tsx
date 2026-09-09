@@ -14,7 +14,7 @@ import { IconButton } from "../../components/ui/IconButton";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
-import { formatDateTime, formatLabel, formatMoney } from "./orderFormatters";
+import { formatDateTime, formatLabel, formatMoney, orderStatusLabelKeys } from "./orderFormatters";
 import { SearchProjectionStatus } from "./SearchProjectionStatus";
 import { ProjectedOrderSearch } from "./ProjectedOrderSearch";
 import { getSearchProjectionStatusRefetchInterval } from "./searchProjectionPolling";
@@ -23,9 +23,7 @@ const PAGE_SIZE = 25;
 const statusOptions = ["ALL", "RECEIVED", "PROCESSING", "READY"] as const;
 const statusLabelKeys = {
   ALL: "orders.filter.all",
-  RECEIVED: "orders.status.received",
-  PROCESSING: "orders.status.processing",
-  READY: "orders.status.ready",
+  ...orderStatusLabelKeys,
 } as const;
 
 type StatusFilter = "ALL" | NonNullable<ListOperatorOrdersParameters["status"]>;
@@ -172,9 +170,9 @@ function OrdersTable({ page }: { page: OperatorOrderPage }) {
               <td className="px-4 py-3.5 text-app-foreground-secondary">{formatLabel(order.sourceSystem)}</td>
               <td className="px-4 py-3.5">
                 <StatusBadge status={order.status}>
-                  {statusLabelKeys[order.status as keyof typeof statusLabelKeys] === undefined
+                  {orderStatusLabelKeys[order.status as keyof typeof orderStatusLabelKeys] === undefined
                     ? formatLabel(order.status)
-                    : t(statusLabelKeys[order.status as keyof typeof statusLabelKeys])}
+                    : t(orderStatusLabelKeys[order.status as keyof typeof orderStatusLabelKeys])}
                 </StatusBadge>
               </td>
               <td className="px-4 py-3.5 text-right font-medium tabular-nums">

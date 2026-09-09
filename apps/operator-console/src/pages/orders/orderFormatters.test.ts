@@ -1,6 +1,10 @@
 import { expect, test } from "vitest";
 
-import { formatDateTime, formatDuration, formatLabel, formatMoney } from "./orderFormatters";
+import { formatDateTime, formatDuration, formatLabel, formatMoney, orderStatusLabelKeys } from "./orderFormatters";
+
+test("maps known order states to shared translation keys", () => {
+  expect(orderStatusLabelKeys.READY).toBe("orders.status.ready");
+});
 
 test("formats enum-like values as readable labels", () => {
   expect(formatLabel("FAILED_RETRYABLE")).toBe("Failed Retryable");
