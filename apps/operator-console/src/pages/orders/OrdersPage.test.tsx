@@ -158,6 +158,24 @@ test("clears the active projected order search without another request", async (
   expect(searchOperatorOrdersMock).toHaveBeenCalledTimes(1);
 });
 
+test("searches projected orders by exact external order ID and SKU", async () => {
+  listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
+  searchOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
+  renderOrdersPage();
+
+  await waitFor(() => expect(screen.getByRole("searchbox", { name: "Search projected orders" })).toBeEnabled());
+  fireEvent.click(screen.getByRole("button", { name: "Toggle search filters" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "External order ID" }), { target: { value: " ORDER-42 " } });
+  fireEvent.change(screen.getByRole("textbox", { name: "SKU" }), { target: { value: " SKU-42 " } });
+  fireEvent.click(screen.getByRole("button", { name: "Search projected orders" }));
+
+  await waitFor(() => {
+    expect(searchOperatorOrdersMock).toHaveBeenCalledWith(
+      expect.objectContaining({ externalOrderId: "ORDER-42", sku: "SKU-42", limit: 25 }),
+    );
+  });
+});
+
 test("does not submit projected order searches while the projection is unavailable", async () => {
   getOperatorOrderSearchProjectionStatusMock.mockResolvedValue({
     consumerEnabled: false,

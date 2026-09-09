@@ -86,6 +86,11 @@
       "placeholder": "Search item descriptions",
       "submit": "Search projected orders",
       "clear": "Clear projected order search",
+      "filters": {
+        "toggle": "Toggle search filters",
+        "externalOrderId": "External order ID",
+        "sku": "SKU"
+      },
       "unavailable": "Projected order search is unavailable",
       "loading": "Searching projected orders",
       "error": "Unable to search projected orders",

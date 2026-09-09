@@ -86,6 +86,11 @@
       "placeholder": "Cerca nelle descrizioni degli articoli",
       "submit": "Cerca negli ordini indicizzati",
       "clear": "Cancella la ricerca negli ordini indicizzati",
+      "filters": {
+        "toggle": "Mostra o nascondi filtri di ricerca",
+        "externalOrderId": "ID ordine esterno",
+        "sku": "SKU"
+      },
       "unavailable": "La ricerca negli ordini indicizzati non è disponibile",
       "loading": "Ricerca negli ordini indicizzati",
       "error": "Impossibile cercare negli ordini indicizzati",
