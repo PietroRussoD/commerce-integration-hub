@@ -66,11 +66,12 @@ advancing the same checkpoint; a crashed owner can be replaced once its lease
 expires. Each scheduled tick processes at most one bounded page and is disabled
 by default. Prometheus records bounded run outcomes, document outcomes, and
 duration without order or worker identity labels. Full reindexing and persisted
-projection-lag metrics remain future work.
+projection-lag metrics are intentionally separate concerns. The implemented
+reindex protocol uses its own durable state and is described by ADR 0018.
 
 ## Follow-up
 
 [ADR 0016](0016-version-order-state-and-evolve-ready-event.md) supplies the
 aggregate-version contract and moves the projection source to `OrderReady.v2`.
-[ADR 0018](0018-safe-opensearch-reindex-cutover.md) defines the safe rebuild
-and alias-cutover protocol for the future reindex operation.
+[ADR 0018](0018-safe-opensearch-reindex-cutover.md) defines the implemented
+safe rebuild and alias-cutover protocol.
