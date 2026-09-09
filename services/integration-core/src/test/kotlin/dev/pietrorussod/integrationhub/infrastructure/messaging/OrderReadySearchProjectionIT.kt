@@ -100,7 +100,6 @@ class OrderReadySearchProjectionIT {
         val candidateIndex = "orders-v2"
         openSearchClient.indices().create(OpenSearchOrderIndexDefinition.createCandidateRequest(candidateIndex))
         documentWriter.upsert(messageMapper.map(event()), candidateIndex)
-        openSearchClient.indices().refresh { request -> request.index(candidateIndex) }
 
         assertEquals(1L, candidateDocumentCounter.countDocuments(candidateIndex))
     }

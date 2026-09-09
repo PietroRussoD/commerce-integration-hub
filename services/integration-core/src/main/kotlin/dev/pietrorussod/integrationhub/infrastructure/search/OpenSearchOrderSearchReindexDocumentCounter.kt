@@ -13,6 +13,7 @@ class OpenSearchOrderSearchReindexDocumentCounter
     ) : OrderSearchReindexDocumentCounter {
         override fun countDocuments(candidateIndex: String): Long {
             require(candidateIndex.isNotBlank()) { "Order search reindex candidate index must not be blank" }
+            client.indices().refresh { request -> request.index(candidateIndex) }
             return client.count { request -> request.index(candidateIndex) }.count()
         }
     }
