@@ -7,6 +7,7 @@ import dev.pietrorussod.integrationhub.application.search.RebuildOrderSearchInde
 import dev.pietrorussod.integrationhub.application.search.ReconcileOrderSearchProjectionUseCase
 import dev.pietrorussod.integrationhub.application.search.RunOrderSearchProjectionReconciliationUseCase
 import dev.pietrorussod.integrationhub.application.search.RunOrderSearchReindexUseCase
+import dev.pietrorussod.integrationhub.application.search.ValidateOrderSearchReindexUseCase
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.inject.Produces
 import java.time.Clock
@@ -18,11 +19,13 @@ class SearchApplicationConfiguration {
         reindexStateRepository: OrderSearchReindexStateRepository,
         indexManager: OrderSearchReindexIndexManager,
         rebuildOrderSearchIndex: RebuildOrderSearchIndexUseCase,
+        validateOrderSearchReindex: ValidateOrderSearchReindexUseCase,
     ): RunOrderSearchReindexUseCase =
         RunOrderSearchReindexUseCase(
             reindexStateRepository = reindexStateRepository,
             indexManager = indexManager,
             rebuildOrderSearchIndex = rebuildOrderSearchIndex,
+            validateOrderSearchReindex = validateOrderSearchReindex,
             clock = Clock.systemUTC(),
         )
 
