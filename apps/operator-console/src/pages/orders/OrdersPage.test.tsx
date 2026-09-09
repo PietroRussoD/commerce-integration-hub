@@ -131,6 +131,7 @@ test("searches projected orders only after an explicit submission", async () => 
   renderOrdersPage();
 
   expect(searchOperatorOrdersMock).not.toHaveBeenCalled();
+  await waitFor(() => expect(screen.getByRole("searchbox", { name: "Search projected orders" })).toBeEnabled());
   fireEvent.change(screen.getByRole("searchbox", { name: "Search projected orders" }), { target: { value: "blue" } });
   fireEvent.click(screen.getByRole("button", { name: "Search projected orders" }));
 
@@ -145,6 +146,7 @@ test("clears the active projected order search without another request", async (
   renderOrdersPage();
 
   const searchbox = screen.getByRole("searchbox", { name: "Search projected orders" });
+  await waitFor(() => expect(searchbox).toBeEnabled());
   fireEvent.change(searchbox, { target: { value: "blue" } });
   fireEvent.click(screen.getByRole("button", { name: "Search projected orders" }));
   expect(await screen.findByText("No projected orders found")).toBeInTheDocument();
@@ -154,6 +156,34 @@ test("clears the active projected order search without another request", async (
   expect(searchbox).toHaveValue("");
   expect(screen.queryByText("No projected orders found")).not.toBeInTheDocument();
   expect(searchOperatorOrdersMock).toHaveBeenCalledTimes(1);
+});
+
+test("does not submit projected order searches while the projection is unavailable", async () => {
+  getOperatorOrderSearchProjectionStatusMock.mockResolvedValue({
+    consumerEnabled: false,
+    readAlias: "orders-read",
+    availability: "UNAVAILABLE",
+    reconciliationInProgress: false,
+    lastReconciliationCompletedAt: null,
+    lastReconciliationScannedCount: null,
+    lastReconciliationAppliedCount: null,
+    lastReconciliationIgnoredCount: null,
+    reindex: {
+      phase: "IDLE",
+      sourceIndex: null,
+      candidateIndex: null,
+      scannedCount: 0,
+      appliedCount: 0,
+      ignoredNonNewerVersionCount: 0,
+    },
+  });
+  listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
+  renderOrdersPage();
+
+  expect(await screen.findByText("Projected order search is unavailable")).toBeInTheDocument();
+  expect(screen.getByRole("searchbox", { name: "Search projected orders" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Search projected orders" })).toBeDisabled();
+  expect(searchOperatorOrdersMock).not.toHaveBeenCalled();
 });
 
 test("paginates projected order search results independently from the order list", async () => {
@@ -201,6 +231,7 @@ test("paginates projected order search results independently from the order list
     });
   renderOrdersPage();
 
+  await waitFor(() => expect(screen.getByRole("searchbox", { name: "Search projected orders" })).toBeEnabled());
   fireEvent.change(screen.getByRole("searchbox", { name: "Search projected orders" }), { target: { value: "blue" } });
   fireEvent.click(screen.getByRole("button", { name: "Search projected orders" }));
   expect(await screen.findByText("SEARCH-PAGE-1")).toBeInTheDocument();

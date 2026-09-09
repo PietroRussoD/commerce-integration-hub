@@ -12,7 +12,13 @@ import { formatDateTime, formatLabel, formatMoney } from "./orderFormatters";
 
 const SEARCH_PAGE_SIZE = 25;
 
-export function ProjectedOrderSearch() {
+export function ProjectedOrderSearch({
+  isAvailable,
+  isAvailabilityKnown,
+}: {
+  isAvailable: boolean;
+  isAvailabilityKnown: boolean;
+}) {
   const { t } = useTranslation();
   const [searchText, setSearchText] = useState("");
   const [submittedSearchText, setSubmittedSearchText] = useState<string>();
@@ -20,7 +26,7 @@ export function ProjectedOrderSearch() {
   const query = useQuery({
     queryKey: ["operator-projected-order-search", { q: submittedSearchText, limit: SEARCH_PAGE_SIZE, offset }],
     queryFn: ({ signal }) => searchOperatorOrders({ q: submittedSearchText, limit: SEARCH_PAGE_SIZE, offset, signal }),
-    enabled: submittedSearchText !== undefined,
+    enabled: isAvailable && submittedSearchText !== undefined,
     placeholderData: keepPreviousData,
   });
 
@@ -58,10 +64,15 @@ export function ProjectedOrderSearch() {
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
             placeholder={t("orders.search.placeholder")}
+            disabled={!isAvailable}
             className="h-9 w-full rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none placeholder:text-app-foreground-faint focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring"
           />
         </label>
-        <IconButton label={t("orders.search.submit")} type="submit" disabled={searchText.trim().length === 0 || query.isFetching}>
+        <IconButton
+          label={t("orders.search.submit")}
+          type="submit"
+          disabled={!isAvailable || searchText.trim().length === 0 || query.isFetching}
+        >
           <Search aria-hidden="true" size={17} />
         </IconButton>
         {submittedSearchText !== undefined ? (
@@ -71,7 +82,11 @@ export function ProjectedOrderSearch() {
         ) : null}
       </form>
 
-      {submittedSearchText === undefined ? null : (
+      {isAvailabilityKnown && !isAvailable ? (
+        <p className="mt-2 text-sm text-app-foreground-secondary">{t("orders.search.unavailable")}</p>
+      ) : null}
+
+      {isAvailable && submittedSearchText !== undefined ? (
         <div className="mt-3 overflow-hidden rounded-md border border-app-border bg-app-surface">
           {query.isPending ? <SearchLoading /> : null}
           {query.isError ? <SearchError onRetry={() => void query.refetch()} /> : null}
@@ -88,7 +103,7 @@ export function ProjectedOrderSearch() {
             </>
           ) : null}
         </div>
-      )}
+      ) : null}
     </section>
   );
 }
