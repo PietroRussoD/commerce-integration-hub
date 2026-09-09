@@ -85,6 +85,7 @@
       "label": "Search projected orders",
       "placeholder": "Search item descriptions",
       "submit": "Search projected orders",
+      "clear": "Clear projected order search",
       "loading": "Searching projected orders",
       "error": "Unable to search projected orders",
       "empty": "No projected orders found",
