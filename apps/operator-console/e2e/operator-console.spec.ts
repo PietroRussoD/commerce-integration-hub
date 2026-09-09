@@ -1,6 +1,13 @@
 import { expect, test, type Page, type Request } from "@playwright/test";
 
-import { orderDetail, orderId, orderPage, receiveOrderResponse } from "./fixtures";
+import {
+  orderDetail,
+  orderId,
+  orderPage,
+  projectedOrderPage,
+  receiveOrderResponse,
+  searchProjectionStatus,
+} from "./fixtures";
 
 test("opens an order from the operator list", async ({ page }) => {
   await mockOperatorApi(page);
@@ -14,6 +21,22 @@ test("opens an order from the operator list", async ({ page }) => {
   await expect(page).toHaveURL(`/orders/${orderId}`);
   await expect(page.getByRole("heading", { name: "Order details" })).toBeVisible();
   await expect(page.getByRole("row", { name: /LINE-1 SKU-E2E-001 Browser-tested item/i })).toBeVisible();
+});
+
+test("searches projected orders after the projection becomes available", async ({ page }) => {
+  let searchRequest: Request | undefined;
+  await mockOperatorApi(page, (request) => {
+    searchRequest = request;
+  });
+  await page.goto("/orders");
+
+  const search = page.getByRole("searchbox", { name: "Search projected orders" });
+  await expect(search).toBeEnabled();
+  await search.fill("browser");
+  await page.getByRole("button", { name: "Search projected orders" }).click();
+
+  await expect(page.getByRole("row", { name: /ORDER-SEARCH-001.*Ready/i })).toBeVisible();
+  expect(new URL(searchRequest?.url() ?? "").searchParams.get("q")).toBe("browser");
 });
 
 test("submits an order and opens the accepted result", async ({ page }) => {
@@ -119,11 +142,18 @@ test("replays a recorded rejection through the Flow Explorer", async ({ page }) 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
 
-async function mockOperatorApi(page: Page) {
+async function mockOperatorApi(page: Page, onProjectedSearch?: (request: Request) => void) {
+  await page.route("**/api/v1/operator/orders/*", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(orderDetail) });
+  });
   await page.route("**/api/v1/operator/orders?**", async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(orderPage) });
   });
-  await page.route("**/api/v1/operator/orders/*", async (route) => {
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(orderDetail) });
+  await page.route("**/api/v1/operator/orders/search?**", async (route) => {
+    onProjectedSearch?.(route.request());
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(projectedOrderPage) });
+  });
+  await page.route("**/api/v1/operator/orders/search/status", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(searchProjectionStatus) });
   });
 }
