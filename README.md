@@ -84,9 +84,9 @@ The current baseline establishes:
   PostgreSQL-backed synthetic-provider process test and a reproducible Compose
   demonstration.
 
-The `v0.7.0` release adds a sanitized, evidence-backed Integration Flow
-Explorer to the operator console. Development now targets the `v0.8.0`
-operational search projection; PostgreSQL remains the source of truth.
+The `v0.8.0` release adds an operational OpenSearch order projection, safe
+reindexing, and availability-gated projected-order search in the console.
+PostgreSQL remains the source of truth.
 
 ## Repository structure
 

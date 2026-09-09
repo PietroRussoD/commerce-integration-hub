@@ -17,6 +17,8 @@ import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.Orders.Companion.ORDERS
 import io.quarkus.test.common.QuarkusTestResource
 import io.quarkus.test.junit.QuarkusTest
+import io.quarkus.test.junit.QuarkusTestProfile
+import io.quarkus.test.junit.TestProfile
 import jakarta.inject.Inject
 import org.jooq.DSLContext
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -30,6 +32,7 @@ import java.time.ZoneOffset
 import java.util.UUID
 
 @QuarkusTest
+@TestProfile(OrderSearchReindexTestProfile::class)
 @QuarkusTestResource(OpenSearchProjectionTestResource::class, restrictToAnnotatedClass = true)
 class OrderSearchReindexIT {
     @Inject
@@ -164,5 +167,13 @@ class OrderSearchReindexIT {
                         position = 0,
                     ),
                 ),
+        )
+}
+
+class OrderSearchReindexTestProfile : QuarkusTestProfile {
+    override fun getConfigOverrides(): Map<String, String> =
+        mapOf(
+            "quarkus.datasource.devservices.enabled" to "true",
+            "quarkus.datasource.devservices.db-name" to "order_search_reindex_test",
         )
 }
