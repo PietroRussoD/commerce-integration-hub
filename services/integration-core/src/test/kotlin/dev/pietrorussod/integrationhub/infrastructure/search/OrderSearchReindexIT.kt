@@ -95,7 +95,7 @@ class OrderSearchReindexIT {
         assertEquals(setOf("orders-v2"), aliasIndices)
         assertEquals(
             3L,
-            openSearchClient.count { request -> request.index(OpenSearchOrderIndexDefinition.READ_ALIAS) }.count()
+            openSearchClient.count { request -> request.index(OpenSearchOrderIndexDefinition.READ_ALIAS) }.count(),
         )
     }
 
