@@ -11,6 +11,14 @@ data class OrderSearchProjectionStatus(
     val lastReconciliationScannedCount: Long?,
     val lastReconciliationAppliedCount: Long?,
     val lastReconciliationIgnoredCount: Long?,
+    val reindex: OrderSearchReindexStatus,
+)
+
+data class OrderSearchReindexStatus(
+    val phase: OrderSearchReindexPhase,
+    val sourceIndex: String?,
+    val candidateIndex: String?,
+    val progress: OrderSearchReindexProgress,
 )
 
 enum class OrderSearchProjectionAvailability {

@@ -151,6 +151,7 @@ components:
       - lastReconciliationScannedCount
       - lastReconciliationAppliedCount
       - lastReconciliationIgnoredCount
+      - reindex
       properties:
         consumerEnabled:
           type: boolean
@@ -178,6 +179,37 @@ components:
           type:
           - integer
           - "null"
+          format: int64
+        reindex:
+          $ref: "#/components/schemas/OperatorOrderSearchReindexStatusResponse"
+    OperatorOrderSearchReindexStatusResponse:
+      type: object
+      required:
+      - phase
+      - sourceIndex
+      - candidateIndex
+      - scannedCount
+      - appliedCount
+      - ignoredNonNewerVersionCount
+      properties:
+        phase:
+          type: string
+        sourceIndex:
+          type:
+          - string
+          - "null"
+        candidateIndex:
+          type:
+          - string
+          - "null"
+        scannedCount:
+          type: integer
+          format: int64
+        appliedCount:
+          type: integer
+          format: int64
+        ignoredNonNewerVersionCount:
+          type: integer
           format: int64
     OperatorOrderSearchResponse:
       type: object
