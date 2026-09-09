@@ -80,6 +80,18 @@
         "notInitialized": "Not initialized",
         "unavailable": "Unavailable"
       }
+    },
+    "search": {
+      "label": "Search projected orders",
+      "placeholder": "Search item descriptions",
+      "submit": "Search projected orders",
+      "loading": "Searching projected orders",
+      "error": "Unable to search projected orders",
+      "empty": "No projected orders found",
+      "table": {
+        "matches": "Matches",
+        "ready": "Ready"
+      }
     }
   },
   "orderDetail": {

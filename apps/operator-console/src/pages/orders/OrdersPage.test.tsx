@@ -5,7 +5,11 @@ import { I18nextProvider } from "react-i18next";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-import { getOperatorOrderSearchProjectionStatus, listOperatorOrders } from "../../api/integrationCoreClient";
+import {
+  getOperatorOrderSearchProjectionStatus,
+  listOperatorOrders,
+  searchOperatorOrders,
+} from "../../api/integrationCoreClient";
 import { createAppI18n, type SupportedLocale } from "../../i18n/i18n";
 import { expectNoAccessibilityViolations } from "../../test/accessibility";
 import { OrdersPage } from "./OrdersPage";
@@ -13,10 +17,12 @@ import { OrdersPage } from "./OrdersPage";
 vi.mock("../../api/integrationCoreClient", () => ({
   getOperatorOrderSearchProjectionStatus: vi.fn(),
   listOperatorOrders: vi.fn(),
+  searchOperatorOrders: vi.fn(),
 }));
 
 const getOperatorOrderSearchProjectionStatusMock = vi.mocked(getOperatorOrderSearchProjectionStatus);
 const listOperatorOrdersMock = vi.mocked(listOperatorOrders);
+const searchOperatorOrdersMock = vi.mocked(searchOperatorOrders);
 
 beforeEach(() => {
   getOperatorOrderSearchProjectionStatusMock.mockResolvedValue({
@@ -43,6 +49,7 @@ afterEach(() => {
   cleanup();
   getOperatorOrderSearchProjectionStatusMock.mockReset();
   listOperatorOrdersMock.mockReset();
+  searchOperatorOrdersMock.mockReset();
 });
 
 test("renders operator order summaries returned by the API", async () => {
@@ -97,6 +104,39 @@ test("requests a new first page when the status filter changes", async () => {
       expect.objectContaining({ status: "READY", limit: 25, offset: 0 }),
     );
   });
+});
+
+test("searches projected orders only after an explicit submission", async () => {
+  listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
+  searchOperatorOrdersMock.mockResolvedValue({
+    items: [
+      {
+        id: "018f38c2-1b95-7cc4-bb89-72d26a6f9f88",
+        aggregateVersion: 2,
+        sourceSystem: "MARKETPLACE_A",
+        externalOrderId: "SEARCH-42",
+        status: "READY",
+        currency: "EUR",
+        totalAmount: "39.98",
+        receivedAt: "2026-09-08T08:00:00Z",
+        readyAt: "2026-09-08T08:00:05Z",
+        itemSkus: ["SKU-42"],
+        itemDescriptions: ["Blue shirt"],
+      },
+    ],
+    limit: 25,
+    offset: 0,
+    total: 1,
+  });
+  renderOrdersPage();
+
+  expect(searchOperatorOrdersMock).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByRole("searchbox", { name: "Search projected orders" }), { target: { value: "blue" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search projected orders" }));
+
+  expect(await screen.findByText("SEARCH-42")).toBeInTheDocument();
+  expect(screen.getByText("Blue shirt")).toBeInTheDocument();
+  expect(searchOperatorOrdersMock).toHaveBeenCalledWith(expect.objectContaining({ q: "blue", limit: 25 }));
 });
 
 test("renders the empty state", async () => {

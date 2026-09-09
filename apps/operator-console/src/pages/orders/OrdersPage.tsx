@@ -16,6 +16,7 @@ import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatLabel, formatMoney } from "./orderFormatters";
 import { SearchProjectionStatus } from "./SearchProjectionStatus";
+import { ProjectedOrderSearch } from "./ProjectedOrderSearch";
 import { getSearchProjectionStatusRefetchInterval } from "./searchProjectionPolling";
 
 const PAGE_SIZE = 25;
@@ -100,6 +101,8 @@ export function OrdersPage() {
         isPending={searchProjectionQuery.isPending}
         isError={searchProjectionQuery.isError}
       />
+
+      <ProjectedOrderSearch />
 
       <div className="mt-5 overflow-hidden rounded-md border border-app-border bg-app-surface">
         {query.isPending ? <OrdersLoading /> : null}
