@@ -16,6 +16,7 @@ import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatLabel, formatMoney } from "./orderFormatters";
 import { SearchProjectionStatus } from "./SearchProjectionStatus";
+import { getSearchProjectionStatusRefetchInterval } from "./searchProjectionPolling";
 
 const PAGE_SIZE = 25;
 const statusOptions = ["ALL", "RECEIVED", "PROCESSING", "READY"] as const;
@@ -46,6 +47,7 @@ export function OrdersPage() {
   const searchProjectionQuery = useQuery({
     queryKey: ["operator-order-search-projection-status"],
     queryFn: ({ signal }) => getOperatorOrderSearchProjectionStatus({ signal }),
+    refetchInterval: (query) => getSearchProjectionStatusRefetchInterval(query.state.data),
   });
 
   async function refresh() {
