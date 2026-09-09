@@ -29,6 +29,9 @@ beforeEach(() => {
     consumerEnabled: true,
     readAlias: "orders-read",
     availability: "AVAILABLE",
+    lastProjectedEventOccurredAt: "2026-09-08T08:00:01Z",
+    lastProjectedAt: "2026-09-08T08:00:01.250Z",
+    lastProjectionProcessingDelayMilliseconds: 250,
     reconciliationInProgress: false,
     lastReconciliationCompletedAt: "2026-09-08T08:00:00Z",
     lastReconciliationScannedCount: 20,
@@ -83,6 +86,8 @@ test("renders operator order summaries returned by the API", async () => {
   expect(screen.getByRole("heading", { name: "Search projection" })).toBeInTheDocument();
   expect(screen.getByText("Available")).toBeInTheDocument();
   expect(screen.getByText("orders-read")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Projection progress" })).toBeInTheDocument();
+  expect(screen.getByText("250 ms")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Reindex" })).toBeInTheDocument();
   expect(screen.getAllByText("Idle")).toHaveLength(1);
   expect(screen.getByRole("row", { name: /ORDER-42.*Ready/i })).toBeInTheDocument();
@@ -181,6 +186,9 @@ test("does not submit projected order searches while the projection is unavailab
     consumerEnabled: false,
     readAlias: "orders-read",
     availability: "UNAVAILABLE",
+    lastProjectedEventOccurredAt: null,
+    lastProjectedAt: null,
+    lastProjectionProcessingDelayMilliseconds: null,
     reconciliationInProgress: false,
     lastReconciliationCompletedAt: null,
     lastReconciliationScannedCount: null,

@@ -58,6 +58,13 @@
       "inProgress": "In progress",
       "notRun": "Not run yet",
       "lastCompleted": "Completed {{completedAt}}: {{scanned}} scanned, {{applied}} applied",
+      "progress": {
+        "title": "Projection progress",
+        "eventOccurredAt": "Last projected event",
+        "projectedAt": "Applied at",
+        "processingDelay": "Processing delay",
+        "notRecorded": "Not recorded yet"
+      },
       "reindex": {
         "title": "Reindex",
         "phase": "Phase",

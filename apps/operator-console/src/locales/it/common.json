@@ -58,6 +58,13 @@
       "inProgress": "In corso",
       "notRun": "Non ancora eseguita",
       "lastCompleted": "Completata {{completedAt}}: {{scanned}} analizzati, {{applied}} applicati",
+      "progress": {
+        "title": "Avanzamento della proiezione",
+        "eventOccurredAt": "Ultimo evento proiettato",
+        "projectedAt": "Applicato alle",
+        "processingDelay": "Ritardo di elaborazione",
+        "notRecorded": "Non ancora registrato"
+      },
       "reindex": {
         "title": "Reindicizzazione",
         "phase": "Fase",

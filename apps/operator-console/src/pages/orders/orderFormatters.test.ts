@@ -1,6 +1,13 @@
 import { expect, test } from "vitest";
 
-import { formatDateTime, formatDuration, formatLabel, formatMoney, orderStatusLabelKeys } from "./orderFormatters";
+import {
+  formatDateTime,
+  formatDuration,
+  formatDurationMilliseconds,
+  formatLabel,
+  formatMoney,
+  orderStatusLabelKeys,
+} from "./orderFormatters";
 
 test("maps known order states to shared translation keys", () => {
   expect(orderStatusLabelKeys.READY).toBe("orders.status.ready");
@@ -23,4 +30,6 @@ test("formats completed and active attempt durations", () => {
   expect(formatDuration("2026-08-21T08:00:00Z", "2026-08-21T08:00:00.750Z")).toBe("750 ms");
   expect(formatDuration("2026-08-21T08:00:00Z", "2026-08-21T08:00:01.250Z")).toBe("1.3 s");
   expect(formatDuration("2026-08-21T08:00:00Z", "2026-08-21T08:00:01.250Z", "it-IT")).toBe("1,3 s");
+  expect(formatDurationMilliseconds(750)).toBe("750 ms");
+  expect(formatDurationMilliseconds(1_250, "it-IT")).toBe("1,3 s");
 });
