@@ -34,7 +34,11 @@ export function formatDuration(
 ): string {
   if (completedAt === null) return inProgressLabel;
 
-  const durationMilliseconds = Math.max(0, new Date(completedAt).getTime() - new Date(startedAt).getTime());
+  return formatDurationMilliseconds(new Date(completedAt).getTime() - new Date(startedAt).getTime(), locale);
+}
+
+export function formatDurationMilliseconds(value: number, locale = "en-GB"): string {
+  const durationMilliseconds = Math.max(0, value);
   if (durationMilliseconds < 1_000) return `${durationMilliseconds} ms`;
 
   const seconds = new Intl.NumberFormat(locale, {

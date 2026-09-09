@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { OperatorOrderSearchProjectionStatus } from "../../api/integrationCoreClient";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
-import { formatDateTime } from "./orderFormatters";
+import { formatDateTime, formatDurationMilliseconds } from "./orderFormatters";
 
 interface SearchProjectionStatusProps {
   status?: OperatorOrderSearchProjectionStatus;
@@ -83,6 +83,35 @@ export function SearchProjectionStatus({ status, isPending, isError }: SearchPro
                       scanned: status.lastReconciliationScannedCount ?? 0,
                       applied: status.lastReconciliationAppliedCount ?? 0,
                     })}
+            </dd>
+          </div>
+        </dl>
+      </div>
+      <div className="mt-3 border-t border-app-border pt-3">
+        <h3 className="text-xs font-semibold text-app-foreground">{t("orders.searchProjection.progress.title")}</h3>
+        <dl className="mt-2 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+          <div>
+            <dt className="text-xs text-app-foreground-secondary">{t("orders.searchProjection.progress.eventOccurredAt")}</dt>
+            <dd className="text-sm text-app-foreground">
+              {status.lastProjectedEventOccurredAt === null
+                ? t("orders.searchProjection.progress.notRecorded")
+                : formatDateTime(status.lastProjectedEventOccurredAt, locale)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-app-foreground-secondary">{t("orders.searchProjection.progress.projectedAt")}</dt>
+            <dd className="text-sm text-app-foreground">
+              {status.lastProjectedAt === null
+                ? t("orders.searchProjection.progress.notRecorded")
+                : formatDateTime(status.lastProjectedAt, locale)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-app-foreground-secondary">{t("orders.searchProjection.progress.processingDelay")}</dt>
+            <dd className="font-mono text-sm text-app-foreground">
+              {status.lastProjectionProcessingDelayMilliseconds === null
+                ? t("orders.searchProjection.progress.notRecorded")
+                : formatDurationMilliseconds(status.lastProjectionProcessingDelayMilliseconds, locale)}
             </dd>
           </div>
         </dl>

@@ -181,6 +181,10 @@ export interface components {
             consumerEnabled: boolean;
             readAlias: string;
             availability: string;
+            lastProjectedEventOccurredAt: components["schemas"]["Instant"] | null;
+            lastProjectedAt: components["schemas"]["Instant"] | null;
+            /** Format: int64 */
+            lastProjectionProcessingDelayMilliseconds: number | null;
             reconciliationInProgress: boolean;
             lastReconciliationCompletedAt: components["schemas"]["Instant"] | null;
             /** Format: int64 */
