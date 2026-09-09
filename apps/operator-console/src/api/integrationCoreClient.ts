@@ -9,6 +9,9 @@ export type OperatorOrderDetail =
 export type OperatorOrderSearchProjectionStatus =
   paths["/api/v1/operator/orders/search/status"]["get"]["responses"]["200"]["content"]["application/json"];
 
+export type OperatorOrderSearchPage =
+  paths["/api/v1/operator/orders/search"]["get"]["responses"]["200"]["content"]["application/json"];
+
 export type ReceiveOrderRequest =
   paths["/api/v1/orders"]["post"]["requestBody"]["content"]["application/json"];
 
@@ -53,6 +56,20 @@ export interface GetOperatorOrderParameters {
 }
 
 export interface GetOperatorOrderSearchProjectionStatusParameters {
+  signal?: AbortSignal;
+}
+
+export interface SearchOperatorOrdersParameters {
+  q?: string;
+  sourceSystem?: string;
+  externalOrderId?: string;
+  status?: string;
+  currency?: string;
+  sku?: string;
+  receivedAtFrom?: string;
+  receivedAtBefore?: string;
+  limit?: number;
+  offset?: number;
   signal?: AbortSignal;
 }
 
@@ -107,6 +124,50 @@ export async function getOperatorOrderSearchProjectionStatus({
   }
 
   return response.json() as Promise<OperatorOrderSearchProjectionStatus>;
+}
+
+export async function searchOperatorOrders({
+  q,
+  sourceSystem,
+  externalOrderId,
+  status,
+  currency,
+  sku,
+  receivedAtFrom,
+  receivedAtBefore,
+  limit,
+  offset,
+  signal,
+}: SearchOperatorOrdersParameters = {}): Promise<OperatorOrderSearchPage> {
+  const search = new URLSearchParams();
+  const parameters = {
+    q,
+    sourceSystem,
+    externalOrderId,
+    status,
+    currency,
+    sku,
+    receivedAtFrom,
+    receivedAtBefore,
+    limit,
+    offset,
+  };
+
+  for (const [name, value] of Object.entries(parameters)) {
+    if (value !== undefined) search.set(name, value.toString());
+  }
+
+  const query = search.size > 0 ? `?${search.toString()}` : "";
+  const response = await fetch(`/api/v1/operator/orders/search${query}`, {
+    headers: { Accept: "application/json" },
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new IntegrationCoreApiError(response.status, await readProblem(response));
+  }
+
+  return response.json() as Promise<OperatorOrderSearchPage>;
 }
 
 export async function receiveOrder({
