@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, RefreshCw, Search, TriangleAlert, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw, Search, SlidersHorizontal, TriangleAlert, X } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -12,6 +12,12 @@ import { formatDateTime, formatLabel, formatMoney } from "./orderFormatters";
 
 const SEARCH_PAGE_SIZE = 25;
 
+interface SearchCriteria {
+  q?: string;
+  externalOrderId?: string;
+  sku?: string;
+}
+
 export function ProjectedOrderSearch({
   isAvailable,
   isAvailabilityKnown,
@@ -21,21 +27,24 @@ export function ProjectedOrderSearch({
 }) {
   const { t } = useTranslation();
   const [searchText, setSearchText] = useState("");
-  const [submittedSearchText, setSubmittedSearchText] = useState<string>();
+  const [externalOrderId, setExternalOrderId] = useState("");
+  const [sku, setSku] = useState("");
+  const [filtersVisible, setFiltersVisible] = useState(false);
+  const [submittedCriteria, setSubmittedCriteria] = useState<SearchCriteria>();
   const [offset, setOffset] = useState(0);
   const query = useQuery({
-    queryKey: ["operator-projected-order-search", { q: submittedSearchText, limit: SEARCH_PAGE_SIZE, offset }],
-    queryFn: ({ signal }) => searchOperatorOrders({ q: submittedSearchText, limit: SEARCH_PAGE_SIZE, offset, signal }),
-    enabled: isAvailable && submittedSearchText !== undefined,
+    queryKey: ["operator-projected-order-search", { ...submittedCriteria, limit: SEARCH_PAGE_SIZE, offset }],
+    queryFn: ({ signal }) => searchOperatorOrders({ ...submittedCriteria, limit: SEARCH_PAGE_SIZE, offset, signal }),
+    enabled: isAvailable && submittedCriteria !== undefined,
     placeholderData: keepPreviousData,
   });
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const value = searchText.trim();
-    if (value.length === 0) return;
+    const criteria = toSearchCriteria({ q: searchText, externalOrderId, sku });
+    if (criteria === undefined) return;
 
-    if (value === submittedSearchText) {
+    if (isSameSearchCriteria(criteria, submittedCriteria)) {
       if (offset !== 0) {
         setOffset(0);
         return;
@@ -45,40 +54,74 @@ export function ProjectedOrderSearch({
     }
 
     setOffset(0);
-    setSubmittedSearchText(value);
+    setSubmittedCriteria(criteria);
   }
 
   function clear() {
     setSearchText("");
-    setSubmittedSearchText(undefined);
+    setExternalOrderId("");
+    setSku("");
+    setSubmittedCriteria(undefined);
     setOffset(0);
   }
 
+  const hasCriteria = toSearchCriteria({ q: searchText, externalOrderId, sku }) !== undefined;
+
   return (
     <section aria-labelledby="projected-order-search-heading" className="mt-5">
-      <form onSubmit={submit} className="flex max-w-xl items-end gap-2">
-        <label className="grid min-w-0 flex-1 gap-1 text-xs font-medium text-app-foreground-secondary">
-          <span id="projected-order-search-heading">{t("orders.search.label")}</span>
-          <input
-            type="search"
-            value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
-            placeholder={t("orders.search.placeholder")}
+      <form onSubmit={submit} className="grid max-w-xl gap-3">
+        <div className="flex items-end gap-2">
+          <label className="grid min-w-0 flex-1 gap-1 text-xs font-medium text-app-foreground-secondary">
+            <span id="projected-order-search-heading">{t("orders.search.label")}</span>
+            <input
+              type="search"
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              placeholder={t("orders.search.placeholder")}
+              disabled={!isAvailable}
+              className="h-9 w-full rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none placeholder:text-app-foreground-faint focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring"
+            />
+          </label>
+          <IconButton
+            label={t("orders.search.filters.toggle")}
+            onClick={() => setFiltersVisible((visible) => !visible)}
+            aria-pressed={filtersVisible}
             disabled={!isAvailable}
-            className="h-9 w-full rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none placeholder:text-app-foreground-faint focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring"
-          />
-        </label>
-        <IconButton
-          label={t("orders.search.submit")}
-          type="submit"
-          disabled={!isAvailable || searchText.trim().length === 0 || query.isFetching}
-        >
-          <Search aria-hidden="true" size={17} />
-        </IconButton>
-        {submittedSearchText !== undefined ? (
-          <IconButton label={t("orders.search.clear")} onClick={clear} variant="ghost">
-            <X aria-hidden="true" size={17} />
+          >
+            <SlidersHorizontal aria-hidden="true" size={17} />
           </IconButton>
+          <IconButton label={t("orders.search.submit")} type="submit" disabled={!isAvailable || !hasCriteria || query.isFetching}>
+            <Search aria-hidden="true" size={17} />
+          </IconButton>
+          {submittedCriteria !== undefined ? (
+            <IconButton label={t("orders.search.clear")} onClick={clear} variant="ghost">
+              <X aria-hidden="true" size={17} />
+            </IconButton>
+          ) : null}
+        </div>
+        {filtersVisible ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-1 text-xs font-medium text-app-foreground-secondary">
+              {t("orders.search.filters.externalOrderId")}
+              <input
+                type="text"
+                value={externalOrderId}
+                onChange={(event) => setExternalOrderId(event.target.value)}
+                disabled={!isAvailable}
+                className="h-9 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring"
+              />
+            </label>
+            <label className="grid gap-1 text-xs font-medium text-app-foreground-secondary">
+              {t("orders.search.filters.sku")}
+              <input
+                type="text"
+                value={sku}
+                onChange={(event) => setSku(event.target.value)}
+                disabled={!isAvailable}
+                className="h-9 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring"
+              />
+            </label>
+          </div>
         ) : null}
       </form>
 
@@ -86,7 +129,7 @@ export function ProjectedOrderSearch({
         <p className="mt-2 text-sm text-app-foreground-secondary">{t("orders.search.unavailable")}</p>
       ) : null}
 
-      {isAvailable && submittedSearchText !== undefined ? (
+      {isAvailable && submittedCriteria !== undefined ? (
         <div className="mt-3 overflow-hidden rounded-md border border-app-border bg-app-surface">
           {query.isPending ? <SearchLoading /> : null}
           {query.isError ? <SearchError onRetry={() => void query.refetch()} /> : null}
@@ -106,6 +149,21 @@ export function ProjectedOrderSearch({
       ) : null}
     </section>
   );
+}
+
+function toSearchCriteria(criteria: SearchCriteria): SearchCriteria | undefined {
+  const normalizedCriteria = Object.fromEntries(
+    Object.entries(criteria).flatMap(([name, value]) => {
+      const normalizedValue = value?.trim();
+      return normalizedValue === undefined || normalizedValue.length === 0 ? [] : [[name, normalizedValue]];
+    }),
+  );
+
+  return Object.keys(normalizedCriteria).length === 0 ? undefined : normalizedCriteria;
+}
+
+function isSameSearchCriteria(left: SearchCriteria, right: SearchCriteria | undefined): boolean {
+  return left.q === right?.q && left.externalOrderId === right?.externalOrderId && left.sku === right?.sku;
 }
 
 function SearchLoading() {
