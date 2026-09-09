@@ -2,6 +2,7 @@ package dev.pietrorussod.integrationhub.infrastructure.persistence.jooq
 
 import dev.pietrorussod.integrationhub.application.search.OrderSearchDocument
 import dev.pietrorussod.integrationhub.application.search.OrderSearchItem
+import dev.pietrorussod.integrationhub.application.search.ReadyOrderSearchDocumentCounter
 import dev.pietrorussod.integrationhub.application.search.ReadyOrderSearchDocumentCursor
 import dev.pietrorussod.integrationhub.application.search.ReadyOrderSearchDocumentReader
 import dev.pietrorussod.integrationhub.domain.order.Currency
@@ -23,7 +24,16 @@ class JooqReadyOrderSearchDocumentReader
     @Inject
     constructor(
         private val dslContext: DSLContext,
-    ) : ReadyOrderSearchDocumentReader {
+    ) : ReadyOrderSearchDocumentReader,
+        ReadyOrderSearchDocumentCounter {
+        override fun countReadyDocuments(): Long =
+            dslContext
+                .selectCount()
+                .from(ORDERS)
+                .where(ORDERS.STATUS.eq(OrderStatus.READY.name))
+                .fetchOne(0, Long::class.java)
+                ?: 0L
+
         override fun readPage(
             after: ReadyOrderSearchDocumentCursor?,
             limit: Int,
