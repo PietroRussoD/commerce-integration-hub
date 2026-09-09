@@ -928,7 +928,7 @@
   },
   "info" : {
     "title" : "Commerce Integration Hub API",
-    "version" : "0.8.0-SNAPSHOT",
+    "version" : "0.8.0",
     "description" : "Reliable commerce order ingestion and integration API."
   }
 }
