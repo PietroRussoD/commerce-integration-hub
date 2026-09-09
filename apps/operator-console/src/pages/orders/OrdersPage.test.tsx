@@ -139,6 +139,62 @@ test("searches projected orders only after an explicit submission", async () => 
   expect(searchOperatorOrdersMock).toHaveBeenCalledWith(expect.objectContaining({ q: "blue", limit: 25 }));
 });
 
+test("paginates projected order search results independently from the order list", async () => {
+  listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
+  searchOperatorOrdersMock
+    .mockResolvedValueOnce({
+      items: [
+        {
+          id: "018f38c2-1b95-7cc4-bb89-72d26a6f9f88",
+          aggregateVersion: 1,
+          sourceSystem: "MARKETPLACE_A",
+          externalOrderId: "SEARCH-PAGE-1",
+          status: "READY",
+          currency: "EUR",
+          totalAmount: "39.98",
+          receivedAt: "2026-09-08T08:00:00Z",
+          readyAt: "2026-09-08T08:00:05Z",
+          itemSkus: ["SKU-1"],
+          itemDescriptions: ["Blue shirt"],
+        },
+      ],
+      limit: 25,
+      offset: 0,
+      total: 26,
+    })
+    .mockResolvedValueOnce({
+      items: [
+        {
+          id: "018f38c2-1b95-7cc4-bb89-72d26a6f9f89",
+          aggregateVersion: 1,
+          sourceSystem: "MARKETPLACE_A",
+          externalOrderId: "SEARCH-PAGE-2",
+          status: "READY",
+          currency: "EUR",
+          totalAmount: "39.98",
+          receivedAt: "2026-09-08T08:00:00Z",
+          readyAt: "2026-09-08T08:00:05Z",
+          itemSkus: ["SKU-2"],
+          itemDescriptions: ["Blue shirt"],
+        },
+      ],
+      limit: 25,
+      offset: 25,
+      total: 26,
+    });
+  renderOrdersPage();
+
+  fireEvent.change(screen.getByRole("searchbox", { name: "Search projected orders" }), { target: { value: "blue" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search projected orders" }));
+  expect(await screen.findByText("SEARCH-PAGE-1")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+
+  expect(await screen.findByText("SEARCH-PAGE-2")).toBeInTheDocument();
+  expect(searchOperatorOrdersMock).toHaveBeenLastCalledWith(expect.objectContaining({ q: "blue", limit: 25, offset: 25 }));
+  expect(listOperatorOrdersMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 0 }));
+});
+
 test("renders the empty state", async () => {
   listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
   renderOrdersPage();
