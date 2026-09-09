@@ -8,6 +8,7 @@ class RunOrderSearchReindexUseCase(
     private val reindexStateRepository: OrderSearchReindexStateRepository,
     private val indexManager: OrderSearchReindexIndexManager,
     private val rebuildOrderSearchIndex: RebuildOrderSearchIndexUseCase,
+    private val validateOrderSearchReindex: ValidateOrderSearchReindexUseCase,
     private val clock: Clock,
 ) {
     fun run(
@@ -110,6 +111,11 @@ class RunOrderSearchReindexUseCase(
         state: OrderSearchReindexState,
         leaseToken: UUID,
     ): OrderSearchReindexRunResult {
+        val validation = validateOrderSearchReindex.validate(requireNotNull(state.candidateIndex))
+        if (!validation.isValid) {
+            return OrderSearchReindexRunResult.ValidationFailed(validation)
+        }
+
         val outcome =
             indexManager.cutOver(
                 OrderSearchReindexIndices(
@@ -137,6 +143,10 @@ sealed interface OrderSearchReindexRunResult {
     ) : OrderSearchReindexRunResult
 
     data object ReadyForCutover : OrderSearchReindexRunResult
+
+    data class ValidationFailed(
+        val validation: OrderSearchReindexValidationResult,
+    ) : OrderSearchReindexRunResult
 
     data class Completed(
         val outcome: OrderSearchReindexCutoverOutcome,

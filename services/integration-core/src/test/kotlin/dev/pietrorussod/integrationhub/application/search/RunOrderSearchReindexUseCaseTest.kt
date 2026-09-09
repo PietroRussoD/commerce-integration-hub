@@ -69,16 +69,38 @@ class RunOrderSearchReindexUseCaseTest {
         assertEquals(OrderSearchReindexPhase.IDLE, repository.current().phase)
     }
 
+    @Test
+    fun `keeps the candidate when validation fails`() {
+        val repository = InMemoryStateRepository(readyForCutoverState())
+        val indexManager = RecordingIndexManager(indices)
+        val validation = OrderSearchReindexValidationResult(authoritativeDocumentCount = 2, candidateDocumentCount = 1)
+        val useCase = useCase(repository, indexManager, validation = validation)
+
+        assertEquals(
+            OrderSearchReindexRunResult.ValidationFailed(validation),
+            useCase.run("instance-a", Duration.ofSeconds(30), 100),
+        )
+
+        assertEquals(emptyList<OrderSearchReindexIndices>(), indexManager.cutOvers)
+        assertEquals(OrderSearchReindexPhase.READY_FOR_CUTOVER, repository.current().phase)
+    }
+
     private fun useCase(
         repository: InMemoryStateRepository,
         indexManager: RecordingIndexManager,
         reader: RecordingReader = RecordingReader(emptyList()),
         writer: RecordingWriter = RecordingWriter(),
+        validation: OrderSearchReindexValidationResult = OrderSearchReindexValidationResult(0, 0),
     ): RunOrderSearchReindexUseCase =
         RunOrderSearchReindexUseCase(
             reindexStateRepository = repository,
             indexManager = indexManager,
             rebuildOrderSearchIndex = RebuildOrderSearchIndexUseCase(reader, writer),
+            validateOrderSearchReindex =
+                ValidateOrderSearchReindexUseCase(
+                    authoritativeDocumentCounter = { validation.authoritativeDocumentCount },
+                    candidateDocumentCounter = { validation.candidateDocumentCount },
+                ),
             clock = clock,
         )
 

@@ -1,5 +1,8 @@
 package dev.pietrorussod.integrationhub.application.search
 
+import jakarta.enterprise.context.ApplicationScoped
+
+@ApplicationScoped
 class ValidateOrderSearchReindexUseCase(
     private val authoritativeDocumentCounter: ReadyOrderSearchDocumentCounter,
     private val candidateDocumentCounter: OrderSearchReindexDocumentCounter,
