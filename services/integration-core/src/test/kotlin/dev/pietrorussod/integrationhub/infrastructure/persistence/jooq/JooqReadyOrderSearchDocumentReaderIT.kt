@@ -1,5 +1,6 @@
 package dev.pietrorussod.integrationhub.infrastructure.persistence.jooq
 
+import dev.pietrorussod.integrationhub.application.search.ReadyOrderSearchDocumentCounter
 import dev.pietrorussod.integrationhub.application.search.ReadyOrderSearchDocumentCursor
 import dev.pietrorussod.integrationhub.application.search.ReadyOrderSearchDocumentReader
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.IntegrationEvents.Companion.INTEGRATION_EVENTS
@@ -20,6 +21,9 @@ import java.util.UUID
 class JooqReadyOrderSearchDocumentReaderIT {
     @Inject
     lateinit var reader: ReadyOrderSearchDocumentReader
+
+    @Inject
+    lateinit var counter: ReadyOrderSearchDocumentCounter
 
     @Inject
     lateinit var dslContext: DSLContext
@@ -59,6 +63,17 @@ class JooqReadyOrderSearchDocumentReaderIT {
             emptyList<UUID>(),
             reader.readPage(after = ReadyOrderSearchDocumentCursor(receivedAt, secondId), limit = 1).map { it.orderId },
         )
+    }
+
+    @Test
+    fun `counts only current ready orders`() {
+        val receivedAt = Instant.parse("2026-09-08T08:00:00Z")
+
+        insertReadyOrder(UUID.randomUUID(), "ORDER-1", receivedAt, receivedAt.plusSeconds(30), 3)
+        insertReadyOrder(UUID.randomUUID(), "ORDER-2", receivedAt.plusSeconds(60), receivedAt.plusSeconds(90), 4)
+        insertOrder(UUID.randomUUID(), "ORDER-3", receivedAt.plusSeconds(120), "PROCESSING", 2)
+
+        assertEquals(2L, counter.countReadyDocuments())
     }
 
     private fun insertReadyOrder(
