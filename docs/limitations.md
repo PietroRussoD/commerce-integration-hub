@@ -57,12 +57,13 @@ mistaken for available behavior.
   API exposes read-only summaries and details across sources. Cross-source
   administration, functional dashboards, and authenticated operator roles are
   not implemented. The operator console exposes a paginated summary,
-  operational details, real search-projection availability and reconciliation
-  state, a controlled canonical-ingestion simulator, and a Flow Explorer that
-  replays three committed sanitized local traces. The simulator keeps its
-  source API key only in page memory. The simulator and Flow Explorer are
-  intended for local development and portfolio demonstrations, not production
-  operation, auditing, or distributed tracing.
+  availability-gated projected-order search, operational details, real
+  search-projection availability and reconciliation state, a controlled
+  canonical-ingestion simulator, and a Flow Explorer that replays three
+  committed sanitized local traces. The simulator keeps its source API key only
+  in page memory. The simulator and Flow Explorer are intended for local
+  development and portfolio demonstrations, not production operation, auditing,
+  or distributed tracing.
 - Liveness and PostgreSQL readiness checks, structured logs, correlation IDs,
   Prometheus runtime metrics,
   bounded outbox, order-search-projection, reconciliation, and Gateway-worker

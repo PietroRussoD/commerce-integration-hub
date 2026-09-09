@@ -47,10 +47,10 @@ The current baseline establishes:
   with source-owned order access;
 - correlation IDs propagated through HTTP, persistence, and structured logs;
 - a React and TypeScript operator console with a paginated, filterable order
-  summary view, operational details, real search-projection availability and
-  reconciliation state, a controlled ingestion simulator, generated API types,
-  routing, unit and local Chromium browser tests, enforced coverage, and CI
-  validation;
+  summary view, optional OpenSearch projected-order search, operational details,
+  real search-projection availability and reconciliation state, a controlled
+  ingestion simulator, generated API types, routing, unit and local Chromium
+  browser tests, enforced coverage, and CI validation;
 - a strict TypeScript and Fastify Connector Gateway baseline with an injectable
   application factory, health endpoint, enforced coverage, and an independent
   selective CI job;
@@ -227,6 +227,9 @@ pnpm dev
 
 Open [http://localhost:5173](http://localhost:5173). The simulator accepts the
 source API key created by the local demo and keeps it only in page memory.
+When the optional `search` Compose profile is running and the projection is
+available, the Orders page also searches projected orders by item description,
+external order ID, or SKU.
 
 Start the optional version-controlled operations dashboard with:
 
