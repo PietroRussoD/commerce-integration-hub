@@ -62,3 +62,43 @@ export const receiveOrderResponse = {
   receivedAt: "2026-08-21T08:00:00Z",
   items: [],
 };
+
+export const searchProjectionStatus = {
+  consumerEnabled: true,
+  readAlias: "orders-read",
+  availability: "AVAILABLE",
+  reconciliationInProgress: false,
+  lastReconciliationCompletedAt: null,
+  lastReconciliationScannedCount: null,
+  lastReconciliationAppliedCount: null,
+  lastReconciliationIgnoredCount: null,
+  reindex: {
+    phase: "IDLE",
+    sourceIndex: null,
+    candidateIndex: null,
+    scannedCount: 0,
+    appliedCount: 0,
+    ignoredNonNewerVersionCount: 0,
+  },
+};
+
+export const projectedOrderPage = {
+  items: [
+    {
+      id: orderId,
+      aggregateVersion: 2,
+      sourceSystem: "MARKETPLACE_A",
+      externalOrderId: "ORDER-SEARCH-001",
+      status: "READY",
+      currency: "EUR",
+      totalAmount: "39.98",
+      receivedAt: "2026-08-21T08:00:00Z",
+      readyAt: "2026-08-21T08:00:05Z",
+      itemSkus: ["SKU-E2E-001"],
+      itemDescriptions: ["Browser-tested item"],
+    },
+  ],
+  limit: 25,
+  offset: 0,
+  total: 1,
+};
