@@ -28,6 +28,14 @@ beforeEach(() => {
     lastReconciliationScannedCount: 20,
     lastReconciliationAppliedCount: 3,
     lastReconciliationIgnoredCount: 17,
+    reindex: {
+      phase: "IDLE",
+      sourceIndex: null,
+      candidateIndex: null,
+      scannedCount: 0,
+      appliedCount: 0,
+      ignoredNonNewerVersionCount: 0,
+    },
   });
 });
 
@@ -68,6 +76,8 @@ test("renders operator order summaries returned by the API", async () => {
   expect(screen.getByRole("heading", { name: "Search projection" })).toBeInTheDocument();
   expect(screen.getByText("Available")).toBeInTheDocument();
   expect(screen.getByText("orders-read")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Reindex" })).toBeInTheDocument();
+  expect(screen.getAllByText("Idle")).toHaveLength(1);
   expect(screen.getByRole("row", { name: /ORDER-42.*Ready/i })).toBeInTheDocument();
   expect(screen.getByText("1-1 of 1")).toBeInTheDocument();
   expect(listOperatorOrdersMock).toHaveBeenCalledWith(
@@ -129,6 +139,7 @@ test("renders translated labels and locale-aware values in Italian", async () =>
   expect(screen.getByRole("heading", { name: "Ordini" })).toBeInTheDocument();
   expect(await screen.findByText("ORDER-42")).toBeInTheDocument();
   expect(await screen.findByRole("heading", { name: "Proiezione di ricerca" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Reindicizzazione" })).toBeInTheDocument();
   expect(screen.getByLabelText("Stato")).toBeInTheDocument();
   expect(screen.getByRole("row", { name: /ORDER-42.*Pronto/i })).toBeInTheDocument();
   expect(screen.getByText("1-1 di 1")).toBeInTheDocument();

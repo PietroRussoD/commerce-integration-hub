@@ -58,6 +58,22 @@
       "inProgress": "In corso",
       "notRun": "Non ancora eseguita",
       "lastCompleted": "Completata {{completedAt}}: {{scanned}} analizzati, {{applied}} applicati",
+      "reindex": {
+        "title": "Reindicizzazione",
+        "phase": "Fase",
+        "sourceIndex": "Indice sorgente",
+        "candidateIndex": "Indice candidato",
+        "scanned": "Analizzati",
+        "applied": "Applicati",
+        "appliedValue": "{{applied}} applicati, {{ignored}} ignorati",
+        "notAvailable": "Non disponibile",
+        "phases": {
+          "idle": "Inattiva",
+          "preparing": "Preparazione",
+          "rebuilding": "Ricostruzione",
+          "readyForCutover": "Pronta per il passaggio"
+        }
+      },
       "availability": {
         "label": "Disponibilità",
         "available": "Disponibile",
