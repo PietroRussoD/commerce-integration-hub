@@ -2,6 +2,8 @@ package dev.pietrorussod.integrationhub.infrastructure.messaging
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjection
+import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionProgress
+import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionProgressRepository
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionWriteOutcome
 import dev.pietrorussod.integrationhub.application.search.OrderSearchReindexDocumentCounter
 import dev.pietrorussod.integrationhub.application.search.OrderSearchRepository
@@ -32,6 +34,8 @@ import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.hamcrest.Matchers.equalTo
+import org.hamcrest.Matchers.greaterThanOrEqualTo
+import org.hamcrest.Matchers.notNullValue
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -63,6 +67,9 @@ class OrderReadySearchProjectionIT {
 
     @Inject
     lateinit var projection: OrderSearchProjection
+
+    @Inject
+    lateinit var progressRepository: OrderSearchProjectionProgressRepository
 
     @Inject
     lateinit var documentWriter: OpenSearchOrderSearchDocumentWriter
@@ -157,6 +164,28 @@ class OrderReadySearchProjectionIT {
         assertEquals("order-1001", stored.getString("externalOrderId"))
         assertEquals("READY", stored.getString("status"))
         assertEquals("SKU-1", stored.getJsonArray("itemSkus").getString(0))
+    }
+
+    @Test
+    fun `reports persisted projection progress through the operator API`() {
+        val event = event(readyAt = Instant.parse("2026-09-08T08:01:00Z"))
+
+        newProducer().use { producer ->
+            producer
+                .send(ProducerRecord(topic, event.aggregateId.toString(), objectMapper.writeValueAsString(event)))
+                .get(10, TimeUnit.SECONDS)
+        }
+        awaitProjectedDocument(event.aggregateId)
+        awaitProjectionProgress(event.occurredAt)
+
+        given()
+            .`when`()
+            .get("/api/v1/operator/orders/search/status")
+            .then()
+            .statusCode(200)
+            .body("lastProjectedEventOccurredAt", equalTo(event.occurredAt.toString()))
+            .body("lastProjectedAt", notNullValue())
+            .body("lastProjectionProcessingDelayMilliseconds", greaterThanOrEqualTo(0))
     }
 
     @Test
@@ -284,6 +313,18 @@ class OrderReadySearchProjectionIT {
         throw AssertionError("Order was not projected before the timeout")
     }
 
+    private fun awaitProjectionProgress(expectedEventOccurredAt: Instant): OrderSearchProjectionProgress {
+        val deadline = System.nanoTime() + Duration.ofSeconds(20).toNanos()
+        while (System.nanoTime() < deadline) {
+            val progress = progressRepository.current()
+            if (progress.lastProjectedEventOccurredAt == expectedEventOccurredAt && progress.lastProjectedAt != null) {
+                return progress
+            }
+            Thread.sleep(100)
+        }
+        throw AssertionError("Projection progress was not recorded before the timeout")
+    }
+
     private fun awaitDeadLetter(
         consumer: KafkaConsumer<String, String>,
         predicate: (ConsumerRecord<String, String>) -> Boolean,
@@ -330,9 +371,9 @@ class OrderReadySearchProjectionIT {
         orderId: UUID = UUID.randomUUID(),
         aggregateVersion: Long = 3,
         externalOrderId: String = "order-1001",
-    ): StructuredEvent {
-        val readyAt = Instant.parse("2026-09-07T08:01:00Z")
-        return StructuredEvent(
+        readyAt: Instant = Instant.parse("2026-09-07T08:01:00Z"),
+    ): StructuredEvent =
+        StructuredEvent(
             envelopeVersion = 1,
             eventId = UUID.randomUUID(),
             eventType = "OrderReady",
@@ -368,7 +409,6 @@ class OrderReadySearchProjectionIT {
                     ),
                 ),
         )
-    }
 }
 
 class OrderReadySearchProjectionBrokerTestProfile : QuarkusTestProfile {

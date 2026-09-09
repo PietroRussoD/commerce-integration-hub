@@ -146,6 +146,9 @@ components:
       - consumerEnabled
       - readAlias
       - availability
+      - lastProjectedEventOccurredAt
+      - lastProjectedAt
+      - lastProjectionProcessingDelayMilliseconds
       - reconciliationInProgress
       - lastReconciliationCompletedAt
       - lastReconciliationScannedCount
@@ -159,6 +162,19 @@ components:
           type: string
         availability:
           type: string
+        lastProjectedEventOccurredAt:
+          anyOf:
+          - $ref: "#/components/schemas/Instant"
+          - type: "null"
+        lastProjectedAt:
+          anyOf:
+          - $ref: "#/components/schemas/Instant"
+          - type: "null"
+        lastProjectionProcessingDelayMilliseconds:
+          type:
+          - integer
+          - "null"
+          format: int64
         reconciliationInProgress:
           type: boolean
         lastReconciliationCompletedAt:

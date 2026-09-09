@@ -152,7 +152,7 @@
       },
       "OperatorOrderSearchProjectionStatusResponse" : {
         "type" : "object",
-        "required" : [ "consumerEnabled", "readAlias", "availability", "reconciliationInProgress", "lastReconciliationCompletedAt", "lastReconciliationScannedCount", "lastReconciliationAppliedCount", "lastReconciliationIgnoredCount", "reindex" ],
+        "required" : [ "consumerEnabled", "readAlias", "availability", "lastProjectedEventOccurredAt", "lastProjectedAt", "lastProjectionProcessingDelayMilliseconds", "reconciliationInProgress", "lastReconciliationCompletedAt", "lastReconciliationScannedCount", "lastReconciliationAppliedCount", "lastReconciliationIgnoredCount", "reindex" ],
         "properties" : {
           "consumerEnabled" : {
             "type" : "boolean"
@@ -162,6 +162,24 @@
           },
           "availability" : {
             "type" : "string"
+          },
+          "lastProjectedEventOccurredAt" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/Instant"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "lastProjectedAt" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/Instant"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "lastProjectionProcessingDelayMilliseconds" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
           },
           "reconciliationInProgress" : {
             "type" : "boolean"
