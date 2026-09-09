@@ -3,6 +3,7 @@ package dev.pietrorussod.integrationhub.infrastructure.messaging
 import com.fasterxml.jackson.databind.ObjectMapper
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjection
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionWriteOutcome
+import dev.pietrorussod.integrationhub.application.search.OrderSearchReindexDocumentCounter
 import dev.pietrorussod.integrationhub.application.search.OrderSearchRepository
 import dev.pietrorussod.integrationhub.application.search.SearchOrdersQuery
 import dev.pietrorussod.integrationhub.domain.order.Currency
@@ -12,6 +13,7 @@ import dev.pietrorussod.integrationhub.domain.order.SourceSystem
 import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchOrderIndexBootstrap
 import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchOrderIndexBootstrapOutcome
 import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchOrderIndexDefinition
+import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchOrderSearchDocumentWriter
 import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchTestContainer
 import io.quarkus.test.common.QuarkusTestResource
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager
@@ -63,6 +65,12 @@ class OrderReadySearchProjectionIT {
     lateinit var projection: OrderSearchProjection
 
     @Inject
+    lateinit var documentWriter: OpenSearchOrderSearchDocumentWriter
+
+    @Inject
+    lateinit var candidateDocumentCounter: OrderSearchReindexDocumentCounter
+
+    @Inject
     lateinit var orderSearchRepository: OrderSearchRepository
 
     @ConfigProperty(name = "kafka.bootstrap.servers")
@@ -85,6 +93,16 @@ class OrderReadySearchProjectionIT {
                 .value(),
         )
         assertEquals(OpenSearchOrderIndexBootstrapOutcome.ALREADY_EXISTS, indexBootstrap.ensureReadAlias())
+    }
+
+    @Test
+    fun `counts documents in a candidate index`() {
+        val candidateIndex = "orders-v2"
+        openSearchClient.indices().create(OpenSearchOrderIndexDefinition.createCandidateRequest(candidateIndex))
+        documentWriter.upsert(messageMapper.map(event()), candidateIndex)
+        openSearchClient.indices().refresh { request -> request.index(candidateIndex) }
+
+        assertEquals(1L, candidateDocumentCounter.countDocuments(candidateIndex))
     }
 
     @Test
