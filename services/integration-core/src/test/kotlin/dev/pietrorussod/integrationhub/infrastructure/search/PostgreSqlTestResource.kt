@@ -32,8 +32,7 @@ class PostgreSqlTestResource : QuarkusTestResourceLifecycleManager {
     }
 }
 
-private class PostgreSqlTestContainer :
-    GenericContainer<PostgreSqlTestContainer>(DockerImageName.parse("postgres:18.3")) {
+private class PostgreSqlTestContainer : GenericContainer<PostgreSqlTestContainer>(DockerImageName.parse("postgres:18.3")) {
     init {
         withEnv("POSTGRES_DB", DATABASE)
         withEnv("POSTGRES_USER", USERNAME)
