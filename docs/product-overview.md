@@ -101,17 +101,18 @@ persistence, and structured logs.
 
 ### Operator API and demo console
 
-Available for the current PostgreSQL-backed scope. The Integration Core exposes
-read-only operator endpoints for paginated order summaries and order details
-with line items, timeline entries, and processing attempts. With the optional
+Available for the current PostgreSQL-authoritative scope. The Integration Core
+exposes read-only operator endpoints for paginated order summaries and order
+details with line items, timeline entries, and processing attempts. With the optional
 OpenSearch profile enabled, `GET /api/v1/operator/orders/search` searches the
 event-driven order projection by text, source system, external ID, status,
 currency, SKU, and receipt interval. `GET /api/v1/operator/orders/search/status`
 reports consumer enablement and read-alias availability without mutating the
-projection. The React and TypeScript console
-implements the paginated summary, operational detail, and a demo simulator for
-sending fresh, equivalent, conflicting, and domain-invalid canonical orders in
-a controlled local environment. Published-event inspection remains planned.
+projection. The React and TypeScript console implements the paginated summary,
+operational detail, and an availability-gated projected-order search by text,
+exact external order ID, or SKU. It also provides a demo simulator for sending
+fresh, equivalent, conflicting, and domain-invalid canonical orders in a
+controlled local environment. Published-event inspection remains planned.
 
 The simulator is a portfolio and development tool, not a production
 administration surface. Production replay, manual retries, and mutation of
@@ -194,7 +195,7 @@ external subscribers remain planned.
 | Processing consumer and event deduplication | Implemented and broker-tested |
 | Operator order summary API | Implemented |
 | Operator detail API | Implemented |
-| Operator console and demo simulator | Summary, detail, and controlled simulator implemented |
+| Operator console and demo simulator | Summary, detail, availability-gated projected-order search, and controlled simulator implemented |
 | Integration Flow Explorer | Sanitized local evidence replay implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
 | `ERP_B` polling adapter | Implemented and process-tested |

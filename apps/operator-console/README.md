@@ -1,10 +1,11 @@
 # Operator Console
 
 React and TypeScript console for inspecting Commerce Integration Hub operations.
-It provides a paginated order list, operational order details, a controlled
-canonical-ingestion simulator, and a Flow Explorer that replays recorded
-integration evidence. API types are generated from the Integration Core OpenAPI
-document and all HTTP access is isolated behind a tested client.
+It provides a paginated order list, optional projected-order search, operational
+order details, a controlled canonical-ingestion simulator, and a Flow Explorer
+that replays recorded integration evidence. API types are generated from the
+Integration Core OpenAPI document and all HTTP access is isolated behind a
+tested client.
 
 ## Prerequisites
 
@@ -27,6 +28,11 @@ backend during development with `VITE_INTEGRATION_CORE_PROXY_TARGET`.
 Open [http://localhost:5173](http://localhost:5173) after Vite starts. The order
 list and detail views use the read-only operator API. The simulator requires a
 source API key provisioned by the Integration Core administrative CLI.
+
+With the Integration Core OpenSearch profile enabled, the Orders page enables
+projected-order search only after the status endpoint reports the read alias as
+available. Operators can search item descriptions, an exact external order ID,
+or an exact SKU.
 
 ## Flow Explorer
 
