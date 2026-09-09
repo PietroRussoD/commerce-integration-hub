@@ -80,6 +80,18 @@
         "notInitialized": "Non inizializzata",
         "unavailable": "Non disponibile"
       }
+    },
+    "search": {
+      "label": "Cerca negli ordini indicizzati",
+      "placeholder": "Cerca nelle descrizioni degli articoli",
+      "submit": "Cerca negli ordini indicizzati",
+      "loading": "Ricerca negli ordini indicizzati",
+      "error": "Impossibile cercare negli ordini indicizzati",
+      "empty": "Nessun ordine indicizzato trovato",
+      "table": {
+        "matches": "Corrispondenze",
+        "ready": "Pronto"
+      }
     }
   },
   "orderDetail": {
