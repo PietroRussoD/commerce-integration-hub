@@ -189,6 +189,18 @@ export interface components {
             lastReconciliationAppliedCount: number | null;
             /** Format: int64 */
             lastReconciliationIgnoredCount: number | null;
+            reindex: components["schemas"]["OperatorOrderSearchReindexStatusResponse"];
+        };
+        OperatorOrderSearchReindexStatusResponse: {
+            phase: string;
+            sourceIndex: string | null;
+            candidateIndex: string | null;
+            /** Format: int64 */
+            scannedCount: number;
+            /** Format: int64 */
+            appliedCount: number;
+            /** Format: int64 */
+            ignoredNonNewerVersionCount: number;
         };
         OperatorOrderSearchResponse: {
             items: components["schemas"]["OperatorOrderSearchHitResponse"][];

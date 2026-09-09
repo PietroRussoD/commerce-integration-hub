@@ -58,6 +58,22 @@
       "inProgress": "In progress",
       "notRun": "Not run yet",
       "lastCompleted": "Completed {{completedAt}}: {{scanned}} scanned, {{applied}} applied",
+      "reindex": {
+        "title": "Reindex",
+        "phase": "Phase",
+        "sourceIndex": "Source index",
+        "candidateIndex": "Candidate index",
+        "scanned": "Scanned",
+        "applied": "Applied",
+        "appliedValue": "{{applied}} applied, {{ignored}} ignored",
+        "notAvailable": "Not available",
+        "phases": {
+          "idle": "Idle",
+          "preparing": "Preparing",
+          "rebuilding": "Rebuilding",
+          "readyForCutover": "Ready for cutover"
+        }
+      },
       "availability": {
         "label": "Availability",
         "available": "Available",

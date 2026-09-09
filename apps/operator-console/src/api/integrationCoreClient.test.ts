@@ -99,6 +99,14 @@ test("requests the operator search projection status", async () => {
     lastReconciliationScannedCount: 20,
     lastReconciliationAppliedCount: 3,
     lastReconciliationIgnoredCount: 17,
+    reindex: {
+      phase: "IDLE",
+      sourceIndex: null,
+      candidateIndex: null,
+      scannedCount: 0,
+      appliedCount: 0,
+      ignoredNonNewerVersionCount: 0,
+    },
   };
   const fetchMock = vi.fn().mockResolvedValue(
     new Response(JSON.stringify(responseBody), {
