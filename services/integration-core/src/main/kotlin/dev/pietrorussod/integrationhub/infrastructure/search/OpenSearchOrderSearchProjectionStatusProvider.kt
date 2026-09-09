@@ -4,6 +4,8 @@ import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionA
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationStateRepository
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionStatus
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionStatusProvider
+import dev.pietrorussod.integrationhub.application.search.OrderSearchReindexStateRepository
+import dev.pietrorussod.integrationhub.application.search.OrderSearchReindexStatus
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
 import org.eclipse.microprofile.config.inject.ConfigProperty
@@ -17,12 +19,14 @@ class OpenSearchOrderSearchProjectionStatusProvider
     constructor(
         private val client: OpenSearchClient,
         private val reconciliationStateRepository: OrderSearchProjectionReconciliationStateRepository,
+        private val reindexStateRepository: OrderSearchReindexStateRepository,
         @param:ConfigProperty(name = "mp.messaging.incoming.order-ready-search-in.enabled")
         private val consumerEnabled: Boolean,
     ) : OrderSearchProjectionStatusProvider {
         override fun status(): OrderSearchProjectionStatus {
             val reconciliationState = reconciliationStateRepository.current()
             val lastCompletedRun = reconciliationState.lastCompletedRun
+            val reindexState = reindexStateRepository.current()
             return OrderSearchProjectionStatus(
                 consumerEnabled = consumerEnabled,
                 readAlias = OpenSearchOrderIndexDefinition.READ_ALIAS,
@@ -32,6 +36,13 @@ class OpenSearchOrderSearchProjectionStatusProvider
                 lastReconciliationScannedCount = lastCompletedRun?.progress?.scannedCount,
                 lastReconciliationAppliedCount = lastCompletedRun?.progress?.appliedCount,
                 lastReconciliationIgnoredCount = lastCompletedRun?.progress?.ignoredNonNewerVersionCount,
+                reindex =
+                    OrderSearchReindexStatus(
+                        phase = reindexState.phase,
+                        sourceIndex = reindexState.sourceIndex,
+                        candidateIndex = reindexState.candidateIndex,
+                        progress = reindexState.progress,
+                    ),
             )
         }
 

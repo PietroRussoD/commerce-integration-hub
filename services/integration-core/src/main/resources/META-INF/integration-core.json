@@ -152,7 +152,7 @@
       },
       "OperatorOrderSearchProjectionStatusResponse" : {
         "type" : "object",
-        "required" : [ "consumerEnabled", "readAlias", "availability", "reconciliationInProgress", "lastReconciliationCompletedAt", "lastReconciliationScannedCount", "lastReconciliationAppliedCount", "lastReconciliationIgnoredCount" ],
+        "required" : [ "consumerEnabled", "readAlias", "availability", "reconciliationInProgress", "lastReconciliationCompletedAt", "lastReconciliationScannedCount", "lastReconciliationAppliedCount", "lastReconciliationIgnoredCount", "reindex" ],
         "properties" : {
           "consumerEnabled" : {
             "type" : "boolean"
@@ -183,6 +183,36 @@
           },
           "lastReconciliationIgnoredCount" : {
             "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "reindex" : {
+            "$ref" : "#/components/schemas/OperatorOrderSearchReindexStatusResponse"
+          }
+        }
+      },
+      "OperatorOrderSearchReindexStatusResponse" : {
+        "type" : "object",
+        "required" : [ "phase", "sourceIndex", "candidateIndex", "scannedCount", "appliedCount", "ignoredNonNewerVersionCount" ],
+        "properties" : {
+          "phase" : {
+            "type" : "string"
+          },
+          "sourceIndex" : {
+            "type" : [ "string", "null" ]
+          },
+          "candidateIndex" : {
+            "type" : [ "string", "null" ]
+          },
+          "scannedCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "appliedCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "ignoredNonNewerVersionCount" : {
+            "type" : "integer",
             "format" : "int64"
           }
         }

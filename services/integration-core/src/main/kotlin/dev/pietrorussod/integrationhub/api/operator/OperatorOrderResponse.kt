@@ -52,6 +52,16 @@ data class OperatorOrderSearchProjectionStatusResponse(
     val lastReconciliationScannedCount: Long?,
     val lastReconciliationAppliedCount: Long?,
     val lastReconciliationIgnoredCount: Long?,
+    val reindex: OperatorOrderSearchReindexStatusResponse,
+)
+
+data class OperatorOrderSearchReindexStatusResponse(
+    val phase: String,
+    val sourceIndex: String?,
+    val candidateIndex: String?,
+    val scannedCount: Long,
+    val appliedCount: Long,
+    val ignoredNonNewerVersionCount: Long,
 )
 
 data class OperatorOrderDetailResponse(

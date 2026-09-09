@@ -63,6 +63,15 @@ fun OrderSearchProjectionStatus.toResponse(): OperatorOrderSearchProjectionStatu
         lastReconciliationScannedCount = lastReconciliationScannedCount,
         lastReconciliationAppliedCount = lastReconciliationAppliedCount,
         lastReconciliationIgnoredCount = lastReconciliationIgnoredCount,
+        reindex =
+            OperatorOrderSearchReindexStatusResponse(
+                phase = reindex.phase.name,
+                sourceIndex = reindex.sourceIndex,
+                candidateIndex = reindex.candidateIndex,
+                scannedCount = reindex.progress.scannedCount,
+                appliedCount = reindex.progress.appliedCount,
+                ignoredNonNewerVersionCount = reindex.progress.ignoredNonNewerVersionCount,
+            ),
     )
 
 private fun OrderSearchHit.toResponse(): OperatorOrderSearchHitResponse =

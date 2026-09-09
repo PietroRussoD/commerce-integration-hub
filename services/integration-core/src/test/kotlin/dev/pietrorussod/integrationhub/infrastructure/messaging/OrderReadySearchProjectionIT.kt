@@ -117,6 +117,8 @@ class OrderReadySearchProjectionIT {
             .body("readAlias", equalTo(OpenSearchOrderIndexDefinition.READ_ALIAS))
             .body("availability", equalTo("AVAILABLE"))
             .body("reconciliationInProgress", equalTo(false))
+            .body("reindex.phase", equalTo("IDLE"))
+            .body("reindex.scannedCount", equalTo(0))
     }
 
     @Test
