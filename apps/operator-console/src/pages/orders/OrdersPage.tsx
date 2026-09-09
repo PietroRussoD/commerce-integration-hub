@@ -102,7 +102,10 @@ export function OrdersPage() {
         isError={searchProjectionQuery.isError}
       />
 
-      <ProjectedOrderSearch />
+      <ProjectedOrderSearch
+        isAvailable={searchProjectionQuery.data?.availability === "AVAILABLE"}
+        isAvailabilityKnown={searchProjectionQuery.data !== undefined}
+      />
 
       <div className="mt-5 overflow-hidden rounded-md border border-app-border bg-app-surface">
         {query.isPending ? <OrdersLoading /> : null}
