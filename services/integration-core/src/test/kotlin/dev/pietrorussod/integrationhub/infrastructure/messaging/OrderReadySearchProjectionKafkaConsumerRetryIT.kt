@@ -5,6 +5,7 @@ import dev.pietrorussod.integrationhub.application.search.OrderSearchDocument
 import dev.pietrorussod.integrationhub.application.search.OrderSearchItem
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjection
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionWriteOutcome
+import dev.pietrorussod.integrationhub.application.search.RecordOrderSearchProjectionProgressUseCase
 import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.OrderStatus
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
@@ -32,6 +33,9 @@ class OrderReadySearchProjectionKafkaConsumerRetryIT {
     lateinit var projection: OrderSearchProjection
 
     @InjectMock
+    lateinit var recordProjectionProgress: RecordOrderSearchProjectionProgressUseCase
+
+    @InjectMock
     lateinit var metrics: OrderSearchProjectionMetrics
 
     @Test
@@ -53,6 +57,7 @@ class OrderReadySearchProjectionKafkaConsumerRetryIT {
         consumer.consume(event)
 
         assertEquals(3, invocationCount)
+        Mockito.verify(recordProjectionProgress).record(event.occurredAt)
         Mockito.verify(metrics).recordProjection(OrderSearchProjectionWriteOutcome.APPLIED)
         Mockito.verify(metrics, Mockito.times(2)).recordFailedAttempt()
     }
@@ -70,6 +75,7 @@ class OrderReadySearchProjectionKafkaConsumerRetryIT {
         }
         Mockito.verify(messageMapper, Mockito.times(1)).map(event)
         Mockito.verifyNoInteractions(projection)
+        Mockito.verifyNoInteractions(recordProjectionProgress)
         Mockito.verify(metrics).recordInvalidEvent()
     }
 
