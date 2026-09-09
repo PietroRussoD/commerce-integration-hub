@@ -6,6 +6,7 @@ import {
   IntegrationCoreApiError,
   listOperatorOrders,
   receiveOrder,
+  searchOperatorOrders,
 } from "./integrationCoreClient";
 
 const receiveOrderRequest = {
@@ -121,6 +122,42 @@ test("requests the operator search projection status", async () => {
     headers: { Accept: "application/json" },
     signal: undefined,
   });
+});
+
+test("searches projected orders with encoded filters", async () => {
+  const responseBody = { items: [], limit: 10, offset: 20, total: 0 };
+  const fetchMock = vi.fn().mockResolvedValue(
+    new Response(JSON.stringify(responseBody), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(
+    searchOperatorOrders({
+      q: "blue shirt",
+      sourceSystem: "MARKETPLACE_A",
+      externalOrderId: "order/42",
+      status: "READY",
+      currency: "EUR",
+      sku: "SKU 42",
+      receivedAtFrom: "2026-09-01T00:00:00Z",
+      receivedAtBefore: "2026-09-02T00:00:00Z",
+      limit: 10,
+      offset: 20,
+    }),
+  ).resolves.toEqual(responseBody);
+  expect(fetchMock).toHaveBeenCalledWith(
+    "/api/v1/operator/orders/search?q=blue+shirt&sourceSystem=MARKETPLACE_A&externalOrderId=order%2F42&status=READY&currency=EUR&sku=SKU+42&receivedAtFrom=2026-09-01T00%3A00%3A00Z&receivedAtBefore=2026-09-02T00%3A00%3A00Z&limit=10&offset=20",
+    { headers: { Accept: "application/json" }, signal: undefined },
+  );
+});
+
+test("returns a typed error when projected order search fails", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 400 })));
+
+  await expect(searchOperatorOrders({ q: "" })).rejects.toMatchObject({ status: 400 });
 });
 
 test.each([
