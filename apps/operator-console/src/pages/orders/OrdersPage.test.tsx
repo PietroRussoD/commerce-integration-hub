@@ -139,6 +139,23 @@ test("searches projected orders only after an explicit submission", async () => 
   expect(searchOperatorOrdersMock).toHaveBeenCalledWith(expect.objectContaining({ q: "blue", limit: 25 }));
 });
 
+test("clears the active projected order search without another request", async () => {
+  listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
+  searchOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
+  renderOrdersPage();
+
+  const searchbox = screen.getByRole("searchbox", { name: "Search projected orders" });
+  fireEvent.change(searchbox, { target: { value: "blue" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search projected orders" }));
+  expect(await screen.findByText("No projected orders found")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Clear projected order search" }));
+
+  expect(searchbox).toHaveValue("");
+  expect(screen.queryByText("No projected orders found")).not.toBeInTheDocument();
+  expect(searchOperatorOrdersMock).toHaveBeenCalledTimes(1);
+});
+
 test("paginates projected order search results independently from the order list", async () => {
   listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
   searchOperatorOrdersMock

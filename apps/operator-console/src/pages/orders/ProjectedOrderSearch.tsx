@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, RefreshCw, Search, TriangleAlert } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw, Search, TriangleAlert, X } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -42,6 +42,12 @@ export function ProjectedOrderSearch() {
     setSubmittedSearchText(value);
   }
 
+  function clear() {
+    setSearchText("");
+    setSubmittedSearchText(undefined);
+    setOffset(0);
+  }
+
   return (
     <section aria-labelledby="projected-order-search-heading" className="mt-5">
       <form onSubmit={submit} className="flex max-w-xl items-end gap-2">
@@ -58,6 +64,11 @@ export function ProjectedOrderSearch() {
         <IconButton label={t("orders.search.submit")} type="submit" disabled={searchText.trim().length === 0 || query.isFetching}>
           <Search aria-hidden="true" size={17} />
         </IconButton>
+        {submittedSearchText !== undefined ? (
+          <IconButton label={t("orders.search.clear")} onClick={clear} variant="ghost">
+            <X aria-hidden="true" size={17} />
+          </IconButton>
+        ) : null}
       </form>
 
       {submittedSearchText === undefined ? null : (
