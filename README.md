@@ -198,7 +198,9 @@ The base Compose stack does not start OpenSearch, and both runtime paths remain
 disabled by default. The profile creates `orders-read` on the first projected
 order; reconciliation then pages through authoritative READY orders every 30
 seconds. Inspect its live availability and latest completed checkpoint at
-`GET /api/v1/operator/orders/search/status`.
+`GET /api/v1/operator/orders/search/status`. The same endpoint exposes the
+read-only progress of an active full reindex; starting that administrative
+operation is intentionally outside the local demo contract.
 
 Run the containerized Connector Gateway, its dedicated PostgreSQL database,
 and its one-shot migration job with:

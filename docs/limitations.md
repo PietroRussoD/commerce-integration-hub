@@ -38,8 +38,10 @@ mistaken for available behavior.
   PostgreSQL-backed reconciliation are implemented. Reconciliation has a
   durable checkpoint and lease, but is disabled by default. The local Compose
   path enables it only through explicit environment variables together with the
-  `search` profile. Full reindexing and persisted projection-lag metrics are
-  not implemented.
+  `search` profile. Full reindexing uses a separate durable lease, a candidate
+  index, dual writes, authoritative count validation, and atomic alias cutover.
+  It is intentionally internal: an authenticated, audited operator command and
+  persisted projection-lag metrics are not implemented.
 - The transactional outbox is persisted atomically with each new order, and the
   scheduled claim-publish-transition and expired-claim recovery cycles are
   implemented. Invalid or retry-exhausted `OrderReceived.v1` deliveries are
