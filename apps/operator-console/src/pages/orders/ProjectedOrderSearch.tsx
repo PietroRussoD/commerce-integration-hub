@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { RefreshCw, Search, TriangleAlert } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw, Search, TriangleAlert } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -16,9 +16,10 @@ export function ProjectedOrderSearch() {
   const { t } = useTranslation();
   const [searchText, setSearchText] = useState("");
   const [submittedSearchText, setSubmittedSearchText] = useState<string>();
+  const [offset, setOffset] = useState(0);
   const query = useQuery({
-    queryKey: ["operator-projected-order-search", { q: submittedSearchText, limit: SEARCH_PAGE_SIZE }],
-    queryFn: ({ signal }) => searchOperatorOrders({ q: submittedSearchText, limit: SEARCH_PAGE_SIZE, signal }),
+    queryKey: ["operator-projected-order-search", { q: submittedSearchText, limit: SEARCH_PAGE_SIZE, offset }],
+    queryFn: ({ signal }) => searchOperatorOrders({ q: submittedSearchText, limit: SEARCH_PAGE_SIZE, offset, signal }),
     enabled: submittedSearchText !== undefined,
     placeholderData: keepPreviousData,
   });
@@ -29,10 +30,15 @@ export function ProjectedOrderSearch() {
     if (value.length === 0) return;
 
     if (value === submittedSearchText) {
+      if (offset !== 0) {
+        setOffset(0);
+        return;
+      }
       void query.refetch();
       return;
     }
 
+    setOffset(0);
     setSubmittedSearchText(value);
   }
 
@@ -58,7 +64,18 @@ export function ProjectedOrderSearch() {
         <div className="mt-3 overflow-hidden rounded-md border border-app-border bg-app-surface">
           {query.isPending ? <SearchLoading /> : null}
           {query.isError ? <SearchError onRetry={() => void query.refetch()} /> : null}
-          {query.data !== undefined ? <SearchResults page={query.data} /> : null}
+          {query.data !== undefined ? (
+            <>
+              <SearchResults page={query.data} />
+              {query.data.total > 0 ? (
+                <SearchPagination
+                  page={query.data}
+                  onPrevious={() => setOffset((current) => Math.max(0, current - SEARCH_PAGE_SIZE))}
+                  onNext={() => setOffset((current) => current + SEARCH_PAGE_SIZE)}
+                />
+              ) : null}
+            </>
+          ) : null}
         </div>
       )}
     </section>
@@ -148,6 +165,38 @@ function SearchResults({ page }: { page: OperatorOrderSearchPage }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function SearchPagination({
+  page,
+  onPrevious,
+  onNext,
+}: {
+  page: OperatorOrderSearchPage;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  const { t } = useTranslation();
+  const first = page.offset + 1;
+  const last = Math.min(page.offset + page.items.length, page.total);
+
+  return (
+    <div className="flex items-center justify-end gap-3 border-t border-app-border px-4 py-3 text-sm text-app-foreground-secondary">
+      <span className="tabular-nums">{t("orders.pagination", { first, last, total: page.total })}</span>
+      <div className="flex gap-1">
+        <IconButton label={t("orders.actions.previousPage")} onClick={onPrevious} disabled={page.offset === 0}>
+          <ChevronLeft aria-hidden="true" size={18} />
+        </IconButton>
+        <IconButton
+          label={t("orders.actions.nextPage")}
+          onClick={onNext}
+          disabled={page.offset + page.items.length >= page.total}
+        >
+          <ChevronRight aria-hidden="true" size={18} />
+        </IconButton>
+      </div>
     </div>
   );
 }
