@@ -1,3 +1,9 @@
+export const orderStatusLabelKeys = {
+  RECEIVED: "orders.status.received",
+  PROCESSING: "orders.status.processing",
+  READY: "orders.status.ready",
+} as const;
+
 export function formatDateTime(value: string, locale = "en-GB"): string {
   return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",

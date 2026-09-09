@@ -8,7 +8,7 @@ import { searchOperatorOrders, type OperatorOrderSearchPage } from "../../api/in
 import { IconButton } from "../../components/ui/IconButton";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
-import { formatDateTime, formatLabel, formatMoney } from "./orderFormatters";
+import { formatDateTime, formatLabel, formatMoney, orderStatusLabelKeys } from "./orderFormatters";
 
 const SEARCH_PAGE_SIZE = 25;
 
@@ -191,8 +191,7 @@ function SearchError({ onRetry }: { onRetry: () => void }) {
 }
 
 function SearchResults({ page }: { page: OperatorOrderSearchPage }) {
-  const { t, i18n } = useTranslation();
-  const locale = resolveIntlLocale(i18n.resolvedLanguage);
+  const { t } = useTranslation();
 
   if (page.items.length === 0) {
     return <p className="px-6 py-12 text-center text-sm text-app-foreground-muted">{t("orders.search.empty")}</p>;
@@ -225,31 +224,41 @@ function SearchResults({ page }: { page: OperatorOrderSearchPage }) {
         </thead>
         <tbody className="divide-y divide-app-surface-muted">
           {page.items.map((order) => (
-            <tr key={order.id} className="group hover:bg-app-canvas">
-              <td className="px-4 py-3.5">
-                <Link
-                  to={`/orders/${order.id}`}
-                  className="font-medium text-app-foreground underline-offset-4 group-hover:text-app-brand-primary group-hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
-                >
-                  {order.externalOrderId}
-                </Link>
-              </td>
-              <td className="px-4 py-3.5 text-app-foreground-secondary">{formatLabel(order.sourceSystem)}</td>
-              <td className="px-4 py-3.5">
-                <StatusBadge status={order.status}>{formatLabel(order.status)}</StatusBadge>
-              </td>
-              <td className="px-4 py-3.5 text-app-foreground-secondary">{order.itemDescriptions.join(", ")}</td>
-              <td className="px-4 py-3.5 text-right font-medium tabular-nums">
-                {formatMoney(order.totalAmount, order.currency, locale)}
-              </td>
-              <td className="px-4 py-3.5 whitespace-nowrap text-app-foreground-secondary">
-                {formatDateTime(order.readyAt, locale)}
-              </td>
-            </tr>
+            <SearchResultRow key={order.id} order={order} />
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function SearchResultRow({ order }: { order: OperatorOrderSearchPage["items"][number] }) {
+  const { t, i18n } = useTranslation();
+  const locale = resolveIntlLocale(i18n.resolvedLanguage);
+  const statusLabelKey = orderStatusLabelKeys[order.status as keyof typeof orderStatusLabelKeys];
+
+  return (
+    <tr className="group hover:bg-app-canvas">
+      <td className="px-4 py-3.5">
+        <Link
+          to={`/orders/${order.id}`}
+          className="font-medium text-app-foreground underline-offset-4 group-hover:text-app-brand-primary group-hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+        >
+          {order.externalOrderId}
+        </Link>
+      </td>
+      <td className="px-4 py-3.5 text-app-foreground-secondary">{formatLabel(order.sourceSystem)}</td>
+      <td className="px-4 py-3.5">
+        <StatusBadge status={order.status}>{statusLabelKey === undefined ? formatLabel(order.status) : t(statusLabelKey)}</StatusBadge>
+      </td>
+      <td className="px-4 py-3.5 text-app-foreground-secondary">{order.itemDescriptions.join(", ")}</td>
+      <td className="px-4 py-3.5 text-right font-medium tabular-nums">
+        {formatMoney(order.totalAmount, order.currency, locale)}
+      </td>
+      <td className="px-4 py-3.5 whitespace-nowrap text-app-foreground-secondary">
+        {formatDateTime(order.readyAt, locale)}
+      </td>
+    </tr>
   );
 }
 

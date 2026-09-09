@@ -295,6 +295,26 @@ test("renders translated labels and locale-aware values in Italian", async () =>
     offset: 0,
     total: 1,
   });
+  searchOperatorOrdersMock.mockResolvedValue({
+    items: [
+      {
+        id: "018f38c2-1b95-7cc4-bb89-72d26a6f9f88",
+        aggregateVersion: 2,
+        sourceSystem: "MARKETPLACE_A",
+        externalOrderId: "RICERCA-42",
+        status: "READY",
+        currency: "EUR",
+        totalAmount: "39.98",
+        receivedAt: "2026-09-08T08:00:00Z",
+        readyAt: "2026-09-08T08:00:05Z",
+        itemSkus: ["SKU-42"],
+        itemDescriptions: ["Maglia blu"],
+      },
+    ],
+    limit: 25,
+    offset: 0,
+    total: 1,
+  });
 
   renderOrdersPage("it");
 
@@ -306,6 +326,13 @@ test("renders translated labels and locale-aware values in Italian", async () =>
   expect(screen.getByRole("row", { name: /ORDER-42.*Pronto/i })).toBeInTheDocument();
   expect(screen.getByText("1-1 di 1")).toBeInTheDocument();
   expect(screen.getByText(/39,98/)).toBeInTheDocument();
+
+  await waitFor(() => expect(screen.getByRole("searchbox", { name: "Cerca negli ordini indicizzati" })).toBeEnabled());
+  fireEvent.change(screen.getByRole("searchbox", { name: "Cerca negli ordini indicizzati" }), { target: { value: "blu" } });
+  fireEvent.click(screen.getByRole("button", { name: "Cerca negli ordini indicizzati" }));
+
+  expect(await screen.findByText("RICERCA-42")).toBeInTheDocument();
+  expect(screen.getByRole("row", { name: /RICERCA-42.*Pronto/i })).toBeInTheDocument();
 });
 
 test("has no automatically detectable accessibility violations in the loaded order list", async () => {
