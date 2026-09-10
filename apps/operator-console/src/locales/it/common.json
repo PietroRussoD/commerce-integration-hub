@@ -413,6 +413,10 @@
     },
     "operations": {
       "title": "Superfici operative e osservabilita'",
+      "connections": {
+        "title": "Touchpoint runtime",
+        "coreAndGateway": "Integration Core e Connector Gateway"
+      },
       "console": {
         "title": "Console operativa",
         "description": "Console React che invoca l'API HTTP dell'Integration Core."
