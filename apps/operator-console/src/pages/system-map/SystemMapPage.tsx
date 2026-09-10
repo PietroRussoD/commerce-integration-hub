@@ -370,11 +370,16 @@ function SystemConnection({ from, label, to, optional = false }: { from: string;
 }
 
 function SystemNode({ nodeId, icon: Icon, title, description, optional = false, selected, onSelect }: SystemNodeProps) {
+  const titleId = `system-map-${nodeId}-title`;
+  const descriptionId = `system-map-${nodeId}-description`;
+
   return (
     <button
       type="button"
       aria-pressed={selected}
       aria-controls="system-map-details"
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
       onClick={() => onSelect(nodeId)}
       className={[
         "min-h-32 border bg-app-surface p-4 text-left transition-colors hover:bg-app-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus",
@@ -383,8 +388,12 @@ function SystemNode({ nodeId, icon: Icon, title, description, optional = false, 
       ].join(" ")}
     >
       <Icon aria-hidden="true" className="text-app-brand-primary" size={20} strokeWidth={1.8} />
-      <h3 className="mt-3 text-sm font-semibold text-app-foreground">{title}</h3>
-      <p className="mt-1 text-xs leading-5 text-app-foreground-muted">{description}</p>
+      <h3 id={titleId} className="mt-3 text-sm font-semibold text-app-foreground">
+        {title}
+      </h3>
+      <p id={descriptionId} className="mt-1 text-xs leading-5 text-app-foreground-muted">
+        {description}
+      </p>
     </button>
   );
 }
