@@ -32,7 +32,7 @@ Read in this order to follow one order through the system.
 7. [Flow Explorer](flow-explorer.md): how captured local scenarios are
    sanitized and replayed in the Operator Console.
 8. [System Map](../apps/operator-console/README.md#system-map): the static,
-   interactive topology reference and the versioned technical sources behind its
+   interactive topology reference and the technical sources behind its
    component descriptions.
 
 ## Frontend

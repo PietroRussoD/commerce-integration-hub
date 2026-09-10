@@ -67,9 +67,8 @@ flowchart LR
     Core -->|Projected-order query| Search
 ```
 
-Solid connections are available in the current repository. Dashed connections
-represent planned increments and must not be interpreted as implemented runtime
-behavior.
+Every connection in this diagram is implemented. Optional runtime paths remain
+disabled unless their documented Compose profile and configuration are enabled.
 
 ## Synthetic Providers
 
@@ -125,7 +124,7 @@ Available as static architecture reference in the Operator Console. The map
 shows the implemented runtime topology, direct canonical HTTP ingestion,
 provider-specific Gateway paths, durable stores, event processing, optional
 local capabilities, and operational touchpoints. Selecting a component exposes
-its role, interfaces, and a versioned repository reference. It neither reports
+its role, interfaces, and a repository reference. It neither reports
 live runtime state nor invokes operational commands.
 
 ### Provider-specific Connector Gateway
@@ -207,10 +206,15 @@ read model; external subscribers remain planned.
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, availability-gated projected-order search, and controlled simulator implemented |
 | Integration Flow Explorer | Sanitized local evidence replay implemented |
-| Integration System Map | Interactive static topology reference with versioned technical links implemented |
+| Integration System Map | Interactive static topology reference with technical links implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
 | `ERP_B` polling adapter | Implemented and process-tested |
 | OpenSearch projection, operator search API, outcome metrics, availability API, bounded reconciliation, safe full reindex, and persisted projection progress | Implemented; an authenticated/audited reindex command and Kafka consumer lag remain planned |
+| Gateway and event API contracts | Gateway OpenAPI and canonical-event AsyncAPI planned |
+| Operator authentication and authorization | External JWT validation and operator/platform-admin roles planned |
+| Failure inspection and controlled recovery | Delivery/DLQ inspection, idempotent retry/replay, and immutable audit evidence planned |
+| Gateway payload retention enforcement | Expiry timestamp implemented; payload cleanup planned |
+| Distributed tracing and alerting | OpenTelemetry propagation/export and alert rules planned |
 
 ## Non-goals
 

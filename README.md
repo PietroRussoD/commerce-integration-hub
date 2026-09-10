@@ -276,8 +276,9 @@ checks are documented in the [accessibility plan](docs/accessibility.md).
 The precise boundary of the current implementation is documented in
 [current limitations](docs/limitations.md). The delivered behavior and its
 verification evidence are summarized in the
-[`v0.7.0` release notes](docs/releases/v0.7.0.md). Previous milestones are
-documented in the [`v0.6.0`](docs/releases/v0.6.0.md),
+[`v0.9.0` release notes](docs/releases/v0.9.0.md). Previous milestones are
+documented in the [`v0.8.0`](docs/releases/v0.8.0.md),
+[`v0.7.0`](docs/releases/v0.7.0.md), [`v0.6.0`](docs/releases/v0.6.0.md),
 [`v0.5.0`](docs/releases/v0.5.0.md),
 [`v0.4.0`](docs/releases/v0.4.0.md),
 [`v0.3.0`](docs/releases/v0.3.0.md),

@@ -18,7 +18,9 @@ mocked where required:
 - application shell and navigation;
 - populated order list;
 - populated order details;
-- canonical-order simulator.
+- canonical-order simulator;
+- Flow Explorer;
+- System Map.
 
 The shared helper in `src/test/accessibility.ts` reports each violation with its
 impact, rule, affected selector, and failure summary. The tests cover semantic
@@ -32,10 +34,11 @@ components through its accessibility addon, but those checks do not replace a
 full-page audit.
 
 The local `pnpm test:e2e` Playwright suite verifies the order list-to-detail
-flow, simulator success and validation states, focus recovery, keyboard skip
-navigation, and global overflow at a 320 px viewport in Chromium. The suite
-uses deterministic API fixtures and is not currently executed by GitHub
-Actions, so it does not verify the live backend or act as a CI gate.
+flow, simulator success and validation states, Flow Explorer playback, System
+Map exploration, focus recovery, keyboard skip navigation, and global overflow
+at a 320 px viewport in Chromium. The suite uses deterministic API fixtures and
+is not currently executed by GitHub Actions, so it does not verify the live
+backend or act as a CI gate.
 
 ## Current Evidence
 

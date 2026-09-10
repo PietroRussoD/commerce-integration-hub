@@ -79,6 +79,10 @@ mistaken for available behavior.
   Distributed tracing, alerting rules, and production monitoring are not.
   Deployment must restrict `/metrics` to trusted monitoring infrastructure.
 - Raw provider payloads are not retained by the canonical API.
+- The Connector Gateway does retain synthetic provider and canonical payloads
+  with a default 30-day expiry timestamp so accepted work can be forwarded and
+  investigated. Automated payload clearing is not implemented yet, so the
+  timestamp is not currently an enforced retention policy.
 
 ## Deployment and Scale
 

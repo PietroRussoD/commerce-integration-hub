@@ -3,9 +3,10 @@
 React and TypeScript console for inspecting Commerce Integration Hub operations.
 It provides a paginated order list, optional projected-order search, operational
 order details, a controlled canonical-ingestion simulator, and a Flow Explorer
-that replays recorded integration evidence. API types are generated from the
-Integration Core OpenAPI document and all HTTP access is isolated behind a
-tested client.
+that replays recorded integration evidence. Its System Map explains the
+implemented component topology and links to the corresponding technical
+sources. API types are generated from the Integration Core OpenAPI document and
+all HTTP access is isolated behind a tested client.
 
 ## Prerequisites
 
@@ -51,7 +52,7 @@ contract boundaries, and regeneration commands are documented in the
 
 Open [http://localhost:5173/system-map](http://localhost:5173/system-map) for
 an interactive reference of the implemented topology. Selecting a component
-shows its role, interfaces, and a link to the versioned repository document
+shows its role, interfaces, and a link to the repository document
 that supports the description. The page is static architecture reference; it
 does not report live runtime state or issue control commands.
 
