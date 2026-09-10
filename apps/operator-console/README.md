@@ -47,6 +47,14 @@ arrow keys, `Home`, and `End` for keyboard inspection. Capture provenance,
 contract boundaries, and regeneration commands are documented in the
 [Flow Explorer guide](../../docs/flow-explorer.md).
 
+## System Map
+
+Open [http://localhost:5173/system-map](http://localhost:5173/system-map) for
+an interactive reference of the implemented topology. Selecting a component
+shows its role, interfaces, and a link to the versioned repository document
+that supports the description. The page is static architecture reference; it
+does not report live runtime state or issue control commands.
+
 ## Component development
 
 Run Storybook to develop and inspect shared UI components independently from
