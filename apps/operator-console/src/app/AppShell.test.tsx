@@ -29,6 +29,7 @@ test("renders navigation inside the operator shell", async () => {
   expect(screen.getByRole("main")).toHaveAttribute("tabindex", "-1");
   expect(screen.getByRole("link", { name: "Orders" })).toHaveAttribute("href", "/orders");
   expect(screen.getByRole("link", { name: "Flow Explorer" })).toHaveAttribute("href", "/flow-explorer");
+  expect(screen.getByRole("link", { name: "System Map" })).toHaveAttribute("href", "/system-map");
   expect(screen.getByRole("link", { name: "Simulator" })).toHaveAttribute("aria-current", "page");
 });
 
@@ -96,6 +97,7 @@ test("renders shell navigation in Italian when supplied with the Italian locale"
     "href",
     "/flow-explorer",
   );
+  expect(within(navigation).getByRole("link", { name: "Mappa del sistema" })).toHaveAttribute("href", "/system-map");
   expect(within(navigation).getByRole("link", { name: "Simulatore" })).toHaveAttribute("aria-current", "page");
   expect(screen.getByText("Console operativa")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Vai al contenuto principale" })).toHaveAttribute("href", "#main-content");
