@@ -7,7 +7,8 @@ class RecordOrderSearchProjectionProgressUseCase(
     private val progressRepository: OrderSearchProjectionProgressRepository,
     private val clock: Clock,
 ) {
-    fun record(eventOccurredAt: Instant) {
-        progressRepository.recordSuccessfulProjection(eventOccurredAt, clock.instant())
+    fun record(eventOccurredAt: Instant): Instant? {
+        val projectedAt = clock.instant()
+        return projectedAt.takeIf { progressRepository.recordSuccessfulProjection(eventOccurredAt, it) }
     }
 }

@@ -7,6 +7,8 @@ import io.quarkus.test.junit.QuarkusTest
 import jakarta.inject.Inject
 import org.jooq.DSLContext
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.time.Instant
 
@@ -28,14 +30,14 @@ class JooqOrderSearchProjectionProgressRepositoryIT {
 
         val firstEventAt = Instant.parse("2026-09-09T08:00:00.123456Z")
         val firstProjectedAt = Instant.parse("2026-09-09T08:00:00.323456Z")
-        repository.recordSuccessfulProjection(firstEventAt, firstProjectedAt)
+        assertTrue(repository.recordSuccessfulProjection(firstEventAt, firstProjectedAt))
 
         val olderEventAt = Instant.parse("2026-09-09T07:59:59.123456Z")
-        repository.recordSuccessfulProjection(olderEventAt, Instant.parse("2026-09-09T08:00:01.123456Z"))
+        assertFalse(repository.recordSuccessfulProjection(olderEventAt, Instant.parse("2026-09-09T08:00:01.123456Z")))
 
         val latestEventAt = Instant.parse("2026-09-09T08:00:02.123456Z")
         val latestProjectedAt = Instant.parse("2026-09-09T08:00:02.423456Z")
-        repository.recordSuccessfulProjection(latestEventAt, latestProjectedAt)
+        assertTrue(repository.recordSuccessfulProjection(latestEventAt, latestProjectedAt))
 
         assertEquals(
             OrderSearchProjectionProgress(
