@@ -143,6 +143,27 @@ test("replays a recorded rejection through the Flow Explorer", async ({ page }) 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
 
+test("explores the System Map without mobile page overflow", async ({ page }) => {
+  await page.goto("/system-map");
+
+  await expect(page.getByRole("heading", { name: "System Map" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Integration Core" }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Integration Core" })).toHaveAttribute("aria-pressed", "true");
+
+  await page.getByRole("button", { name: "OpenSearch" }).click();
+
+  await expect(page.getByRole("complementary", { name: "OpenSearch" })).toContainText(
+    "Provides a rebuildable read model for operational order search",
+  );
+  await expect(page.getByRole("link", { name: "Open technical reference" })).toHaveAttribute(
+    "href",
+    "https://github.com/PietroRussoD/commerce-integration-hub/blob/main/docs/decisions/0015-rebuildable-opensearch-order-projection.md",
+  );
+
+  await page.setViewportSize({ width: 320, height: 800 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});
+
 async function mockOperatorApi(page: Page, onProjectedSearch?: (request: Request) => void) {
   await page.route("**/api/v1/operator/orders/*", async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(orderDetail) });
