@@ -178,8 +178,8 @@ the actual delay is sampled between 50% and 100% of that limit. Once the maximum
 attempt count is reached, the decision is `Exhausted` rather than another retry.
 
 The policy, terminal transition, publisher orchestrator, and runtime
-configuration are connected. Metrics and alerting are separate operational
-increments.
+configuration are connected. Bounded dispatch and recovery metrics are
+implemented; alerting rules are not.
 
 ## Expiry and ambiguous publication
 
@@ -204,5 +204,5 @@ sequenceDiagram
 ```
 
 The broker may observe event `E` twice. This is an at-least-once boundary, so the
-consumer increment must record the stable event ID and apply its business effect
+implemented consumer records the stable event ID and applies its business effect
 only once.

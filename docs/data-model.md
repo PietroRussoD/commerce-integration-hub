@@ -29,6 +29,7 @@ erDiagram
         numeric total_amount
         varchar payload_fingerprint
         smallint payload_fingerprint_version
+        bigint aggregate_version
         varchar status
         timestamptz received_at
     }
@@ -95,6 +96,42 @@ erDiagram
         timestamptz started_at
         timestamptz completed_at
     }
+
+    order_search_projection_reconciliation_state {
+        varchar projection_name PK
+        timestamptz cursor_received_at
+        uuid cursor_order_id
+        bigint current_scanned_count
+        bigint current_applied_count
+        bigint current_ignored_non_newer_version_count
+        timestamptz last_completed_at
+        bigint version
+        varchar lease_owner
+        uuid lease_token
+        timestamptz lease_expires_at
+    }
+
+    order_search_reindex_state {
+        varchar operation_name PK
+        varchar source_index
+        varchar candidate_index
+        varchar phase
+        timestamptz cursor_received_at
+        uuid cursor_order_id
+        bigint scanned_count
+        bigint applied_count
+        bigint ignored_count
+        bigint version
+        varchar lease_owner
+        uuid lease_token
+        timestamptz lease_expires_at
+    }
+
+    order_search_projection_progress {
+        varchar projection_name PK
+        timestamptz last_projected_event_occurred_at
+        timestamptz last_projected_at
+    }
 ```
 
 `orders.source_system` and `orders.external_order_id` form one composite unique
@@ -127,6 +164,15 @@ timeline. Attempt numbers are unique within an order, and a partial unique index
 allows at most one `STARTED` attempt per order. State constraints require
 successful and failed attempts to have a completion time, while only failed
 attempts may contain a non-blank safe error code and message.
+
+`orders.aggregate_version` increases with authoritative state changes and is
+included in `OrderReady.v2`. OpenSearch uses it to reject equal or stale
+projection writes. The three standalone search tables coordinate repair rather
+than owning order data: reconciliation persists a leased keyset cursor and
+counts, reindexing persists its fenced phase and candidate-index progress, and
+projection progress stores the latest successful event/application timestamps.
+The OpenSearch index itself is not part of this relational diagram because it is
+a rebuildable read model rather than PostgreSQL state.
 
 ## Connector Gateway
 
@@ -234,9 +280,10 @@ payload conflict, or database failure rolls back the complete page.
 
 The claim adapter locks only eligible delivery rows with `SKIP LOCKED`, assigns
 one lease token to a bounded batch, and commits before network work begins. The
-owner, token, and expiry are either all null or all present. Future completion
-and recovery transitions must match the token so a late worker cannot mutate a
-new ownership generation. See the [gateway delivery lifecycle](gateway-delivery-lifecycle.md).
+owner, token, and expiry are either all null or all present. Completion and
+recovery transitions match the token so a late worker cannot mutate a new
+ownership generation. See the
+[gateway delivery lifecycle](gateway-delivery-lifecycle.md).
 
 The repository uses the composite unique key to classify concurrent first
 receipt, equivalent replay, and conflicting content transactionally. It never

@@ -35,10 +35,10 @@ implementation chronology.
   OpenSearch order projection with PostgreSQL authority and alias-based reindex.
 - [ADR 0016](0016-version-order-state-and-evolve-ready-event.md): persisted
   aggregate versions and `OrderReady.v2` for stale-event protection.
-- [ADR 0018](0018-safe-opensearch-reindex-cutover.md): dual-write OpenSearch
-  rebuild, validation, and atomic read-alias cutover.
 - [ADR 0017](0017-single-repository-version.md): one repository version for
   every module, enforced by an automated check.
+- [ADR 0018](0018-safe-opensearch-reindex-cutover.md): dual-write OpenSearch
+  rebuild, validation, and atomic read-alias cutover.
 
 Accepted records are not edited to hide a later change of direction. Later
 extensions or replacements are recorded in a new ADR and linked to the earlier

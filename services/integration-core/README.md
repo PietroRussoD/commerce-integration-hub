@@ -16,11 +16,13 @@ are authenticated and constrained to that same source. A Kafka adapter publishes
 structured outbox events and is verified against a real broker. Scheduled
 workers dispatch bounded outbox batches and recover expired claims; message
 consumption handles `OrderReceived.v1` idempotently, records processing
-attempts, transitions valid orders to `READY`, and emits `OrderReady.v1`.
+attempts, transitions valid orders to `READY`, and emits `OrderReady.v2`.
 Read-only operator endpoints expose paginated summaries and order details with
-line items, timeline entries, and processing attempts. Search is not implemented
-yet. HTTP correlation IDs are returned on success and error responses and are
-persisted with ingestion events.
+line items, timeline entries, and processing attempts. An optional OpenSearch
+projection provides availability-gated operator search, reconciliation, safe
+full reindexing, and durable projection-progress reporting while PostgreSQL
+remains authoritative. HTTP correlation IDs are returned on success and error
+responses and are persisted with ingestion events.
 
 The service persists a canonical payload fingerprint with each order. Reusing a
 source identity returns `ALREADY_RECEIVED` for equivalent content and
@@ -42,6 +44,7 @@ dev.pietrorussod.integrationhub/
   application/operator/        operator read models, use cases, and port
   application/outbox/          event claim use case, model, and persistence port
   application/processing/      order-processing use case, model, and ports
+  application/search/          search, reconciliation, and reindex use cases
   domain/order/                entities, value objects, and business invariants
   infrastructure/persistence/  PostgreSQL adapters
     jooq/                       jOOQ repository and record mapping
@@ -49,6 +52,7 @@ dev.pietrorussod.integrationhub/
   infrastructure/observability/ operational metrics adapters
   infrastructure/provisioning/ source credential administrative CLI
   infrastructure/scheduling/   scheduled outbox dispatch adapter
+  infrastructure/search/       OpenSearch index and projection adapters
   infrastructure/security/     credential MAC verification
 ```
 
@@ -150,8 +154,24 @@ The outer timeout must remain greater than the producer delivery timeout.
 Fast component integration tests replace the connector with SmallRye in-memory.
 Broker-backed integration tests enable Kafka Dev Services and use Redpanda to
 verify publication metadata, consumer retry and dead-letter behavior, and the
-complete path from authenticated HTTP ingestion to `OrderReady.v1` publication.
+complete path from authenticated HTTP ingestion to `OrderReady.v2` publication.
 Production obtains its broker address from `KAFKA_BOOTSTRAP_SERVERS`.
+
+## Order search projection
+
+The optional OpenSearch path consumes `OrderReady.v2`, writes versioned order
+documents behind the `orders-read` alias, and ignores equal or stale aggregate
+versions. Operator search is unavailable until that alias exists. PostgreSQL is
+the source of truth: a leased reconciliation job repairs missed documents, and
+the internal full-reindex use case builds and validates a candidate index before
+an atomic alias cutover. Starting a reindex is intentionally not exposed as an
+operator command until authentication and audit controls exist.
+
+The search profile, its local startup command, and the status endpoint are
+documented in the repository [local demo](../../README.md#local-demo). The
+design and cutover decisions are recorded in
+[ADR 0015](../../docs/decisions/0015-rebuildable-opensearch-order-projection.md)
+and [ADR 0018](../../docs/decisions/0018-safe-opensearch-reindex-cutover.md).
 
 ## Observability
 
@@ -161,6 +181,8 @@ using the bounded `outcome` values `claimed`, `published`, `rescheduled`,
 `failed`, and `claim_lost`. Recovered expired claims are counted by
 `integration_hub_outbox_recovery_events_total`. Quarkus also records execution
 counts and durations for both scheduled jobs under `scheduled_methods_seconds`.
+Search metrics report projection outcomes, reconciliation runs and documents,
+reindex progress, the latest successful processing delay, and watermark age.
 
 Readiness checks the PostgreSQL connection and outgoing messaging channel;
 liveness reports whether the running process can continue serving. These
@@ -239,8 +261,9 @@ context leaking between requests.
 
 Development and test profiles use human-readable logs with the complete MDC.
 Production emits JSON, making the value searchable as `mdc.correlationId` in log
-platforms. W3C trace-context propagation and broker headers belong to later
-observability and messaging increments.
+platforms. W3C trace-context propagation belongs to a later observability
+increment; the repository correlation ID is already carried in event envelopes
+and Kafka headers.
 
 ## Build
 
@@ -394,11 +417,11 @@ docker compose exec -T redpanda \
 On a clean broker this returns the first submitted order as a structured
 `OrderReceived.v1` event, together with its Kafka key, headers, partition, and
 offset. The consumer processes it transactionally and the outbox dispatcher
-publishes the resulting `OrderReady.v1` event to its dedicated topic:
+publishes the resulting `OrderReady.v2` event to its dedicated topic:
 
 ```bash
 docker compose exec -T redpanda \
-  rpk topic consume integration.order.ready.v1 \
+  rpk topic consume integration.order.ready.v2 \
   --brokers redpanda:9092 \
   --offset start \
   --num 1 \
