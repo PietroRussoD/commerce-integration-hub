@@ -4,11 +4,35 @@ import { buildApplication } from "./app.js";
 
 const applications: ReturnType<typeof buildApplication>[] = [];
 
+interface OpenApiDocumentSummary {
+    info: { title: string; version: string };
+    paths: Record<string, unknown>;
+}
+
 afterEach(async () => {
     await Promise.all(applications.splice(0).map(async (application) => application.close()));
 });
 
 describe("health endpoint", () => {
+    it("exposes an OpenAPI document generated from the registered routes", async () => {
+        const application = buildApplication();
+        applications.push(application);
+
+        await application.ready();
+        const response = await application.inject({ method: "GET", url: "/openapi.json" });
+        const document: OpenApiDocumentSummary = response.json();
+
+        expect(response.statusCode).toBe(200);
+        expect(response.headers["content-type"]).toContain("application/json");
+        expect(document.info).toEqual({
+            title: "Commerce Integration Hub Connector Gateway API",
+            version: "1.0.0-SNAPSHOT",
+            description: "Provider-facing connector and operational health API."
+        });
+        expect(document.paths).toHaveProperty("/health");
+        expect(document.paths).toHaveProperty("/health/live");
+    });
+
     it("reports that the gateway is running", async () => {
         const application = buildApplication();
         applications.push(application);
