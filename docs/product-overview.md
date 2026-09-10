@@ -10,11 +10,11 @@ than checkout, payment, or inventory features.
 The platform is designed to make duplicate deliveries, ambiguous timeouts,
 temporary outages, and permanent failures explicit and recoverable. Operators
 can follow an order across ingestion and asynchronous processing through line
-items, timeline entries, and processing attempts. Search projections and
-controlled production retries remain later increments. The current operator API
-exposes read-only order summary and detail views backed by the authoritative
-PostgreSQL state, and the console also provides a controlled local ingestion
-simulator and a replay of sanitized local flow evidence.
+items, timeline entries, processing attempts, and an eventually consistent
+search projection. Controlled production retries remain a later increment. The
+current operator API exposes read-only order summary and detail views backed by
+the authoritative PostgreSQL state, and the console also provides a controlled
+local ingestion simulator and a replay of sanitized local flow evidence.
 
 ## Problem
 
@@ -34,7 +34,7 @@ metadata for investigation.
 | --- | --- |
 | External source system | Submits or exposes provider-specific order data. |
 | Integration operator | Inspects orders, failures, timelines, and controlled retries. |
-| Platform engineer | Operates the services and investigates backlog, lag, and failed events. |
+| Platform engineer | Operates the services and investigates backlog, projection progress, and failed events. |
 | Downstream service | Consumes canonical events and applies an idempotent business effect. |
 
 An optional public tracking view may later expose a restricted customer-safe
@@ -61,8 +61,8 @@ flowchart LR
     Core -->|Canonical event| Broker
     Broker --> Processor
     Processor --> CoreDatabase
-    Processor -.-> Search
-    Search -.-> UI
+    Processor --> Search
+    Search --> UI
     UI -->|Reads and canonical demo commands| Core
 ```
 
