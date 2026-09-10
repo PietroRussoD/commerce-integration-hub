@@ -49,8 +49,9 @@ The current baseline establishes:
 - a React and TypeScript operator console with a paginated, filterable order
   summary view, optional OpenSearch projected-order search, operational details,
   real search-projection availability and reconciliation state, a controlled
-  ingestion simulator, generated API types, routing, unit and local Chromium
-  browser tests, enforced coverage, and CI validation;
+  ingestion simulator, Flow Explorer, interactive static System Map, generated
+  API types, routing, unit and local Chromium browser tests, enforced coverage,
+  and CI validation;
 - a strict TypeScript and Fastify Connector Gateway baseline with an injectable
   application factory, health endpoint, enforced coverage, and an independent
   selective CI job;

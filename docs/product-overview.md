@@ -14,7 +14,8 @@ items, timeline entries, processing attempts, and an eventually consistent
 search projection. Controlled production retries remain a later increment. The
 current operator API exposes read-only order summary and detail views backed by
 the authoritative PostgreSQL state, and the console also provides a controlled
-local ingestion simulator and a replay of sanitized local flow evidence.
+local ingestion simulator, a replay of sanitized local flow evidence, and an
+interactive static System Map of the implemented topology.
 
 ## Problem
 
@@ -62,8 +63,8 @@ flowchart LR
     Broker --> Processor
     Processor --> CoreDatabase
     Processor --> Search
-    Search --> UI
-    UI -->|Reads and canonical demo commands| Core
+    UI -->|Operator API and canonical demo commands| Core
+    Core -->|Projected-order query| Search
 ```
 
 Solid connections are available in the current repository. Dashed connections
@@ -118,6 +119,15 @@ The simulator is a portfolio and development tool, not a production
 administration surface. Production replay, manual retries, and mutation of
 integration state remain separate audited capabilities.
 
+### System Map
+
+Available as static architecture reference in the Operator Console. The map
+shows the implemented runtime topology, direct canonical HTTP ingestion,
+provider-specific Gateway paths, durable stores, event processing, optional
+local capabilities, and operational touchpoints. Selecting a component exposes
+its role, interfaces, and a versioned repository reference. It neither reports
+live runtime state nor invokes operational commands.
+
 ### Provider-specific Connector Gateway
 
 Implemented for the current `MARKETPLACE_A` webhook path. The Node.js and
@@ -166,8 +176,8 @@ publishes versioned canonical events through Kafka-compatible infrastructure
 and processes `OrderReceived.v1` idempotently.
 The consumer records attempts and timeline entries transactionally, transitions
 successful orders to `READY`, and emits `OrderReady.v2` with the order aggregate
-version. Search projection and
-external subscribers remain planned.
+version. The OpenSearch order-search projection is implemented as a rebuildable
+read model; external subscribers remain planned.
 
 ## Reliability Model
 
@@ -197,6 +207,7 @@ external subscribers remain planned.
 | Operator detail API | Implemented |
 | Operator console and demo simulator | Summary, detail, availability-gated projected-order search, and controlled simulator implemented |
 | Integration Flow Explorer | Sanitized local evidence replay implemented |
+| Integration System Map | Interactive static topology reference with versioned technical links implemented |
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
 | `ERP_B` polling adapter | Implemented and process-tested |
 | OpenSearch projection, operator search API, outcome metrics, availability API, bounded reconciliation, safe full reindex, and persisted projection progress | Implemented; an authenticated/audited reindex command and Kafka consumer lag remain planned |
@@ -218,4 +229,5 @@ external subscribers remain planned.
 - [Ingestion sequences](ingestion-sequences.md)
 - [Outbox lifecycle](outbox-lifecycle.md)
 - [Architecture decisions](decisions/README.md)
+- [Operator Console System Map](../apps/operator-console/README.md#system-map)
 - [Current limitations](limitations.md)
