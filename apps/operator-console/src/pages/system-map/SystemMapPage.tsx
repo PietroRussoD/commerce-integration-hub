@@ -23,6 +23,7 @@ type SystemNodeProps = {
   title: string;
   description: string;
   optional?: boolean;
+  idSuffix?: string;
   selected: boolean;
   onSelect: (nodeId: SystemNodeId) => void;
 };
@@ -166,9 +167,9 @@ export function SystemMapPage() {
           {t("systemMap.ingestion.title")}
         </h2>
 
-        <div className="mt-3 overflow-x-auto border-y border-app-border py-5">
-          <div className="min-w-[920px]">
-            <div className="grid grid-cols-[minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)] items-center gap-3">
+        <div className="mt-3 border-y border-app-border py-5">
+          <div>
+            <div className="grid items-center gap-3 md:grid-cols-[minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)]">
               <SystemNode
                 nodeId="source"
                 icon={Globe2}
@@ -215,7 +216,7 @@ export function SystemMapPage() {
               />
             </div>
 
-            <div className="mt-5 grid grid-cols-[minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)] items-start gap-3">
+            <div className="mt-5 hidden grid-cols-[minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)] items-start gap-3 md:grid">
               <div />
               <div />
               <div className="flex flex-col items-center gap-2">
@@ -259,6 +260,37 @@ export function SystemMapPage() {
                   onSelect={setSelectedNodeId}
                 />
               </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 border-t border-app-border pt-5 md:hidden">
+              <SystemNode
+                nodeId="gatewayStorage"
+                icon={Database}
+                title={t("systemMap.storage.gateway.title")}
+                description={t("systemMap.storage.gateway.description")}
+                idSuffix="mobile"
+                selected={selectedNodeId === "gatewayStorage"}
+                onSelect={setSelectedNodeId}
+              />
+              <SystemNode
+                nodeId="coreStorage"
+                icon={Database}
+                title={t("systemMap.storage.core.title")}
+                description={t("systemMap.storage.core.description")}
+                idSuffix="mobile"
+                selected={selectedNodeId === "coreStorage"}
+                onSelect={setSelectedNodeId}
+              />
+              <SystemNode
+                nodeId="search"
+                icon={Search}
+                title={t("systemMap.storage.search.title")}
+                description={t("systemMap.storage.search.description")}
+                optional
+                idSuffix="mobile"
+                selected={selectedNodeId === "search"}
+                onSelect={setSelectedNodeId}
+              />
             </div>
 
             <div className="mt-5 flex items-center justify-center gap-3 border-t border-app-border pt-5 text-center text-xs text-app-foreground-muted">
@@ -349,8 +381,8 @@ function LegendItem({ label, optional }: { label: string; optional: boolean }) {
 
 function MapArrow({ label }: { label: string }) {
   return (
-    <div className="flex w-24 flex-col items-center gap-1 text-center text-xs text-app-foreground-muted">
-      <ArrowRight aria-hidden="true" className="text-app-foreground-faint" size={20} />
+    <div className="flex w-24 flex-col items-center gap-1 text-center text-xs text-app-foreground-muted max-md:w-full max-md:flex-row max-md:justify-center">
+      <ArrowRight aria-hidden="true" className="text-app-foreground-faint max-md:rotate-90" size={20} />
       <span>{label}</span>
     </div>
   );
@@ -369,9 +401,10 @@ function SystemConnection({ from, label, to, optional = false }: { from: string;
   );
 }
 
-function SystemNode({ nodeId, icon: Icon, title, description, optional = false, selected, onSelect }: SystemNodeProps) {
-  const titleId = `system-map-${nodeId}-title`;
-  const descriptionId = `system-map-${nodeId}-description`;
+function SystemNode({ nodeId, icon: Icon, title, description, optional = false, idSuffix, selected, onSelect }: SystemNodeProps) {
+  const identifier = idSuffix === undefined ? nodeId : `${nodeId}-${idSuffix}`;
+  const titleId = `system-map-${identifier}-title`;
+  const descriptionId = `system-map-${identifier}-description`;
 
   return (
     <button
