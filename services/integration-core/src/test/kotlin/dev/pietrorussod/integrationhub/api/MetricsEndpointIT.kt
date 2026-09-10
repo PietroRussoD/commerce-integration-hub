@@ -17,5 +17,7 @@ class MetricsEndpointIT {
             .body(containsString("integration_hub_outbox_dispatch_events_total"))
             .body(containsString("integration_hub_outbox_recovery_events_total"))
             .body(containsString("integration_hub_order_search_projection_events_total"))
+            .body(containsString("integration_hub_order_search_projection_processing_delay_milliseconds"))
+            .body(containsString("integration_hub_order_search_projection_watermark_age_milliseconds"))
     }
 }

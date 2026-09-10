@@ -39,6 +39,20 @@ editing them in the UI. Prometheus retains local samples for 24 hours.
 Services that are not running appear as `DOWN` targets. This does not prevent
 Prometheus or Grafana from starting.
 
+## Search projection progress
+
+The operations dashboard exposes two gauges for the OpenSearch order
+projection after its watermark advances successfully:
+
+- **Processing delay**: elapsed time from the source event occurrence to the
+  successful projection.
+- **Watermark age**: elapsed time since the most recently advanced watermark.
+
+Both are empty until the first successful projection and remain a view of
+successful projection progress, not Kafka consumer lag. A quiet source makes
+the watermark age increase even when the consumer is healthy and has no
+backlog.
+
 ## Reproducible smoke test
 
 Run the release-level smoke test from any directory:
