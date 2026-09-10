@@ -31,12 +31,12 @@ Read in this order to follow one order through the system.
    checkpoints, and its lease ownership.
 7. [Flow Explorer](flow-explorer.md): how captured local scenarios are
    sanitized and replayed in the Operator Console.
+8. [System Map](../apps/operator-console/README.md#system-map): the static,
+   interactive topology reference and the versioned technical sources behind its
+   component descriptions.
 
 ## Frontend
 
-- [System Map](../apps/operator-console/README.md#system-map): the static,
-  interactive topology reference in the Operator Console and the versioned
-  technical sources behind each component description.
 - [Accessibility plan](accessibility.md): the target, what is automatically
   verified, and what remains a manual audit.
 

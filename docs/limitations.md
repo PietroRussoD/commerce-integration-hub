@@ -62,10 +62,12 @@ mistaken for available behavior.
   availability-gated projected-order search, operational details, real
   search-projection availability and reconciliation state, a controlled
   canonical-ingestion simulator, and a Flow Explorer that replays three
-  committed sanitized local traces. The simulator keeps its source API key only
-  in page memory. The simulator and Flow Explorer are intended for local
+  committed sanitized local traces. It also provides a static System Map of the
+  implemented architecture. The simulator keeps its source API key only in page
+  memory. The simulator, Flow Explorer, and System Map are intended for local
   development and portfolio demonstrations, not production operation, auditing,
-  or distributed tracing.
+  or distributed tracing. The System Map is reference material only and has no
+  live topology, health, or control-plane behavior.
 - Liveness and PostgreSQL readiness checks, structured logs, correlation IDs,
   Prometheus runtime metrics,
   bounded outbox, order-search-projection, reconciliation, and Gateway-worker
