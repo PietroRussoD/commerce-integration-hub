@@ -24,6 +24,14 @@ export function createAppRoutes(brandTheme: BrandTheme = defaultBrandTheme): Rou
             return { Component: FlowExplorerPage };
           },
         },
+        {
+          path: "/system-map",
+          hydrateFallbackElement: <RouteLoading />,
+          lazy: async () => {
+            const { SystemMapPage } = await import("../pages/system-map/SystemMapPage");
+            return { Component: SystemMapPage };
+          },
+        },
       ],
     },
   ];

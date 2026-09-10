@@ -10,7 +10,8 @@
       "label": "Navigazione principale",
       "orders": "Ordini",
       "simulator": "Simulatore",
-      "flowExplorer": "Esplorazione flussi"
+      "flowExplorer": "Esplorazione flussi",
+      "systemMap": "Mappa del sistema"
     },
     "language": {
       "label": "Lingua",
@@ -312,6 +313,81 @@
     },
     "error": {
       "title": "Invio dell'ordine non riuscito"
+    }
+  },
+  "systemMap": {
+    "title": "Mappa del sistema",
+    "description": "La topologia di integrazione implementata e i suoi confini operativi. E' materiale di riferimento architetturale, non telemetria in tempo reale.",
+    "legend": {
+      "title": "Come leggere la mappa",
+      "implemented": "Flusso runtime implementato",
+      "optional": "Funzionalita' locale opzionale"
+    },
+    "ingestion": {
+      "title": "Acquisizione ed elaborazione ordini",
+      "source": {
+        "title": "Sistemi sorgente",
+        "description": "Marketplace, partner e sistemi ERP inviano o espongono gli ordini."
+      },
+      "gateway": {
+        "title": "Connector Gateway",
+        "description": "Confine TypeScript e Fastify per webhook firmati, polling e recupero delle consegne."
+      },
+      "core": {
+        "title": "Integration Core",
+        "description": "Servizio Kotlin e Quarkus che valida gli ordini canonici e gestisce il workflow."
+      },
+      "events": {
+        "title": "Redpanda",
+        "description": "Broker eventi compatibile con Kafka che trasporta eventi ordine canonici durevoli."
+      },
+      "processor": {
+        "title": "Consumer di elaborazione",
+        "description": "Consumer idempotente che avanza il workflow degli ordini e i read model."
+      }
+    },
+    "storage": {
+      "title": "Stato persistente",
+      "gateway": {
+        "title": "PostgreSQL del gateway",
+        "description": "Stato di consegna, checkpoint di polling e tentativi di recupero."
+      },
+      "core": {
+        "title": "PostgreSQL del core",
+        "description": "Ordini, timeline, outbox e stato di elaborazione."
+      },
+      "search": {
+        "title": "OpenSearch",
+        "description": "Read model ricostruibile per la ricerca ordini, dietro l'API del core."
+      }
+    },
+    "operations": {
+      "title": "Superfici operative e osservabilita'",
+      "console": {
+        "title": "Console operativa",
+        "description": "Console React che invoca l'API HTTP dell'Integration Core."
+      },
+      "simulator": {
+        "title": "Simulatore del provider",
+        "description": "Fixture locale che fornisce pagine ERP_B deterministiche."
+      },
+      "observability": {
+        "title": "Prometheus e Grafana",
+        "description": "Raccolta metriche e dashboard operative locali opzionali."
+      }
+    },
+    "links": {
+      "signedWebhook": "Webhook firmato",
+      "canonicalHttp": "Comando HTTP canonico",
+      "normalizedHttp": "Comando HTTP normalizzato",
+      "canonicalEvent": "Evento canonico",
+      "consumes": "Consuma evento",
+      "deliveryState": "Stato di consegna",
+      "workflowState": "Stato workflow e outbox",
+      "projects": "Proietta ordini",
+      "queries": "Interroga tramite API del core",
+      "polls": "Esegue polling delle pagine",
+      "scrapes": "Raccoglie metriche"
     }
   }
 }

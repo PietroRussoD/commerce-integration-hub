@@ -10,7 +10,8 @@
       "label": "Primary navigation",
       "orders": "Orders",
       "simulator": "Simulator",
-      "flowExplorer": "Flow Explorer"
+      "flowExplorer": "Flow Explorer",
+      "systemMap": "System Map"
     },
     "language": {
       "label": "Language",
@@ -312,6 +313,81 @@
     },
     "error": {
       "title": "Order submission failed"
+    }
+  },
+  "systemMap": {
+    "title": "System Map",
+    "description": "The implemented integration topology and its operational boundaries. This is architecture reference material, not live telemetry.",
+    "legend": {
+      "title": "Reading the map",
+      "implemented": "Implemented runtime path",
+      "optional": "Optional local capability"
+    },
+    "ingestion": {
+      "title": "Order ingestion and processing",
+      "source": {
+        "title": "Source systems",
+        "description": "Marketplaces, partners and ERP systems submit or expose orders."
+      },
+      "gateway": {
+        "title": "Connector Gateway",
+        "description": "TypeScript and Fastify boundary for signed webhooks, polling and delivery recovery."
+      },
+      "core": {
+        "title": "Integration Core",
+        "description": "Kotlin and Quarkus service that validates canonical orders and owns the workflow."
+      },
+      "events": {
+        "title": "Redpanda",
+        "description": "Kafka-compatible event broker carrying durable canonical order events."
+      },
+      "processor": {
+        "title": "Processing consumer",
+        "description": "Idempotent consumer that advances the order workflow and read models."
+      }
+    },
+    "storage": {
+      "title": "Durable state",
+      "gateway": {
+        "title": "Gateway PostgreSQL",
+        "description": "Delivery state, polling checkpoints and recovery attempts."
+      },
+      "core": {
+        "title": "Core PostgreSQL",
+        "description": "Orders, timeline, outbox and processing state."
+      },
+      "search": {
+        "title": "OpenSearch",
+        "description": "Rebuildable order-search read model behind the core API."
+      }
+    },
+    "operations": {
+      "title": "Operator and observability surfaces",
+      "console": {
+        "title": "Operator Console",
+        "description": "React console that invokes the Integration Core HTTP API."
+      },
+      "simulator": {
+        "title": "Provider Simulator",
+        "description": "Local fixture that supplies deterministic ERP_B pages."
+      },
+      "observability": {
+        "title": "Prometheus and Grafana",
+        "description": "Optional local metrics collection and operational dashboards."
+      }
+    },
+    "links": {
+      "signedWebhook": "Signed webhook",
+      "canonicalHttp": "Canonical HTTP command",
+      "normalizedHttp": "Normalized HTTP command",
+      "canonicalEvent": "Canonical event",
+      "consumes": "Consumes event",
+      "deliveryState": "Delivery state",
+      "workflowState": "Workflow state and outbox",
+      "projects": "Projects orders",
+      "queries": "Queries through core API",
+      "polls": "Polls pages",
+      "scrapes": "Scrapes metrics"
     }
   }
 }

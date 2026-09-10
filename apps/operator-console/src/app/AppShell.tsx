@@ -1,4 +1,4 @@
-import { ClipboardList, FlaskConical, Workflow } from "lucide-react";
+import { ClipboardList, FlaskConical, Network, Workflow } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
@@ -10,6 +10,7 @@ const navigation = [
   { to: "/orders", labelKey: "shell.navigation.orders", icon: ClipboardList },
   { to: "/simulator", labelKey: "shell.navigation.simulator", icon: FlaskConical },
   { to: "/flow-explorer", labelKey: "shell.navigation.flowExplorer", icon: Workflow },
+  { to: "/system-map", labelKey: "shell.navigation.systemMap", icon: Network },
 ] as const;
 
 export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
