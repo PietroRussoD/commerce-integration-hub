@@ -9,6 +9,7 @@ import {
   Search,
   Server,
   Workflow,
+  ExternalLink,
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
@@ -39,63 +40,76 @@ type SystemNodeId =
   | "simulator"
   | "observability";
 
+const repositoryUrl = "https://github.com/PietroRussoD/commerce-integration-hub/blob/main";
+
 const systemNodeDetails = {
   source: {
     titleKey: "systemMap.ingestion.source.title",
     roleKey: "systemMap.details.source.role",
     interfacesKey: "systemMap.details.source.interfaces",
+    referencePath: "docs/product-overview.md#integration-modes",
   },
   gateway: {
     titleKey: "systemMap.ingestion.gateway.title",
     roleKey: "systemMap.details.gateway.role",
     interfacesKey: "systemMap.details.gateway.interfaces",
+    referencePath: "services/connector-gateway/README.md",
   },
   core: {
     titleKey: "systemMap.ingestion.core.title",
     roleKey: "systemMap.details.core.role",
     interfacesKey: "systemMap.details.core.interfaces",
+    referencePath: "services/integration-core/README.md#architecture",
   },
   events: {
     titleKey: "systemMap.ingestion.events.title",
     roleKey: "systemMap.details.events.role",
     interfacesKey: "systemMap.details.events.interfaces",
+    referencePath: "services/integration-core/README.md#kafka-publication",
   },
   processor: {
     titleKey: "systemMap.ingestion.processor.title",
     roleKey: "systemMap.details.processor.role",
     interfacesKey: "systemMap.details.processor.interfaces",
+    referencePath: "docs/product-overview.md#event-subscription",
   },
   gatewayStorage: {
     titleKey: "systemMap.storage.gateway.title",
     roleKey: "systemMap.details.gatewayStorage.role",
     interfacesKey: "systemMap.details.gatewayStorage.interfaces",
+    referencePath: "docs/data-model.md#connector-gateway",
   },
   coreStorage: {
     titleKey: "systemMap.storage.core.title",
     roleKey: "systemMap.details.coreStorage.role",
     interfacesKey: "systemMap.details.coreStorage.interfaces",
+    referencePath: "docs/data-model.md",
   },
   search: {
     titleKey: "systemMap.storage.search.title",
     roleKey: "systemMap.details.search.role",
     interfacesKey: "systemMap.details.search.interfaces",
+    referencePath: "docs/decisions/0015-rebuildable-opensearch-order-projection.md",
   },
   console: {
     titleKey: "systemMap.operations.console.title",
     roleKey: "systemMap.details.console.role",
     interfacesKey: "systemMap.details.console.interfaces",
+    referencePath: "apps/operator-console/README.md",
   },
   simulator: {
     titleKey: "systemMap.operations.simulator.title",
     roleKey: "systemMap.details.simulator.role",
     interfacesKey: "systemMap.details.simulator.interfaces",
+    referencePath: "docs/erp-b-polling.md",
   },
   observability: {
     titleKey: "systemMap.operations.observability.title",
     roleKey: "systemMap.details.observability.role",
     interfacesKey: "systemMap.details.observability.interfaces",
+    referencePath: "services/integration-core/README.md#observability",
   },
-} as const satisfies Record<SystemNodeId, { titleKey: string; roleKey: string; interfacesKey: string }>;
+} as const satisfies Record<SystemNodeId, { titleKey: string; roleKey: string; interfacesKey: string; referencePath: string }>;
 
 export function SystemMapPage() {
   const { t } = useTranslation();
@@ -136,6 +150,15 @@ export function SystemMapPage() {
             <dd className="mt-1 leading-6 text-app-foreground-muted">{t(selectedNode.interfacesKey)}</dd>
           </div>
         </dl>
+        <a
+          href={`${repositoryUrl}/${selectedNode.referencePath}`}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-5 inline-flex h-9 items-center gap-2 text-sm font-semibold text-app-brand-primary underline underline-offset-4 hover:text-app-brand-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+        >
+          {t("systemMap.details.reference")}
+          <ExternalLink aria-hidden="true" size={16} />
+        </a>
       </aside>
 
       <section aria-labelledby="ingestion-heading" className="mt-6">

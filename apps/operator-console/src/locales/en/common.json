@@ -322,6 +322,7 @@
       "title": "Selected component",
       "role": "Role",
       "interfaces": "Interfaces",
+      "reference": "Open technical reference",
       "source": {
         "role": "Represents marketplace, partner and ERP systems that own the original order data.",
         "interfaces": "Signed webhooks can enter through the gateway; canonical HTTP order commands can enter the core directly."

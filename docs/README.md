@@ -34,6 +34,9 @@ Read in this order to follow one order through the system.
 
 ## Frontend
 
+- [System Map](../apps/operator-console/README.md#system-map): the static,
+  interactive topology reference in the Operator Console and the versioned
+  technical sources behind each component description.
 - [Accessibility plan](accessibility.md): the target, what is automatically
   verified, and what remains a manual audit.
 

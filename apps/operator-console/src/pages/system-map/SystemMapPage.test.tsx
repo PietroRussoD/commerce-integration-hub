@@ -34,6 +34,10 @@ test("shows the selected component's architecture details", () => {
       "Owns canonical order validation, idempotency, the workflow and the transactional outbox.",
     ),
   ).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Open technical reference" })).toHaveAttribute(
+    "href",
+    "https://github.com/PietroRussoD/commerce-integration-hub/blob/main/services/integration-core/README.md#architecture",
+  );
 
   fireEvent.click(screen.getByRole("button", { name: /Connector Gateway/ }));
 
@@ -42,6 +46,10 @@ test("shows the selected component's architecture details", () => {
       "Protects the core from provider-specific protocols and preserves recoverable delivery state.",
     ),
   ).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Open technical reference" })).toHaveAttribute(
+    "href",
+    "https://github.com/PietroRussoD/commerce-integration-hub/blob/main/services/connector-gateway/README.md",
+  );
   expect(screen.getByRole("button", { name: /Connector Gateway/ })).toHaveAttribute("aria-pressed", "true");
 });
 

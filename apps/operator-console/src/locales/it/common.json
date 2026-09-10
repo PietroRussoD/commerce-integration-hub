@@ -322,6 +322,7 @@
       "title": "Componente selezionato",
       "role": "Ruolo",
       "interfaces": "Interfacce",
+      "reference": "Apri il riferimento tecnico",
       "source": {
         "role": "Rappresenta marketplace, partner e sistemi ERP che possiedono i dati originali dell'ordine.",
         "interfaces": "I webhook firmati possono entrare dal gateway; i comandi HTTP ordine canonici possono entrare direttamente nel core."
