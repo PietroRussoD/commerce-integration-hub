@@ -88,6 +88,11 @@ The `v0.8.0` release adds an operational OpenSearch order projection, safe
 reindexing, and availability-gated projected-order search in the console.
 PostgreSQL remains the source of truth.
 
+The current `v0.9.0-SNAPSHOT` increment persists the latest successful search
+projection watermark and exposes its processing delay and age through the
+operator status API and the local operations dashboard. These measures describe
+projection progress, not Kafka consumer lag.
+
 ## Repository structure
 
 ```text
