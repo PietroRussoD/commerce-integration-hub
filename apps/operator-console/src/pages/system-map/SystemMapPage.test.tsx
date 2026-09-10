@@ -16,6 +16,9 @@ test("renders the implemented integration topology", () => {
   expect(screen.getByRole("heading", { name: "Connector Gateway" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "OpenSearch" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Operator and observability surfaces" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Runtime touchpoints" })).toBeInTheDocument();
+  expect(screen.getByText("Canonical HTTP command")).toBeInTheDocument();
+  expect(screen.getByText("Queries through core API")).toBeInTheDocument();
 });
 
 test("renders translated system map content", () => {

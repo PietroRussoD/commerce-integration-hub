@@ -260,6 +260,14 @@ export function SystemMapPage() {
                 />
               </div>
             </div>
+
+            <div className="mt-5 flex items-center justify-center gap-3 border-t border-app-border pt-5 text-center text-xs text-app-foreground-muted">
+              <span className="font-semibold text-app-foreground-secondary">{t("systemMap.ingestion.source.title")}</span>
+              <ArrowRight aria-hidden="true" className="shrink-0 text-app-foreground-faint" size={18} />
+              <span>{t("systemMap.links.canonicalHttp")}</span>
+              <ArrowRight aria-hidden="true" className="shrink-0 text-app-foreground-faint" size={18} />
+              <span className="font-semibold text-app-foreground-secondary">{t("systemMap.ingestion.core.title")}</span>
+            </div>
           </div>
         </div>
       </section>
@@ -297,6 +305,31 @@ export function SystemMapPage() {
             onSelect={setSelectedNodeId}
           />
         </div>
+
+        <div className="mt-5 border-t border-app-border pt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-app-foreground-muted">
+            {t("systemMap.operations.connections.title")}
+          </h3>
+          <div className="mt-3 grid gap-3 lg:grid-cols-3">
+            <SystemConnection
+              from={t("systemMap.operations.console.title")}
+              label={t("systemMap.links.queries")}
+              to={t("systemMap.ingestion.core.title")}
+            />
+            <SystemConnection
+              from={t("systemMap.operations.simulator.title")}
+              label={t("systemMap.links.polls")}
+              to={t("systemMap.ingestion.gateway.title")}
+              optional
+            />
+            <SystemConnection
+              from={t("systemMap.operations.connections.coreAndGateway")}
+              label={t("systemMap.links.scrapes")}
+              to={t("systemMap.operations.observability.title")}
+              optional
+            />
+          </div>
+        </div>
       </section>
     </section>
   );
@@ -319,6 +352,19 @@ function MapArrow({ label }: { label: string }) {
     <div className="flex w-24 flex-col items-center gap-1 text-center text-xs text-app-foreground-muted">
       <ArrowRight aria-hidden="true" className="text-app-foreground-faint" size={20} />
       <span>{label}</span>
+    </div>
+  );
+}
+
+function SystemConnection({ from, label, to, optional = false }: { from: string; label: string; to: string; optional?: boolean }) {
+  return (
+    <div className={optional ? "border border-dashed border-app-border-strong px-4 py-3" : "border border-app-border px-4 py-3"}>
+      <p className="text-sm font-semibold text-app-foreground-secondary">{from}</p>
+      <div className="my-2 flex items-center gap-2 text-xs text-app-foreground-muted">
+        <ArrowRight aria-hidden="true" className="shrink-0 text-app-foreground-faint" size={16} />
+        <span>{label}</span>
+      </div>
+      <p className="text-sm font-semibold text-app-foreground-secondary">{to}</p>
     </div>
   );
 }

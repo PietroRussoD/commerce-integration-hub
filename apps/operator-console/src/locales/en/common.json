@@ -413,6 +413,10 @@
     },
     "operations": {
       "title": "Operator and observability surfaces",
+      "connections": {
+        "title": "Runtime touchpoints",
+        "coreAndGateway": "Integration Core and Connector Gateway"
+      },
       "console": {
         "title": "Operator Console",
         "description": "React console that invokes the Integration Core HTTP API."
