@@ -112,6 +112,15 @@ The runtime and framework boundary are documented in
 The forwarding boundary and response policy are recorded in
 [ADR 0013](../../docs/decisions/0013-classify-integration-core-http-outcomes.md).
 
+## OpenAPI
+
+The Gateway exposes a generated OpenAPI document at
+`GET /openapi.json`. It is built from the Fastify route schemas at application
+startup and currently describes the health endpoints and the provider webhook
+when that boundary is configured. It is a runtime contract endpoint; a
+committed export and CI drift check will be added once the Gateway route
+surface is stable.
+
 ## Requirements
 
 - Node.js 24 or newer, below Node.js 27;
