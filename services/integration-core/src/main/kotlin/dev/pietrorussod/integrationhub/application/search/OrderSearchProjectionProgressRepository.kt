@@ -8,7 +8,7 @@ interface OrderSearchProjectionProgressRepository {
     fun recordSuccessfulProjection(
         eventOccurredAt: Instant,
         projectedAt: Instant,
-    )
+    ): Boolean
 }
 
 data class OrderSearchProjectionProgress(

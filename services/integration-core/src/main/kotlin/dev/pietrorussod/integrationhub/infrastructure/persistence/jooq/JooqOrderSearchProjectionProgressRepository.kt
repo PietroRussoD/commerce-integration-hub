@@ -26,12 +26,12 @@ class JooqOrderSearchProjectionProgressRepository
         override fun recordSuccessfulProjection(
             eventOccurredAt: Instant,
             projectedAt: Instant,
-        ) {
+        ): Boolean {
             require(!projectedAt.isBefore(eventOccurredAt)) {
                 "Order search projection completion must not precede the event"
             }
 
-            dslContext
+            return dslContext
                 .update(ORDER_SEARCH_PROJECTION_PROGRESS)
                 .set(
                     ORDER_SEARCH_PROJECTION_PROGRESS.LAST_PROJECTED_EVENT_OCCURRED_AT,
@@ -42,7 +42,7 @@ class JooqOrderSearchProjectionProgressRepository
                     ORDER_SEARCH_PROJECTION_PROGRESS.LAST_PROJECTED_EVENT_OCCURRED_AT.isNull.or(
                         ORDER_SEARCH_PROJECTION_PROGRESS.LAST_PROJECTED_EVENT_OCCURRED_AT.lt(eventOccurredAt.atOffset(ZoneOffset.UTC)),
                     ),
-                ).execute()
+                ).execute() == 1
         }
 
         private fun org.jooq.Record.toProgress(): OrderSearchProjectionProgress =

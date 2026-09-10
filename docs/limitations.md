@@ -40,8 +40,10 @@ mistaken for available behavior.
   path enables it only through explicit environment variables together with the
   `search` profile. Full reindexing uses a separate durable lease, a candidate
   index, dual writes, authoritative count validation, and atomic alias cutover.
-  It is intentionally internal: an authenticated, audited operator command and
-  persisted projection-lag metrics are not implemented.
+  It is intentionally internal: an authenticated, audited operator command is
+  not implemented. PostgreSQL persists the last advanced projection watermark;
+  the API and Prometheus expose its most recent processing delay and age. These
+  measures do not represent Kafka consumer lag, which remains unavailable.
 - The transactional outbox is persisted atomically with each new order, and the
   scheduled claim-publish-transition and expired-claim recovery cycles are
   implemented. Invalid or retry-exhausted `OrderReceived.v1` deliveries are
@@ -68,7 +70,8 @@ mistaken for available behavior.
   Prometheus runtime metrics,
   bounded outbox, order-search-projection, reconciliation, and Gateway-worker
   outcome metrics, and database-backed eligible-delivery backlog,
-  connector-state, and polling-checkpoint gauges are available. A
+  connector-state, polling-checkpoint, and persisted search-projection progress
+  gauges are available. A
   version-controlled Prometheus and Grafana profile provides a local operations
   dashboard.
   Distributed tracing, alerting rules, and production monitoring are not.

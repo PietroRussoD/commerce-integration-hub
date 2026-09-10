@@ -1,5 +1,7 @@
 package dev.pietrorussod.integrationhub.infrastructure.observability
 
+import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionProgress
+import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionProgressRepository
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationBatchResult
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionReconciliationRunResult
 import dev.pietrorussod.integrationhub.application.search.OrderSearchProjectionWriteOutcome
@@ -13,10 +15,10 @@ import java.util.UUID
 
 class OrderSearchProjectionMetricsTest {
     private val registry = SimpleMeterRegistry()
-    private val metrics = OrderSearchProjectionMetrics(registry)
 
     @Test
     fun `records bounded projection outcomes`() {
+        val metrics = metrics()
         metrics.recordProjection(OrderSearchProjectionWriteOutcome.APPLIED)
         metrics.recordProjection(OrderSearchProjectionWriteOutcome.IGNORED_NON_NEWER_VERSION)
         metrics.recordInvalidEvent()
@@ -30,6 +32,7 @@ class OrderSearchProjectionMetricsTest {
 
     @Test
     fun `records reconciliation outcomes documents and duration`() {
+        val metrics = metrics()
         metrics.recordReconciliation(
             OrderSearchProjectionReconciliationRunResult.Advanced(
                 OrderSearchProjectionReconciliationBatchResult(
@@ -57,6 +60,43 @@ class OrderSearchProjectionMetricsTest {
         assertEquals(5L, registry.get(OrderSearchProjectionMetrics.RECONCILIATION_DURATION_METRIC).timer().count())
     }
 
+    @Test
+    fun `restores and advances persisted projection progress gauges`() {
+        val restoredEventAt = Instant.parse("2026-09-09T08:00:00Z")
+        val restoredProjectedAt = Instant.parse("2026-09-09T08:00:00.250Z")
+        val metrics =
+            metrics(
+                OrderSearchProjectionProgress(
+                    lastProjectedEventOccurredAt = restoredEventAt,
+                    lastProjectedAt = restoredProjectedAt,
+                ),
+            )
+
+        assertEquals(250.0, projectionProcessingDelay())
+        metrics.recordProjectionProgress(
+            eventOccurredAt = Instant.parse("2026-09-09T08:00:02Z"),
+            projectedAt = Instant.parse("2026-09-09T08:00:02.500Z"),
+        )
+
+        assertEquals(500.0, projectionProcessingDelay())
+        assertEquals(true, projectionWatermarkAge() >= 0.0)
+    }
+
+    private fun metrics(
+        initialProgress: OrderSearchProjectionProgress = OrderSearchProjectionProgress(null, null),
+    ): OrderSearchProjectionMetrics =
+        OrderSearchProjectionMetrics(
+            registry,
+            object : OrderSearchProjectionProgressRepository {
+                override fun current(): OrderSearchProjectionProgress = initialProgress
+
+                override fun recordSuccessfulProjection(
+                    eventOccurredAt: Instant,
+                    projectedAt: Instant,
+                ): Boolean = false
+            },
+        )
+
     private fun count(outcome: String): Double =
         registry
             .get(OrderSearchProjectionMetrics.EVENT_METRIC)
@@ -77,4 +117,10 @@ class OrderSearchProjectionMetricsTest {
             .tag("outcome", outcome)
             .counter()
             .count()
+
+    private fun projectionProcessingDelay(): Double =
+        registry.get(OrderSearchProjectionMetrics.PROJECTION_PROCESSING_DELAY_METRIC).gauge().value()
+
+    private fun projectionWatermarkAge(): Double =
+        registry.get(OrderSearchProjectionMetrics.PROJECTION_WATERMARK_AGE_METRIC).gauge().value()
 }

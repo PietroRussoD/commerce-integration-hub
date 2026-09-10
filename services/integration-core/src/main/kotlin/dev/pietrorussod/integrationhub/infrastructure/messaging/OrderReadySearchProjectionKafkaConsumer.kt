@@ -35,7 +35,9 @@ class OrderReadySearchProjectionKafkaConsumer
         fun consume(event: StructuredEvent) {
             try {
                 val outcome = projection.upsert(messageMapper.map(event))
-                recordProjectionProgress.record(event.occurredAt)
+                recordProjectionProgress.record(event.occurredAt)?.let { projectedAt ->
+                    metrics.recordProjectionProgress(event.occurredAt, projectedAt)
+                }
                 metrics.recordProjection(outcome)
             } catch (exception: InvalidOrderReadyEventException) {
                 metrics.recordInvalidEvent()

@@ -17,6 +17,7 @@ import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchOrderInde
 import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchOrderIndexDefinition
 import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchOrderSearchDocumentWriter
 import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchTestContainer
+import io.micrometer.core.instrument.MeterRegistry
 import io.quarkus.test.common.QuarkusTestResource
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager
 import io.quarkus.test.junit.QuarkusTest
@@ -76,6 +77,9 @@ class OrderReadySearchProjectionIT {
 
     @Inject
     lateinit var candidateDocumentCounter: OrderSearchReindexDocumentCounter
+
+    @Inject
+    lateinit var meterRegistry: MeterRegistry
 
     @Inject
     lateinit var orderSearchRepository: OrderSearchRepository
@@ -177,6 +181,12 @@ class OrderReadySearchProjectionIT {
         }
         awaitProjectedDocument(event.aggregateId)
         awaitProjectionProgress(event.occurredAt)
+        assertTrue(
+            meterRegistry
+                .get("integration.hub.order.search.projection.processing.delay")
+                .gauge()
+                .value() > 0.0,
+        )
 
         given()
             .`when`()
