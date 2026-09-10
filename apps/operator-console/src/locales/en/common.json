@@ -318,6 +318,55 @@
   "systemMap": {
     "title": "System Map",
     "description": "The implemented integration topology and its operational boundaries. This is architecture reference material, not live telemetry.",
+    "details": {
+      "title": "Selected component",
+      "role": "Role",
+      "interfaces": "Interfaces",
+      "source": {
+        "role": "Represents marketplace, partner and ERP systems that own the original order data.",
+        "interfaces": "Signed webhooks can enter through the gateway; canonical HTTP order commands can enter the core directly."
+      },
+      "gateway": {
+        "role": "Protects the core from provider-specific protocols and preserves recoverable delivery state.",
+        "interfaces": "Receives signed webhooks, polls ERP_B pages and sends normalized HTTP commands to the Integration Core."
+      },
+      "core": {
+        "role": "Owns canonical order validation, idempotency, the workflow and the transactional outbox.",
+        "interfaces": "Exposes canonical and operator HTTP APIs, persists core state and publishes canonical events through the outbox."
+      },
+      "events": {
+        "role": "Separates durable event publication from asynchronous downstream processing.",
+        "interfaces": "Receives canonical order events from the core outbox and delivers them to consumer groups through the Kafka API."
+      },
+      "processor": {
+        "role": "Processes canonical events idempotently and advances durable workflow and search-projection state.",
+        "interfaces": "Consumes Redpanda topics, writes core state and projects searchable orders to OpenSearch when enabled."
+      },
+      "gatewayStorage": {
+        "role": "Makes provider delivery and polling recovery durable across gateway restarts.",
+        "interfaces": "Used only by Connector Gateway for delivery attempts, page checkpoints and recovery scheduling."
+      },
+      "coreStorage": {
+        "role": "Is the transactional system of record for canonical orders and their workflow.",
+        "interfaces": "Used by the Integration Core and processing consumer for orders, timeline, outbox and processing state."
+      },
+      "search": {
+        "role": "Provides a rebuildable read model for operational order search without becoming the system of record.",
+        "interfaces": "Receives projections from the processing consumer; search requests remain behind the Integration Core API."
+      },
+      "console": {
+        "role": "Gives operators a controlled interface for orders, simulations, flow evidence and architecture reference.",
+        "interfaces": "Calls only the Integration Core HTTP API; it does not connect directly to PostgreSQL, Redpanda or OpenSearch."
+      },
+      "simulator": {
+        "role": "Supplies deterministic local provider behavior for connector development and acceptance evidence.",
+        "interfaces": "Exposes ERP_B fixture pages that the Connector Gateway polls in the local compose profile."
+      },
+      "observability": {
+        "role": "Collects and presents runtime health, throughput and recovery signals without owning business state.",
+        "interfaces": "Prometheus scrapes the Core and Gateway metrics endpoints; Grafana reads from Prometheus."
+      }
+    },
     "legend": {
       "title": "Reading the map",
       "implemented": "Implemented runtime path",
