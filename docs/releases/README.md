@@ -63,3 +63,4 @@ Run it locally at any time:
 - [v0.6.0](v0.6.0.md): ERP polling and local observability.
 - [v0.7.0](v0.7.0.md): integration flow explorer.
 - [v0.8.0](v0.8.0.md): rebuildable OpenSearch order projection and search.
+- [v0.9.0](v0.9.0.md): durable search projection progress and observability.
