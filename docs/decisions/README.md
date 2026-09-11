@@ -39,6 +39,8 @@ implementation chronology.
   every module, enforced by an automated check.
 - [ADR 0018](0018-safe-opensearch-reindex-cutover.md): dual-write OpenSearch
   rebuild, validation, and atomic read-alias cutover.
+- [ADR 0019](0019-protect-operator-apis-with-external-jwt.md): external OIDC
+  bearer tokens, JWKS validation, and operator/platform-admin authorization.
 
 Accepted records are not edited to hide a later change of direction. Later
 extensions or replacements are recorded in a new ADR and linked to the earlier
