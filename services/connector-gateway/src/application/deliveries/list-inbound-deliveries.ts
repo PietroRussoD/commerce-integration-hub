@@ -75,10 +75,14 @@ function validateQuery(query: ListInboundDeliveriesQuery): void {
     if (query.cursor === undefined) {
         return;
     }
-    if (!UUID_PATTERN.test(query.cursor.deliveryId)) {
+    assertInboundDeliveryCursor(query.cursor);
+}
+
+export function assertInboundDeliveryCursor(cursor: InboundDeliveryCursor): void {
+    if (!UUID_PATTERN.test(cursor.deliveryId)) {
         throw new Error("cursor deliveryId must be a canonical UUID");
     }
-    if (!CURSOR_TIMESTAMP_PATTERN.test(query.cursor.receivedAt)) {
+    if (!CURSOR_TIMESTAMP_PATTERN.test(cursor.receivedAt)) {
         throw new Error("cursor receivedAt must be a UTC timestamp with microsecond precision");
     }
 }

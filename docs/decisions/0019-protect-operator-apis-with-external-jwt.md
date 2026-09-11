@@ -5,10 +5,10 @@
 
 ## Context
 
-The Integration Core currently exposes read-only operator endpoints without an
-authenticated user identity. Future Gateway inspection and recovery endpoints
-will expose operational state and trigger controlled mutations, so network
-placement alone is not an adequate trust boundary.
+The Integration Core exposes read-only operator endpoints, and the Gateway
+exposes delivery inspection endpoints. Future recovery operations will trigger
+controlled mutations, so network placement alone is not an adequate trust
+boundary.
 
 The project already has two unrelated machine-authentication mechanisms:
 source API keys protect canonical order ingestion, and provider HMAC signatures

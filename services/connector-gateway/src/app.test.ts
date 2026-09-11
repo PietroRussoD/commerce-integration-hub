@@ -5,8 +5,11 @@ import { buildApplication } from "./app.js";
 const applications: ReturnType<typeof buildApplication>[] = [];
 
 interface OpenApiDocumentSummary {
+    components?: {
+        securitySchemes?: Record<string, unknown>;
+    };
     info: { title: string; version: string };
-    paths: Record<string, unknown>;
+    paths: Record<string, { get?: { security?: readonly Record<string, unknown>[] } }>;
 }
 
 afterEach(async () => {
@@ -42,6 +45,35 @@ describe("health endpoint", () => {
 
             expect(response.statusCode).toBe(200);
             expect(response.json()).toEqual({ status: "UP" });
+        }
+    });
+
+    it("documents the protected operator delivery boundary", async () => {
+        const application = buildApplication({
+            operatorDeliveries: {
+                authorization: { enabled: false },
+                getDelivery: () => Promise.resolve(null),
+                listDeliveries: () => Promise.resolve({ items: [], nextCursor: null })
+            }
+        });
+        applications.push(application);
+
+        await application.ready();
+        const response = await application.inject({ method: "GET", url: "/openapi.json" });
+        const document: OpenApiDocumentSummary = response.json();
+
+        expect(document.components?.securitySchemes).toMatchObject({
+            operatorJwt: {
+                type: "http",
+                scheme: "bearer",
+                bearerFormat: "JWT"
+            }
+        });
+        for (const path of [
+            "/api/v1/operator/deliveries",
+            "/api/v1/operator/deliveries/{deliveryId}"
+        ]) {
+            expect(document.paths[path]?.get?.security).toEqual([{ operatorJwt: [] }]);
         }
     });
 

@@ -11,6 +11,11 @@ const application = buildApplication({
         authenticate: () => ({ authenticated: false, reason: "unknown_key" }),
         receiveInboundDelivery: () =>
             Promise.resolve({ deliveryId: "00000000-0000-0000-0000-000000000000", outcome: "CREATED" as const })
+    },
+    operatorDeliveries: {
+        authorization: { enabled: false },
+        getDelivery: () => Promise.resolve(null),
+        listDeliveries: () => Promise.resolve({ items: [], nextCursor: null })
     }
 });
 
