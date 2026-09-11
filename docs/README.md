@@ -34,6 +34,8 @@ Read in this order to follow one order through the system.
 8. [System Map](../apps/operator-console/README.md#system-map): the static,
    interactive topology reference and the technical sources behind its
    component descriptions.
+9. [Messaging contracts](contracts/commerce-events.asyncapi.yaml): the
+   canonical Kafka envelope, event payloads, headers, and dead-letter topics.
 
 ## Frontend
 

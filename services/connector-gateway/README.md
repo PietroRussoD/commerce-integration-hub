@@ -117,9 +117,11 @@ The forwarding boundary and response policy are recorded in
 The Gateway exposes a generated OpenAPI document at
 `GET /openapi.json`. It is built from the Fastify route schemas at application
 startup and currently describes the health endpoints and the provider webhook
-when that boundary is configured. It is a runtime contract endpoint; a
-committed export and CI drift check will be added once the Gateway route
-surface is stable.
+when that boundary is configured. The committed export and CI drift check are
+maintained with `pnpm generate:openapi` and `pnpm check:openapi`.
+
+The canonical Kafka event contract is documented separately in the repository
+[AsyncAPI contract](../../docs/contracts/commerce-events.asyncapi.yaml).
 
 ## Requirements
 

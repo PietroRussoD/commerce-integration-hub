@@ -1,0 +1,218 @@
+asyncapi: 3.0.0
+info:
+  title: Commerce Integration Hub Events
+  version: 1.0.0-SNAPSHOT
+  description: Canonical Kafka events exchanged by the Integration Core.
+defaultContentType: application/json
+servers:
+  redpanda:
+    host: redpanda:9092
+    protocol: kafka
+    description: Local Redpanda-compatible Kafka broker.
+channels:
+  orderReceived:
+    address: integration.order.received.v1
+    messages:
+      orderReceived:
+        $ref: '#/components/messages/OrderReceivedV1'
+  orderReceivedDlq:
+    address: integration.order.received.dlq.v1
+    messages:
+      deadLetter:
+        $ref: '#/components/messages/FrameworkDeadLetter'
+  orderReady:
+    address: integration.order.ready.v2
+    messages:
+      orderReady:
+        $ref: '#/components/messages/OrderReadyV2'
+  orderReadySearchDlq:
+    address: integration.order.ready.search.dlq.v2
+    messages:
+      deadLetter:
+        $ref: '#/components/messages/FrameworkDeadLetter'
+operations:
+  publishOrderReceived:
+    action: send
+    description: Integration Core publishes accepted orders from the transactional outbox.
+    channel:
+      $ref: '#/channels/orderReceived'
+    messages:
+      - $ref: '#/channels/orderReceived/messages/orderReceived'
+  consumeOrderReceived:
+    action: receive
+    description: Integration Core order processor consumer group `integration-core-order-processor`.
+    channel:
+      $ref: '#/channels/orderReceived'
+    messages:
+      - $ref: '#/channels/orderReceived/messages/orderReceived'
+  consumeOrderReceivedDlq:
+    action: receive
+    channel:
+      $ref: '#/channels/orderReceivedDlq'
+    messages:
+      - $ref: '#/channels/orderReceivedDlq/messages/deadLetter'
+  publishOrderReady:
+    action: send
+    channel:
+      $ref: '#/channels/orderReady'
+    messages:
+      - $ref: '#/channels/orderReady/messages/orderReady'
+  consumeOrderReadySearch:
+    action: receive
+    description: Optional OpenSearch projection consumer group `integration-core-order-search-projection`.
+    channel:
+      $ref: '#/channels/orderReady'
+    messages:
+      - $ref: '#/channels/orderReady/messages/orderReady'
+  consumeOrderReadySearchDlq:
+    action: receive
+    description: Integration Core search projection consumer group `integration-core-order-search-projection` handles failures from the `orderReady` channel.
+    channel:
+      $ref: '#/channels/orderReadySearchDlq'
+    messages:
+      - $ref: '#/channels/orderReadySearchDlq/messages/deadLetter'
+components:
+  messages:
+    OrderReceivedV1:
+      name: OrderReceivedV1
+      title: Order received
+      summary: Canonical order accepted by the Integration Core.
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/OrderReceivedEnvelope'
+    OrderReadyV2:
+      name: OrderReadyV2
+      title: Order ready
+      summary: Order transitioned to READY and is available to downstream projections.
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/OrderReadyEnvelope'
+    FrameworkDeadLetter:
+      name: FrameworkDeadLetter
+      title: Framework dead-letter record
+      summary: Broker record moved to a SmallRye Kafka dead-letter topic after consumer failure.
+      description: The framework owns the dead-letter value envelope and metadata. Consumers must use the original-event headers and broker metadata rather than treating this as a canonical business event.
+      payload:
+        type: object
+        additionalProperties: true
+  schemas:
+    EventHeaders:
+      type: object
+      additionalProperties: false
+      required: [event-id, event-type, event-version, correlation-id]
+      properties:
+        event-id:
+          type: string
+          format: uuid
+        event-type:
+          type: string
+          enum: [OrderReceived, OrderReady]
+        event-version:
+          type: string
+          pattern: '^[0-9]+$'
+        correlation-id:
+          type: string
+          format: uuid
+      description: UTF-8 Kafka headers duplicated from the event envelope for routing and diagnostics.
+    EventEnvelope:
+      type: object
+      additionalProperties: false
+      required: [envelopeVersion, eventId, eventType, eventVersion, aggregateType, aggregateId, correlationId, occurredAt, payload]
+      properties:
+        envelopeVersion:
+          type: integer
+          const: 1
+        eventId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+        eventVersion:
+          type: integer
+        aggregateType:
+          type: string
+          const: ORDER
+        aggregateId:
+          type: string
+          format: uuid
+        correlationId:
+          type: string
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        payload:
+          type: object
+      description: Stable transport envelope. The payload contains the event-specific canonical representation.
+    OrderReceivedEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            eventType:
+              const: OrderReceived
+            eventVersion:
+              const: 1
+            payload:
+              $ref: '#/components/schemas/OrderPayload'
+    OrderReadyEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            eventType:
+              const: OrderReady
+            eventVersion:
+              const: 2
+            payload:
+              $ref: '#/components/schemas/OrderReadyPayload'
+    OrderPayload:
+      type: object
+      additionalProperties: false
+      required: [orderId, sourceSystem, externalOrderId, currency, totalAmount, status, receivedAt, items]
+      properties:
+        orderId: { type: string, format: uuid }
+        sourceSystem: { type: string, enum: [MARKETPLACE_A, ERP_B] }
+        externalOrderId: { type: string }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        totalAmount: { type: number }
+        status: { type: string, const: RECEIVED }
+        receivedAt: { type: string, format: date-time }
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItem'
+    OrderReadyPayload:
+      type: object
+      additionalProperties: false
+      required: [orderId, aggregateVersion, sourceSystem, externalOrderId, currency, totalAmount, status, receivedAt, readyAt, items]
+      properties:
+        orderId: { type: string, format: uuid }
+        aggregateVersion: { type: integer, format: int64, minimum: 1 }
+        sourceSystem: { type: string, enum: [MARKETPLACE_A, ERP_B] }
+        externalOrderId: { type: string }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        totalAmount: { type: number }
+        status: { type: string, const: READY }
+        receivedAt: { type: string, format: date-time }
+        readyAt: { type: string, format: date-time }
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItem'
+    OrderItem:
+      type: object
+      additionalProperties: false
+      required: [sku, quantity, unitPrice, lineAmount, position]
+      properties:
+        externalLineId: { type: [string, 'null'] }
+        sku: { type: string }
+        description: { type: [string, 'null'] }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        unitPrice: { type: number, minimum: 0 }
+        lineAmount: { type: number, minimum: 0 }
+        position: { type: integer, minimum: 0 }
