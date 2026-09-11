@@ -213,9 +213,9 @@ read model; external subscribers remain planned.
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
 | `ERP_B` polling adapter | Implemented and process-tested |
 | OpenSearch projection, operator search API, outcome metrics, availability API, bounded reconciliation, safe full reindex, and persisted projection progress | Implemented; an authenticated/audited reindex command and Kafka consumer lag remain planned |
-| Gateway and event API contracts | Gateway OpenAPI and canonical-event AsyncAPI planned |
-| Operator authentication and authorization | External JWT validation and operator/platform-admin roles planned |
-| Failure inspection and controlled recovery | Delivery/DLQ inspection, idempotent retry/replay, and immutable audit evidence planned |
+| Gateway and event API contracts | Generated Gateway OpenAPI and canonical-event AsyncAPI implemented with drift checks |
+| Operator authentication and authorization | Opt-in external JWT validation and operator/platform-admin roles implemented for current Core and Gateway operator APIs; Console token delivery remains planned |
+| Failure inspection and controlled recovery | Gateway delivery list/detail inspection implemented; audited retry/replay and immutable audit evidence planned |
 | Gateway payload retention enforcement | Expiry timestamp implemented; payload cleanup planned |
 | Distributed tracing and alerting | OpenTelemetry propagation/export and alert rules planned |
 

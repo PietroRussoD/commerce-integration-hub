@@ -65,6 +65,12 @@ Current implemented scope:
   cancellation-aware shutdown, and restart-safe lifecycle;
 - zero-initialized, bounded-cardinality ERP_B run, duration, activity, progress,
   and last-success metrics exposed through the existing `/metrics` endpoint.
+- read-only operator delivery list/detail endpoints with bounded filters,
+  microsecond-safe opaque cursor pagination, payload-free summaries, and safe
+  attempt history;
+- opt-in `RS256` operator JWT validation through a remote JWKS, with issuer,
+  audience, expiry, subject, `groups` roles, and distinct `401`, `403`, and `503`
+  handling.
 
 The running provider route returns `202` only after PostgreSQL commit. An
 equivalent replay returns the same delivery ID with `Idempotent-Replay: true`;
@@ -117,8 +123,35 @@ The forwarding boundary and response policy are recorded in
 The Gateway exposes a generated OpenAPI document at
 `GET /openapi.json`. It is built from the Fastify route schemas at application
 startup and currently describes the health endpoints and the provider webhook
-when that boundary is configured. The committed export and CI drift check are
-maintained with `pnpm generate:openapi` and `pnpm check:openapi`.
+when that boundary is configured, plus the operator delivery list/detail API.
+The committed export and CI drift check are maintained with
+`pnpm generate:openapi` and `pnpm check:openapi`.
+
+## Operator delivery inspection
+
+`GET /api/v1/operator/deliveries` returns newest-first delivery summaries. It
+accepts `limit` (`1..100`), one `provider`, one `status`, and the opaque `cursor`
+returned by the previous page. `GET /api/v1/operator/deliveries/{deliveryId}`
+adds safe connector state, payload-retention metadata, and ordered attempt
+evidence. Neither endpoint returns raw/canonical payloads, payload hashes,
+leases, tokens, or connector secret references.
+
+The local demo keeps authorization disabled until a browser token flow is
+configured. Enable the Gateway resource-server boundary with:
+
+| Variable | Requirement |
+| --- | --- |
+| `OPERATOR_OIDC_ENABLED` | `true` to load OIDC/JWKS settings |
+| `OPERATOR_AUTHORIZATION_ENABLED` | `true` to enforce route roles; requires OIDC |
+| `OPERATOR_OIDC_ISSUER` | exact trusted token issuer URL |
+| `OPERATOR_OIDC_AUDIENCE` | expected access-token audience |
+| `OPERATOR_OIDC_JWKS_URL` | trusted HTTP(S) JWKS URL |
+| `OPERATOR_OIDC_CLOCK_SKEW_SECONDS` | optional `0..300`, default `30` |
+
+Only `RS256` is accepted. Read endpoints admit `operator` and
+`platform-admin` values from the JWT `groups` claim. The Gateway validates
+externally issued tokens but does not implement login, token issuance, user
+storage, or role management.
 
 The canonical Kafka event contract is documented separately in the repository
 [AsyncAPI contract](../../docs/contracts/commerce-events.asyncapi.yaml).

@@ -6,6 +6,14 @@
     "description": "Provider-facing connector and operational health API."
   },
   "components": {
+    "securitySchemes": {
+      "operatorJwt": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Externally issued operator access token"
+      }
+    },
     "schemas": {}
   },
   "paths": {
@@ -189,6 +197,691 @@
             }
           },
           "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/operator/deliveries": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ERP_B",
+                "MARKETPLACE_A"
+              ]
+            },
+            "in": "query",
+            "name": "provider",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BLOCKED_CONFIGURATION",
+                "DELIVERED",
+                "EXHAUSTED",
+                "FORWARDING",
+                "PERMANENT_FAILURE",
+                "RECEIVED",
+                "RETRY_WAIT"
+              ]
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "operatorJwt": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "attemptCount",
+                          "completedAt",
+                          "correlationId",
+                          "deliveryId",
+                          "errorCode",
+                          "externalEventId",
+                          "lastCoreOrderId",
+                          "lastHttpStatus",
+                          "provider",
+                          "receivedAt",
+                          "sourceSystem",
+                          "status",
+                          "updatedAt"
+                        ],
+                        "properties": {
+                          "attemptCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "completedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "correlationId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "deliveryId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "errorCode": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "externalEventId": {
+                            "type": "string"
+                          },
+                          "lastCoreOrderId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "lastHttpStatus": {
+                            "type": "integer",
+                            "minimum": 100,
+                            "maximum": 599,
+                            "nullable": true
+                          },
+                          "provider": {
+                            "type": "string",
+                            "enum": [
+                              "ERP_B",
+                              "MARKETPLACE_A"
+                            ]
+                          },
+                          "receivedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "sourceSystem": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "BLOCKED_CONFIGURATION",
+                              "DELIVERED",
+                              "EXHAUSTED",
+                              "FORWARDING",
+                              "PERMANENT_FAILURE",
+                              "RECEIVED",
+                              "RETRY_WAIT"
+                            ]
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/operator/deliveries/{deliveryId}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "deliveryId",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "operatorJwt": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "attemptCount",
+                    "completedAt",
+                    "correlationId",
+                    "deliveryId",
+                    "errorCode",
+                    "externalEventId",
+                    "lastCoreOrderId",
+                    "lastHttpStatus",
+                    "provider",
+                    "receivedAt",
+                    "sourceSystem",
+                    "status",
+                    "updatedAt",
+                    "attempts",
+                    "connectorId",
+                    "connectorMode",
+                    "connectorStatus",
+                    "mappingVersion",
+                    "nextAttemptAt",
+                    "payloadExpiresAt",
+                    "payloadRetained",
+                    "safeErrorMessage"
+                  ],
+                  "properties": {
+                    "attemptCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "completedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "correlationId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "deliveryId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "errorCode": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "externalEventId": {
+                      "type": "string"
+                    },
+                    "lastCoreOrderId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "lastHttpStatus": {
+                      "type": "integer",
+                      "minimum": 100,
+                      "maximum": 599,
+                      "nullable": true
+                    },
+                    "provider": {
+                      "type": "string",
+                      "enum": [
+                        "ERP_B",
+                        "MARKETPLACE_A"
+                      ]
+                    },
+                    "receivedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "sourceSystem": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "BLOCKED_CONFIGURATION",
+                        "DELIVERED",
+                        "EXHAUSTED",
+                        "FORWARDING",
+                        "PERMANENT_FAILURE",
+                        "RECEIVED",
+                        "RETRY_WAIT"
+                      ]
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "attempts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "attemptId",
+                          "attemptNumber",
+                          "completedAt",
+                          "durationMilliseconds",
+                          "errorCode",
+                          "httpStatus",
+                          "outcome",
+                          "safeErrorMessage",
+                          "startedAt",
+                          "traceId"
+                        ],
+                        "properties": {
+                          "attemptId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "attemptNumber": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "completedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "durationMilliseconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "nullable": true
+                          },
+                          "errorCode": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "httpStatus": {
+                            "type": "integer",
+                            "minimum": 100,
+                            "maximum": 599,
+                            "nullable": true
+                          },
+                          "outcome": {
+                            "type": "string",
+                            "enum": [
+                              "BLOCKED_CONFIGURATION",
+                              "DELIVERED",
+                              "PERMANENT_FAILURE",
+                              "RETRYABLE_FAILURE"
+                            ],
+                            "nullable": true
+                          },
+                          "safeErrorMessage": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "startedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "traceId": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    },
+                    "connectorId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "connectorMode": {
+                      "type": "string",
+                      "enum": [
+                        "POLLING",
+                        "WEBHOOK"
+                      ]
+                    },
+                    "connectorStatus": {
+                      "type": "string",
+                      "enum": [
+                        "ACTIVE",
+                        "BLOCKED_CONFIGURATION",
+                        "DISABLED"
+                      ]
+                    },
+                    "mappingVersion": {
+                      "type": "string"
+                    },
+                    "nextAttemptAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "payloadExpiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "payloadRetained": {
+                      "type": "boolean"
+                    },
+                    "safeErrorMessage": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Default Response",
             "content": {
               "application/json": {

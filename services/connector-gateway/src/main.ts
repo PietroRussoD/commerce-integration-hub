@@ -9,6 +9,8 @@ import { createProcessInboundDeliveryBatchUseCase } from "./application/deliveri
 import { createReceiveInboundDeliveryUseCase } from "./application/deliveries/receive-inbound-delivery.js";
 import { createRecoverExpiredInboundDeliveriesUseCase } from "./application/deliveries/recover-expired-inbound-deliveries.js";
 import { createStartInboundDeliveryAttemptUseCase } from "./application/deliveries/start-inbound-delivery-attempt.js";
+import { createGetInboundDeliveryUseCase } from "./application/deliveries/get-inbound-delivery.js";
+import { createListInboundDeliveriesUseCase } from "./application/deliveries/list-inbound-deliveries.js";
 import { createAcquirePollingLeaseUseCase } from "./application/polling/acquire-polling-lease.js";
 import { createBlockPollingConnectorUseCase } from "./application/polling/block-polling-connector.js";
 import {
@@ -26,6 +28,7 @@ import { loadDatabaseConfiguration } from "./infrastructure/database/database-co
 import { createDatabase } from "./infrastructure/database/database.js";
 import { KyselyInboundDeliveryAttemptRepository } from "./infrastructure/database/kysely-inbound-delivery-attempt-repository.js";
 import { KyselyInboundDeliveryClaimRepository } from "./infrastructure/database/kysely-inbound-delivery-claim-repository.js";
+import { KyselyInboundDeliveryInspectionRepository } from "./infrastructure/database/kysely-inbound-delivery-inspection-repository.js";
 import { KyselyInboundDeliveryRepository } from "./infrastructure/database/kysely-inbound-delivery-repository.js";
 import { KyselyPolledOrderPageRepository } from "./infrastructure/database/kysely-polled-order-page-repository.js";
 import { KyselyPollingLeaseRepository } from "./infrastructure/database/kysely-polling-lease-repository.js";
@@ -34,6 +37,8 @@ import { KyselyOperationalMetricsSource } from "./infrastructure/database/kysely
 import { FetchIntegrationCoreOrderClient } from "./infrastructure/http/fetch-integration-core-order-client.js";
 import { readIntegrationCoreClientConfiguration } from "./infrastructure/http/integration-core-client-configuration.js";
 import { createConnectorGatewayMetrics } from "./infrastructure/observability/connector-gateway-metrics.js";
+import { createOperatorJwtVerifier } from "./infrastructure/security/operator-jwt-verifier.js";
+import { readOperatorSecurityConfiguration } from "./infrastructure/security/operator-security-configuration.js";
 import {
     assertLeaseExceedsForwardingTimeout,
     readDeliveryWorkerConfiguration
@@ -72,12 +77,14 @@ const databaseConfiguration = loadDatabaseConfiguration();
 const webhookSecurityConfiguration = readMarketplaceAWebhookSecurityConfiguration(process.env);
 const deliveryWorkerConfiguration = readDeliveryWorkerConfiguration(process.env);
 const erpBPollingConfiguration = readErpBPollingConfiguration(process.env);
+const operatorSecurityConfiguration = readOperatorSecurityConfiguration(process.env);
 const database = createDatabase(databaseConfiguration);
 const metrics = createConnectorGatewayMetrics({
     operationalMetricsSource: new KyselyOperationalMetricsSource(database)
 });
 const databaseReadiness = new KyselyDatabaseReadiness(database);
 const deliveryRepository = new KyselyInboundDeliveryRepository(database);
+const deliveryInspectionRepository = new KyselyInboundDeliveryInspectionRepository(database);
 const receiveInboundDelivery = createReceiveInboundDeliveryUseCase({
     connectorId: readMarketplaceAConnectorId(),
     repository: deliveryRepository
@@ -91,6 +98,18 @@ const application = buildApplication({
         receiveInboundDelivery
     },
     metrics: metrics.exporter,
+    operatorDeliveries: {
+        authorization:
+            operatorSecurityConfiguration.oidcEnabled &&
+            operatorSecurityConfiguration.authorizationEnabled
+                ? {
+                      enabled: true,
+                      verifyToken: createOperatorJwtVerifier(operatorSecurityConfiguration)
+                  }
+                : { enabled: false },
+        getDelivery: createGetInboundDeliveryUseCase(deliveryInspectionRepository),
+        listDeliveries: createListInboundDeliveriesUseCase(deliveryInspectionRepository)
+    },
     readiness: () => databaseReadiness.isReady()
 });
 let deliveryWorker: DeliveryWorkerScheduler | undefined;

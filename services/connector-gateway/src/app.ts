@@ -1,6 +1,10 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import fastifySwagger from "@fastify/swagger";
 
+import {
+    type OperatorDeliveryRouteOptions,
+    operatorDeliveryRoute
+} from "./api/operator/delivery-route.js";
 import type { MetricsExporter } from "./infrastructure/observability/connector-gateway-metrics.js";
 import {
     type MarketplaceAWebhookRouteOptions,
@@ -11,6 +15,7 @@ export interface BuildApplicationOptions {
     logger?: boolean;
     marketplaceAWebhook?: MarketplaceAWebhookRouteOptions;
     metrics?: MetricsExporter;
+    operatorDeliveries?: OperatorDeliveryRouteOptions;
     readiness?: () => Promise<boolean>;
 }
 
@@ -52,7 +57,10 @@ const READINESS_RESPONSE_SCHEMA = {
 } as const;
 
 export function buildApplication(options: BuildApplicationOptions = {}): FastifyInstance {
-    const application = Fastify({ logger: options.logger ?? false });
+    const application = Fastify({
+        ajv: { customOptions: { removeAdditional: false } },
+        logger: options.logger ?? false
+    });
 
     application.register(fastifySwagger, {
         mode: "dynamic",
@@ -61,6 +69,16 @@ export function buildApplication(options: BuildApplicationOptions = {}): Fastify
                 title: "Commerce Integration Hub Connector Gateway API",
                 version: "1.0.0-SNAPSHOT",
                 description: "Provider-facing connector and operational health API."
+            },
+            components: {
+                securitySchemes: {
+                    operatorJwt: {
+                        type: "http",
+                        scheme: "bearer",
+                        bearerFormat: "JWT",
+                        description: "Externally issued operator access token"
+                    }
+                }
             }
         }
     });
@@ -113,6 +131,9 @@ export function buildApplication(options: BuildApplicationOptions = {}): Fastify
 
         if (options.marketplaceAWebhook !== undefined) {
             instance.register(marketplaceAWebhookRoute, options.marketplaceAWebhook);
+        }
+        if (options.operatorDeliveries !== undefined) {
+            instance.register(operatorDeliveryRoute, options.operatorDeliveries);
         }
         done();
     });

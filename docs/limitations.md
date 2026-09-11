@@ -53,15 +53,17 @@ mistaken for available behavior.
 ## API and Operations
 
 - Authentication uses per-source API keys for machine-to-machine ingestion.
-  Integration Core also has opt-in OIDC JWT validation and role enforcement for
-  operator paths, but the default local demo and console do not yet supply
-  operator tokens. User login, identity-provider deployment, and role management
-  are not implemented.
+  Integration Core and Connector Gateway have opt-in OIDC JWT validation and
+  role enforcement for operator paths, but the default local demo and console
+  do not yet supply operator tokens. User login, identity-provider deployment,
+  and role management are not implemented.
 - Source order access is restricted to the authenticated source. The operator
   API exposes read-only summaries and details across sources. Its opt-in access
   policy admits `operator` and `platform-admin` roles from the JWT `groups`
   claim. Cross-source administration and authenticated console sessions are not
-  implemented. The operator console exposes a paginated summary,
+  implemented. The Gateway operator API exposes payload-free delivery summaries
+  with bounded keyset pagination and a safe detail/attempt history. Audited
+  recovery is not implemented. The operator console exposes a paginated summary,
   availability-gated projected-order search, operational details, real
   search-projection availability and reconciliation state, a controlled
   canonical-ingestion simulator, and a Flow Explorer that replays three
