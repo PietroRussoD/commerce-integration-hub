@@ -103,8 +103,11 @@ persistence, and structured logs.
 
 Available for the current PostgreSQL-authoritative scope. The Integration Core
 exposes read-only operator endpoints for paginated order summaries and order
-details with line items, timeline entries, and processing attempts. With the optional
-OpenSearch profile enabled, `GET /api/v1/operator/orders/search` searches the
+details with line items, timeline entries, and processing attempts. The service
+can validate externally issued OIDC JWTs and restrict these paths to `operator`
+or `platform-admin`; this remains disabled in the default local demo until the
+console supplies a token. With the optional OpenSearch profile enabled,
+`GET /api/v1/operator/orders/search` searches the
 event-driven order projection by text, source system, external ID, status,
 currency, SKU, and receipt interval. `GET /api/v1/operator/orders/search/status`
 reports consumer enablement and read-alias availability without mutating the

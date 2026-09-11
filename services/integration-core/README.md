@@ -214,6 +214,22 @@ Production deployments must inject peppers through their secret-management
 boundary rather than repository configuration. Order ingestion expects the
 credential in the `X-Source-API-Key` header.
 
+## Operator authorization
+
+Operator endpoints support external OIDC bearer-token validation. Enable both
+`OPERATOR_OIDC_ENABLED` and `OPERATOR_AUTHORIZATION_ENABLED`, then configure
+`OPERATOR_OIDC_AUTH_SERVER_URL`, `OPERATOR_OIDC_ISSUER`, and
+`OPERATOR_OIDC_AUDIENCE` for the selected identity provider. Tokens must be
+signed with `RS256`, match the configured issuer and audience, and contain
+either `operator` or `platform-admin` in the `groups` claim. The default local
+demo leaves this boundary disabled until the console can supply a token.
+
+The service is a resource server: it validates access tokens through the
+provider's JWKS endpoint but does not implement login, issue tokens, or manage
+users and roles. Integration tests use an HTTP JWKS fixture and cover missing
+credentials, insufficient roles, valid roles, issuer mismatch, audience
+mismatch, and token expiry.
+
 After Flyway has initialized the target database, provision a source credential
 with the administrative CLI:
 
