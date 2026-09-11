@@ -123,6 +123,86 @@ describe("KyselyInboundDeliveryInspectionRepository", () => {
         });
     });
 
+    it("returns null when the delivery does not exist", async () => {
+        await expect(
+            repository.findById("0199037b-6400-7000-8000-000000000999")
+        ).resolves.toBeNull();
+    });
+
+    it("returns safe delivery details with attempts in numerical order", async () => {
+        const deliveryId = "0199037b-6400-7000-8000-000000000941";
+        await insertDelivery(
+            "000000000941",
+            "failed-event",
+            "EXHAUSTED",
+            "2026-09-11T11:00:00.123456Z"
+        );
+        await database
+            .insertInto("delivery_attempts")
+            .values([
+                deliveryAttempt(
+                    "0199037b-6400-7000-8000-000000000952",
+                    deliveryId,
+                    2,
+                    "2026-09-11T11:02:00.000Z"
+                ),
+                deliveryAttempt(
+                    "0199037b-6400-7000-8000-000000000951",
+                    deliveryId,
+                    1,
+                    "2026-09-11T11:01:00.000Z"
+                )
+            ])
+            .execute();
+
+        const detail = await repository.findById(deliveryId);
+
+        expect(detail).toMatchObject({
+            connectorId: MARKETPLACE_CONNECTOR_ID,
+            connectorMode: "WEBHOOK",
+            connectorStatus: "ACTIVE",
+            deliveryId,
+            externalEventId: "failed-event",
+            mappingVersion: "marketplace_a-order-v1",
+            payloadRetained: true,
+            provider: "MARKETPLACE_A",
+            safeErrorMessage: "Internal detail excluded from list",
+            sourceSystem: "MARKETPLACE_A",
+            status: "EXHAUSTED"
+        });
+        expect(detail?.attempts).toEqual([
+            {
+                attemptId: "0199037b-6400-7000-8000-000000000951",
+                attemptNumber: 1,
+                completedAt: new Date("2026-09-11T11:01:01.000Z"),
+                durationMilliseconds: 1_000,
+                errorCode: "CORE_UNAVAILABLE",
+                httpStatus: 503,
+                outcome: "RETRYABLE_FAILURE",
+                safeErrorMessage: "Core was temporarily unavailable",
+                startedAt: new Date("2026-09-11T11:01:00.000Z"),
+                traceId: "a".repeat(32)
+            },
+            {
+                attemptId: "0199037b-6400-7000-8000-000000000952",
+                attemptNumber: 2,
+                completedAt: new Date("2026-09-11T11:02:01.000Z"),
+                durationMilliseconds: 1_000,
+                errorCode: "CORE_UNAVAILABLE",
+                httpStatus: 503,
+                outcome: "RETRYABLE_FAILURE",
+                safeErrorMessage: "Core was temporarily unavailable",
+                startedAt: new Date("2026-09-11T11:02:00.000Z"),
+                traceId: "a".repeat(32)
+            }
+        ]);
+        expect(detail).not.toHaveProperty("rawPayload");
+        expect(detail).not.toHaveProperty("canonicalPayload");
+        expect(detail).not.toHaveProperty("providerPayloadHash");
+        expect(detail).not.toHaveProperty("leaseToken");
+        expect(detail).not.toHaveProperty("secretReference");
+    });
+
     async function insertDelivery(
         idSuffix: string,
         externalEventId: string,
@@ -177,6 +257,23 @@ describe("KyselyInboundDeliveryInspectionRepository", () => {
             .execute();
     }
 });
+
+function deliveryAttempt(id: string, deliveryId: string, attemptNumber: number, startedAt: string) {
+    const startedAtDate = new Date(startedAt);
+    return {
+        id,
+        delivery_id: deliveryId,
+        attempt_number: attemptNumber,
+        started_at: startedAtDate,
+        completed_at: new Date(startedAtDate.getTime() + 1_000),
+        outcome: "RETRYABLE_FAILURE" as const,
+        http_status: 503,
+        error_code: "CORE_UNAVAILABLE",
+        safe_error_message: "Core was temporarily unavailable",
+        duration_ms: 1_000,
+        trace_id: "a".repeat(32)
+    };
+}
 
 function connectorConfiguration(id: string, provider: DeliveryProvider) {
     return {
