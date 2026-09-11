@@ -15,6 +15,7 @@ export default defineConfig({
                 "src/infrastructure/database/kysely-operational-metrics-source.ts",
                 "src/infrastructure/database/kysely-inbound-delivery-attempt-repository.ts",
                 "src/infrastructure/database/kysely-inbound-delivery-claim-repository.ts",
+                "src/infrastructure/database/kysely-inbound-delivery-inspection-repository.ts",
                 "src/infrastructure/database/kysely-inbound-delivery-repository.ts",
                 "src/infrastructure/database/kysely-polled-order-page-repository.ts",
                 "src/infrastructure/database/kysely-polling-lease-repository.ts",
