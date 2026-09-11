@@ -536,6 +536,12 @@
       }
     },
     "securitySchemes" : {
+      "operatorJwt" : {
+        "type" : "http",
+        "description" : "Externally issued OIDC access token with an operator role",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
+      },
       "sourceApiKey" : {
         "type" : "apiKey",
         "description" : "Source credential formatted as <key_id>.<secret>",
@@ -617,6 +623,9 @@
             }
           }
         },
+        "security" : [ {
+          "operatorJwt" : [ ]
+        } ],
         "tags" : [ "Operator Order Resource" ]
       }
     },
@@ -729,6 +738,9 @@
             }
           }
         },
+        "security" : [ {
+          "operatorJwt" : [ ]
+        } ],
         "tags" : [ "Operator Order Search Resource" ]
       }
     },
@@ -748,6 +760,9 @@
             }
           }
         },
+        "security" : [ {
+          "operatorJwt" : [ ]
+        } ],
         "tags" : [ "Operator Order Search Resource" ]
       }
     },
@@ -797,6 +812,9 @@
             }
           }
         },
+        "security" : [ {
+          "operatorJwt" : [ ]
+        } ],
         "tags" : [ "Operator Order Resource" ]
       }
     },

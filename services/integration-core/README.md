@@ -230,6 +230,10 @@ users and roles. Integration tests use an HTTP JWKS fixture and cover missing
 credentials, insufficient roles, valid roles, issuer mismatch, audience
 mismatch, and token expiry.
 
+The committed OpenAPI contract identifies operator operations with the
+`operatorJwt` bearer scheme while canonical source operations retain their
+separate `sourceApiKey` scheme.
+
 After Flyway has initialized the target database, provision a source credential
 with the administrative CLI:
 

@@ -25,10 +25,12 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import java.time.Instant
 
 @Path("/api/v1/operator/orders/search")
 @Produces(MediaType.APPLICATION_JSON)
+@SecurityRequirement(name = OPERATOR_JWT_SECURITY_SCHEME)
 class OperatorOrderSearchResource(
     private val searchOrdersUseCase: SearchOrdersUseCase,
     private val getOrderSearchProjectionStatusUseCase: GetOrderSearchProjectionStatusUseCase,
