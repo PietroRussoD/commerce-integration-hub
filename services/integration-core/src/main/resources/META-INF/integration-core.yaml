@@ -511,6 +511,11 @@ components:
       format: uuid
       pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
   securitySchemes:
+    operatorJwt:
+      type: http
+      description: Externally issued OIDC access token with an operator role
+      scheme: bearer
+      bearerFormat: JWT
     sourceApiKey:
       type: apiKey
       description: Source credential formatted as <key_id>.<secret>
@@ -570,6 +575,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetails"
+      security:
+      - operatorJwt: []
       tags:
       - Operator Order Resource
   /api/v1/operator/orders/search:
@@ -668,6 +675,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetails"
+      security:
+      - operatorJwt: []
       tags:
       - Operator Order Search Resource
   /api/v1/operator/orders/search/status:
@@ -681,6 +690,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OperatorOrderSearchProjectionStatusResponse"
+      security:
+      - operatorJwt: []
       tags:
       - Operator Order Search Resource
   /api/v1/operator/orders/{orderId}:
@@ -714,6 +725,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetails"
+      security:
+      - operatorJwt: []
       tags:
       - Operator Order Resource
   /api/v1/orders:

@@ -12,7 +12,7 @@ import java.time.Instant
 
 @QuarkusTest
 @TestProfile(OperatorOidcTestProfile::class)
-@QuarkusTestResource(OidcWiremockTestResource::class)
+@QuarkusTestResource(value = OidcWiremockTestResource::class, restrictToAnnotatedClass = true)
 class OperatorAuthorizationIT {
     @Test
     fun `rejects operator paths without a bearer token`() {
