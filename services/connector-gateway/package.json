@@ -16,7 +16,9 @@
         "test": "vitest run",
         "test:integration": "vitest run --config vitest.integration.config.ts",
         "test:coverage": "vitest run --coverage",
-        "check": "pnpm lint && pnpm type-check && pnpm test:coverage && pnpm build",
+        "generate:openapi": "tsx scripts/export-openapi.ts",
+        "check:openapi": "tsx scripts/export-openapi.ts --check",
+        "check": "pnpm lint && pnpm type-check && pnpm test:coverage && pnpm check:openapi && pnpm build",
         "db:migrate": "tsx src/database-migrate.ts"
     },
     "dependencies": {
