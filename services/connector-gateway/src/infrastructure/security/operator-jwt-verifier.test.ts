@@ -61,9 +61,13 @@ describe("createOperatorJwtVerifier", () => {
         { audience: "another-api", sub: "operator-123" },
         { issuer: "https://another-issuer.example.test", sub: "operator-123" },
         { expirationTime: NOW_SECONDS - 1, sub: "operator-123" },
+        { expirationTime: null, sub: "operator-123" },
         { sub: undefined },
         { groups: "operator", sub: "operator-123" },
-        { groups: ["operator", 42], sub: "operator-123" }
+        { groups: ["operator", 42], sub: "operator-123" },
+        { groups: Array.from({ length: 51 }, () => "operator"), sub: "operator-123" },
+        { groups: [""], sub: "operator-123" },
+        { groups: ["a".repeat(101)], sub: "operator-123" }
     ])("rejects invalid claims %#", async (overrides) => {
         await expect(verifier(await signToken(overrides))).resolves.toEqual({
             authenticated: false
@@ -91,7 +95,7 @@ describe("createOperatorJwtVerifier", () => {
     async function signToken(
         overrides: {
             audience?: string;
-            expirationTime?: number;
+            expirationTime?: number | null;
             groups?: unknown;
             issuer?: string;
             sub?: string | undefined;
@@ -104,8 +108,10 @@ describe("createOperatorJwtVerifier", () => {
             .setProtectedHeader({ alg: "RS256", kid: KEY_ID })
             .setAudience(overrides.audience ?? AUDIENCE)
             .setIssuer(overrides.issuer ?? ISSUER)
-            .setIssuedAt(NOW_SECONDS)
-            .setExpirationTime(overrides.expirationTime ?? NOW_SECONDS + 300);
+            .setIssuedAt(NOW_SECONDS);
+        if (overrides.expirationTime !== null) {
+            token.setExpirationTime(overrides.expirationTime ?? NOW_SECONDS + 300);
+        }
         if (overrides.sub !== undefined) {
             token.setSubject(overrides.sub);
         }

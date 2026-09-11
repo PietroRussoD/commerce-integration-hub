@@ -8,6 +8,8 @@ import {
 import type { OperatorSecurityConfiguration } from "./operator-security-configuration.js";
 
 const ACCEPTED_ALGORITHM = "RS256";
+const MAX_GROUP_COUNT = 50;
+const MAX_GROUP_LENGTH = 100;
 const MAX_SUBJECT_LENGTH = 200;
 
 export type OperatorRole = "operator" | "platform-admin";
@@ -37,6 +39,9 @@ export function createOperatorJwtVerifier(
                 clockTolerance: configuration.clockToleranceSeconds,
                 issuer: configuration.issuer
             });
+            if (payload.exp === undefined) {
+                throw new InvalidOperatorTokenError("JWT expiration is missing");
+            }
             return {
                 authenticated: true,
                 principal: {
@@ -69,7 +74,16 @@ function readRoles(groups: unknown): ReadonlySet<OperatorRole> {
     if (groups === undefined) {
         return new Set();
     }
-    if (!Array.isArray(groups) || !groups.every((group) => typeof group === "string")) {
+    if (
+        !Array.isArray(groups) ||
+        groups.length > MAX_GROUP_COUNT ||
+        !groups.every(
+            (group) =>
+                typeof group === "string" &&
+                group.length > 0 &&
+                group.length <= MAX_GROUP_LENGTH
+        )
+    ) {
         throw new InvalidOperatorTokenError("JWT groups claim is invalid");
     }
     return new Set(
