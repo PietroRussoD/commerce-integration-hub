@@ -99,10 +99,10 @@ projection watermark and exposes its processing delay and age through the
 operator status API and the local operations dashboard. These measures describe
 projection progress, not Kafka consumer lag.
 
-The `v1.0.0` release candidate adds versioned Gateway and event contracts, an
+The `v1.0.0` release adds versioned Gateway and event contracts, an
 interactive System Map, external operator JWT authorization, safe Gateway
 delivery inspection, and audited `platform-admin` replay. Its release evidence
-is recorded during final verification.
+is recorded in the release notes.
 
 ## Repository structure
 
@@ -289,9 +289,9 @@ The frontend accessibility target, automated coverage, and remaining manual
 checks are documented in the [accessibility plan](docs/accessibility.md).
 
 The precise boundary of the current implementation is documented in
-[current limitations](docs/limitations.md). The latest published verification
-evidence is summarized in the [`v0.9.0` release notes](docs/releases/v0.9.0.md);
-the repository is currently developing `v1.0.0`. Previous milestones are
+[current limitations](docs/limitations.md). The latest release evidence is
+summarized in the [`v1.0.0` release notes](docs/releases/v1.0.0.md). Previous
+milestones are
 documented in the [`v0.8.0`](docs/releases/v0.8.0.md),
 [`v0.7.0`](docs/releases/v0.7.0.md), [`v0.6.0`](docs/releases/v0.6.0.md),
 [`v0.5.0`](docs/releases/v0.5.0.md),
