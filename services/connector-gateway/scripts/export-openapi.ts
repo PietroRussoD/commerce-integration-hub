@@ -13,9 +13,17 @@ const application = buildApplication({
             Promise.resolve({ deliveryId: "00000000-0000-0000-0000-000000000000", outcome: "CREATED" as const })
     },
     operatorDeliveries: {
-        authorization: { enabled: false },
+        authorization: {
+            enabled: true,
+            verifyToken: () => Promise.resolve({ authenticated: false })
+        },
         getDelivery: () => Promise.resolve(null),
-        listDeliveries: () => Promise.resolve({ items: [], nextCursor: null })
+        listDeliveries: () => Promise.resolve({ items: [], nextCursor: null }),
+        replayDelivery: () =>
+            Promise.resolve({
+                commandId: "00000000-0000-0000-0000-000000000000",
+                outcome: "REPLAYED" as const
+            })
     }
 });
 

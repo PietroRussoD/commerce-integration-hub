@@ -8,6 +8,7 @@ import { createCompleteTerminalInboundDeliveryAttemptUseCase } from "./applicati
 import { createProcessInboundDeliveryBatchUseCase } from "./application/deliveries/process-inbound-delivery-batch.js";
 import { createReceiveInboundDeliveryUseCase } from "./application/deliveries/receive-inbound-delivery.js";
 import { createRecoverExpiredInboundDeliveriesUseCase } from "./application/deliveries/recover-expired-inbound-deliveries.js";
+import { createReplayInboundDeliveryUseCase } from "./application/deliveries/replay-inbound-delivery.js";
 import { createStartInboundDeliveryAttemptUseCase } from "./application/deliveries/start-inbound-delivery-attempt.js";
 import { createGetInboundDeliveryUseCase } from "./application/deliveries/get-inbound-delivery.js";
 import { createListInboundDeliveriesUseCase } from "./application/deliveries/list-inbound-deliveries.js";
@@ -29,6 +30,7 @@ import { createDatabase } from "./infrastructure/database/database.js";
 import { KyselyInboundDeliveryAttemptRepository } from "./infrastructure/database/kysely-inbound-delivery-attempt-repository.js";
 import { KyselyInboundDeliveryClaimRepository } from "./infrastructure/database/kysely-inbound-delivery-claim-repository.js";
 import { KyselyInboundDeliveryInspectionRepository } from "./infrastructure/database/kysely-inbound-delivery-inspection-repository.js";
+import { KyselyInboundDeliveryReplayRepository } from "./infrastructure/database/kysely-inbound-delivery-replay-repository.js";
 import { KyselyInboundDeliveryRepository } from "./infrastructure/database/kysely-inbound-delivery-repository.js";
 import { KyselyPolledOrderPageRepository } from "./infrastructure/database/kysely-polled-order-page-repository.js";
 import { KyselyPollingLeaseRepository } from "./infrastructure/database/kysely-polling-lease-repository.js";
@@ -85,6 +87,7 @@ const metrics = createConnectorGatewayMetrics({
 const databaseReadiness = new KyselyDatabaseReadiness(database);
 const deliveryRepository = new KyselyInboundDeliveryRepository(database);
 const deliveryInspectionRepository = new KyselyInboundDeliveryInspectionRepository(database);
+const deliveryReplayRepository = new KyselyInboundDeliveryReplayRepository(database);
 const receiveInboundDelivery = createReceiveInboundDeliveryUseCase({
     connectorId: readMarketplaceAConnectorId(),
     repository: deliveryRepository
@@ -108,7 +111,8 @@ const application = buildApplication({
                   }
                 : { enabled: false },
         getDelivery: createGetInboundDeliveryUseCase(deliveryInspectionRepository),
-        listDeliveries: createListInboundDeliveriesUseCase(deliveryInspectionRepository)
+        listDeliveries: createListInboundDeliveriesUseCase(deliveryInspectionRepository),
+        replayDelivery: createReplayInboundDeliveryUseCase({ repository: deliveryReplayRepository })
     },
     readiness: () => databaseReadiness.isReady()
 });

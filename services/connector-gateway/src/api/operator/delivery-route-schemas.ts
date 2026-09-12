@@ -22,6 +22,7 @@ export const commonOperatorErrorSchemas = {
     400: problemDetailsSchema,
     401: problemDetailsSchema,
     403: problemDetailsSchema,
+    409: problemDetailsSchema,
     503: problemDetailsSchema
 } as const;
 
@@ -41,6 +42,29 @@ export const deliveryPathParametersSchema = {
     additionalProperties: false,
     required: ["deliveryId"],
     properties: { deliveryId: { type: "string", format: "uuid" } }
+} as const;
+
+export const deliveryReplayHeadersSchema = {
+    type: "object",
+    additionalProperties: true,
+    required: ["idempotency-key"],
+    properties: {
+        "idempotency-key": { type: "string", format: "uuid" }
+    }
+} as const;
+
+export const deliveryReplayRequestSchema = {
+    type: "object",
+    additionalProperties: false,
+    required: ["reason"],
+    properties: {
+        reason: {
+            type: "string",
+            minLength: 1,
+            maxLength: 1_000,
+            pattern: "^(?:\\S|\\S.*\\S)$"
+        }
+    }
 } as const;
 
 const deliverySummarySchema = {
@@ -154,5 +178,16 @@ export const deliveryDetailResponseSchema = {
         payloadExpiresAt: { type: "string", format: "date-time" },
         payloadRetained: { type: "boolean" },
         safeErrorMessage: nullableString
+    }
+} as const;
+
+export const deliveryReplayResponseSchema = {
+    type: "object",
+    additionalProperties: false,
+    required: ["commandId", "idempotent", "outcome"],
+    properties: {
+        commandId: { type: "string", format: "uuid" },
+        idempotent: { type: "boolean" },
+        outcome: { type: "string", enum: ["IN_PROGRESS", "REPLAYED"] }
     }
 } as const;

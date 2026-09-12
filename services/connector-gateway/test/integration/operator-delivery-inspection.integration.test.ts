@@ -9,8 +9,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApplication } from "../../src/app.js";
 import { createGetInboundDeliveryUseCase } from "../../src/application/deliveries/get-inbound-delivery.js";
 import { createListInboundDeliveriesUseCase } from "../../src/application/deliveries/list-inbound-deliveries.js";
+import { createReplayInboundDeliveryUseCase } from "../../src/application/deliveries/replay-inbound-delivery.js";
 import { createDatabase, type GatewayDatabase } from "../../src/infrastructure/database/database.js";
 import { KyselyInboundDeliveryInspectionRepository } from "../../src/infrastructure/database/kysely-inbound-delivery-inspection-repository.js";
+import { KyselyInboundDeliveryReplayRepository } from "../../src/infrastructure/database/kysely-inbound-delivery-replay-repository.js";
 import { migrateToLatest } from "../../src/infrastructure/database/migrator.js";
 import { createOperatorJwtVerifier } from "../../src/infrastructure/security/operator-jwt-verifier.js";
 
@@ -57,7 +59,10 @@ describe("operator delivery inspection API", () => {
                     })
                 },
                 getDelivery: createGetInboundDeliveryUseCase(repository),
-                listDeliveries: createListInboundDeliveriesUseCase(repository)
+                listDeliveries: createListInboundDeliveriesUseCase(repository),
+                replayDelivery: createReplayInboundDeliveryUseCase({
+                    repository: new KyselyInboundDeliveryReplayRepository(database)
+                })
             }
         });
     });
@@ -97,6 +102,24 @@ describe("operator delivery inspection API", () => {
             url: `/api/v1/operator/deliveries/${DELIVERY_ID}`,
             headers: { authorization: `Bearer ${operatorToken}` }
         });
+        const deniedReplay = await application.inject({
+            method: "POST",
+            url: `/api/v1/operator/deliveries/${DELIVERY_ID}/replay`,
+            headers: {
+                authorization: `Bearer ${operatorToken}`,
+                "idempotency-key": "0199037b-6400-7000-8000-000000000991"
+            },
+            payload: { reason: "Retry after the upstream incident was resolved" }
+        });
+        const acceptedReplay = await application.inject({
+            method: "POST",
+            url: `/api/v1/operator/deliveries/${DELIVERY_ID}/replay`,
+            headers: {
+                authorization: `Bearer ${await issueToken(["platform-admin"])}`,
+                "idempotency-key": "0199037b-6400-7000-8000-000000000992"
+            },
+            payload: { reason: "Retry after the upstream incident was resolved" }
+        });
 
         expect(missingToken.statusCode).toBe(401);
         expect(insufficientRole.statusCode).toBe(403);
@@ -122,6 +145,12 @@ describe("operator delivery inspection API", () => {
         });
         expect(authorizedDetail.json()).not.toHaveProperty("rawPayload");
         expect(authorizedDetail.json()).not.toHaveProperty("canonicalPayload");
+        expect(deniedReplay.statusCode).toBe(403);
+        expect(acceptedReplay.statusCode).toBe(202);
+        expect(acceptedReplay.json()).toMatchObject({
+            idempotent: false,
+            outcome: "REPLAYED"
+        });
     });
 
     async function issueToken(
