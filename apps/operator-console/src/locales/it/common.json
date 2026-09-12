@@ -170,7 +170,7 @@
     },
     "search": {
       "label": "Cerca negli ordini indicizzati",
-      "placeholder": "Cerca nelle descrizioni degli articoli",
+      "placeholder": "Descrizione, SKU esatto o ID ordine esterno",
       "submit": "Cerca negli ordini indicizzati",
       "clear": "Cancella la ricerca negli ordini indicizzati",
       "filters": {

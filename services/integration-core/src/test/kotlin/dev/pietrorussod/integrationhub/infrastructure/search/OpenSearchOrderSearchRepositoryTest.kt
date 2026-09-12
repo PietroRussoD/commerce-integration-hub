@@ -47,7 +47,12 @@ class OpenSearchOrderSearchRepositoryTest {
 
         val bool = requireNotNull(request.query()).bool()
         assertEquals(1, bool.must().size)
-        assertEquals("itemDescriptions", bool.must()[0].match().field())
+        val textQuery = bool.must().single().bool()
+        assertEquals("1", textQuery.minimumShouldMatch())
+        assertEquals(3, textQuery.should().size)
+        assertEquals("itemDescriptions", textQuery.should()[0].match().field())
+        assertEquals("itemSkus", textQuery.should()[1].term().field())
+        assertEquals("externalOrderId", textQuery.should()[2].term().field())
         assertEquals(6, bool.filter().size)
     }
 
