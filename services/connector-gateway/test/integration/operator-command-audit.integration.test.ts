@@ -2,7 +2,9 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from "@testconta
 import type { Kysely } from "kysely";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { createOperatorCommandAuditor } from "../../src/application/operator-commands/operator-command-audit.js";
 import { createDatabase, type GatewayDatabase } from "../../src/infrastructure/database/database.js";
+import { KyselyOperatorCommandAuditRepository } from "../../src/infrastructure/database/kysely-operator-command-audit-repository.js";
 import { migrateToLatest } from "../../src/infrastructure/database/migrator.js";
 
 const ACTOR_SUBJECT = "operator-integration-test";
@@ -64,6 +66,55 @@ describe("operator command audit storage", () => {
                 .where("id", "=", REQUEST_ENTRY_ID)
                 .execute()
         ).rejects.toMatchObject({ code: "55000" });
+    });
+
+    it("reserves and completes commands idempotently", async () => {
+        const auditor = createOperatorCommandAuditor({
+            clock: () => new Date("2026-09-12T09:00:00.000Z"),
+            createCommandId: () => "0199037b-6400-7000-8000-000000000818",
+            repository: new KyselyOperatorCommandAuditRepository(database)
+        });
+        const request = {
+            actorSubject: "operator-43",
+            deliveryId: "0199037b-6400-7000-8000-000000000819",
+            idempotencyKey: "0199037b-6400-7000-8000-000000000820",
+            reason: "Retry after the upstream incident was resolved"
+        };
+
+        await expect(auditor.reserveDeliveryReplay(request)).resolves.toEqual({
+            commandId: "0199037b-6400-7000-8000-000000000818",
+            status: "CREATED"
+        });
+        await expect(auditor.reserveDeliveryReplay(request)).resolves.toEqual({
+            commandId: "0199037b-6400-7000-8000-000000000818",
+            status: "IDEMPOTENT_REPLAY"
+        });
+        await expect(
+            auditor.reserveDeliveryReplay({ ...request, reason: "Different intent" })
+        ).resolves.toEqual({
+            commandId: "0199037b-6400-7000-8000-000000000818",
+            status: "IDEMPOTENCY_CONFLICT"
+        });
+
+        await expect(
+            auditor.complete({
+                commandId: "0199037b-6400-7000-8000-000000000818",
+                outcome: "SUCCEEDED"
+            })
+        ).resolves.toEqual({ status: "COMPLETED" });
+        await expect(
+            auditor.complete({
+                commandId: "0199037b-6400-7000-8000-000000000818",
+                outcome: "SUCCEEDED"
+            })
+        ).resolves.toEqual({ status: "IDEMPOTENT_REPLAY" });
+        await expect(
+            auditor.complete({
+                commandId: "0199037b-6400-7000-8000-000000000818",
+                errorCode: "DELIVERY_NOT_REPLAYABLE",
+                outcome: "REJECTED"
+            })
+        ).resolves.toEqual({ status: "OUTCOME_CONFLICT" });
     });
 });
 
