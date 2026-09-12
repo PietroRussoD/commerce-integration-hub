@@ -99,10 +99,10 @@ projection watermark and exposes its processing delay and age through the
 operator status API and the local operations dashboard. These measures describe
 projection progress, not Kafka consumer lag.
 
-The current `1.0.0-SNAPSHOT` adds versioned Gateway and event contracts, an
+The `v1.0.0` release candidate adds versioned Gateway and event contracts, an
 interactive System Map, external operator JWT authorization, safe Gateway
 delivery inspection, and audited `platform-admin` replay. Its release evidence
-will be recorded when `v1.0.0` is prepared.
+is recorded during final verification.
 
 ## Repository structure
 
