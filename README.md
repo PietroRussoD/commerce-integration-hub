@@ -210,6 +210,11 @@ with:
 ORDER_SEARCH_PROJECTION_ENABLED=true ORDER_SEARCH_RECONCILIATION_ENABLED=true docker compose --profile search up --build --wait
 ```
 
+The Integration Core image is intentionally runtime-only. After changing Core
+source code or resources, run `./mvnw package -DskipTests` from
+`services/integration-core` before rebuilding Compose; otherwise Docker copies
+the previously packaged `target/quarkus-app` artifact.
+
 The base Compose stack does not start OpenSearch, and both runtime paths remain
 disabled by default. The profile creates `orders-read` on the first projected
 order; reconciliation then pages through authoritative READY orders every 30

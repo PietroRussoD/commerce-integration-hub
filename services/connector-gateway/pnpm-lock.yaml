@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@fastify/swagger':
+        specifier: 9.8.1
+        version: 9.8.1(supports-color@7.2.0)
       '@prometheus-io/client':
         specifier: 0.16.1
         version: 0.16.1
@@ -30,9 +33,6 @@ importers:
       '@eslint/js':
         specifier: 10.0.1
         version: 10.0.1(eslint@10.9.1(supports-color@7.2.0))
-      '@fastify/swagger':
-        specifier: 9.8.1
-        version: 9.8.1(supports-color@7.2.0)
       '@testcontainers/postgresql':
         specifier: 12.1.0
         version: 12.1.0(supports-color@7.2.0)
