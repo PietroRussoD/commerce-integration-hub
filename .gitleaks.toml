@@ -10,3 +10,14 @@ condition = "AND"
 regexTarget = "match"
 regexes = ['''b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7''']
 paths = ['''(^|/)services/integration-core/src/test/kotlin/dev/pietrorussod/integrationhub/infrastructure/security/HmacSha256SourceCredentialSecretVerifierTest\.kt$''']
+
+[[allowlists]]
+description = "Deterministic UUID fixture for idempotency tests"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "match"
+regexes = ['''426a23e6-5234-4d38-9907-e2979ab2d9f5''']
+paths = [
+  '''(^|/)apps/operator-console/src/api/connectorGatewayClient\.test\.ts$''',
+  '''(^|/)apps/operator-console/src/pages/deliveries/ReplayDeliveryAction\.test\.tsx$''',
+]
