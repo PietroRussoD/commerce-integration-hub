@@ -10,6 +10,11 @@ export default defineConfig({
         target: process.env.VITE_INTEGRATION_CORE_PROXY_TARGET ?? "http://localhost:8080",
         changeOrigin: true,
       },
+      "/gateway-api": {
+        target: process.env.VITE_CONNECTOR_GATEWAY_PROXY_TARGET ?? "http://localhost:8081",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/gateway-api/, ""),
+      },
     },
   },
   test: {

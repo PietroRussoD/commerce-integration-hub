@@ -23,8 +23,10 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Requests under `/api` are proxied to `http://localhost:8080`. Override the
-backend during development with `VITE_INTEGRATION_CORE_PROXY_TARGET`.
+Requests under `/api` are proxied to `http://localhost:8080`. Requests under
+`/gateway-api` are proxied to `http://localhost:8081`, with the local prefix
+removed before forwarding. Override either backend during development with
+`VITE_INTEGRATION_CORE_PROXY_TARGET` or `VITE_CONNECTOR_GATEWAY_PROXY_TARGET`.
 
 Open [http://localhost:5173](http://localhost:5173) after Vite starts. The order
 list and detail views use the read-only operator API. The simulator requires a
