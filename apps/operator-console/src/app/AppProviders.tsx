@@ -3,6 +3,7 @@ import { type i18n } from "i18next";
 import { type ReactNode, useEffect } from "react";
 import { I18nextProvider, useTranslation } from "react-i18next";
 
+import { AccessTokenProvider } from "../auth/AccessTokenProvider";
 import { appI18n, resolveSupportedLocale } from "../i18n/i18n";
 
 function createQueryClient() {
@@ -22,7 +23,9 @@ export function AppProviders({ children, i18nInstance = appI18n }: { children: R
   return (
     <I18nextProvider i18n={i18nInstance} defaultNS="common">
       <DocumentLocale />
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <AccessTokenProvider>{children}</AccessTokenProvider>
+      </QueryClientProvider>
     </I18nextProvider>
   );
 }
