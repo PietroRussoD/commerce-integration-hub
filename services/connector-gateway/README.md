@@ -148,8 +148,9 @@ and unexpired canonical payload. The response is `202` when accepted and `409`
 for an idempotency conflict or a state/payload/configuration rejection. The
 command does not expose payload contents and preserves prior attempt evidence.
 
-The local demo keeps authorization disabled until a browser token flow is
-configured. Enable the Gateway resource-server boundary with:
+The local demo keeps authorization disabled because the repository does not
+include an identity provider or token issuer. Enable the Gateway resource-server
+boundary with:
 
 | Variable | Requirement |
 | --- | --- |
@@ -188,7 +189,8 @@ starts PostgreSQL 18.3 with Testcontainers and verifies migrations, critical
 constraints, repositories, durable receipt, and the complete worker process from
 a signed webhook to the Integration Core HTTP boundary and persisted completion.
 It also runs the complete ERP_B polling process against a local synthetic HTTP
-provider.
+provider and verifies operator list, detail, and replay against PostgreSQL using
+short-lived RS256 tokens and a test-only HTTP JWKS server.
 
 ## Database migration
 

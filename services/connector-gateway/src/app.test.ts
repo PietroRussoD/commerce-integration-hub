@@ -36,7 +36,7 @@ describe("health endpoint", () => {
         expect(document.info).toEqual({
             title: "Commerce Integration Hub Connector Gateway API",
             version: "1.0.0-SNAPSHOT",
-            description: "Provider-facing connector and operational health API."
+            description: "Provider-facing connector, operator delivery, and operational health API."
         });
         expect(document.paths).toHaveProperty("/health");
         expect(document.paths).toHaveProperty("/health/live");

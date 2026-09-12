@@ -49,9 +49,9 @@ a bearer challenge. A valid identity without the required role returns
 material, unbounded claims, or detailed cryptographic failure reasons.
 
 The existing source API-key and webhook HMAC boundaries remain unchanged.
-Operator authorization is applied only to `/api/v1/operator/**` and future
-Gateway operator routes. Health, readiness, metrics, OpenAPI, and provider
-routes retain their separately documented deployment controls.
+Operator authorization is applied only to `/api/v1/operator/**` in the Core and
+Gateway. Health, readiness, metrics, OpenAPI, and provider routes retain their
+separately documented deployment controls.
 
 Local integration tests use a test-only RSA key pair, a controlled JWKS server,
 and short-lived tokens. Production configuration supplies the issuer, audience,

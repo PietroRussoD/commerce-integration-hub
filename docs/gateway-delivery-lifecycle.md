@@ -241,26 +241,34 @@ records the retry policy.
 
 ## Controlled Operator Replay
 
-The Gateway implements an internal, state-guarded replay primitive for a
-terminal `EXHAUSTED` delivery. It is not exposed through HTTP until the
-`platform-admin` route and Console token flow are complete.
+When operator authorization is enabled, the Gateway exposes a state-guarded
+`POST /api/v1/operator/deliveries/{deliveryId}/replay` command for a terminal
+`EXHAUSTED` delivery. The route requires a verified `platform-admin` JWT, a
+reason, and a UUID idempotency key. The Console exposes the same command only
+when its in-memory token declares that role; the Gateway remains the enforcing
+security boundary.
 
 ```mermaid
 sequenceDiagram
-    participant O as Operator command
+    participant C as Operator Console
+    participant A as Gateway operator API
     participant DB as Gateway PostgreSQL
 
-    O->>DB: Insert REQUESTED audit record
+    C->>A: POST replay with JWT, reason, idempotency key
+    A->>A: Verify JWT and require platform-admin
+    A->>DB: Insert REQUESTED audit record
     DB->>DB: Lock delivery and validate replayability
     alt EXHAUSTED, active connector, retained payload
         DB->>DB: EXHAUSTED -> RECEIVED
         DB->>DB: Clear terminal error and schedule now
         DB->>DB: Insert SUCCEEDED audit record
-        DB-->>O: REPLAYED
+        DB-->>A: REPLAYED
+        A-->>C: 202 Accepted
     else Invalid state, inactive connector, or expired payload
         DB->>DB: Preserve delivery state
         DB->>DB: Insert REJECTED audit record
-        DB-->>O: Typed rejection
+        DB-->>A: Typed rejection
+        A-->>C: 409 Conflict
     end
 ```
 

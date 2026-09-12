@@ -11,11 +11,12 @@ The platform is designed to make duplicate deliveries, ambiguous timeouts,
 temporary outages, and permanent failures explicit and recoverable. Operators
 can follow an order across ingestion and asynchronous processing through line
 items, timeline entries, processing attempts, and an eventually consistent
-search projection. Controlled production retries remain a later increment. The
-current operator API exposes read-only order summary and detail views backed by
-the authoritative PostgreSQL state, and the console also provides a controlled
-local ingestion simulator, a replay of sanitized local flow evidence, and an
-interactive static System Map of the implemented topology.
+search projection. The Core operator API exposes read-only order views backed by
+authoritative PostgreSQL state. The Gateway operator API additionally supports
+audited replay of eligible exhausted deliveries; outbox and dead-letter replay
+remain later increments. The console provides these operational views alongside
+a controlled local ingestion simulator, replay of sanitized local flow evidence,
+and an interactive static System Map of the implemented topology.
 
 ## Problem
 
@@ -51,7 +52,8 @@ flowchart LR
     GatewayDatabase[(Gateway PostgreSQL)]
     CoreDatabase[(Core PostgreSQL)]
     Broker[Kafka / Redpanda]
-    Processor[Processing consumer]
+    Processor[Order processor]
+    Projection[Search projection consumer]
     Search[(OpenSearch)]
     UI[Operator UI]
     Source -->|Canonical HTTP today| Core
@@ -59,11 +61,14 @@ flowchart LR
     Gateway -->|Durable delivery state| GatewayDatabase
     Gateway -->|Normalized HTTP command| Core
     Core -->|Order, timeline, outbox| CoreDatabase
-    Core -->|Canonical event| Broker
-    Broker --> Processor
-    Processor --> CoreDatabase
-    Processor --> Search
+    Core -->|OrderReceived.v1| Broker
+    Broker -->|OrderReceived.v1| Processor
+    Processor -->|Order state and OrderReady outbox| CoreDatabase
+    Core -->|OrderReady.v2| Broker
+    Broker -->|OrderReady.v2| Projection
+    Projection --> Search
     UI -->|Operator API and canonical demo commands| Core
+    UI -->|Delivery inspection and controlled replay| Gateway
     Core -->|Projected-order query| Search
 ```
 
@@ -105,8 +110,9 @@ Available for the current PostgreSQL-authoritative scope. The Integration Core
 exposes read-only operator endpoints for paginated order summaries and order
 details with line items, timeline entries, and processing attempts. The service
 can validate externally issued OIDC JWTs and restrict these paths to `operator`
-or `platform-admin`; this remains disabled in the default local demo until the
-console supplies a token. With the optional OpenSearch profile enabled,
+or `platform-admin`; this remains disabled in the default local demo because the
+repository does not include an identity provider or token issuer. With the
+optional OpenSearch profile enabled,
 `GET /api/v1/operator/orders/search` searches the
 event-driven order projection by text, source system, external ID, status,
 currency, SKU, and receipt interval. `GET /api/v1/operator/orders/search/status`
@@ -118,8 +124,8 @@ fresh, equivalent, conflicting, and domain-invalid canonical orders in a
 controlled local environment. Published-event inspection remains planned.
 
 The simulator is a portfolio and development tool, not a production
-administration surface. Production replay, manual retries, and mutation of
-integration state remain separate audited capabilities.
+administration surface. Gateway delivery replay is a separate JWT-protected,
+audited capability. Outbox and dead-letter replay remain unimplemented.
 
 ### System Map
 
@@ -213,7 +219,7 @@ read model; external subscribers remain planned.
 | Provider-specific Connector Gateway | Durable receipt, complete fenced forwarding, and opt-in runtime scheduling implemented |
 | `ERP_B` polling adapter | Implemented and process-tested |
 | OpenSearch projection, operator search API, outcome metrics, availability API, bounded reconciliation, safe full reindex, and persisted projection progress | Implemented; an authenticated/audited reindex command and Kafka consumer lag remain planned |
-| Gateway and event API contracts | Generated Gateway OpenAPI and canonical-event AsyncAPI implemented with drift checks |
+| Gateway and event API contracts | Generated Gateway OpenAPI with a drift check and a committed, manually maintained canonical-event AsyncAPI implemented |
 | Operator authentication and authorization | Opt-in external JWT validation and operator/platform-admin roles implemented for current Core and Gateway operator APIs; the Console keeps a manually supplied JWT in page memory only |
 | Failure inspection and controlled recovery | Gateway inspection, immutable command audit, and authenticated platform-admin replay implemented, including the Console recovery control for eligible exhausted deliveries |
 | Gateway payload retention enforcement | Expiry timestamp implemented; payload cleanup planned |

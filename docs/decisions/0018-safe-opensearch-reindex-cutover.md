@@ -72,9 +72,10 @@ sequenceDiagram
 
 ## Consequences
 
-The future implementation needs a dedicated reindex operation state, lease,
-candidate target abstraction, dual-write routing, bounded progress metrics, and
-an integration test that injects a concurrent projection write during backfill.
-The current reconciliation state is intentionally not reused: reconciliation
-repairs the active projection, while reindexing changes its physical target and
-has a different lifecycle.
+The implementation uses a dedicated reindex operation state, lease, candidate
+target abstraction, dual-write routing, bounded progress metrics, and an
+integration test that injects a concurrent projection write during backfill.
+The reconciliation state is intentionally not reused: reconciliation repairs
+the active projection, while reindexing changes its physical target and has a
+different lifecycle. Starting the operation remains an internal boundary until
+a dedicated authenticated and audited command is implemented.

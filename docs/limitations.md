@@ -47,8 +47,9 @@ mistaken for available behavior.
 - The transactional outbox is persisted atomically with each new order, and the
   scheduled claim-publish-transition and expired-claim recovery cycles are
   implemented. Invalid or retry-exhausted `OrderReceived.v1` deliveries are
-  routed to a Kafka dead-letter topic. Operator replay tooling is not
-  implemented.
+  routed to a Kafka dead-letter topic. Outbox and dead-letter replay tooling is
+  not implemented; this is separate from the Gateway delivery replay described
+  below.
 
 ## API and Operations
 

@@ -68,7 +68,7 @@ export function buildApplication(options: BuildApplicationOptions = {}): Fastify
             info: {
                 title: "Commerce Integration Hub Connector Gateway API",
                 version: "1.0.0-SNAPSHOT",
-                description: "Provider-facing connector and operational health API."
+                description: "Provider-facing connector, operator delivery, and operational health API."
             },
             components: {
                 securitySchemes: {

@@ -419,8 +419,8 @@
         "interfaces": "Riceve eventi ordine canonici dall'outbox del core e li consegna ai gruppi di consumer tramite l'API Kafka."
       },
       "processor": {
-        "role": "Elabora eventi canonici in modo idempotente e avanza lo stato durevole del workflow e della proiezione di ricerca.",
-        "interfaces": "Consuma topic Redpanda, scrive lo stato del core e proietta ordini ricercabili su OpenSearch quando abilitato."
+        "role": "Raggruppa i consumer idempotenti del Core per l'elaborazione degli ordini e la proiezione di ricerca opzionale.",
+        "interfaces": "Consuma OrderReceived.v1 in PostgreSQL del Core e OrderReady.v2 in OpenSearch quando la proiezione e' abilitata."
       },
       "gatewayStorage": {
         "role": "Rende durevoli consegna e recupero del polling del provider anche dopo il riavvio del gateway.",
@@ -432,11 +432,11 @@
       },
       "search": {
         "role": "Fornisce un read model ricostruibile per la ricerca operativa degli ordini senza diventare il system of record.",
-        "interfaces": "Riceve proiezioni dal consumer di elaborazione; le richieste di ricerca rimangono dietro l'API dell'Integration Core."
+        "interfaces": "Riceve proiezioni OrderReady.v2 dal consumer dedicato; le richieste di ricerca rimangono dietro l'API dell'Integration Core."
       },
       "console": {
-        "role": "Fornisce agli operatori un'interfaccia controllata per ordini, simulazioni, evidenze dei flussi e riferimento architetturale.",
-        "interfaces": "Chiama solo l'API HTTP dell'Integration Core; non si connette direttamente a PostgreSQL, Redpanda o OpenSearch."
+        "role": "Fornisce agli operatori un'interfaccia controllata per ordini, consegne, recupero, simulazioni, evidenze dei flussi e riferimento architetturale.",
+        "interfaces": "Chiama le API HTTP dell'Integration Core e del Connector Gateway; non si connette direttamente a PostgreSQL, Redpanda o OpenSearch."
       },
       "simulator": {
         "role": "Fornisce un comportamento locale e deterministico del provider per sviluppo del connettore ed evidenze di accettazione.",
@@ -471,8 +471,8 @@
         "description": "Broker eventi compatibile con Kafka che trasporta eventi ordine canonici durevoli."
       },
       "processor": {
-        "title": "Consumer di elaborazione",
-        "description": "Consumer idempotente che avanza il workflow degli ordini e i read model."
+        "title": "Consumer eventi del Core",
+        "description": "Consumer idempotenti per il workflow degli ordini e la proiezione di ricerca opzionale."
       }
     },
     "storage": {
