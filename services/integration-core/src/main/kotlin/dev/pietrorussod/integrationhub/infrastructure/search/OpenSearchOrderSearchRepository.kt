@@ -89,7 +89,7 @@ class OpenSearchOrderSearchRepository
         companion object {
             internal fun buildRequest(query: SearchOrdersQuery): SearchRequest {
                 val filters = query.filters()
-                val searchQuery = query.text?.let(::descriptionMatchQuery)
+                val searchQuery = query.text?.let(::operatorTextQuery)
                 val rootQuery =
                     if (searchQuery == null && filters.isEmpty()) {
                         Query.of { root -> root.matchAll { matchAll -> matchAll } }
@@ -135,9 +135,16 @@ class OpenSearchOrderSearchRepository
                     root.term { term -> term.field(field).value(FieldValue.of(value)) }
                 }
 
-            private fun descriptionMatchQuery(text: String): Query =
+            private fun operatorTextQuery(text: String): Query =
                 Query.of { root ->
-                    root.match { match -> match.field("itemDescriptions").query(FieldValue.of(text)) }
+                    root.bool { bool ->
+                        bool
+                            .should { should ->
+                                should.match { match -> match.field("itemDescriptions").query(FieldValue.of(text)) }
+                            }.should { should -> should.term { term -> term.field("itemSkus").value(FieldValue.of(text)) } }
+                            .should { should -> should.term { term -> term.field("externalOrderId").value(FieldValue.of(text)) } }
+                            .minimumShouldMatch("1")
+                    }
                 }
 
             private fun receiptTimeRangeQuery(

@@ -170,7 +170,7 @@
     },
     "search": {
       "label": "Search projected orders",
-      "placeholder": "Search item descriptions",
+      "placeholder": "Description, exact SKU, or external order ID",
       "submit": "Search projected orders",
       "clear": "Clear projected order search",
       "filters": {
