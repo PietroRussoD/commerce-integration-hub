@@ -62,6 +62,10 @@ describe("connector gateway database migration", () => {
             expect.objectContaining({
                 migrationName: "006_add_erp_b_polling_storage",
                 status: "Success"
+            }),
+            expect.objectContaining({
+                migrationName: "007_create_operator_command_audit",
+                status: "Success"
             })
         ]);
         expect(secondRun).toEqual([]);
@@ -74,6 +78,7 @@ describe("connector gateway database migration", () => {
                   'connector_configurations',
                   'delivery_attempts',
                   'inbound_deliveries',
+                  'operator_command_audit_entries',
                   'polling_checkpoints'
               )
             ORDER BY table_name
@@ -83,6 +88,7 @@ describe("connector gateway database migration", () => {
             "connector_configurations",
             "delivery_attempts",
             "inbound_deliveries",
+            "operator_command_audit_entries",
             "polling_checkpoints"
         ]);
 

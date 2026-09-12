@@ -62,8 +62,9 @@ mistaken for available behavior.
   policy admits `operator` and `platform-admin` roles from the JWT `groups`
   claim. Cross-source administration and authenticated console sessions are not
   implemented. The Gateway operator API exposes payload-free delivery summaries
-  with bounded keyset pagination and a safe detail/attempt history. Audited
-  recovery is not implemented. The operator console exposes a paginated summary,
+  with bounded keyset pagination and a safe detail/attempt history. An immutable
+  operator-command journal is implemented, but audited recovery is not yet
+  exposed. The operator console exposes a paginated summary,
   availability-gated projected-order search, operational details, real
   search-projection availability and reconciliation state, a controlled
   canonical-ingestion simulator, and a Flow Explorer that replays three
