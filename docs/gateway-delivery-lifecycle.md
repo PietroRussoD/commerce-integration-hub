@@ -238,3 +238,35 @@ See [ADR 0012](decisions/0012-short-lived-gateway-delivery-claims.md) for the
 claim decision and [ADR 0013](decisions/0013-classify-integration-core-http-outcomes.md)
 for HTTP outcome classification. [ADR 0014](decisions/0014-bound-gateway-delivery-retries.md)
 records the retry policy.
+
+## Controlled Operator Replay
+
+The Gateway implements an internal, state-guarded replay primitive for a
+terminal `EXHAUSTED` delivery. It is not exposed through HTTP until the
+`platform-admin` route and Console token flow are complete.
+
+```mermaid
+sequenceDiagram
+    participant O as Operator command
+    participant DB as Gateway PostgreSQL
+
+    O->>DB: Insert REQUESTED audit record
+    DB->>DB: Lock delivery and validate replayability
+    alt EXHAUSTED, active connector, retained payload
+        DB->>DB: EXHAUSTED -> RECEIVED
+        DB->>DB: Clear terminal error and schedule now
+        DB->>DB: Insert SUCCEEDED audit record
+        DB-->>O: REPLAYED
+    else Invalid state, inactive connector, or expired payload
+        DB->>DB: Preserve delivery state
+        DB->>DB: Insert REJECTED audit record
+        DB-->>O: Typed rejection
+    end
+```
+
+Reservation, validation, state transition, and terminal audit entry share one
+PostgreSQL transaction. A repeated actor/idempotency-key pair returns the
+original outcome only when its action, target, and rationale match exactly; a
+different request returns an idempotency conflict. Historical attempts remain
+intact and their counter is not reset, so a replay does not bypass the bounded
+automatic retry policy or erase forensic evidence.

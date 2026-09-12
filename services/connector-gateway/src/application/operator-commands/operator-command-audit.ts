@@ -70,7 +70,7 @@ export function createOperatorCommandAuditor({
 }: OperatorCommandAuditorDependencies): OperatorCommandAuditor {
     return {
         complete: async (command) => {
-            assertCanonicalUuid(command.commandId, "commandId");
+            assertOperatorCommandUuid(command.commandId, "commandId");
             const errorCode = readErrorCode(command.outcome, command.errorCode);
             return repository.complete({
                 commandId: command.commandId,
@@ -80,12 +80,12 @@ export function createOperatorCommandAuditor({
             });
         },
         reserveDeliveryReplay: async (command) => {
-            assertNonBlank(command.actorSubject, "actorSubject", 200);
-            assertCanonicalUuid(command.deliveryId, "deliveryId");
-            assertCanonicalUuid(command.idempotencyKey, "idempotencyKey");
-            assertNonBlank(command.reason, "reason", 1_000);
+            assertOperatorCommandText(command.actorSubject, "actorSubject", 200);
+            assertOperatorCommandUuid(command.deliveryId, "deliveryId");
+            assertOperatorCommandUuid(command.idempotencyKey, "idempotencyKey");
+            assertOperatorCommandText(command.reason, "reason", 1_000);
             const commandId = createCommandId();
-            assertCanonicalUuid(commandId, "generated commandId");
+            assertOperatorCommandUuid(commandId, "generated commandId");
             return repository.reserve({
                 action: "DELIVERY_REPLAY",
                 actorSubject: command.actorSubject,
@@ -112,13 +112,17 @@ function readErrorCode(outcome: OperatorCommandOutcome, errorCode: string | unde
     return errorCode;
 }
 
-function assertCanonicalUuid(value: string, name: string): void {
+export function assertOperatorCommandUuid(value: string, name: string): void {
     if (!UUID_PATTERN.test(value)) {
         throw new Error(`${name} must be a canonical UUID`);
     }
 }
 
-function assertNonBlank(value: string, name: string, maximumLength: number): void {
+export function assertOperatorCommandText(
+    value: string,
+    name: string,
+    maximumLength: number
+): void {
     if (value.length === 0 || value.length > maximumLength || value !== value.trim()) {
         throw new Error(`${name} must be non-blank and at most ${maximumLength} characters`);
     }
