@@ -33,8 +33,10 @@ Open [http://localhost:5173](http://localhost:5173) after Vite starts. The order
 list and detail views use the read-only operator API. The Deliveries navigation
 item appears after a valid operator JWT is supplied through the header control;
 the token is held only in page memory. It provides payload-free delivery
-summaries and attempt history from the Gateway. The simulator requires a source
-API key provisioned by the Integration Core administrative CLI.
+summaries and attempt history from the Gateway. A `platform-admin` can submit a
+reasoned, idempotent replay command for an eligible exhausted delivery. The
+simulator requires a source API key provisioned by the Integration Core
+administrative CLI.
 
 With the Integration Core OpenSearch profile enabled, the Orders page enables
 projected-order search only after the status endpoint reports the read alias as

@@ -65,8 +65,9 @@ mistaken for available behavior.
   implemented. The Gateway operator API exposes payload-free delivery summaries
   with bounded keyset pagination and a safe detail/attempt history. An immutable
   operator-command journal and authenticated `platform-admin` replay route for
-  eligible exhausted deliveries are implemented, but Console recovery control is
-  not yet exposed. The operator console exposes a paginated summary,
+  eligible exhausted deliveries are implemented. The Console exposes the replay
+  control only to a `platform-admin`, requires a reason, and generates one
+  idempotency key per submission. The operator console exposes a paginated summary,
   availability-gated projected-order search, operational details, real
   search-projection availability and reconciliation state, a controlled
   canonical-ingestion simulator, and a Flow Explorer that replays three

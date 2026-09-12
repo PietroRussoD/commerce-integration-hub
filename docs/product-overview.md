@@ -215,7 +215,7 @@ read model; external subscribers remain planned.
 | OpenSearch projection, operator search API, outcome metrics, availability API, bounded reconciliation, safe full reindex, and persisted projection progress | Implemented; an authenticated/audited reindex command and Kafka consumer lag remain planned |
 | Gateway and event API contracts | Generated Gateway OpenAPI and canonical-event AsyncAPI implemented with drift checks |
 | Operator authentication and authorization | Opt-in external JWT validation and operator/platform-admin roles implemented for current Core and Gateway operator APIs; the Console keeps a manually supplied JWT in page memory only |
-| Failure inspection and controlled recovery | Gateway inspection, immutable command audit, and authenticated platform-admin replay implemented; Console recovery control planned |
+| Failure inspection and controlled recovery | Gateway inspection, immutable command audit, and authenticated platform-admin replay implemented, including the Console recovery control for eligible exhausted deliveries |
 | Gateway payload retention enforcement | Expiry timestamp implemented; payload cleanup planned |
 | Distributed tracing and alerting | OpenTelemetry propagation/export and alert rules planned |
 

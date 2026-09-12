@@ -86,6 +86,16 @@
         "error": "Errore"
       },
       "outcome": { "retryableFailure": "Errore riprovabile" }
+    },
+    "replay": {
+      "open": "Ripeti consegna",
+      "title": "Ripeti consegna",
+      "close": "Chiudi dialog ripeti consegna",
+      "reason": "Motivazione",
+      "reasonRequired": "È necessaria una motivazione per ripetere la consegna",
+      "submit": "Conferma ripetizione",
+      "replayed": "Il comando di ripetizione {{commandId}} è stato accettato.",
+      "inProgress": "Il comando di ripetizione {{commandId}} è già in corso."
     }
   },
   "orders": {

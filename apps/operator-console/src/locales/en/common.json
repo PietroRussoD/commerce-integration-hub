@@ -86,6 +86,16 @@
         "error": "Error"
       },
       "outcome": { "retryableFailure": "Retryable failure" }
+    },
+    "replay": {
+      "open": "Replay delivery",
+      "title": "Replay delivery",
+      "close": "Close replay delivery dialog",
+      "reason": "Reason",
+      "reasonRequired": "A replay reason is required",
+      "submit": "Confirm replay",
+      "replayed": "Replay command {{commandId}} was accepted.",
+      "inProgress": "Replay command {{commandId}} is already in progress."
     }
   },
   "orders": {

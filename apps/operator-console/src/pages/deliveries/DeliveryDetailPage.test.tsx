@@ -70,6 +70,7 @@ test("renders the payload retention metadata and safe attempt history", async ()
   expect(await screen.findByText("event-42")).toBeInTheDocument();
   expect(screen.getByText(/Retained until/)).toBeInTheDocument();
   expect(screen.getByText("Retryable failure")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Replay delivery" })).toBeInTheDocument();
   expect(screen.getAllByText("The Core endpoint did not respond before the timeout")).toHaveLength(2);
   expect(mockedGetOperatorDelivery).toHaveBeenCalledWith({
     accessToken: "operator-token",
@@ -104,7 +105,7 @@ const operatorAccessTokenContext: AccessTokenContextValue = {
   clearAccessToken: vi.fn(),
   identity: {
     expiresAt: new Date("2027-01-15T08:00:00Z"),
-    roles: new Set(["operator"]),
+    roles: new Set(["operator", "platform-admin"]),
     subject: "operator-42",
   },
   setAccessToken: vi.fn(),
