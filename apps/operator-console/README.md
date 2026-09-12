@@ -31,8 +31,11 @@ removed before forwarding. Override either backend during development with
 
 Open [http://localhost:5173](http://localhost:5173) after Vite starts. The order
 list and detail views use the read-only operator API. The Deliveries navigation
-item appears after a valid operator JWT is supplied through the header control;
-the token is held only in page memory. It provides payload-free delivery
+item appears after a non-expired JWT with an `operator` or `platform-admin`
+`groups` claim is supplied through the header control; the token is held only in
+page memory. The Console inspects these claims only to shape its UI and does not
+verify the signature. The Gateway independently verifies the token and enforces
+authorization. The delivery views provide payload-free delivery
 summaries and attempt history from the Gateway. A `platform-admin` can submit a
 reasoned, idempotent replay command for an eligible exhausted delivery. The
 simulator requires a source API key provisioned by the Integration Core
@@ -147,13 +150,19 @@ coverage gate fails.
 
 ## API types
 
-`src/api/generated/integration-core.ts` is generated from the committed
-Integration Core OpenAPI document and is also committed. Regenerate it after an
-API contract change:
+The committed generated clients are:
+
+- `src/api/generated/integration-core.ts`, generated from the Integration Core
+  OpenAPI document;
+- `src/api/generated/connector-gateway.ts`, generated from the Connector
+  Gateway OpenAPI document.
+
+Regenerate both after an API contract change:
 
 ```bash
 pnpm generate:api
 ```
 
-Application code accesses the backend through `src/api/integrationCoreClient.ts`
+Application code accesses the backends through
+`src/api/integrationCoreClient.ts` and `src/api/connectorGatewayClient.ts`
 rather than importing transport details into page components.

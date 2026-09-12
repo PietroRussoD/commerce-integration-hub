@@ -45,8 +45,9 @@ operations:
       $ref: '#/channels/orderReceived'
     messages:
       - $ref: '#/channels/orderReceived/messages/orderReceived'
-  consumeOrderReceivedDlq:
-    action: receive
+  publishOrderReceivedDeadLetter:
+    action: send
+    description: SmallRye routes rejected or retry-exhausted `OrderReceived.v1` records to this dead-letter channel.
     channel:
       $ref: '#/channels/orderReceivedDlq'
     messages:
@@ -64,9 +65,9 @@ operations:
       $ref: '#/channels/orderReady'
     messages:
       - $ref: '#/channels/orderReady/messages/orderReady'
-  consumeOrderReadySearchDlq:
-    action: receive
-    description: Integration Core search projection consumer group `integration-core-order-search-projection` handles failures from the `orderReady` channel.
+  publishOrderReadySearchDeadLetter:
+    action: send
+    description: SmallRye routes rejected or retry-exhausted search-projection records from the `orderReady` channel to this dead-letter channel.
     channel:
       $ref: '#/channels/orderReadySearchDlq'
     messages:
@@ -101,7 +102,7 @@ components:
     EventHeaders:
       type: object
       additionalProperties: false
-      required: [event-id, event-type, event-version, correlation-id]
+      required: [event-id, event-type, event-version, correlation-id, content-type]
       properties:
         event-id:
           type: string
@@ -115,6 +116,9 @@ components:
         correlation-id:
           type: string
           format: uuid
+        content-type:
+          type: string
+          const: application/json
       description: UTF-8 Kafka headers duplicated from the event envelope for routing and diagnostics.
     EventEnvelope:
       type: object

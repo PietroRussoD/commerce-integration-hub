@@ -419,8 +419,8 @@
         "interfaces": "Receives canonical order events from the core outbox and delivers them to consumer groups through the Kafka API."
       },
       "processor": {
-        "role": "Processes canonical events idempotently and advances durable workflow and search-projection state.",
-        "interfaces": "Consumes Redpanda topics, writes core state and projects searchable orders to OpenSearch when enabled."
+        "role": "Groups the Core's idempotent order-processing and optional search-projection consumers.",
+        "interfaces": "Consumes OrderReceived.v1 into Core PostgreSQL and OrderReady.v2 into OpenSearch when the projection is enabled."
       },
       "gatewayStorage": {
         "role": "Makes provider delivery and polling recovery durable across gateway restarts.",
@@ -432,11 +432,11 @@
       },
       "search": {
         "role": "Provides a rebuildable read model for operational order search without becoming the system of record.",
-        "interfaces": "Receives projections from the processing consumer; search requests remain behind the Integration Core API."
+        "interfaces": "Receives OrderReady.v2 projections from its dedicated consumer; search requests remain behind the Integration Core API."
       },
       "console": {
-        "role": "Gives operators a controlled interface for orders, simulations, flow evidence and architecture reference.",
-        "interfaces": "Calls only the Integration Core HTTP API; it does not connect directly to PostgreSQL, Redpanda or OpenSearch."
+        "role": "Gives operators a controlled interface for orders, deliveries, recovery, simulations, flow evidence and architecture reference.",
+        "interfaces": "Calls the Integration Core and Connector Gateway HTTP APIs; it does not connect directly to PostgreSQL, Redpanda or OpenSearch."
       },
       "simulator": {
         "role": "Supplies deterministic local provider behavior for connector development and acceptance evidence.",
@@ -471,8 +471,8 @@
         "description": "Kafka-compatible event broker carrying durable canonical order events."
       },
       "processor": {
-        "title": "Processing consumer",
-        "description": "Idempotent consumer that advances the order workflow and read models."
+        "title": "Core event consumers",
+        "description": "Idempotent consumers for the order workflow and optional search projection."
       }
     },
     "storage": {

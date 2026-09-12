@@ -165,7 +165,8 @@ versions. Operator search is unavailable until that alias exists. PostgreSQL is
 the source of truth: a leased reconciliation job repairs missed documents, and
 the internal full-reindex use case builds and validates a candidate index before
 an atomic alias cutover. Starting a reindex is intentionally not exposed as an
-operator command until authentication and audit controls exist.
+operator command until dedicated authorization and audit controls are added to
+that operation.
 
 The search profile, its local startup command, and the status endpoint are
 documented in the repository [local demo](../../README.md#local-demo). The
@@ -222,7 +223,8 @@ Operator endpoints support external OIDC bearer-token validation. Enable both
 `OPERATOR_OIDC_AUDIENCE` for the selected identity provider. Tokens must be
 signed with `RS256`, match the configured issuer and audience, and contain
 either `operator` or `platform-admin` in the `groups` claim. The default local
-demo leaves this boundary disabled until the console can supply a token.
+demo leaves this boundary disabled because it does not include an identity
+provider or token issuer.
 
 The service is a resource server: it validates access tokens through the
 provider's JWKS endpoint but does not implement login, issue tokens, or manage

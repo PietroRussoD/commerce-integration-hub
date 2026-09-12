@@ -52,6 +52,11 @@ The current baseline establishes:
   ingestion simulator, Flow Explorer, interactive static System Map, generated
   API types, routing, unit and local Chromium browser tests, enforced coverage,
   and CI validation;
+- opt-in external OIDC JWT validation for Core and Gateway operator APIs, with
+  separate read-only `operator` and recovery-capable `platform-admin` roles;
+- payload-free Gateway delivery inspection and state-guarded replay of eligible
+  exhausted deliveries, protected by JWT authorization, UUID idempotency, and
+  an immutable PostgreSQL command audit journal;
 - a strict TypeScript and Fastify Connector Gateway baseline with an injectable
   application factory, health endpoint, enforced coverage, and an independent
   selective CI job;
@@ -93,6 +98,11 @@ The `v0.9.0` release persists the latest successful search
 projection watermark and exposes its processing delay and age through the
 operator status API and the local operations dashboard. These measures describe
 projection progress, not Kafka consumer lag.
+
+The current `1.0.0-SNAPSHOT` adds versioned Gateway and event contracts, an
+interactive System Map, external operator JWT authorization, safe Gateway
+delivery inspection, and audited `platform-admin` replay. Its release evidence
+will be recorded when `v1.0.0` is prepared.
 
 ## Repository structure
 
@@ -266,7 +276,7 @@ The cursor, lease, page-commit, and simulator interactions for `ERP_B` are shown
 in the dedicated [polling diagrams](docs/erp-b-polling.md).
 The sanitized real-scenario capture boundary and replay contract are documented
 in the [Integration Flow Explorer guide](docs/flow-explorer.md).
-The developing publisher state machine is shown in the
+The publisher state machine is shown in the
 [outbox lifecycle diagrams](docs/outbox-lifecycle.md).
 Significant design choices are recorded in the
 [architecture decision log](docs/decisions/README.md).
@@ -274,9 +284,9 @@ The frontend accessibility target, automated coverage, and remaining manual
 checks are documented in the [accessibility plan](docs/accessibility.md).
 
 The precise boundary of the current implementation is documented in
-[current limitations](docs/limitations.md). The delivered behavior and its
-verification evidence are summarized in the
-[`v0.9.0` release notes](docs/releases/v0.9.0.md). Previous milestones are
+[current limitations](docs/limitations.md). The latest published verification
+evidence is summarized in the [`v0.9.0` release notes](docs/releases/v0.9.0.md);
+the repository is currently developing `v1.0.0`. Previous milestones are
 documented in the [`v0.8.0`](docs/releases/v0.8.0.md),
 [`v0.7.0`](docs/releases/v0.7.0.md), [`v0.6.0`](docs/releases/v0.6.0.md),
 [`v0.5.0`](docs/releases/v0.5.0.md),

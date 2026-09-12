@@ -325,10 +325,10 @@ not been reacquired. These operations do not change cursor version. The bounded
 provider runner, non-overlapping scheduler, and disabled-by-default runtime
 composition in `main.ts` are implemented.
 
-`operator_command_audit_entries` is an append-only journal for future privileged
-Gateway commands. Each entry retains the command, operator subject, target,
-rationale, idempotency key, timestamp, and outcome without relying on mutable
-command state. PostgreSQL rejects updates and deletes through a trigger. A
-partial unique index permits one `REQUESTED` record for an operator/idempotency
-key pair and one terminal outcome per command. The journal exists before any
-recovery mutation is exposed; it does not itself enable replay.
+`operator_command_audit_entries` is the append-only journal used by privileged
+Gateway commands. The current delivery replay records the operator subject,
+target, rationale, idempotency key, timestamp, and outcome without relying on
+mutable command state. PostgreSQL rejects updates and deletes through a trigger.
+A partial unique index permits one `REQUESTED` record for an
+operator/idempotency-key pair and one terminal outcome per command. Audit
+reservation, delivery transition, and terminal outcome share one transaction.
