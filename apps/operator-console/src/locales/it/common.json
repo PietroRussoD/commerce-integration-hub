@@ -46,6 +46,48 @@
     "empty": "Nessuna consegna trovata",
     "error": "Impossibile caricare le consegne"
   },
+  "deliveryDetail": {
+    "title": "Dettagli consegna",
+    "backToDeliveries": "Consegne",
+    "loading": "Caricamento dettagli consegna",
+    "error": "Impossibile caricare i dettagli della consegna",
+    "retry": "Riprova",
+    "summary": {
+      "event": "Evento",
+      "provider": "Provider",
+      "status": "Stato",
+      "received": "Ricevuto",
+      "updated": "Aggiornato",
+      "attempts": "Tentativi",
+      "connectorMode": "Modalità connector",
+      "connectorStatus": "Stato connector",
+      "mappingVersion": "Versione mapping",
+      "nextAttempt": "Prossimo tentativo",
+      "payloadRetention": "Conservazione payload",
+      "coreOrder": "Ordine Core",
+      "httpStatus": "Ultimo stato HTTP",
+      "correlation": "Correlazione",
+      "errorCode": "Codice errore",
+      "safeError": "Errore sicuro"
+    },
+    "retention": {
+      "retained": "Conservato fino a {{expiresAt}}",
+      "expired": "Scaduto alle {{expiresAt}}"
+    },
+    "attempts": {
+      "title": "Tentativi di consegna",
+      "empty": "Nessun tentativo di consegna",
+      "columns": {
+        "attempt": "Tentativo",
+        "outcome": "Esito",
+        "started": "Avviato",
+        "duration": "Durata",
+        "httpStatus": "Stato HTTP",
+        "error": "Errore"
+      },
+      "outcome": { "retryableFailure": "Errore riprovabile" }
+    }
+  },
   "orders": {
     "title": "Ordini",
     "total": "Totale: {{count}}",

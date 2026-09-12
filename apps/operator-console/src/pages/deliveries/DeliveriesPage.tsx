@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, RefreshCw, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 import {
   listOperatorDeliveries,
@@ -161,7 +162,7 @@ function DeliveriesTable({ page }: { page: OperatorDeliveryPage }) {
           {page.items.map((delivery) => (
             <tr key={delivery.deliveryId} className="hover:bg-app-canvas">
               <td className="px-4 py-3.5">
-                <p className="font-medium text-app-foreground">{delivery.externalEventId}</p>
+                <Link to={`/deliveries/${delivery.deliveryId}`} className="font-medium text-app-foreground underline-offset-4 hover:text-app-brand-primary hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">{delivery.externalEventId}</Link>
                 <p className="mt-0.5 font-mono text-xs text-app-foreground-faint">{shortenId(delivery.deliveryId)}</p>
               </td>
               <td className="px-4 py-3.5 text-app-foreground-secondary">{t(providerLabelKeys[delivery.provider])}</td>

@@ -46,6 +46,48 @@
     "empty": "No deliveries found",
     "error": "Unable to load deliveries"
   },
+  "deliveryDetail": {
+    "title": "Delivery details",
+    "backToDeliveries": "Deliveries",
+    "loading": "Loading delivery details",
+    "error": "Unable to load delivery details",
+    "retry": "Retry",
+    "summary": {
+      "event": "Event",
+      "provider": "Provider",
+      "status": "Status",
+      "received": "Received",
+      "updated": "Updated",
+      "attempts": "Attempts",
+      "connectorMode": "Connector mode",
+      "connectorStatus": "Connector status",
+      "mappingVersion": "Mapping version",
+      "nextAttempt": "Next attempt",
+      "payloadRetention": "Payload retention",
+      "coreOrder": "Core order",
+      "httpStatus": "Last HTTP status",
+      "correlation": "Correlation",
+      "errorCode": "Error code",
+      "safeError": "Safe error"
+    },
+    "retention": {
+      "retained": "Retained until {{expiresAt}}",
+      "expired": "Expired at {{expiresAt}}"
+    },
+    "attempts": {
+      "title": "Delivery attempts",
+      "empty": "No delivery attempts",
+      "columns": {
+        "attempt": "Attempt",
+        "outcome": "Outcome",
+        "started": "Started",
+        "duration": "Duration",
+        "httpStatus": "HTTP status",
+        "error": "Error"
+      },
+      "outcome": { "retryableFailure": "Retryable failure" }
+    }
+  },
   "orders": {
     "title": "Orders",
     "total": "Total: {{count}}",
