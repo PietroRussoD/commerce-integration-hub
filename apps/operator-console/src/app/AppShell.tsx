@@ -1,14 +1,23 @@
-import { ClipboardList, FlaskConical, Network, Workflow } from "lucide-react";
+import { ClipboardList, FlaskConical, type LucideIcon, Network, RadioTower, Workflow } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { AccessTokenControl } from "../auth/AccessTokenControl";
+import { useAccessToken } from "../auth/accessTokenContext";
 import { storeBrowserLocale, supportedLocales, type SupportedLocale } from "../i18n/i18n";
 import type { BrandTheme } from "../theme/brandThemes";
 
-const navigation = [
+type NavigationItem = {
+  icon: LucideIcon;
+  labelKey: "shell.navigation.orders" | "shell.navigation.deliveries" | "shell.navigation.simulator" | "shell.navigation.flowExplorer" | "shell.navigation.systemMap";
+  requiresOperatorRole?: boolean;
+  to: string;
+};
+
+const navigation: readonly NavigationItem[] = [
   { to: "/orders", labelKey: "shell.navigation.orders", icon: ClipboardList },
+  { to: "/deliveries", labelKey: "shell.navigation.deliveries", icon: RadioTower, requiresOperatorRole: true },
   { to: "/simulator", labelKey: "shell.navigation.simulator", icon: FlaskConical },
   { to: "/flow-explorer", labelKey: "shell.navigation.flowExplorer", icon: Workflow },
   { to: "/system-map", labelKey: "shell.navigation.systemMap", icon: Network },
@@ -16,6 +25,7 @@ const navigation = [
 
 export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
   const { t } = useTranslation();
+  const { identity } = useAccessToken();
   const { pathname } = useLocation();
   const mainContentRef = useRef<HTMLElement>(null);
   const previousPathnameRef = useRef(pathname);
@@ -57,7 +67,7 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
           className="sticky top-16 z-20 min-w-0 border-b border-app-border bg-app-surface px-3 py-2 md:h-[calc(100vh-4rem)] md:border-r md:border-b-0 md:px-4 md:py-6"
         >
           <ul className="flex gap-1 md:flex-col">
-            {navigation.map(({ to, labelKey, icon: Icon }) => (
+            {navigation.filter((item) => item.requiresOperatorRole !== true || identity?.roles.has("operator") === true).map(({ to, labelKey, icon: Icon }) => (
               <li key={to} className="min-w-0 flex-1 md:flex-none">
                 <NavLink
                   to={to}

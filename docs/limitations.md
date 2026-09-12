@@ -54,9 +54,10 @@ mistaken for available behavior.
 
 - Authentication uses per-source API keys for machine-to-machine ingestion.
   Integration Core and Connector Gateway have opt-in OIDC JWT validation and
-  role enforcement for operator paths, but the default local demo and console
-  do not yet supply operator tokens. User login, identity-provider deployment,
-  and role management are not implemented.
+  role enforcement for operator paths. The Console can retain a manually
+  supplied valid JWT in page memory for Gateway delivery inspection; it does
+  not issue, persist, refresh, or verify tokens. User login, identity-provider
+  deployment, and role management are not implemented.
 - Source order access is restricted to the authenticated source. The operator
   API exposes read-only summaries and details across sources. Its opt-in access
   policy admits `operator` and `platform-admin` roles from the JWT `groups`
@@ -64,13 +65,14 @@ mistaken for available behavior.
   implemented. The Gateway operator API exposes payload-free delivery summaries
   with bounded keyset pagination and a safe detail/attempt history. An immutable
   operator-command journal and authenticated `platform-admin` replay route for
-  eligible exhausted deliveries are implemented, but Console token delivery and
-  recovery control are not yet exposed. The operator console exposes a paginated summary,
+  eligible exhausted deliveries are implemented, but Console recovery control is
+  not yet exposed. The operator console exposes a paginated summary,
   availability-gated projected-order search, operational details, real
   search-projection availability and reconciliation state, a controlled
   canonical-ingestion simulator, and a Flow Explorer that replays three
   committed sanitized local traces. It also provides a static System Map of the
-  implemented architecture. The simulator keeps its source API key only in page
+  implemented architecture, plus authenticated read-only Gateway delivery
+  inspection. The simulator and Gateway token controls keep credentials only in page
   memory. The simulator, Flow Explorer, and System Map are intended for local
   development and portfolio demonstrations, not production operation, auditing,
   or distributed tracing. The System Map is reference material only and has no

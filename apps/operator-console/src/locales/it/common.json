@@ -9,6 +9,7 @@
     "navigation": {
       "label": "Navigazione principale",
       "orders": "Ordini",
+      "deliveries": "Consegne",
       "simulator": "Simulatore",
       "flowExplorer": "Esplorazione flussi",
       "systemMap": "Mappa del sistema"
@@ -29,6 +30,21 @@
       "invalid": "Il formato del token di accesso non è valido",
       "expired": "Il token di accesso è scaduto"
     }
+  },
+  "deliveries": {
+    "title": "Consegne",
+    "total": "{{count}} in questa pagina",
+    "filter": { "provider": "Provider", "status": "Stato", "all": "Tutti" },
+    "provider": { "erpB": "ERP B", "marketplaceA": "Marketplace A" },
+    "status": {
+      "received": "Ricevuto", "forwarding": "In inoltro", "retryWait": "In attesa di nuovo tentativo", "exhausted": "Esaurito", "delivered": "Consegnato", "permanentFailure": "Errore permanente", "blockedConfiguration": "Configurazione bloccata"
+    },
+    "table": { "event": "Evento", "provider": "Provider", "status": "Stato", "attempts": "Tentativi", "received": "Ricevuto", "error": "Errore" },
+    "actions": { "refresh": "Aggiorna consegne", "retry": "Riprova", "previousPage": "Pagina precedente", "nextPage": "Pagina successiva" },
+    "access": { "required": "Per analizzare le consegne è necessario un token di accesso operatore.", "forbidden": "Il token di accesso configurato non concede il ruolo operatore." },
+    "loading": "Caricamento consegne",
+    "empty": "Nessuna consegna trovata",
+    "error": "Impossibile caricare le consegne"
   },
   "orders": {
     "title": "Ordini",
