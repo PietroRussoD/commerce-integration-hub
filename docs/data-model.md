@@ -250,6 +250,20 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
+
+    operator_command_audit_entries {
+        uuid id PK
+        uuid command_id
+        varchar event_type
+        varchar action
+        varchar target_type
+        uuid target_id
+        varchar actor_subject
+        varchar reason
+        uuid idempotency_key
+        varchar error_code
+        timestamptz occurred_at
+    }
 ```
 
 `connector_id` and `external_event_id` form the delivery idempotency key. A
@@ -310,3 +324,11 @@ also requires the current owner/token but may clear an expired lease that has
 not been reacquired. These operations do not change cursor version. The bounded
 provider runner, non-overlapping scheduler, and disabled-by-default runtime
 composition in `main.ts` are implemented.
+
+`operator_command_audit_entries` is an append-only journal for future privileged
+Gateway commands. Each entry retains the command, operator subject, target,
+rationale, idempotency key, timestamp, and outcome without relying on mutable
+command state. PostgreSQL rejects updates and deletes through a trigger. A
+partial unique index permits one `REQUESTED` record for an operator/idempotency
+key pair and one terminal outcome per command. The journal exists before any
+recovery mutation is exposed; it does not itself enable replay.

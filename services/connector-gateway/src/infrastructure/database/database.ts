@@ -20,6 +20,7 @@ export type DeliveryAttemptOutcome =
     | "DELIVERED"
     | "PERMANENT_FAILURE"
     | "RETRYABLE_FAILURE";
+export type OperatorCommandAuditEventType = "FAILED" | "REJECTED" | "REQUESTED" | "SUCCEEDED";
 
 export interface ConnectorConfigurationsTable {
     readonly id: string;
@@ -94,10 +95,25 @@ export interface DeliveryAttemptsTable {
     readonly trace_id: string | null;
 }
 
+export interface OperatorCommandAuditEntriesTable {
+    readonly id: string;
+    readonly command_id: string;
+    readonly event_type: OperatorCommandAuditEventType;
+    readonly action: string;
+    readonly target_type: string;
+    readonly target_id: string;
+    readonly actor_subject: string;
+    readonly reason: string;
+    readonly idempotency_key: string;
+    readonly error_code: string | null;
+    readonly occurred_at: Date;
+}
+
 export interface GatewayDatabase {
     readonly connector_configurations: ConnectorConfigurationsTable;
     readonly delivery_attempts: DeliveryAttemptsTable;
     readonly inbound_deliveries: InboundDeliveriesTable;
+    readonly operator_command_audit_entries: OperatorCommandAuditEntriesTable;
     readonly polling_checkpoints: PollingCheckpointsTable;
 }
 
