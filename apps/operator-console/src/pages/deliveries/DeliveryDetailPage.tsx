@@ -13,7 +13,8 @@ export function DeliveryDetailPage() {
   const { t } = useTranslation();
   const { accessToken, identity } = useAccessToken();
   const deliveryId = useParams<{ deliveryId: string }>().deliveryId ?? "";
-  const canReadDelivery = accessToken !== undefined && identity?.roles.has("operator") === true;
+  const canReadDelivery =
+    accessToken !== undefined && (identity?.roles.has("operator") === true || identity?.roles.has("platform-admin") === true);
   const query = useQuery({
     queryKey: ["operator-delivery", { accessToken, deliveryId }],
     queryFn: ({ signal }) => getOperatorDelivery({ accessToken: accessToken!, deliveryId, signal }),

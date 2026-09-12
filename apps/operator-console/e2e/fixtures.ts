@@ -1,4 +1,52 @@
 export const orderId = "018f38c2-1b95-7cc4-bb89-72d26a6f9f88";
+export const deliveryId = "c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21";
+
+export const deliveryPage = {
+  items: [
+    {
+      attemptCount: 2,
+      completedAt: null,
+      correlationId: "b374867a-07c4-4d82-a438-a04301731707",
+      deliveryId,
+      errorCode: "CORE_UNAVAILABLE",
+      externalEventId: "DELIVERY-E2E-001",
+      lastCoreOrderId: null,
+      lastHttpStatus: 503,
+      provider: "ERP_B",
+      receivedAt: "2026-09-12T12:00:00Z",
+      sourceSystem: "ERP_B",
+      status: "EXHAUSTED",
+      updatedAt: "2026-09-12T12:05:00Z",
+    },
+  ],
+  nextCursor: null,
+};
+
+export const deliveryDetail = {
+  ...deliveryPage.items[0],
+  attempts: [
+    {
+      attemptId: "e09e6770-117f-4c6b-8f9d-2dc8bf1f7b70",
+      attemptNumber: 2,
+      completedAt: "2026-09-12T12:05:01Z",
+      durationMilliseconds: 1_250,
+      errorCode: "CORE_UNAVAILABLE",
+      httpStatus: 503,
+      outcome: "RETRYABLE_FAILURE",
+      safeErrorMessage: "The Core endpoint did not respond before the timeout",
+      startedAt: "2026-09-12T12:05:00Z",
+      traceId: "trace-e2e-42",
+    },
+  ],
+  connectorId: "3a224e92-4a6b-4e73-ae04-d7f8042e8bbb",
+  connectorMode: "POLLING",
+  connectorStatus: "ACTIVE",
+  mappingVersion: "erp-b-v2",
+  nextAttemptAt: "2026-09-12T12:10:00Z",
+  payloadExpiresAt: "2026-09-13T12:00:00Z",
+  payloadRetained: true,
+  safeErrorMessage: "The Core endpoint did not respond before the timeout",
+};
 
 export const orderPage = {
   items: [

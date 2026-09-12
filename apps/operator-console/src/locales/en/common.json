@@ -41,7 +41,7 @@
     },
     "table": { "event": "Event", "provider": "Provider", "status": "Status", "attempts": "Attempts", "received": "Received", "error": "Error" },
     "actions": { "refresh": "Refresh deliveries", "retry": "Retry", "previousPage": "Previous page", "nextPage": "Next page" },
-    "access": { "required": "An operator access token is required to inspect deliveries.", "forbidden": "The configured access token does not grant the operator role." },
+    "access": { "required": "An operator access token is required to inspect deliveries.", "forbidden": "The configured access token does not grant an operational role." },
     "loading": "Loading deliveries",
     "empty": "No deliveries found",
     "error": "Unable to load deliveries"

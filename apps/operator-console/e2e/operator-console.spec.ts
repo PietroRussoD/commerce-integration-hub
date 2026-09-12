@@ -1,6 +1,9 @@
 import { expect, test, type Page, type Request } from "@playwright/test";
 
 import {
+  deliveryDetail,
+  deliveryId,
+  deliveryPage,
   orderDetail,
   orderId,
   orderPage,
@@ -63,6 +66,36 @@ test("submits an order and opens the accepted result", async ({ page }) => {
   await page.getByRole("link", { name: "View order" }).click();
   await expect(page).toHaveURL(`/orders/${orderId}`);
   await expect(page.getByText("ORDER-E2E-001")).toBeVisible();
+});
+
+test("inspects and replays an exhausted delivery with a platform-admin token", async ({ page }) => {
+  let replayRequest: Request | undefined;
+  await mockGatewayApi(page, (request) => {
+    replayRequest = request;
+  });
+  await page.goto("/orders");
+
+  const token = createOperatorToken(["platform-admin"]);
+  await page.getByRole("button", { name: "Set operator access token" }).click();
+  await page.getByRole("textbox", { name: "Access token" }).fill(token);
+  await page.getByRole("button", { name: "Use token" }).click();
+
+  await page.getByRole("link", { name: "Deliveries" }).click();
+  await expect(page).toHaveURL("/deliveries");
+  await expect(page.getByRole("link", { name: "DELIVERY-E2E-001" })).toBeVisible();
+
+  await page.getByRole("link", { name: "DELIVERY-E2E-001" }).click();
+  await expect(page).toHaveURL(`/deliveries/${deliveryId}`);
+  await expect(page.getByText("Retryable failure")).toBeVisible();
+
+  await page.getByRole("button", { name: "Replay delivery" }).click();
+  await page.getByLabel("Reason").fill("The Core endpoint is available again");
+  await page.getByRole("button", { name: "Confirm replay" }).click();
+
+  await expect(page.getByRole("status")).toContainText("Replay command");
+  expect(replayRequest?.headers()["authorization"]).toBe(`Bearer ${token}`);
+  expect(replayRequest?.headers()["idempotency-key"]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+  expect(replayRequest?.postDataJSON()).toEqual({ reason: "The Core endpoint is available again" });
 });
 
 test("associates API validation errors and focuses the first invalid field", async ({ page }) => {
@@ -178,4 +211,30 @@ async function mockOperatorApi(page: Page, onProjectedSearch?: (request: Request
   await page.route("**/api/v1/operator/orders/search/status", async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(searchProjectionStatus) });
   });
+}
+
+async function mockGatewayApi(page: Page, onReplay?: (request: Request) => void) {
+  await page.route("**/gateway-api/api/v1/operator/deliveries?**", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(deliveryPage) });
+  });
+  await page.route("**/gateway-api/api/v1/operator/deliveries/*", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(deliveryDetail) });
+  });
+  await page.route("**/gateway-api/api/v1/operator/deliveries/*/replay", async (route) => {
+    onReplay?.(route.request());
+    await route.fulfill({
+      status: 202,
+      contentType: "application/json",
+      body: JSON.stringify({
+        commandId: "26998c94-b78f-4e33-8a24-47a8b353b9b8",
+        idempotent: false,
+        outcome: "REPLAYED",
+      }),
+    });
+  });
+}
+
+function createOperatorToken(groups: string[]): string {
+  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  return `${encode({ alg: "RS256", typ: "JWT" })}.${encode({ sub: "operator-e2e", exp: 1_900_000_000, groups })}.signature`;
 }

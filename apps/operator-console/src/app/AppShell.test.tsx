@@ -157,7 +157,7 @@ const operatorAccessTokenContext: AccessTokenContextValue = {
   clearAccessToken: () => undefined,
   identity: {
     expiresAt: new Date("2027-01-15T08:00:00Z"),
-    roles: new Set(["operator"]),
+    roles: new Set(["platform-admin"]),
     subject: "operator-42",
   },
   setAccessToken: () => ({ kind: "invalid" }),
