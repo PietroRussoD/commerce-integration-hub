@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { listOperatorDeliveries } from "../../api/connectorGatewayClient";
@@ -69,7 +70,9 @@ function renderPage(contextValue: AccessTokenContextValue = noAccessTokenContext
   return render(
     <AppProviders>
       <AccessTokenContext.Provider value={contextValue}>
-        <DeliveriesPage />
+        <MemoryRouter>
+          <DeliveriesPage />
+        </MemoryRouter>
       </AccessTokenContext.Provider>
     </AppProviders>,
   );
