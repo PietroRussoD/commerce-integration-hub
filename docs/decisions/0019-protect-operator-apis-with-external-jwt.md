@@ -96,7 +96,7 @@ claim semantics and authorization outcomes even though their framework adapters
 differ.
 
 The OpenAPI documents need a bearer security scheme and per-operation role
-descriptions. The Operator Console will eventually need an externally obtained
-access token, but this ADR does not select an identity provider or login flow.
+descriptions. The Operator Console accepts an externally obtained token in page
+memory only; this ADR does not select an identity provider or login flow.
 Recovery audit records can use the validated `sub` as the immutable actor
 identifier without persisting the complete token or claim set.

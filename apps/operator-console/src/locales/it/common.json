@@ -41,7 +41,7 @@
     },
     "table": { "event": "Evento", "provider": "Provider", "status": "Stato", "attempts": "Tentativi", "received": "Ricevuto", "error": "Errore" },
     "actions": { "refresh": "Aggiorna consegne", "retry": "Riprova", "previousPage": "Pagina precedente", "nextPage": "Pagina successiva" },
-    "access": { "required": "Per analizzare le consegne è necessario un token di accesso operatore.", "forbidden": "Il token di accesso configurato non concede il ruolo operatore." },
+    "access": { "required": "Per analizzare le consegne è necessario un token di accesso operatore.", "forbidden": "Il token di accesso configurato non concede un ruolo operativo." },
     "loading": "Caricamento consegne",
     "empty": "Nessuna consegna trovata",
     "error": "Impossibile caricare le consegne"

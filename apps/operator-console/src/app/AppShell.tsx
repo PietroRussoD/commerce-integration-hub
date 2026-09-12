@@ -67,7 +67,7 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
           className="sticky top-16 z-20 min-w-0 border-b border-app-border bg-app-surface px-3 py-2 md:h-[calc(100vh-4rem)] md:border-r md:border-b-0 md:px-4 md:py-6"
         >
           <ul className="flex gap-1 md:flex-col">
-            {navigation.filter((item) => item.requiresOperatorRole !== true || identity?.roles.has("operator") === true).map(({ to, labelKey, icon: Icon }) => (
+            {navigation.filter((item) => item.requiresOperatorRole !== true || hasOperatorAccess(identity?.roles)).map(({ to, labelKey, icon: Icon }) => (
               <li key={to} className="min-w-0 flex-1 md:flex-none">
                 <NavLink
                   to={to}
@@ -103,6 +103,10 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
       </div>
     </div>
   );
+}
+
+function hasOperatorAccess(roles: ReadonlySet<string> | undefined): boolean {
+  return roles?.has("operator") === true || roles?.has("platform-admin") === true;
 }
 
 function LanguageSelector() {

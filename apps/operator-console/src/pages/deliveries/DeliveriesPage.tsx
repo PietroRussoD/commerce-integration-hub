@@ -54,7 +54,8 @@ export function DeliveriesPage() {
   const [status, setStatus] = useState<StatusFilter>("ALL");
   const [cursors, setCursors] = useState<Array<string | undefined>>([undefined]);
   const cursor = cursors.at(-1);
-  const canReadDeliveries = accessToken !== undefined && identity?.roles.has("operator") === true;
+  const canReadDeliveries =
+    accessToken !== undefined && (identity?.roles.has("operator") === true || identity?.roles.has("platform-admin") === true);
   const query = useQuery({
     queryKey: ["operator-deliveries", { accessToken, cursor, limit: PAGE_SIZE, provider, status }],
     queryFn: ({ signal }) =>

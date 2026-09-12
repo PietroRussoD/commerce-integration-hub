@@ -124,9 +124,11 @@ pnpm check:api
 pnpm check
 ```
 
-Browser-level tests use Playwright with Chromium. Operator API calls have
-deterministic mocked responses and the Flow Explorer reads committed trace
-artifacts. Install the browser once, then run the suite locally:
+Browser-level tests use Playwright with Chromium. Operator API calls, including
+the platform-admin Gateway replay flow, have deterministic mocked responses;
+the Gateway integration suite separately verifies RS256 and JWKS validation.
+The Flow Explorer reads committed trace artifacts. Install the browser once,
+then run the suite locally:
 
 ```bash
 pnpm test:e2e:install
