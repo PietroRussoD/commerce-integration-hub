@@ -4,6 +4,7 @@ import {
   ConnectorGatewayApiError,
   getOperatorDelivery,
   listOperatorDeliveries,
+  replayOperatorDelivery,
 } from "./connectorGatewayClient";
 
 afterEach(() => {
@@ -59,6 +60,33 @@ test("preserves problem details from a rejected Gateway request", async () => {
 
   expect(error).toBeInstanceOf(ConnectorGatewayApiError);
   expect(error).toMatchObject({ status: 403, problem, message: problem.detail });
+});
+
+test("replays a delivery with an idempotency key and reason", async () => {
+  const body = { commandId: "c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21", idempotent: false, outcome: "IN_PROGRESS" };
+  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 202 }));
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(
+    replayOperatorDelivery({
+      accessToken: "admin-token",
+      deliveryId: "delivery/42",
+      idempotencyKey: "426a23e6-5234-4d38-9907-e2979ab2d9f5",
+      reason: "The Core endpoint is available again",
+    }),
+  ).resolves.toEqual(body);
+
+  expect(fetchMock).toHaveBeenCalledWith("/gateway-api/api/v1/operator/deliveries/delivery%2F42/replay", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: "Bearer admin-token",
+      "Content-Type": "application/json",
+      "Idempotency-Key": "426a23e6-5234-4d38-9907-e2979ab2d9f5",
+    },
+    body: JSON.stringify({ reason: "The Core endpoint is available again" }),
+    signal: undefined,
+  });
 });
 
 function jsonResponse(body: unknown): Response {

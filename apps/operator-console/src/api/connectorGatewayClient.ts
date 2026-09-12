@@ -6,6 +6,9 @@ export type OperatorDeliveryPage =
 export type OperatorDeliveryDetail =
   paths["/api/v1/operator/deliveries/{deliveryId}"]["get"]["responses"]["200"]["content"]["application/json"];
 
+export type ReplayOperatorDeliveryResponse =
+  paths["/api/v1/operator/deliveries/{deliveryId}/replay"]["post"]["responses"]["202"]["content"]["application/json"];
+
 export type GatewayProblem =
   paths["/api/v1/operator/deliveries"]["get"]["responses"]["401"]["content"]["application/json"];
 
@@ -31,6 +34,14 @@ export interface ListOperatorDeliveriesParameters {
 export interface GetOperatorDeliveryParameters {
   accessToken: string;
   deliveryId: string;
+  signal?: AbortSignal;
+}
+
+export interface ReplayOperatorDeliveryParameters {
+  accessToken: string;
+  deliveryId: string;
+  idempotencyKey: string;
+  reason: string;
   signal?: AbortSignal;
 }
 
@@ -73,6 +84,29 @@ export async function getOperatorDelivery({
   if (!response.ok) throw new ConnectorGatewayApiError(response.status, await readProblem(response));
 
   return response.json() as Promise<OperatorDeliveryDetail>;
+}
+
+export async function replayOperatorDelivery({
+  accessToken,
+  deliveryId,
+  idempotencyKey,
+  reason,
+  signal,
+}: ReplayOperatorDeliveryParameters): Promise<ReplayOperatorDeliveryResponse> {
+  const response = await fetch(`/gateway-api/api/v1/operator/deliveries/${encodeURIComponent(deliveryId)}/replay`, {
+    method: "POST",
+    headers: {
+      ...operatorHeaders(accessToken),
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
+    },
+    body: JSON.stringify({ reason }),
+    signal,
+  });
+
+  if (!response.ok) throw new ConnectorGatewayApiError(response.status, await readProblem(response));
+
+  return response.json() as Promise<ReplayOperatorDeliveryResponse>;
 }
 
 function operatorHeaders(accessToken: string): HeadersInit {

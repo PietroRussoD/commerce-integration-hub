@@ -7,6 +7,7 @@ import { getOperatorDelivery } from "../../api/connectorGatewayClient";
 import { useAccessToken } from "../../auth/accessTokenContext";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { DeliveryDetailContent } from "./DeliveryDetailContent";
+import { ReplayDeliveryAction } from "./ReplayDeliveryAction";
 
 export function DeliveryDetailPage() {
   const { t } = useTranslation();
@@ -40,7 +41,19 @@ export function DeliveryDetailPage() {
         {!canReadDelivery ? <AccessNotice hasToken={accessToken !== undefined} /> : null}
         {canReadDelivery && query.isPending ? <DeliveryDetailLoading /> : null}
         {canReadDelivery && query.isError ? <DeliveryDetailError onRetry={() => void query.refetch()} /> : null}
-        {canReadDelivery && query.data !== undefined ? <DeliveryDetailContent delivery={query.data} /> : null}
+        {canReadDelivery && query.data !== undefined ? (
+          <div className="space-y-5">
+            <div className="flex justify-end">
+              <ReplayDeliveryAction
+                accessToken={accessToken!}
+                canReplay={identity?.roles.has("platform-admin") === true && query.data.status === "EXHAUSTED"}
+                deliveryId={query.data.deliveryId}
+                onReplayAccepted={() => void query.refetch()}
+              />
+            </div>
+            <DeliveryDetailContent delivery={query.data} />
+          </div>
+        ) : null}
       </div>
     </section>
   );
