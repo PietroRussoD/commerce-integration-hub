@@ -68,6 +68,9 @@ Current implemented scope:
 - read-only operator delivery list/detail endpoints with bounded filters,
   microsecond-safe opaque cursor pagination, payload-free summaries, and safe
   attempt history;
+- an opt-in `platform-admin` delivery replay command with mandatory rationale,
+  UUID idempotency key, immutable audit evidence, and a state-guarded
+  PostgreSQL transition;
 - opt-in `RS256` operator JWT validation through a remote JWKS, with issuer,
   audience, expiry, subject, `groups` roles, and distinct `401`, `403`, and `503`
   handling.
@@ -123,7 +126,8 @@ The forwarding boundary and response policy are recorded in
 The Gateway exposes a generated OpenAPI document at
 `GET /openapi.json`. It is built from the Fastify route schemas at application
 startup and currently describes the health endpoints and the provider webhook
-when that boundary is configured, plus the operator delivery list/detail API.
+when that boundary is configured, plus the operator delivery inspection and
+replay API.
 The committed export and CI drift check are maintained with
 `pnpm generate:openapi` and `pnpm check:openapi`.
 
@@ -135,6 +139,14 @@ returned by the previous page. `GET /api/v1/operator/deliveries/{deliveryId}`
 adds safe connector state, payload-retention metadata, and ordered attempt
 evidence. Neither endpoint returns raw/canonical payloads, payload hashes,
 leases, tokens, or connector secret references.
+
+`POST /api/v1/operator/deliveries/{deliveryId}/replay` is registered only when
+operator authorization is enabled. It requires a `platform-admin` JWT, a JSON
+body with a non-blank `reason`, and an `Idempotency-Key` header containing a
+UUID. It accepts only a durable `EXHAUSTED` delivery with an active connector
+and unexpired canonical payload. The response is `202` when accepted and `409`
+for an idempotency conflict or a state/payload/configuration rejection. The
+command does not expose payload contents and preserves prior attempt evidence.
 
 The local demo keeps authorization disabled until a browser token flow is
 configured. Enable the Gateway resource-server boundary with:
@@ -149,7 +161,8 @@ configured. Enable the Gateway resource-server boundary with:
 | `OPERATOR_OIDC_CLOCK_SKEW_SECONDS` | optional `0..300`, default `30` |
 
 Only `RS256` is accepted. Read endpoints admit `operator` and
-`platform-admin` values from the JWT `groups` claim. The Gateway validates
+`platform-admin` values from the JWT `groups` claim; replay admits only
+`platform-admin`. The Gateway validates
 externally issued tokens but does not implement login, token issuance, user
 storage, or role management.
 

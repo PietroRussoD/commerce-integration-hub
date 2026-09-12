@@ -10,8 +10,10 @@ import type {
     InboundDeliverySummary,
     ListInboundDeliveriesUseCase
 } from "../../application/deliveries/list-inbound-deliveries.js";
+import type { ReplayInboundDeliveryUseCase } from "../../application/deliveries/replay-inbound-delivery.js";
 import { decodeDeliveryCursor, encodeDeliveryCursor } from "./delivery-cursor.js";
 import { operatorDeliveryRoute } from "./delivery-route.js";
+import type { OperatorAuthorizationOptions } from "../../infrastructure/security/operator-authorization.js";
 
 const DELIVERY_ID = "0199037b-6400-7000-8000-000000000901";
 const NEXT_DELIVERY_ID = "0199037b-6400-7000-8000-000000000902";
@@ -198,18 +200,169 @@ describe("operatorDeliveryRoute", () => {
 
         expect(response.statusCode).toBe(401);
     });
+
+    it("replays a delivery with an explicit reason and idempotency key", async () => {
+        const replayDelivery = vi
+            .fn<ReplayInboundDeliveryUseCase>()
+            .mockResolvedValue({ commandId: DELIVERY_ID, outcome: "REPLAYED" });
+        const application = buildRoute({ authorization: platformAdminAuthorization(), replayDelivery });
+
+        const response = await application.inject({
+            method: "POST",
+            url: `/api/v1/operator/deliveries/${DELIVERY_ID}/replay`,
+            headers: operatorHeaders({ "idempotency-key": NEXT_DELIVERY_ID }),
+            payload: { reason: "Retry after the upstream incident was resolved" }
+        });
+
+        expect(response.statusCode).toBe(202);
+        expect(response.json()).toEqual({
+            commandId: DELIVERY_ID,
+            idempotent: false,
+            outcome: "REPLAYED"
+        });
+        expect(replayDelivery).toHaveBeenCalledWith({
+            actorSubject: "platform-admin-42",
+            deliveryId: DELIVERY_ID,
+            idempotencyKey: NEXT_DELIVERY_ID,
+            reason: "Retry after the upstream incident was resolved"
+        });
+    });
+
+    it.each([
+        { headers: operatorHeaders(), payload: { reason: "Retry after an incident" } },
+        { headers: operatorHeaders({ "idempotency-key": NEXT_DELIVERY_ID }), payload: {} },
+        {
+            headers: operatorHeaders({ "idempotency-key": "not-a-uuid" }),
+            payload: { reason: "Retry" }
+        },
+        {
+            headers: operatorHeaders({ "idempotency-key": NEXT_DELIVERY_ID }),
+            payload: { reason: " reason" }
+        }
+    ])("rejects invalid replay input before the use case", async ({ headers, payload }) => {
+        const replayDelivery = vi.fn<ReplayInboundDeliveryUseCase>();
+        const application = buildRoute({ authorization: platformAdminAuthorization(), replayDelivery });
+
+        const response = await application.inject({
+            method: "POST",
+            url: `/api/v1/operator/deliveries/${DELIVERY_ID}/replay`,
+            headers,
+            payload
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(replayDelivery).not.toHaveBeenCalled();
+    });
+
+    it("maps a replay rejection to a stable conflict problem", async () => {
+        const replayDelivery = vi.fn<ReplayInboundDeliveryUseCase>().mockResolvedValue({
+            commandId: DELIVERY_ID,
+            outcome: "REJECTED",
+            rejectionCode: "DELIVERY_PAYLOAD_EXPIRED"
+        });
+        const application = buildRoute({ authorization: platformAdminAuthorization(), replayDelivery });
+
+        const response = await application.inject({
+            method: "POST",
+            url: `/api/v1/operator/deliveries/${DELIVERY_ID}/replay`,
+            headers: operatorHeaders({ "idempotency-key": NEXT_DELIVERY_ID }),
+            payload: { reason: "Retry after the upstream incident was resolved" }
+        });
+
+        expect(response.statusCode).toBe(409);
+        expect(response.json()).toEqual({
+            type: "urn:problem:delivery-payload-expired",
+            title: "Delivery replay rejected",
+            status: 409,
+            detail: "The delivery cannot be replayed in its current state"
+        });
+    });
+
+    it("returns an accepted in-progress replay response", async () => {
+        const replayDelivery = vi.fn<ReplayInboundDeliveryUseCase>().mockResolvedValue({
+            commandId: DELIVERY_ID,
+            outcome: "IN_PROGRESS"
+        });
+        const application = buildRoute({ authorization: platformAdminAuthorization(), replayDelivery });
+
+        const response = await application.inject({
+            method: "POST",
+            url: `/api/v1/operator/deliveries/${DELIVERY_ID}/replay`,
+            headers: operatorHeaders({ "idempotency-key": NEXT_DELIVERY_ID }),
+            payload: { reason: "Retry after the upstream incident was resolved" }
+        });
+
+        expect(response.statusCode).toBe(202);
+        expect(response.json()).toEqual({
+            commandId: DELIVERY_ID,
+            idempotent: false,
+            outcome: "IN_PROGRESS"
+        });
+    });
+
+    it("marks a repeated completed replay as idempotent", async () => {
+        const replayDelivery = vi.fn<ReplayInboundDeliveryUseCase>().mockResolvedValue({
+            commandId: DELIVERY_ID,
+            idempotent: true,
+            outcome: "REPLAYED"
+        });
+        const application = buildRoute({ authorization: platformAdminAuthorization(), replayDelivery });
+
+        const response = await application.inject({
+            method: "POST",
+            url: `/api/v1/operator/deliveries/${DELIVERY_ID}/replay`,
+            headers: operatorHeaders({ "idempotency-key": NEXT_DELIVERY_ID }),
+            payload: { reason: "Retry after the upstream incident was resolved" }
+        });
+
+        expect(response.statusCode).toBe(202);
+        expect(response.json()).toEqual({
+            commandId: DELIVERY_ID,
+            idempotent: true,
+            outcome: "REPLAYED"
+        });
+    });
+
+    it("maps a reused idempotency key with different intent to a conflict", async () => {
+        const replayDelivery = vi.fn<ReplayInboundDeliveryUseCase>().mockResolvedValue({
+            commandId: DELIVERY_ID,
+            outcome: "IDEMPOTENCY_CONFLICT"
+        });
+        const application = buildRoute({ authorization: platformAdminAuthorization(), replayDelivery });
+
+        const response = await application.inject({
+            method: "POST",
+            url: `/api/v1/operator/deliveries/${DELIVERY_ID}/replay`,
+            headers: operatorHeaders({ "idempotency-key": NEXT_DELIVERY_ID }),
+            payload: { reason: "Retry after the upstream incident was resolved" }
+        });
+
+        expect(response.statusCode).toBe(409);
+        expect(response.json()).toEqual({
+            type: "urn:problem:operator-idempotency-conflict",
+            title: "Operator command idempotency conflict",
+            status: 409,
+            detail: "The idempotency key was already used for a different command"
+        });
+    });
 });
 
 function buildRoute({
+    authorization,
     getDelivery = vi.fn<GetInboundDeliveryUseCase>().mockResolvedValue(null),
     listDeliveries = vi
         .fn<ListInboundDeliveriesUseCase>()
         .mockResolvedValue({ items: [], nextCursor: null }),
+    replayDelivery = vi
+        .fn<ReplayInboundDeliveryUseCase>()
+        .mockResolvedValue({ commandId: DELIVERY_ID, outcome: "REPLAYED" }),
     protected: authorizationEnabled = false
 }: {
+    authorization?: OperatorAuthorizationOptions;
     getDelivery?: GetInboundDeliveryUseCase;
     listDeliveries?: ListInboundDeliveriesUseCase;
     protected?: boolean;
+    replayDelivery?: ReplayInboundDeliveryUseCase;
 } = {}): FastifyInstance {
     const application = Fastify({
         ajv: { customOptions: { removeAdditional: false } },
@@ -217,16 +370,37 @@ function buildRoute({
     });
     applications.push(application);
     application.register(operatorDeliveryRoute, {
-        authorization: authorizationEnabled
+        authorization:
+            authorization ??
+            (authorizationEnabled
             ? {
                   enabled: true,
                   verifyToken: () => Promise.resolve({ authenticated: false })
               }
-            : { enabled: false },
+            : { enabled: false }),
         getDelivery,
-        listDeliveries
+        listDeliveries,
+        replayDelivery
     });
     return application;
+}
+
+function platformAdminAuthorization(): OperatorAuthorizationOptions {
+    return {
+        enabled: true,
+        verifyToken: () =>
+            Promise.resolve({
+                authenticated: true,
+                principal: {
+                    roles: new Set(["platform-admin"]),
+                    subject: "platform-admin-42"
+                }
+            })
+    };
+}
+
+function operatorHeaders(headers: Record<string, string> = {}): Record<string, string> {
+    return { authorization: "Bearer aaa.bbb.ccc", ...headers };
 }
 
 function deliveryPage(): InboundDeliveryPage {

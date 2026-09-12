@@ -9,7 +9,13 @@ interface OpenApiDocumentSummary {
         securitySchemes?: Record<string, unknown>;
     };
     info: { title: string; version: string };
-    paths: Record<string, { get?: { security?: readonly Record<string, unknown>[] } }>;
+    paths: Record<
+        string,
+        {
+            get?: { security?: readonly Record<string, unknown>[] };
+            post?: { security?: readonly Record<string, unknown>[] };
+        }
+    >;
 }
 
 afterEach(async () => {
@@ -51,9 +57,14 @@ describe("health endpoint", () => {
     it("documents the protected operator delivery boundary", async () => {
         const application = buildApplication({
             operatorDeliveries: {
-                authorization: { enabled: false },
+                authorization: {
+                    enabled: true,
+                    verifyToken: () => Promise.resolve({ authenticated: false })
+                },
                 getDelivery: () => Promise.resolve(null),
-                listDeliveries: () => Promise.resolve({ items: [], nextCursor: null })
+                listDeliveries: () => Promise.resolve({ items: [], nextCursor: null }),
+                replayDelivery: () =>
+                    Promise.resolve({ commandId: "unused", outcome: "REPLAYED" as const })
             }
         });
         applications.push(application);
@@ -71,9 +82,11 @@ describe("health endpoint", () => {
         });
         for (const path of [
             "/api/v1/operator/deliveries",
-            "/api/v1/operator/deliveries/{deliveryId}"
+            "/api/v1/operator/deliveries/{deliveryId}",
+            "/api/v1/operator/deliveries/{deliveryId}/replay"
         ]) {
-            expect(document.paths[path]?.get?.security).toEqual([{ operatorJwt: [] }]);
+            const operation = document.paths[path]?.get ?? document.paths[path]?.post;
+            expect(operation?.security).toEqual([{ operatorJwt: [] }]);
         }
     });
 

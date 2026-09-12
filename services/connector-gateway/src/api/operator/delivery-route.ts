@@ -11,6 +11,10 @@ import type {
     InboundDeliverySummary,
     ListInboundDeliveriesUseCase
 } from "../../application/deliveries/list-inbound-deliveries.js";
+import type {
+    ReplayInboundDeliveryRejectionCode,
+    ReplayInboundDeliveryUseCase
+} from "../../application/deliveries/replay-inbound-delivery.js";
 import {
     configureOperatorAuthorization,
     type OperatorAuthorizationOptions
@@ -26,6 +30,9 @@ import {
     deliveryListQuerySchema,
     deliveryListResponseSchema,
     deliveryPathParametersSchema,
+    deliveryReplayHeadersSchema,
+    deliveryReplayRequestSchema,
+    deliveryReplayResponseSchema,
     operatorJwtSecurity,
     problemDetailsSchema
 } from "./delivery-route-schemas.js";
@@ -43,6 +50,14 @@ interface DeliveryPathParameters {
     readonly deliveryId: string;
 }
 
+interface DeliveryReplayBody {
+    readonly reason: string;
+}
+
+interface DeliveryReplayHeaders {
+    readonly "idempotency-key": string;
+}
+
 interface ProblemDetails {
     readonly detail: string;
     readonly status: number;
@@ -54,11 +69,12 @@ export interface OperatorDeliveryRouteOptions {
     readonly authorization: OperatorAuthorizationOptions;
     readonly getDelivery: GetInboundDeliveryUseCase;
     readonly listDeliveries: ListInboundDeliveriesUseCase;
+    readonly replayDelivery: ReplayInboundDeliveryUseCase;
 }
 
 export const operatorDeliveryRoute: FastifyPluginCallback<OperatorDeliveryRouteOptions> = (
     application,
-    { authorization, getDelivery, listDeliveries },
+    { authorization, getDelivery, listDeliveries, replayDelivery },
     done
 ) => {
     const requireRole = configureOperatorAuthorization(application, authorization);
@@ -143,6 +159,65 @@ export const operatorDeliveryRoute: FastifyPluginCallback<OperatorDeliveryRouteO
         }
     );
 
+    if (authorization.enabled) {
+        application.post<{
+        Body: DeliveryReplayBody;
+        Headers: DeliveryReplayHeaders;
+        Params: DeliveryPathParameters;
+        }>(
+        "/api/v1/operator/deliveries/:deliveryId/replay",
+        {
+            preHandler: requireRole("platform-admin"),
+            schema: {
+                description:
+                    "Replays one eligible exhausted delivery. Requires the platform-admin role.",
+                security: operatorJwtSecurity,
+                body: deliveryReplayRequestSchema,
+                headers: deliveryReplayHeadersSchema,
+                params: deliveryPathParametersSchema,
+                response: {
+                    202: deliveryReplayResponseSchema,
+                    ...commonOperatorErrorSchemas
+                }
+            }
+        },
+        async (request, reply) => {
+            const result = await replayDelivery({
+                actorSubject: request.operatorPrincipal!.subject,
+                deliveryId: request.params.deliveryId,
+                idempotencyKey: request.headers["idempotency-key"],
+                reason: request.body.reason
+            });
+            switch (result.outcome) {
+                case "REPLAYED":
+                    reply.code(202);
+                    return {
+                        commandId: result.commandId,
+                        idempotent: "idempotent" in result && result.idempotent,
+                        outcome: result.outcome
+                    };
+                case "IN_PROGRESS":
+                    reply.code(202);
+                    return {
+                        commandId: result.commandId,
+                        idempotent: false,
+                        outcome: result.outcome
+                    };
+                case "IDEMPOTENCY_CONFLICT":
+                    sendProblem(reply, 409, {
+                        type: "urn:problem:operator-idempotency-conflict",
+                        title: "Operator command idempotency conflict",
+                        detail: "The idempotency key was already used for a different command"
+                    });
+                    return;
+                case "REJECTED":
+                    sendProblem(reply, 409, replayRejectionProblem(result.rejectionCode));
+                    return;
+            }
+        }
+        );
+    }
+
     done();
 };
 
@@ -202,9 +277,20 @@ function hasValidationErrors(error: unknown): boolean {
     return typeof error === "object" && error !== null && "validation" in error;
 }
 
+function replayRejectionProblem(
+    rejectionCode: ReplayInboundDeliveryRejectionCode
+): Omit<ProblemDetails, "status"> {
+    const typeSuffix = rejectionCode.toLowerCase().replaceAll("_", "-");
+    return {
+        type: `urn:problem:${typeSuffix}`,
+        title: "Delivery replay rejected",
+        detail: "The delivery cannot be replayed in its current state"
+    };
+}
+
 function sendProblem(
     reply: FastifyReply,
-    status: 400 | 503,
+    status: 400 | 409 | 503,
     problem: Omit<ProblemDetails, "status">
 ): void {
     reply.code(status).type("application/problem+json").send({ ...problem, status });
