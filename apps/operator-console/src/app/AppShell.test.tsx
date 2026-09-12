@@ -4,6 +4,7 @@ import { afterEach, expect, test } from "vitest";
 
 import { AppProviders } from "./AppProviders";
 import { createAppRoutes } from "./router";
+import { AccessTokenContext, type AccessTokenContextValue } from "../auth/accessTokenContext";
 import { createAppI18n, localeStorageKey } from "../i18n/i18n";
 import { expectNoAccessibilityViolations } from "../test/accessibility";
 import { resolveBrandThemeForHostname } from "../theme/brandThemes";
@@ -28,9 +29,25 @@ test("renders navigation inside the operator shell", async () => {
   expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
   expect(screen.getByRole("main")).toHaveAttribute("tabindex", "-1");
   expect(screen.getByRole("link", { name: "Orders" })).toHaveAttribute("href", "/orders");
+  expect(screen.queryByRole("link", { name: "Deliveries" })).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Flow Explorer" })).toHaveAttribute("href", "/flow-explorer");
   expect(screen.getByRole("link", { name: "System Map" })).toHaveAttribute("href", "/system-map");
   expect(screen.getByRole("link", { name: "Simulator" })).toHaveAttribute("aria-current", "page");
+});
+
+test("reveals delivery inspection to an operator token", async () => {
+  const router = createMemoryRouter(createAppRoutes(), { initialEntries: ["/simulator"] });
+
+  render(
+    <AppProviders>
+      <AccessTokenContext.Provider value={operatorAccessTokenContext}>
+        <RouterProvider router={router} />
+      </AccessTokenContext.Provider>
+    </AppProviders>,
+  );
+
+  expect(await screen.findByRole("heading", { name: "Simulator" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Deliveries" })).toHaveAttribute("href", "/deliveries");
 });
 
 test("moves focus to the main content after route navigation", async () => {
@@ -134,3 +151,14 @@ test("has no automatically detectable accessibility violations in the applicatio
   expect(await screen.findByRole("heading", { name: "Simulator" })).toBeInTheDocument();
   await expectNoAccessibilityViolations(container);
 });
+
+const operatorAccessTokenContext: AccessTokenContextValue = {
+  accessToken: "operator-token",
+  clearAccessToken: () => undefined,
+  identity: {
+    expiresAt: new Date("2027-01-15T08:00:00Z"),
+    roles: new Set(["operator"]),
+    subject: "operator-42",
+  },
+  setAccessToken: () => ({ kind: "invalid" }),
+};

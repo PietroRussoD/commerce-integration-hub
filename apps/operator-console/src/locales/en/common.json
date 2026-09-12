@@ -9,6 +9,7 @@
     "navigation": {
       "label": "Primary navigation",
       "orders": "Orders",
+      "deliveries": "Deliveries",
       "simulator": "Simulator",
       "flowExplorer": "Flow Explorer",
       "systemMap": "System Map"
@@ -29,6 +30,21 @@
       "invalid": "The access token format is invalid",
       "expired": "The access token has expired"
     }
+  },
+  "deliveries": {
+    "title": "Deliveries",
+    "total": "{{count}} on this page",
+    "filter": { "provider": "Provider", "status": "Status", "all": "All" },
+    "provider": { "erpB": "ERP B", "marketplaceA": "Marketplace A" },
+    "status": {
+      "received": "Received", "forwarding": "Forwarding", "retryWait": "Retry wait", "exhausted": "Exhausted", "delivered": "Delivered", "permanentFailure": "Permanent failure", "blockedConfiguration": "Blocked configuration"
+    },
+    "table": { "event": "Event", "provider": "Provider", "status": "Status", "attempts": "Attempts", "received": "Received", "error": "Error" },
+    "actions": { "refresh": "Refresh deliveries", "retry": "Retry", "previousPage": "Previous page", "nextPage": "Next page" },
+    "access": { "required": "An operator access token is required to inspect deliveries.", "forbidden": "The configured access token does not grant the operator role." },
+    "loading": "Loading deliveries",
+    "empty": "No deliveries found",
+    "error": "Unable to load deliveries"
   },
   "orders": {
     "title": "Orders",
