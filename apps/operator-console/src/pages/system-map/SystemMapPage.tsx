@@ -169,7 +169,7 @@ export function SystemMapPage() {
 
         <div className="mt-3 border-y border-app-border py-5">
           <div>
-            <div className="grid items-center gap-3 md:grid-cols-[minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)]">
+            <div className="grid items-center gap-3 xl:grid-cols-[minmax(8rem,1fr)_auto_minmax(8rem,1fr)_auto_minmax(8rem,1fr)_auto_minmax(8rem,1fr)_auto_minmax(8rem,1fr)]">
               <SystemNode
                 nodeId="source"
                 icon={Globe2}
@@ -216,7 +216,7 @@ export function SystemMapPage() {
               />
             </div>
 
-            <div className="mt-5 hidden grid-cols-[minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)_auto_minmax(10rem,1fr)] items-start gap-3 md:grid">
+            <div className="mt-5 hidden grid-cols-[minmax(8rem,1fr)_auto_minmax(8rem,1fr)_auto_minmax(8rem,1fr)_auto_minmax(8rem,1fr)_auto_minmax(8rem,1fr)] items-start gap-3 xl:grid">
               <div />
               <div />
               <div className="flex flex-col items-center gap-2">
@@ -262,7 +262,7 @@ export function SystemMapPage() {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 border-t border-app-border pt-5 md:hidden">
+            <div className="mt-5 grid gap-3 border-t border-app-border pt-5 xl:hidden">
               <SystemNode
                 nodeId="gatewayStorage"
                 icon={Database}
@@ -381,8 +381,8 @@ function LegendItem({ label, optional }: { label: string; optional: boolean }) {
 
 function MapArrow({ label }: { label: string }) {
   return (
-    <div className="flex w-24 flex-col items-center gap-1 text-center text-xs text-app-foreground-muted max-md:w-full max-md:flex-row max-md:justify-center">
-      <ArrowRight aria-hidden="true" className="text-app-foreground-faint max-md:rotate-90" size={20} />
+    <div className="flex w-14 flex-col items-center gap-1 text-center text-xs text-app-foreground-muted max-xl:w-full max-xl:flex-row max-xl:justify-center">
+      <ArrowRight aria-hidden="true" className="text-app-foreground-faint max-xl:rotate-90" size={20} />
       <span>{label}</span>
     </div>
   );
