@@ -17,6 +17,17 @@
       "label": "Language",
       "english": "English",
       "italian": "Italian"
+    },
+    "accessToken": {
+      "open": "Set operator access token",
+      "manage": "Manage operator access token",
+      "title": "Operator access token",
+      "close": "Close access token dialog",
+      "fieldLabel": "Access token",
+      "apply": "Use token",
+      "clear": "Remove token",
+      "invalid": "The access token format is invalid",
+      "expired": "The access token has expired"
     }
   },
   "orders": {

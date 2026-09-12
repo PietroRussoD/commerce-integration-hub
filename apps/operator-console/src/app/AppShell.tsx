@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
+import { AccessTokenControl } from "../auth/AccessTokenControl";
 import { storeBrowserLocale, supportedLocales, type SupportedLocale } from "../i18n/i18n";
 import type { BrandTheme } from "../theme/brandThemes";
 
@@ -43,7 +44,10 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
               <p className="text-xs text-app-foreground-muted">{t(brandTheme.consoleNameKey)}</p>
             </div>
           </div>
-          <LanguageSelector />
+          <div className="flex items-center gap-2">
+            <AccessTokenControl />
+            <LanguageSelector />
+          </div>
         </div>
       </header>
 

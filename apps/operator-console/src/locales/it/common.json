@@ -17,6 +17,17 @@
       "label": "Lingua",
       "english": "Inglese",
       "italian": "Italiano"
+    },
+    "accessToken": {
+      "open": "Imposta token di accesso operatore",
+      "manage": "Gestisci token di accesso operatore",
+      "title": "Token di accesso operatore",
+      "close": "Chiudi dialog token di accesso",
+      "fieldLabel": "Token di accesso",
+      "apply": "Usa token",
+      "clear": "Rimuovi token",
+      "invalid": "Il formato del token di accesso non è valido",
+      "expired": "Il token di accesso è scaduto"
     }
   },
   "orders": {
