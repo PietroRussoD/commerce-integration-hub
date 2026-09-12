@@ -69,6 +69,32 @@ describe("operator command auditor", () => {
             })
         ).rejects.toThrow("SUCCEEDED operator commands cannot include an errorCode");
     });
+
+    it("uses a generated command ID and records failed outcomes", async () => {
+        const repository = repositoryStub();
+        repository.reserve.mockResolvedValue({ commandId: COMMAND_ID, status: "CREATED" });
+        repository.complete.mockResolvedValue({ status: "COMPLETED" });
+        const auditor = createOperatorCommandAuditor({ repository });
+
+        await auditor.reserveDeliveryReplay(request());
+        await auditor.complete({
+            commandId: COMMAND_ID,
+            errorCode: "DELIVERY_NOT_REPLAYABLE",
+            outcome: "FAILED"
+        });
+
+        const reservedCommand = repository.reserve.mock.calls[0]?.[0];
+        const completedCommand = repository.complete.mock.calls[0]?.[0];
+        expect(reservedCommand?.commandId).toMatch(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+        );
+        expect(reservedCommand?.occurredAt).toBeInstanceOf(Date);
+        expect(completedCommand).toMatchObject({
+            commandId: COMMAND_ID,
+            errorCode: "DELIVERY_NOT_REPLAYABLE",
+            outcome: "FAILED"
+        });
+    });
 });
 
 function createAuditor(repository: ReturnType<typeof repositoryStub>) {
