@@ -45,6 +45,18 @@ curl http://localhost:8080/api/service-info
 The automatically instrumented HTTP span should appear after the batch span
 processor exports it.
 
+Verify that an unavailable trace backend does not affect the Core's operator
+read path:
+
+```bash
+./scripts/verify-v1.1-otel-exporter-outage.sh
+```
+
+The isolated smoke test enables tracing but deliberately does not start Jaeger.
+It checks that the request returns `200`, that its sampled trace context is in
+the request log, and that the asynchronous OTLP export failure is logged. The
+script removes its containers and volumes when it finishes.
+
 Start only the metrics services alongside an already running topology:
 
 ```bash
