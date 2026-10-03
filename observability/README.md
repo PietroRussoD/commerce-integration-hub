@@ -1,8 +1,8 @@
 # Local Observability
 
-The optional `observability` Compose profile runs Prometheus and Grafana for
-local development and portfolio demonstrations. It is not a production
-monitoring topology.
+The optional `observability` Compose profile runs Prometheus, Grafana, and
+Jaeger for local development and portfolio demonstrations. It is not a
+production monitoring topology.
 
 ```mermaid
 flowchart LR
@@ -10,6 +10,8 @@ flowchart LR
     Gateway[Connector Gateway /metrics]
     Prometheus[(Prometheus)]
     Grafana[Grafana dashboard]
+    Core -->|OTLP gRPC| Jaeger[Jaeger]
+    Jaeger[Jaeger] --> TraceUI[Jaeger trace UI]
 
     Prometheus -->|scrape every 5 seconds| Core
     Prometheus -->|scrape every 5 seconds| Gateway
@@ -19,10 +21,31 @@ flowchart LR
 Start the complete topology from the repository root:
 
 ```bash
-docker compose --profile gateway --profile observability up --build -d
+OTEL_SDK_DISABLED=false docker compose --profile gateway --profile observability up --build -d
 ```
 
-Or start only the monitoring services alongside an already running topology:
+Start Jaeger with tracing enabled in Integration Core:
+
+```bash
+OTEL_SDK_DISABLED=false docker compose --profile observability up --build -d integration-core jaeger
+```
+
+Tracing remains disabled by default. The Jaeger all-in-one service uses
+temporary in-memory storage, so its trace history is lost when it stops. The
+OTLP receiver is reachable only inside the Compose network; only the UI is
+published to the host.
+
+Open [Jaeger](http://localhost:16686) and select the `integration-core`
+service. Generate a trace with a request to the service-info endpoint:
+
+```bash
+curl http://localhost:8080/api/service-info
+```
+
+The automatically instrumented HTTP span should appear after the batch span
+processor exports it.
+
+Start only the metrics services alongside an already running topology:
 
 ```bash
 docker compose --profile observability up -d prometheus grafana
@@ -30,6 +53,7 @@ docker compose --profile observability up -d prometheus grafana
 
 - Grafana: [http://localhost:3000](http://localhost:3000)
 - Prometheus targets: [http://localhost:9090/targets](http://localhost:9090/targets)
+- Jaeger: [http://localhost:16686](http://localhost:16686)
 
 Grafana opens without login because both published ports are bound to localhost
 and the profile is intended only for local use. The provisioned data source and

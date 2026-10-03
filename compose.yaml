@@ -209,6 +209,8 @@ services:
       OPERATOR_OIDC_ENABLED: "${OPERATOR_OIDC_ENABLED:-false}"
       OPERATOR_OIDC_ISSUER: "${OPERATOR_OIDC_ISSUER:-https://identity.example.invalid/realms/integration-hub}"
       INTEGRATION_HUB_SECURITY_SOURCE_CREDENTIAL_PEPPERS: "1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-true}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
     ports:
       - "${INTEGRATION_CORE_PORT:-8080}:8080"
     depends_on:
@@ -263,6 +265,12 @@ services:
     depends_on:
       prometheus:
         condition: service_started
+
+  jaeger:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.21.0
+    profiles: ["observability"]
+    ports:
+      - "127.0.0.1:${JAEGER_UI_PORT:-16686}:16686"
 
 volumes:
   connector-gateway-postgres:
