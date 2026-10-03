@@ -1,6 +1,6 @@
 # ADR 0020: Distributed Tracing With OpenTelemetry
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-03
 
 ## Context
@@ -63,14 +63,16 @@ database. For Kafka, use the instrumentation's supported parent/link semantics
 and make the observed behavior an integration-test assertion; do not rewrite
 native instrumentation merely to force a preferred trace shape.
 
-For local demonstration, use an optional Jaeger v2 all-in-one Compose service
-with OTLP receivers and temporary in-memory storage. Applications export over
-OTLP directly to Jaeger; defer a separate Collector until there is a concrete
-need for routing or telemetry processing. The viewer is not required for
-ordinary application startup or tests. Export is asynchronous and bounded;
-viewer or exporter failure must not fail business processing. When tracing is
-disabled, the applications must not emit spans or noisy connection errors.
-Sampling and exporter endpoint are configuration, not business behavior.
+For local demonstration, use an optional OpenTelemetry Collector and Jaeger v2
+all-in-one Compose services. Applications export over OTLP to the Collector,
+which removes `exception.message` and `exception.stacktrace` from exception
+events before forwarding traces to Jaeger. If that transform fails, the trace
+is dropped. Jaeger uses temporary in-memory storage. The viewer and Collector
+are not required for ordinary application startup or tests. Export is
+asynchronous and bounded; viewer or exporter failure must not fail business
+processing. When tracing is disabled, the applications must not emit spans or
+noisy connection errors. Sampling and exporter endpoint are configuration,
+not business behavior.
 
 Allow only bounded internal identifiers, attempt number, fixed operation and
 outcome codes, and other explicitly reviewed attributes. Never record payloads,
@@ -92,8 +94,8 @@ static walkthrough; Jaeger is the live trace viewer.
   single viewer.
 - **Add trace IDs to business payloads:** rejected because tracing is transport
   metadata and should not change event contracts or fingerprints.
-- **Introduce an OpenTelemetry Collector immediately:** deferred because the
-  local demonstration has one receiver and no routing or processing need.
+- **Export directly to Jaeger:** rejected because it bypasses the local
+  exception-data redaction boundary.
 - **Build browser tracing or a custom trace UI:** rejected as out of scope; the
   operator needs a deep link to the standard trace viewer, not another UI.
 
@@ -115,8 +117,7 @@ static walkthrough; Jaeger is the live trace viewer.
   method, route, response status and size, plus `client.address`, user agent,
   server address, and port. It contained no request or response body, query
   values, credentials, or order data. This is a narrow smoke-test review;
-  tracing remains disabled by default, and the ADR remains Proposed until
-  exception and HTTP 500 paths are also reviewed.
+  tracing remains disabled by default.
 - An end-to-end local trace from a synthetic signed `MARKETPLACE_A` webhook
   continued through the Gateway delivery attempt, Core HTTP ingestion, both
   Core outbox dispatches, and Kafka publish/consume. The custom Gateway and
@@ -126,8 +127,13 @@ static walkthrough; Jaeger is the live trace viewer.
   partition, and offset. The trace contained no body contents, order fields,
   webhook signature, API key, or raw error message. A controlled Core `401`
   rejection recorded the status and response-body size, but not response
-  contents, credentials, or an error message. Gateway custom spans had no
-  attributes or error status. Exception and HTTP `500` paths remain unreviewed.
+  contents or credentials. Gateway custom spans had no attributes or error
+  status. A controlled database outage returned a generic `500` problem
+  response. Before Collector redaction, its span contained an exception
+  message and stack trace. After redaction, Jaeger retained the `500`, error
+  status, and exception type while the exception message and stack trace were
+  absent. The Gateway smoke test also confirmed traces pass through the
+  Collector to Jaeger.
 - Before route-level filtering, `@fastify/otel` emitted a separate HTTP request
   trace for the webhook; the trusted processing trace began at
   `connector-gateway.webhook.receipt`. Configure `otel: false` on that public
@@ -157,5 +163,7 @@ static walkthrough; Jaeger is the live trace viewer.
   consumption, the second durable outbox record, and `OrderReady` publication.
   The persisted consumer span and final producer span have distinct span IDs,
   while the trace ID and `tracestate` remain continuous.
-- This ADR remains Proposed until the real application configuration,
-  propagation tests, and privacy review validate these constraints.
+- The real application configuration, propagation tests, and local privacy
+  review satisfy the acceptance criteria for this decision. Production
+  deployments must provide an equivalent Collector redaction policy before
+  exporting traces to a backend.
