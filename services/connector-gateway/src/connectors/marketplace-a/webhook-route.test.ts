@@ -38,6 +38,26 @@ afterEach(async () => {
 });
 
 describe("MARKETPLACE_A webhook route", () => {
+    it("disables automatic OpenTelemetry spans for the public webhook route", async () => {
+        let webhookOtelConfig: unknown;
+        const application = Fastify();
+        applications.push(application);
+        application.addHook("onRoute", (routeOptions) => {
+            if (routeOptions.url === MARKETPLACE_A_WEBHOOK_PATH) {
+                webhookOtelConfig = routeOptions.config?.otel;
+            }
+        });
+        application.register(marketplaceAWebhookRoute, {
+            authenticate: () => ({ authenticated: true }),
+            receiveInboundDelivery: () =>
+                Promise.resolve({ deliveryId: "0199037b-6400-7000-8000-000000000300", outcome: "CREATED" })
+        });
+
+        await application.ready();
+
+        expect(webhookOtelConfig).toBe(false);
+    });
+
     it("passes the exact raw body and authentication headers to the authenticator", async () => {
         const authenticate = vi
             .fn<

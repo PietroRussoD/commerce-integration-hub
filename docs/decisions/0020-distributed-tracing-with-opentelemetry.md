@@ -114,9 +114,9 @@ static walkthrough; Jaeger is the live trace viewer.
 - A local Jaeger inspection of `GET /api/service-info` found the expected HTTP
   method, route, response status and size, plus `client.address`, user agent,
   server address, and port. It contained no request or response body, query
-  values, credentials, or order data. This is a narrow smoke-test review, not a
-  complete privacy audit of custom Gateway/Core spans; tracing therefore remains
-  disabled by default and this ADR remains Proposed until that review is done.
+  values, credentials, or order data. This is a narrow smoke-test review;
+  tracing remains disabled by default, and the ADR remains Proposed until
+  exception and HTTP 500 paths are also reviewed.
 - An end-to-end local trace from a synthetic signed `MARKETPLACE_A` webhook
   continued through the Gateway delivery attempt, Core HTTP ingestion, both
   Core outbox dispatches, and Kafka publish/consume. The custom Gateway and
@@ -124,10 +124,18 @@ static walkthrough; Jaeger is the live trace viewer.
   included method, route, status, body sizes, client address, user agent, and
   server address; Kafka spans included topic, consumer group/client IDs,
   partition, and offset. The trace contained no body contents, order fields,
-  webhook signature, API key, or raw error message. This verifies the successful
-  path only; error-path attributes remain to be reviewed. The captured trace
-  begins with `connector-gateway.webhook.receipt`, so it does not show a Fastify
-  HTTP server span in that same trace.
+  webhook signature, API key, or raw error message. A controlled Core `401`
+  rejection recorded the status and response-body size, but not response
+  contents, credentials, or an error message. Gateway custom spans had no
+  attributes or error status. Exception and HTTP `500` paths remain unreviewed.
+- Before route-level filtering, `@fastify/otel` emitted a separate HTTP request
+  trace for the webhook; the trusted processing trace began at
+  `connector-gateway.webhook.receipt`. Configure `otel: false` on that public
+  route to suppress only its automatic request/handler spans while retaining
+  the manually rooted receipt and delivery spans. A live test sent a known
+  external `traceparent`: the receipt trace used a new local trace ID, and the
+  external trace ID was absent from Jaeger. Other Gateway routes remain
+  automatically instrumented.
 - The first implemented durable hop creates a locally rooted Gateway receipt
   span after webhook authentication and validation, discarding any provider
   `traceparent` or `tracestate`. It persists only nullable `traceparent` and
