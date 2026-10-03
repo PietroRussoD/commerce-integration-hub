@@ -28,6 +28,9 @@ Requests under `/api` are proxied to `http://localhost:8080`. Requests under
 `/gateway-api` are proxied to `http://localhost:8081`, with the local prefix
 removed before forwarding. Override either backend during development with
 `VITE_INTEGRATION_CORE_PROXY_TARGET` or `VITE_CONNECTOR_GATEWAY_PROXY_TARGET`.
+Set `VITE_JAEGER_UI_URL` in the Vite environment (see `.env.example`) to the
+browser-reachable Jaeger URL to show trace links in delivery attempt history.
+When unset, trace IDs and links are not rendered.
 
 Open [http://localhost:5173](http://localhost:5173) after Vite starts. The order
 list and detail views use the read-only operator API. The Deliveries navigation

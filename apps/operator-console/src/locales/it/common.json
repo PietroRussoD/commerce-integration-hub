@@ -83,8 +83,10 @@
         "started": "Avviato",
         "duration": "Durata",
         "httpStatus": "Stato HTTP",
+        "trace": "Traccia",
         "error": "Errore"
       },
+      "openTrace": "Apri la traccia {{traceId}} in Jaeger",
       "outcome": { "retryableFailure": "Errore riprovabile" }
     },
     "replay": {

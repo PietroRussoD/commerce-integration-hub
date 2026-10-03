@@ -1,3 +1,4 @@
+import { ExternalLink } from "lucide-react";
 import { type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -5,6 +6,7 @@ import type { OperatorDeliveryDetail } from "../../api/connectorGatewayClient";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatDurationMilliseconds, formatLabel } from "../orders/orderFormatters";
+import { jaegerTraceUrl } from "./jaegerTraceUrl";
 
 const statusLabelKeys = {
   BLOCKED_CONFIGURATION: "deliveries.status.blockedConfiguration",
@@ -77,7 +79,7 @@ function DeliveryAttempts({ attempts }: { attempts: OperatorDeliveryDetail["atte
           <p className="px-6 py-10 text-center text-sm text-app-foreground-muted">{t("deliveryDetail.attempts.empty")}</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] border-collapse text-left text-sm">
+            <table className="w-full min-w-[1120px] border-collapse text-left text-sm">
               <thead className="border-b border-app-border bg-app-canvas text-xs font-semibold text-app-foreground-secondary">
                 <tr>
                   <th scope="col" className="px-4 py-3 text-right">{t("deliveryDetail.attempts.columns.attempt")}</th>
@@ -85,6 +87,7 @@ function DeliveryAttempts({ attempts }: { attempts: OperatorDeliveryDetail["atte
                   <th scope="col" className="px-4 py-3">{t("deliveryDetail.attempts.columns.started")}</th>
                   <th scope="col" className="px-4 py-3 text-right">{t("deliveryDetail.attempts.columns.duration")}</th>
                   <th scope="col" className="px-4 py-3 text-right">{t("deliveryDetail.attempts.columns.httpStatus")}</th>
+                  <th scope="col" className="px-4 py-3">{t("deliveryDetail.attempts.columns.trace")}</th>
                   <th scope="col" className="px-4 py-3">{t("deliveryDetail.attempts.columns.error")}</th>
                 </tr>
               </thead>
@@ -102,6 +105,9 @@ function DeliveryAttempts({ attempts }: { attempts: OperatorDeliveryDetail["atte
                       {attempt.durationMilliseconds === null ? "-" : formatDurationMilliseconds(attempt.durationMilliseconds, locale)}
                     </td>
                     <td className="px-4 py-3.5 text-right tabular-nums text-app-foreground-secondary">{attempt.httpStatus ?? "-"}</td>
+                    <td className="px-4 py-3.5 font-mono text-xs">
+                      <AttemptTrace traceId={attempt.traceId} />
+                    </td>
                     <td className="max-w-80 px-4 py-3.5">
                       <AttemptError code={attempt.errorCode} message={attempt.safeErrorMessage} />
                     </td>
@@ -113,6 +119,25 @@ function DeliveryAttempts({ attempts }: { attempts: OperatorDeliveryDetail["atte
         )}
       </div>
     </section>
+  );
+}
+
+function AttemptTrace({ traceId }: { traceId: string | null }) {
+  const { t } = useTranslation();
+  const url = jaegerTraceUrl(traceId);
+  if (url === null || traceId === null) return <span className="text-app-foreground-faint">-</span>;
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={t("deliveryDetail.attempts.openTrace", { traceId })}
+      className="inline-flex items-center gap-1.5 text-app-brand-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+    >
+      {traceId}
+      <ExternalLink aria-hidden="true" size={14} />
+    </a>
   );
 }
 

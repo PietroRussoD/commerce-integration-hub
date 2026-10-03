@@ -120,6 +120,10 @@ static walkthrough; Jaeger is the live trace viewer.
   starts a new trace when tracing is enabled. An operator replay clears the
   previous delivery context; the original attempt trace ID remains available
   in attempt history, but no trace link is created.
+- The operator console shows a delivery attempt's trace ID as a Jaeger link only
+  when `VITE_JAEGER_UI_URL` is configured and the ID has the W3C trace-ID format.
+  The URL is a Vite build-time setting; with no viewer configured, trace IDs are
+  hidden from the console.
 - A process-level integration test verifies the PostgreSQL migration, durable
   context restoration, a distinct child span ID, and propagation on the Core
   HTTP request. Both Core outbox records persist nullable W3C context separately
