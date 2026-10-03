@@ -105,6 +105,7 @@ const application = buildApplication({
     },
     metrics: metrics.exporter,
     operatorDeliveries: {
+        withOperatorReplayTrace: telemetry.withOperatorReplayTrace,
         authorization:
             operatorSecurityConfiguration.oidcEnabled &&
             operatorSecurityConfiguration.authorizationEnabled

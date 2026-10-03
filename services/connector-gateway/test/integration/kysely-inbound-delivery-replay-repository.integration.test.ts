@@ -11,6 +11,14 @@ const CONNECTOR_ID = "0199037b-6400-7000-8000-000000000001";
 const EXPIRED_DELIVERY_ID = "0199037b-6400-7000-8000-000000000842";
 const REPLAYABLE_DELIVERY_ID = "0199037b-6400-7000-8000-000000000841";
 const REPLAYED_AT = new Date("2026-09-12T10:00:00.000Z");
+const PREVIOUS_ATTEMPT_CONTEXT = {
+    traceparent: "00-11111111111111111111111111111111-2222222222222222-01",
+    tracestate: "vendor=previous"
+};
+const REPLAY_REQUEST_CONTEXT = {
+    traceparent: "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01",
+    tracestate: "vendor=replay"
+};
 
 describe("Kysely inbound delivery replay repository", () => {
     let container: StartedPostgreSqlContainer;
@@ -30,6 +38,24 @@ describe("Kysely inbound delivery replay repository", () => {
                 delivery(REPLAYABLE_DELIVERY_ID, "operator-replayable", "2026-10-12T10:00:00.000Z"),
                 delivery(EXPIRED_DELIVERY_ID, "operator-expired", "2026-09-11T10:00:00.000Z")
             ])
+            .execute();
+        await database
+            .insertInto("delivery_attempts")
+            .values({
+                id: "0199037b-6400-7000-8000-000000000871",
+                delivery_id: REPLAYABLE_DELIVERY_ID,
+                attempt_number: 5,
+                started_at: new Date("2026-09-11T10:01:00.000Z"),
+                completed_at: new Date("2026-09-11T10:05:00.000Z"),
+                outcome: "RETRYABLE_FAILURE",
+                http_status: 503,
+                error_code: "CORE_UNAVAILABLE",
+                safe_error_message: "Core was temporarily unavailable",
+                duration_ms: 100,
+                trace_id: "1".repeat(32),
+                traceparent: PREVIOUS_ATTEMPT_CONTEXT.traceparent,
+                tracestate: PREVIOUS_ATTEMPT_CONTEXT.tracestate
+            })
             .execute();
     });
 
@@ -54,7 +80,8 @@ describe("Kysely inbound delivery replay repository", () => {
             actorSubject: "operator-44",
             deliveryId: REPLAYABLE_DELIVERY_ID,
             idempotencyKey: "0199037b-6400-7000-8000-000000000861",
-            reason: "Retry after the upstream incident was resolved"
+            reason: "Retry after the upstream incident was resolved",
+            traceContext: REPLAY_REQUEST_CONTEXT
         };
 
         await expect(replay(replayableRequest)).resolves.toEqual({
@@ -93,6 +120,8 @@ describe("Kysely inbound delivery replay repository", () => {
                     "error_code",
                     "next_attempt_at",
                     "status",
+                    "replay_link_traceparent",
+                    "replay_link_tracestate",
                     "traceparent",
                     "tracestate"
                 ])
@@ -104,8 +133,10 @@ describe("Kysely inbound delivery replay repository", () => {
             error_code: null,
             next_attempt_at: REPLAYED_AT,
             status: "RECEIVED",
-            traceparent: null,
-            tracestate: null
+            replay_link_traceparent: PREVIOUS_ATTEMPT_CONTEXT.traceparent,
+            replay_link_tracestate: PREVIOUS_ATTEMPT_CONTEXT.tracestate,
+            traceparent: REPLAY_REQUEST_CONTEXT.traceparent,
+            tracestate: REPLAY_REQUEST_CONTEXT.tracestate
         });
         const auditEntries = await database
             .selectFrom("operator_command_audit_entries")

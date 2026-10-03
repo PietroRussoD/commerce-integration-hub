@@ -69,6 +69,7 @@ describe("health endpoint", () => {
     it("documents the protected operator delivery boundary", async () => {
         const application = buildApplication({
             operatorDeliveries: {
+                withOperatorReplayTrace: (operation) => operation(undefined),
                 authorization: {
                     enabled: true,
                     verifyToken: () => Promise.resolve({ authenticated: false })

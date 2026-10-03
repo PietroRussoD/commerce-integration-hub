@@ -85,7 +85,30 @@ describe("KyselyInboundDeliveryAttemptRepository", () => {
             outcome: null,
             safe_error_message: null,
             started_at: NOW,
-            trace_id: "a".repeat(32)
+            trace_id: "a".repeat(32),
+            traceparent: null,
+            tracestate: null
+        });
+    });
+
+    it("persists the complete W3C context for a traced attempt", async () => {
+        await insertDelivery();
+        const traceContext = {
+            traceparent: "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01",
+            tracestate: "vendor=value"
+        };
+
+        await repository.start(startCommand({ traceContext, traceId: "a".repeat(32) }));
+
+        await expect(
+            database
+                .selectFrom("delivery_attempts")
+                .select(["trace_id", "traceparent", "tracestate"])
+                .executeTakeFirstOrThrow()
+        ).resolves.toEqual({
+            trace_id: "a".repeat(32),
+            traceparent: traceContext.traceparent,
+            tracestate: traceContext.tracestate
         });
     });
 

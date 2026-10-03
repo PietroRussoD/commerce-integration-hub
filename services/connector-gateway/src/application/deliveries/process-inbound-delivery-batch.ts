@@ -68,15 +68,18 @@ export function createProcessInboundDeliveryBatchUseCase({
         const claimedDeliveries = await claimInboundDeliveries();
         const outcomes = await Promise.all(
             claimedDeliveries.map(async (delivery): Promise<DeliveryProcessingOutcome> => {
-                return runWithDeliveryTraceContext(delivery.traceContext, async (activeTrace) =>
-                    processClaimedDelivery(delivery, activeTrace, {
-                        completeDelivered,
-                        completeRetryable,
-                        completeTerminal,
-                        forwarder,
-                        signal,
-                        startAttempt
-                    })
+                return runWithDeliveryTraceContext(
+                    delivery.traceContext,
+                    delivery.replayLinkContext,
+                    async (activeTrace) =>
+                        processClaimedDelivery(delivery, activeTrace, {
+                            completeDelivered,
+                            completeRetryable,
+                            completeTerminal,
+                            forwarder,
+                            signal,
+                            startAttempt
+                        })
                 );
             })
         );
@@ -99,7 +102,9 @@ async function processClaimedDelivery(
     const attempt = await dependencies.startAttempt({
         deliveryId: delivery.deliveryId,
         leaseToken: delivery.leaseToken,
-        ...(activeTrace?.traceId === undefined ? {} : { traceId: activeTrace.traceId })
+        ...(activeTrace === undefined
+            ? {}
+            : { traceId: activeTrace.traceId, traceContext: activeTrace.context })
     });
     if (attempt.outcome === "STALE_CLAIM") {
         return "STALE_CLAIM";

@@ -13,6 +13,7 @@ const application = buildApplication({
             Promise.resolve({ deliveryId: "00000000-0000-0000-0000-000000000000", outcome: "CREATED" as const })
     },
     operatorDeliveries: {
+        withOperatorReplayTrace: (operation) => operation(undefined),
         authorization: {
             enabled: true,
             verifyToken: () => Promise.resolve({ authenticated: false })

@@ -5,6 +5,7 @@ import {
     assertOperatorCommandUuid,
     type OperatorCommandAction
 } from "../operator-commands/operator-command-audit.js";
+import type { TraceContext } from "../observability/trace-context.js";
 
 export type ReplayInboundDeliveryRejectionCode =
     | "CONNECTOR_NOT_ACTIVE"
@@ -17,6 +18,7 @@ export interface ReplayInboundDeliveryRequest {
     readonly deliveryId: string;
     readonly idempotencyKey: string;
     readonly reason: string;
+    readonly traceContext?: TraceContext;
 }
 
 export interface ReplayInboundDeliveryCommand extends ReplayInboundDeliveryRequest {

@@ -11,6 +11,7 @@ import type {
     ListInboundDeliveriesUseCase
 } from "../../application/deliveries/list-inbound-deliveries.js";
 import type { ReplayInboundDeliveryUseCase } from "../../application/deliveries/replay-inbound-delivery.js";
+import type { OperatorReplayTraceRunner } from "../../application/observability/trace-context.js";
 import { decodeDeliveryCursor, encodeDeliveryCursor } from "./delivery-cursor.js";
 import { operatorDeliveryRoute } from "./delivery-route.js";
 import type { OperatorAuthorizationOptions } from "../../infrastructure/security/operator-authorization.js";
@@ -202,10 +203,18 @@ describe("operatorDeliveryRoute", () => {
     });
 
     it("replays a delivery with an explicit reason and idempotency key", async () => {
+        const traceContext = {
+            traceparent: "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01",
+            tracestate: "vendor=replay"
+        };
         const replayDelivery = vi
             .fn<ReplayInboundDeliveryUseCase>()
             .mockResolvedValue({ commandId: DELIVERY_ID, outcome: "REPLAYED" });
-        const application = buildRoute({ authorization: platformAdminAuthorization(), replayDelivery });
+        const application = buildRoute({
+            authorization: platformAdminAuthorization(),
+            withOperatorReplayTrace: (operation) => operation(traceContext),
+            replayDelivery
+        });
 
         const response = await application.inject({
             method: "POST",
@@ -224,7 +233,8 @@ describe("operatorDeliveryRoute", () => {
             actorSubject: "platform-admin-42",
             deliveryId: DELIVERY_ID,
             idempotencyKey: NEXT_DELIVERY_ID,
-            reason: "Retry after the upstream incident was resolved"
+            reason: "Retry after the upstream incident was resolved",
+            traceContext
         });
     });
 
@@ -349,6 +359,7 @@ describe("operatorDeliveryRoute", () => {
 
 function buildRoute({
     authorization,
+    withOperatorReplayTrace,
     getDelivery = vi.fn<GetInboundDeliveryUseCase>().mockResolvedValue(null),
     listDeliveries = vi
         .fn<ListInboundDeliveriesUseCase>()
@@ -359,6 +370,7 @@ function buildRoute({
     protected: authorizationEnabled = false
 }: {
     authorization?: OperatorAuthorizationOptions;
+    withOperatorReplayTrace?: OperatorReplayTraceRunner;
     getDelivery?: GetInboundDeliveryUseCase;
     listDeliveries?: ListInboundDeliveriesUseCase;
     protected?: boolean;
@@ -370,6 +382,7 @@ function buildRoute({
     });
     applications.push(application);
     application.register(operatorDeliveryRoute, {
+        withOperatorReplayTrace: withOperatorReplayTrace ?? ((operation) => operation(undefined)),
         authorization:
             authorization ??
             (authorizationEnabled

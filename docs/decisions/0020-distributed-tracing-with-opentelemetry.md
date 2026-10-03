@@ -55,8 +55,12 @@ For the Gateway delivery record and both Core outbox records, resume the
 persisted context as the parent of a new span for each attempt or dispatch.
 Never keep a span open while work waits in storage. Automatic retries are
 sibling attempt spans under the persisted operation context. An explicit
-administrative replay starts a new trace; linking it to the original context
-is deferred until trace-link behavior is implemented and verified.
+administrative replay starts a locally rooted trace and links its delivery
+attempt span to the latest prior attempt that has a complete persisted W3C
+context. The replay trace context and linked context are stored separately on
+the delivery while it is queued, then restored by the worker. Do not inherit an
+operator HTTP request's remote parent. Historical attempts without a full
+context remain replayable without a link.
 
 Create short-lived spans for actual work, not for the time a row waits in a
 database. For Kafka, use the instrumentation's supported parent/link semantics
@@ -148,9 +152,11 @@ static walkthrough; Jaeger is the live trace viewer.
   `tracestate` columns, then creates a short-lived worker attempt span and
   propagates its W3C context to Integration Core. The attempt trace ID is stored
   with the delivery-attempt record. Poll-originated work without a stored parent
-  starts a new trace when tracing is enabled. An operator replay clears the
-  previous delivery context; the original attempt trace ID remains available
-  in attempt history, but no trace link is created.
+  starts a new trace when tracing is enabled. An operator replay also starts a
+  local root, persisting its context separately from the latest prior attempt's
+  context. The worker restores both and adds the prior context as a span link on
+  the attempt span. Replay requests do not inherit remote operator trace context;
+  historical attempts without a complete context simply have no link.
 - The operator console shows a delivery attempt's trace ID as a Jaeger link only
   when `VITE_JAEGER_UI_URL` is configured and the ID has the W3C trace-ID format.
   The URL is a Vite build-time setting; with no viewer configured, trace IDs are

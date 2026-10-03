@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { core } from "@opentelemetry/sdk-node";
 
 import {
     createActiveDeliveryTrace,
+    createDeliverySpanOptions,
     readTraceContext,
     startConnectorGatewayTelemetry
 } from "./connector-gateway-telemetry.js";
@@ -48,21 +50,24 @@ describe("connector gateway telemetry", () => {
 
         expect(telemetry.instrumentation).toBeUndefined();
         await expect(
-            telemetry.runWithDeliveryTraceContext(undefined, (activeTrace) => Promise.resolve(activeTrace))
+            telemetry.runWithDeliveryTraceContext(undefined, undefined, (activeTrace) => Promise.resolve(activeTrace))
         ).resolves.toBeUndefined();
         await expect(
             telemetry.withProviderReceiptTrace((traceContext) => Promise.resolve(traceContext))
+        ).resolves.toBeUndefined();
+        await expect(
+            telemetry.withOperatorReplayTrace((traceContext) => Promise.resolve(traceContext))
         ).resolves.toBeUndefined();
         const parent = {
             traceparent: "00-11111111111111111111111111111111-2222222222222222-01"
         };
         await expect(
-            telemetry.runWithDeliveryTraceContext(parent, (activeTrace) => Promise.resolve(activeTrace))
+            telemetry.runWithDeliveryTraceContext(parent, undefined, (activeTrace) => Promise.resolve(activeTrace))
         ).resolves.toEqual({ context: parent });
         await expect(telemetry.shutdown()).resolves.toBeUndefined();
     });
 
-    it("starts child attempt spans and propagates W3C context when enabled", async () => {
+    it("creates local spans and propagates context when enabled", async () => {
         const previousSampler = process.env.OTEL_TRACES_SAMPLER;
         process.env.OTEL_TRACES_SAMPLER = "always_off";
         const telemetry = startConnectorGatewayTelemetry({ OTEL_SDK_DISABLED: "false" });
@@ -72,8 +77,7 @@ describe("connector gateway telemetry", () => {
                 traceparent: "00-11111111111111111111111111111111-2222222222222222-01",
                 tracestate: "vendor=value"
             };
-            await telemetry.runWithDeliveryTraceContext(parent, (activeTrace) => {
-                expect(activeTrace).toBeDefined();
+            await telemetry.runWithDeliveryTraceContext(parent, undefined, (activeTrace) => {
                 expect(activeTrace?.traceId).toBe("11111111111111111111111111111111");
                 expect(activeTrace?.context.traceparent).toMatch(
                     /^00-11111111111111111111111111111111-(?!2222222222222222)[0-9a-f]{16}-[0-9a-f]{2}$/
@@ -81,11 +85,17 @@ describe("connector gateway telemetry", () => {
                 expect(activeTrace?.context.tracestate).toBe("vendor=value");
                 return Promise.resolve();
             });
-            await telemetry.runWithDeliveryTraceContext(undefined, (activeTrace) => {
+            await telemetry.runWithDeliveryTraceContext(undefined, undefined, (activeTrace) => {
                 expect(activeTrace?.traceId).toMatch(/^[0-9a-f]{32}$/);
                 return Promise.resolve();
             });
             await telemetry.withProviderReceiptTrace((traceContext) => {
+                expect(traceContext?.traceparent).toMatch(
+                    /^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/
+                );
+                return Promise.resolve();
+            });
+            await telemetry.withOperatorReplayTrace((traceContext) => {
                 expect(traceContext?.traceparent).toMatch(
                     /^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/
                 );
@@ -99,5 +109,23 @@ describe("connector gateway telemetry", () => {
                 process.env.OTEL_TRACES_SAMPLER = previousSampler;
             }
         }
+    });
+
+    it("creates a span link from the persisted W3C context", () => {
+        const options = createDeliverySpanOptions(
+            {
+                traceparent: "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01",
+                tracestate: "vendor=previous"
+            },
+            new core.W3CTraceContextPropagator()
+        );
+
+        expect(options.links).toHaveLength(1);
+        expect(options.links?.[0]?.context).toMatchObject({
+            traceId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            spanId: "bbbbbbbbbbbbbbbb",
+            traceFlags: 1,
+            isRemote: true
+        });
     });
 });

@@ -87,6 +87,60 @@ describe("createStartInboundDeliveryAttemptUseCase", () => {
             })
         ).toThrow("traceId must be 32 lower-case hexadecimal characters");
     });
+
+    it("rejects a trace ID that differs from the persisted trace context", () => {
+        const useCase = createUseCase();
+
+        expect(() =>
+            useCase({
+                deliveryId: DELIVERY_ID,
+                leaseToken: LEASE_TOKEN,
+                traceId: "a".repeat(32),
+                traceContext: {
+                    traceparent: "00-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-2222222222222222-01"
+                }
+            })
+        ).toThrow("traceId must match the trace ID in traceContext.traceparent");
+    });
+
+    it("persists a trace context when its trace ID is consistent", async () => {
+        const traceContext = {
+            traceparent: "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01"
+        };
+        const start = vi
+            .fn<InboundDeliveryAttemptRepository["start"]>()
+            .mockResolvedValue({
+                attemptId: ATTEMPT_ID,
+                attemptNumber: 1,
+                deliveryReceivedAt: new Date("2026-08-30T08:00:00.000Z"),
+                outcome: "STARTED",
+                startedAt: new Date("2026-08-30T09:00:00.000Z")
+            });
+        const useCase = createUseCase({ repository: { start } });
+
+        await useCase({
+            deliveryId: DELIVERY_ID,
+            leaseToken: LEASE_TOKEN,
+            traceId: "a".repeat(32),
+            traceContext
+        });
+
+        expect(start).toHaveBeenCalledWith(expect.objectContaining({ traceContext }));
+    });
+
+    it("requires a trace ID when a trace context is provided", () => {
+        const useCase = createUseCase();
+
+        expect(() =>
+            useCase({
+                deliveryId: DELIVERY_ID,
+                leaseToken: LEASE_TOKEN,
+                traceContext: {
+                    traceparent: "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01"
+                }
+            })
+        ).toThrow("traceId is required when traceContext is provided");
+    });
 });
 
 function createUseCase(

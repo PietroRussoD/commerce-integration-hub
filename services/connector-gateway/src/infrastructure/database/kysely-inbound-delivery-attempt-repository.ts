@@ -74,7 +74,9 @@ export class KyselyInboundDeliveryAttemptRepository
                     outcome: null,
                     safe_error_message: null,
                     started_at: command.startedAt,
-                    trace_id: command.traceId ?? null
+                    trace_id: command.traceId ?? null,
+                    traceparent: command.traceContext?.traceparent ?? null,
+                    tracestate: command.traceContext?.tracestate ?? null
                 })
                 .execute();
 
