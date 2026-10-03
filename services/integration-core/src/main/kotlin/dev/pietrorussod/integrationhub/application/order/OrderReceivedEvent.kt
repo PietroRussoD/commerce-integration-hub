@@ -1,5 +1,6 @@
 package dev.pietrorussod.integrationhub.application.order
 
+import dev.pietrorussod.integrationhub.application.telemetry.TraceContext
 import dev.pietrorussod.integrationhub.domain.order.Order
 import java.time.Instant
 import java.util.UUID
@@ -9,6 +10,7 @@ data class OrderReceivedEvent(
     val correlationId: UUID,
     val order: Order,
     val occurredAt: Instant,
+    val traceContext: TraceContext? = null,
 ) {
     init {
         require(occurredAt == order.receivedAt) {

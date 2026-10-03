@@ -6,6 +6,7 @@ import dev.pietrorussod.integrationhub.application.order.OrderInsertOutcome
 import dev.pietrorussod.integrationhub.application.order.OrderInsertResult
 import dev.pietrorussod.integrationhub.application.order.OrderReceivedEvent
 import dev.pietrorussod.integrationhub.application.order.OrderRepository
+import dev.pietrorussod.integrationhub.application.telemetry.TraceContext
 import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
 import dev.pietrorussod.integrationhub.domain.order.Money
@@ -95,6 +96,25 @@ class JooqOrderRepositoryIT {
         val payload = objectMapper.readTree(requireNotNull(outboxEvent.payload).data())
         assertEquals(order.id.value.toString(), payload["orderId"].asText())
         assertEquals(order.items.size, payload["items"].size())
+    }
+
+    @Test
+    fun `persists trace context separately from the event payload`() {
+        val order = order(id = "018f38c2-1b95-7cc4-bb89-72d26a6f9f52")
+        val traceContext =
+            TraceContext(
+                traceparent = "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01",
+                tracestate = "vendor=value",
+            )
+
+        insert(order, traceContext)
+
+        val outboxEvent = dslContext.selectFrom(OUTBOX_EVENTS).fetchSingle()
+        val payload = objectMapper.readTree(requireNotNull(outboxEvent.payload).data())
+        assertEquals(traceContext.traceparent, outboxEvent.traceparent)
+        assertEquals(traceContext.tracestate, outboxEvent.tracestate)
+        assertFalse(payload.has("traceparent"))
+        assertFalse(payload.has("tracestate"))
     }
 
     @Test
@@ -365,13 +385,17 @@ class JooqOrderRepositoryIT {
             receivedAt = Instant.parse("2026-08-02T06:30:00Z"),
         )
 
-    private fun insert(order: Order): OrderInsertResult =
+    private fun insert(
+        order: Order,
+        traceContext: TraceContext? = null,
+    ): OrderInsertResult =
         repository.insertIfAbsent(
             OrderReceivedEvent(
                 id = UUID.randomUUID(),
                 correlationId = UUID.randomUUID(),
                 order = order,
                 occurredAt = order.receivedAt,
+                traceContext = traceContext,
             ),
             fingerprinter.fingerprint(order),
         )

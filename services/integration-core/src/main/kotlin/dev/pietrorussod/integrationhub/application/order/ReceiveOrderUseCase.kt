@@ -33,6 +33,7 @@ class ReceiveOrderUseCase(
                 correlationId = command.correlationId,
                 order = order,
                 occurredAt = order.receivedAt,
+                traceContext = command.traceContext,
             )
         val insertResult = orderRepository.insertIfAbsent(event, payloadFingerprint)
 

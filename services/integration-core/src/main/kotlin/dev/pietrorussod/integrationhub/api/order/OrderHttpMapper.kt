@@ -1,6 +1,7 @@
 package dev.pietrorussod.integrationhub.api.order
 
 import dev.pietrorussod.integrationhub.api.correlation.correlationId
+import dev.pietrorussod.integrationhub.api.telemetry.CurrentTraceContext
 import dev.pietrorussod.integrationhub.application.order.ReceiveOrderCommand
 import dev.pietrorussod.integrationhub.application.order.ReceiveOrderItemCommand
 import dev.pietrorussod.integrationhub.domain.order.Order
@@ -18,6 +19,7 @@ fun ReceiveOrderRequest.toCommand(
         externalOrderId = requireNotNull(externalId),
         currency = requireNotNull(currency),
         declaredTotalAmount = BigDecimal(requireNotNull(declaredTotalAmount)),
+        traceContext = CurrentTraceContext.capture(),
         items =
             requireNotNull(items).map { item ->
                 ReceiveOrderItemCommand(
