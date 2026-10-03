@@ -195,7 +195,7 @@ class OrderReadySearchProjectionIT {
             .statusCode(200)
             .body("lastProjectedEventOccurredAt", equalTo(event.occurredAt.toString()))
             .body("lastProjectedAt", notNullValue())
-            .body("lastProjectionProcessingDelayMilliseconds", greaterThanOrEqualTo(0))
+            .body("lastProjectionProcessingDelayMilliseconds", greaterThanOrEqualTo(0L))
     }
 
     @Test
