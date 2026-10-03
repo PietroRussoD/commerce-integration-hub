@@ -76,6 +76,8 @@ export class KyselyInboundDeliveryReplayRepository implements ReplayInboundDeliv
                     lease_token: null,
                     next_attempt_at: command.replayedAt,
                     safe_error_message: null,
+                    traceparent: null,
+                    tracestate: null,
                     status: "RECEIVED",
                     updated_at: command.replayedAt
                 })

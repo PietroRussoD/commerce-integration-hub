@@ -28,8 +28,9 @@ automatically instrumented HTTP span to Jaeger 2.21.0 over OTLP on
 read request still returns `200` when the OTLP endpoint is unavailable; the
 export failure is logged asynchronously. A separate Compose smoke test
 confirmed that a Fastify liveness request creates a Gateway trace received by
-Jaeger. Durable propagation across the Gateway worker boundary and Kafka
-remains to be verified.
+Jaeger. The Connector Gateway's PostgreSQL-backed worker boundary is now
+covered by an integration test; Core outbox propagation and Kafka remain to be
+verified.
 
 ## Decision
 
@@ -52,7 +53,8 @@ For the Gateway delivery record and both Core outbox records, resume the
 persisted context as the parent of a new span for each attempt or dispatch.
 Never keep a span open while work waits in storage. Automatic retries are
 sibling attempt spans under the persisted operation context. An explicit
-administrative replay starts a new trace and links it to the original context.
+administrative replay starts a new trace; linking it to the original context
+is deferred until trace-link behavior is implemented and verified.
 
 Create short-lived spans for actual work, not for the time a row waits in a
 database. For Kafka, use the instrumentation's supported parent/link semantics
@@ -107,5 +109,17 @@ static walkthrough; Jaeger is the live trace viewer.
 - Automatic instrumentation can create duplicate spans or expose attributes
   that are not appropriate for the demo. Review the emitted trace before
   enabling it by default.
+- The first implemented durable hop creates a locally rooted Gateway receipt
+  span after webhook authentication and validation, discarding any provider
+  `traceparent` or `tracestate`. It persists only nullable `traceparent` and
+  `tracestate` columns, then creates a short-lived worker attempt span and
+  propagates its W3C context to Integration Core. The attempt trace ID is stored
+  with the delivery-attempt record. Poll-originated work without a stored parent
+  starts a new trace when tracing is enabled. An operator replay clears the
+  previous delivery context; the original attempt trace ID remains available
+  in attempt history, but no trace link is created.
+- A process-level integration test verifies the PostgreSQL migration, durable
+  context restoration, a distinct child span ID, and propagation on the Core
+  HTTP request. The rest of the Core outbox and Kafka path is still pending.
 - This ADR remains Proposed until the real application configuration,
   propagation tests, and privacy review validate these constraints.

@@ -45,7 +45,7 @@ export class FetchIntegrationCoreOrderClient implements CanonicalOrderForwarder 
                 `${this.configuration.baseUrl}/api/v1/orders`,
                 {
                     body: JSON.stringify(command.canonicalOrder),
-                    headers: this.createHeaders(command.correlationId),
+                    headers: this.createHeaders(command.correlationId, command.traceContext),
                     method: "POST",
                     redirect: "manual",
                     signal
@@ -129,13 +129,22 @@ export class FetchIntegrationCoreOrderClient implements CanonicalOrderForwarder 
         };
     }
 
-    private createHeaders(correlationId: string | undefined): Record<string, string> {
+    private createHeaders(
+        correlationId: string | undefined,
+        traceContext: ForwardCanonicalOrderCommand["traceContext"]
+    ): Record<string, string> {
         const headers: Record<string, string> = {
             "Content-Type": "application/json",
             "X-Source-API-Key": this.configuration.sourceApiKey
         };
         if (correlationId !== undefined) {
             headers["X-Correlation-ID"] = correlationId;
+        }
+        if (traceContext !== undefined) {
+            headers.traceparent = traceContext.traceparent;
+            if (traceContext.tracestate !== undefined) {
+                headers.tracestate = traceContext.tracestate;
+            }
         }
         return headers;
     }

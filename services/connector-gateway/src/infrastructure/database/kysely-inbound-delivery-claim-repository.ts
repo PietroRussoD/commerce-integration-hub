@@ -24,7 +24,9 @@ export class KyselyInboundDeliveryClaimRepository implements InboundDeliveryClai
                 .select([
                     "delivery.id",
                     "delivery.connector_id",
-                    "delivery.canonical_payload"
+                    "delivery.canonical_payload",
+                    "delivery.traceparent",
+                    "delivery.tracestate"
                 ])
                 .where("delivery.status", "in", ["RECEIVED", "RETRY_WAIT"])
                 .where("delivery.canonical_payload", "is not", null)
@@ -62,7 +64,17 @@ export class KyselyInboundDeliveryClaimRepository implements InboundDeliveryClai
                 canonicalOrder: candidate.canonical_payload,
                 connectorId: candidate.connector_id,
                 deliveryId: candidate.id,
-                leaseToken: command.leaseToken
+                leaseToken: command.leaseToken,
+                ...(candidate.traceparent === null
+                    ? {}
+                    : {
+                          traceContext: {
+                              traceparent: candidate.traceparent,
+                              ...(candidate.tracestate === null
+                                  ? {}
+                                  : { tracestate: candidate.tracestate })
+                          }
+                      })
             }));
         });
     }

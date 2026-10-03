@@ -1,6 +1,7 @@
 import type { FastifyPluginCallback } from "fastify";
 
 import type { ReceiveInboundDeliveryUseCase } from "../../application/deliveries/receive-inbound-delivery.js";
+import type { ProviderReceiptTraceRunner } from "../../application/observability/trace-context.js";
 import { createMarketplaceAInboundDeliveryCommand } from "./webhook-receipt-command.js";
 import type {
     MarketplaceAWebhookAuthenticationInput,
@@ -33,6 +34,7 @@ interface MarketplaceAWebhookRoute {
 
 export interface MarketplaceAWebhookRouteOptions {
     authenticate: MarketplaceAWebhookAuthenticator;
+    withProviderReceiptTrace?: ProviderReceiptTraceRunner;
     receiveInboundDelivery: ReceiveInboundDeliveryUseCase;
 }
 
@@ -65,7 +67,7 @@ const WEBHOOK_ACCEPTED_SCHEMA = {
 
 export const marketplaceAWebhookRoute: FastifyPluginCallback<
     MarketplaceAWebhookRouteOptions
-> = (application, { authenticate, receiveInboundDelivery }, done) => {
+> = (application, { authenticate, receiveInboundDelivery, withProviderReceiptTrace }, done) => {
     configureMarketplaceARawJsonBodyParser(application);
 
     application.post<MarketplaceAWebhookRoute>(
@@ -133,8 +135,12 @@ export const marketplaceAWebhookRoute: FastifyPluginCallback<
             }
 
             try {
-                const result = await receiveInboundDelivery(
-                    createMarketplaceAInboundDeliveryCommand(request.body, mapping.value)
+                const receiveWithTrace = withProviderReceiptTrace ?? ((operation) => operation(undefined));
+                const result = await receiveWithTrace((traceContext) =>
+                    receiveInboundDelivery({
+                        ...createMarketplaceAInboundDeliveryCommand(request.body, mapping.value),
+                        ...(traceContext === undefined ? {} : { traceContext })
+                    })
                 );
 
                 if (result.outcome === "PAYLOAD_CONFLICT") {

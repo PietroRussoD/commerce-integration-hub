@@ -1,9 +1,11 @@
 import type { CanonicalOrder } from "../orders/canonical-order.js";
+import type { TraceContext } from "../observability/trace-context.js";
 
 export interface ForwardCanonicalOrderCommand {
     readonly canonicalOrder: CanonicalOrder;
     readonly correlationId?: string;
     readonly signal?: AbortSignal;
+    readonly traceContext?: TraceContext;
 }
 
 export type ForwardCanonicalOrderResult =

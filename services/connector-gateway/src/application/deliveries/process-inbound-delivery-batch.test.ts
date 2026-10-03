@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { ClaimedInboundDelivery } from "./claim-inbound-deliveries.js";
 import { createProcessInboundDeliveryBatchUseCase } from "./process-inbound-delivery-batch.js";
+import type { DeliveryTraceRunner } from "../observability/trace-context.js";
 
 const DELIVERY: ClaimedInboundDelivery = {
     canonicalOrder: {
@@ -71,6 +72,42 @@ describe("createProcessInboundDeliveryBatchUseCase", () => {
             deliveryId: DELIVERY.deliveryId,
             httpStatus: 201,
             leaseToken: DELIVERY.leaseToken
+        });
+    });
+
+    it("uses a child delivery trace for attempt metadata and Core forwarding", async () => {
+        const dependencies = createDependencies();
+        dependencies.forwarder.forward.mockResolvedValue({
+            coreOrderId: "0199037b-6400-7000-8000-000000000765",
+            equivalentReplay: false,
+            httpStatus: 201,
+            outcome: "DELIVERED"
+        });
+        const parentContext = {
+            traceparent: "00-11111111111111111111111111111111-2222222222222222-01"
+        };
+        const activeTrace = {
+            context: {
+                traceparent: "00-11111111111111111111111111111111-3333333333333333-01"
+            },
+            traceId: "11111111111111111111111111111111"
+        };
+        dependencies.claimInboundDeliveries.mockResolvedValue([
+            { ...DELIVERY, traceContext: parentContext }
+        ]);
+        dependencies.setNextActiveTrace(activeTrace);
+
+        await createUseCase(dependencies)();
+
+        expect(dependencies.traceParents).toEqual([parentContext]);
+        expect(dependencies.startAttempt).toHaveBeenCalledWith({
+            deliveryId: DELIVERY.deliveryId,
+            leaseToken: DELIVERY.leaseToken,
+            traceId: activeTrace.traceId
+        });
+        expect(dependencies.forwarder.forward).toHaveBeenCalledWith({
+            canonicalOrder: DELIVERY.canonicalOrder,
+            traceContext: activeTrace.context
         });
     });
 
@@ -182,13 +219,24 @@ describe("createProcessInboundDeliveryBatchUseCase", () => {
 });
 
 function createDependencies() {
+    let nextActiveTrace: Parameters<Parameters<DeliveryTraceRunner>[1]>[0];
+    const traceParents: (ClaimedInboundDelivery["traceContext"] | undefined)[] = [];
+    const runWithDeliveryTraceContext: DeliveryTraceRunner = async (parent, operation) => {
+        traceParents.push(parent);
+        return operation(nextActiveTrace);
+    };
     return {
         claimInboundDeliveries: vi.fn().mockResolvedValue([DELIVERY]),
         completeDelivered: vi.fn().mockResolvedValue({ outcome: "COMPLETED" as const }),
         completeRetryable: vi.fn().mockResolvedValue({ outcome: "COMPLETED" as const }),
         completeTerminal: vi.fn().mockResolvedValue({ outcome: "COMPLETED" as const }),
         forwarder: { forward: vi.fn() },
-        startAttempt: vi.fn().mockResolvedValue(STARTED_ATTEMPT)
+        runWithDeliveryTraceContext,
+        startAttempt: vi.fn().mockResolvedValue(STARTED_ATTEMPT),
+        traceParents,
+        setNextActiveTrace: (activeTrace: Parameters<Parameters<DeliveryTraceRunner>[1]>[0]) => {
+            nextActiveTrace = activeTrace;
+        }
     };
 }
 
