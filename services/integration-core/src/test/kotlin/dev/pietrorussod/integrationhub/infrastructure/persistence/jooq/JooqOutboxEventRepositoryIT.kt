@@ -5,6 +5,7 @@ import dev.pietrorussod.integrationhub.application.outbox.OutboxEventRepository
 import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEvent
 import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEventRepository
 import dev.pietrorussod.integrationhub.application.processing.OrderReadyEvent
+import dev.pietrorussod.integrationhub.application.telemetry.TraceContext
 import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
 import dev.pietrorussod.integrationhub.domain.order.Money
@@ -107,6 +108,26 @@ class JooqOutboxEventRepositoryIT {
                 .fetchSingle()
                 .status,
         )
+    }
+
+    @Test
+    fun `restores trace context when claiming an outbox event`() {
+        val eventId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f61")
+        val traceContext =
+            TraceContext(
+                traceparent = "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01",
+                tracestate = "vendor=value",
+            )
+        insertEvent(
+            id = eventId,
+            createdAt = now.minusSeconds(10),
+            nextAttemptAt = now.minusSeconds(1),
+            traceContext = traceContext,
+        )
+
+        val claimedEvent = repository.claimPending(UUID.randomUUID(), "publisher-1", now, batchSize = 1).single()
+
+        assertEquals(traceContext, claimedEvent.traceContext)
     }
 
     @Test
@@ -404,6 +425,7 @@ class JooqOutboxEventRepositoryIT {
         id: UUID,
         createdAt: Instant,
         nextAttemptAt: Instant,
+        traceContext: TraceContext? = null,
     ) {
         dslContext
             .insertInto(OUTBOX_EVENTS)
@@ -414,6 +436,8 @@ class JooqOutboxEventRepositoryIT {
             .set(OUTBOX_EVENTS.EVENT_VERSION, 1)
             .set(OUTBOX_EVENTS.PAYLOAD, JSON.valueOf("{\"eventId\":\"$id\"}"))
             .set(OUTBOX_EVENTS.CORRELATION_ID, UUID.nameUUIDFromBytes("correlation-$id".toByteArray()))
+            .set(OUTBOX_EVENTS.TRACEPARENT, traceContext?.traceparent)
+            .set(OUTBOX_EVENTS.TRACESTATE, traceContext?.tracestate)
             .set(OUTBOX_EVENTS.CREATED_AT, createdAt.atOffset(ZoneOffset.UTC))
             .set(OUTBOX_EVENTS.STATUS, "PENDING")
             .set(OUTBOX_EVENTS.NEXT_ATTEMPT_AT, nextAttemptAt.atOffset(ZoneOffset.UTC))

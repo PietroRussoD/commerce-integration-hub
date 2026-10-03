@@ -4,6 +4,7 @@ import dev.pietrorussod.integrationhub.application.outbox.ClaimedOutboxEvent
 import dev.pietrorussod.integrationhub.application.outbox.OutboxEventRepository
 import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEvent
 import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEventRepository
+import dev.pietrorussod.integrationhub.application.telemetry.TraceContext
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.OutboxEvents.Companion.OUTBOX_EVENTS
 import dev.pietrorussod.integrationhub.infrastructure.persistence.jooq.generated.tables.records.OutboxEventsRecord
 import jakarta.enterprise.context.ApplicationScoped
@@ -218,6 +219,13 @@ class JooqOutboxEventRepository
                 correlationId = requireNotNull(correlationId),
                 createdAt = requireNotNull(createdAt).toInstant(),
                 publishAttempts = requireNotNull(publishAttempts),
+                traceContext =
+                    traceparent?.let {
+                        TraceContext(
+                            traceparent = it,
+                            tracestate = tracestate,
+                        )
+                    },
             )
 
         private companion object {

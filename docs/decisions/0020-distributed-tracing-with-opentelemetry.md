@@ -28,9 +28,10 @@ automatically instrumented HTTP span to Jaeger 2.21.0 over OTLP on
 read request still returns `200` when the OTLP endpoint is unavailable; the
 export failure is logged asynchronously. A separate Compose smoke test
 confirmed that a Fastify liveness request creates a Gateway trace received by
-Jaeger. The Connector Gateway's PostgreSQL-backed worker boundary is now
-covered by an integration test; Core outbox propagation and Kafka remain to be
-verified.
+Jaeger. The Connector Gateway's PostgreSQL-backed worker boundary is covered by
+an integration test. Core outbox persistence/restoration and Kafka producer
+propagation have isolated tests; the complete Core durable hop and consumer
+continuation remain to be verified.
 
 ## Decision
 
@@ -120,6 +121,10 @@ static walkthrough; Jaeger is the live trace viewer.
   in attempt history, but no trace link is created.
 - A process-level integration test verifies the PostgreSQL migration, durable
   context restoration, a distinct child span ID, and propagation on the Core
-  HTTP request. The rest of the Core outbox and Kafka path is still pending.
+  HTTP request. The Core `OrderReceived` outbox now persists and restores W3C
+  context, and its dispatcher creates a short-lived producer span. A broker test
+  verifies that Kafka receives the dispatch span's `traceparent` and inherited
+  `tracestate`; a full Core HTTP-to-outbox-to-Kafka test and consumer continuation
+  are still pending.
 - This ADR remains Proposed until the real application configuration,
   propagation tests, and privacy review validate these constraints.
