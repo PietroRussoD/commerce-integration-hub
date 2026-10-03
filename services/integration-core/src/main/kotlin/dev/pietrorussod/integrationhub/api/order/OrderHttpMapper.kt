@@ -1,11 +1,11 @@
 package dev.pietrorussod.integrationhub.api.order
 
 import dev.pietrorussod.integrationhub.api.correlation.correlationId
-import dev.pietrorussod.integrationhub.api.telemetry.CurrentTraceContext
 import dev.pietrorussod.integrationhub.application.order.ReceiveOrderCommand
 import dev.pietrorussod.integrationhub.application.order.ReceiveOrderItemCommand
 import dev.pietrorussod.integrationhub.domain.order.Order
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
+import dev.pietrorussod.integrationhub.infrastructure.telemetry.CurrentTraceContext
 import jakarta.ws.rs.container.ContainerRequestContext
 import java.math.BigDecimal
 

@@ -1,6 +1,7 @@
 package dev.pietrorussod.integrationhub.application.outbox
 
 import dev.pietrorussod.integrationhub.application.processing.OrderReadyEvent
+import dev.pietrorussod.integrationhub.application.telemetry.TraceContext
 import java.time.Instant
 import java.util.UUID
 
@@ -14,11 +15,13 @@ data class PendingOutboxEvent private constructor(
     val payload: String,
     val correlationId: UUID,
     val createdAt: Instant,
+    val traceContext: TraceContext?,
 ) {
     companion object {
         fun orderReady(
             event: OrderReadyEvent,
             payload: String,
+            traceContext: TraceContext? = null,
         ): PendingOutboxEvent {
             require(payload.isNotBlank()) { "OrderReady outbox payload must not be blank" }
 
@@ -31,6 +34,7 @@ data class PendingOutboxEvent private constructor(
                 payload = payload,
                 correlationId = event.correlationId,
                 createdAt = event.occurredAt,
+                traceContext = traceContext,
             )
         }
     }

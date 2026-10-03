@@ -30,8 +30,9 @@ export failure is logged asynchronously. A separate Compose smoke test
 confirmed that a Fastify liveness request creates a Gateway trace received by
 Jaeger. The Connector Gateway's PostgreSQL-backed worker boundary is covered by
 an integration test. Core outbox persistence/restoration and Kafka producer
-propagation have isolated tests; the complete Core durable hop and consumer
-continuation remain to be verified.
+propagation have isolated tests, and a broker-backed Core test now verifies
+trace continuity from HTTP ingestion through both outbox dispatches and the
+`OrderReceived` consumer into the `OrderReady` Kafka record.
 
 ## Decision
 
@@ -121,10 +122,11 @@ static walkthrough; Jaeger is the live trace viewer.
   in attempt history, but no trace link is created.
 - A process-level integration test verifies the PostgreSQL migration, durable
   context restoration, a distinct child span ID, and propagation on the Core
-  HTTP request. The Core `OrderReceived` outbox now persists and restores W3C
-  context, and its dispatcher creates a short-lived producer span. A broker test
-  verifies that Kafka receives the dispatch span's `traceparent` and inherited
-  `tracestate`; a full Core HTTP-to-outbox-to-Kafka test and consumer continuation
-  are still pending.
+  HTTP request. Both Core outbox records persist nullable W3C context separately
+  from business payloads. A broker-backed end-to-end test verifies that the
+  trace continues from HTTP ingestion through `OrderReceived` publication and
+  consumption, the second durable outbox record, and `OrderReady` publication.
+  The persisted consumer span and final producer span have distinct span IDs,
+  while the trace ID and `tracestate` remain continuous.
 - This ADR remains Proposed until the real application configuration,
   propagation tests, and privacy review validate these constraints.

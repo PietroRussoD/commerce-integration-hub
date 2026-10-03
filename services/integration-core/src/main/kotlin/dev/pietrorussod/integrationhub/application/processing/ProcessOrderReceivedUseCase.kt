@@ -97,6 +97,7 @@ class ProcessOrderReceivedUseCase(
             PendingOutboxEvent.orderReady(
                 event = orderReadyEvent,
                 payload = orderReadyPayloadSerializer.serialize(orderReadyEvent),
+                traceContext = command.traceContext,
             ),
         )
 

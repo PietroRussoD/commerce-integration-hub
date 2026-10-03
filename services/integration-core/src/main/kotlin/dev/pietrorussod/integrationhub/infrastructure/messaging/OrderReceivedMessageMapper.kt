@@ -1,13 +1,17 @@
 package dev.pietrorussod.integrationhub.infrastructure.messaging
 
 import dev.pietrorussod.integrationhub.application.processing.ProcessOrderReceivedCommand
+import dev.pietrorussod.integrationhub.application.telemetry.TraceContext
 import dev.pietrorussod.integrationhub.domain.order.OrderId
 import jakarta.enterprise.context.ApplicationScoped
 import java.util.UUID
 
 @ApplicationScoped
 class OrderReceivedMessageMapper {
-    fun map(event: StructuredEvent): ProcessOrderReceivedCommand {
+    fun map(
+        event: StructuredEvent,
+        traceContext: TraceContext? = null,
+    ): ProcessOrderReceivedCommand {
         validate(event.envelopeVersion == SUPPORTED_ENVELOPE_VERSION) {
             "Unsupported event envelope version: ${event.envelopeVersion}"
         }
@@ -29,6 +33,7 @@ class OrderReceivedMessageMapper {
             eventId = event.eventId,
             orderId = OrderId(event.aggregateId),
             correlationId = event.correlationId,
+            traceContext = traceContext,
         )
     }
 
