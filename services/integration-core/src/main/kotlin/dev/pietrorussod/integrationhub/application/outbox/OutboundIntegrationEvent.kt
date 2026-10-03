@@ -1,5 +1,6 @@
 package dev.pietrorussod.integrationhub.application.outbox
 
+import dev.pietrorussod.integrationhub.application.telemetry.TraceContext
 import java.time.Instant
 import java.util.UUID
 
@@ -13,6 +14,7 @@ data class OutboundIntegrationEvent(
     val correlationId: UUID,
     val occurredAt: Instant,
     val payload: String,
+    val traceContext: TraceContext? = null,
 )
 
 fun ClaimedOutboxEvent.toOutboundIntegrationEvent(): OutboundIntegrationEvent =
@@ -26,4 +28,5 @@ fun ClaimedOutboxEvent.toOutboundIntegrationEvent(): OutboundIntegrationEvent =
         correlationId = correlationId,
         occurredAt = createdAt,
         payload = payload,
+        traceContext = traceContext,
     )

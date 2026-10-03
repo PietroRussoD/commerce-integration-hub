@@ -1,5 +1,6 @@
 package dev.pietrorussod.integrationhub.application.outbox
 
+import dev.pietrorussod.integrationhub.application.telemetry.TraceContext
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -9,6 +10,11 @@ import java.util.UUID
 class OutboundIntegrationEventTest {
     @Test
     fun `maps stable event data without claim metadata`() {
+        val traceContext =
+            TraceContext(
+                traceparent = "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01",
+                tracestate = "vendor=value",
+            )
         val claimedEvent =
             ClaimedOutboxEvent(
                 id = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f61"),
@@ -22,6 +28,7 @@ class OutboundIntegrationEventTest {
                 correlationId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f55"),
                 createdAt = Instant.parse("2026-08-19T08:00:00Z"),
                 publishAttempts = 3,
+                traceContext = traceContext,
             )
 
         val outboundEvent = claimedEvent.toOutboundIntegrationEvent()
@@ -35,6 +42,7 @@ class OutboundIntegrationEventTest {
         assertEquals(claimedEvent.correlationId, outboundEvent.correlationId)
         assertEquals(claimedEvent.createdAt, outboundEvent.occurredAt)
         assertEquals(claimedEvent.payload, outboundEvent.payload)
+        assertEquals(traceContext, outboundEvent.traceContext)
     }
 
     @Test

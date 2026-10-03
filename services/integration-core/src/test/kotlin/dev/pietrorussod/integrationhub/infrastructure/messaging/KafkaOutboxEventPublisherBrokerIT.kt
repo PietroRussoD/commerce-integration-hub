@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import dev.pietrorussod.integrationhub.application.outbox.OutboundIntegrationEvent
 import dev.pietrorussod.integrationhub.application.outbox.OutboxEventPublisher
 import dev.pietrorussod.integrationhub.application.outbox.PublicationOutcome
+import dev.pietrorussod.integrationhub.application.telemetry.TraceContext
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.QuarkusTestProfile
 import io.quarkus.test.junit.TestProfile
@@ -13,6 +14,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
 import java.time.Duration
@@ -67,6 +69,13 @@ class KafkaOutboxEventPublisherBrokerIT {
             assertEquals(event.eventType, record.headerValue("event-type"))
             assertEquals(event.eventVersion.toString(), record.headerValue("event-version"))
             assertEquals(event.correlationId.toString(), record.headerValue("correlation-id"))
+            val expectedTraceParent = requireNotNull(event.traceContext).traceparent.split('-')
+            val actualTraceParent = record.headerValue("traceparent").split('-')
+            assertEquals(4, expectedTraceParent.size)
+            assertEquals(expectedTraceParent[1], actualTraceParent[1])
+            assertEquals(4, actualTraceParent.size)
+            assertNotEquals(expectedTraceParent[2], actualTraceParent[2])
+            assertEquals("vendor=value", record.headerValue("tracestate"))
         }
     }
 
@@ -100,6 +109,11 @@ class KafkaOutboxEventPublisherBrokerIT {
             correlationId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f55"),
             occurredAt = Instant.parse("2026-08-20T08:00:00Z"),
             payload = "{\"orderId\":\"order-123\"}",
+            traceContext =
+                TraceContext(
+                    traceparent = "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01",
+                    tracestate = "vendor=value",
+                ),
         )
 }
 
@@ -108,5 +122,7 @@ class KafkaBrokerTestProfile : QuarkusTestProfile {
         mapOf(
             "quarkus.kafka.devservices.enabled" to "true",
             "mp.messaging.outgoing.integration-events-out.connector" to "smallrye-kafka",
+            "quarkus.otel.sdk.disabled" to "false",
+            "quarkus.otel.traces.exporter" to "none",
         )
 }
