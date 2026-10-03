@@ -223,7 +223,7 @@ read model; external subscribers remain planned.
 | Operator authentication and authorization | Opt-in external JWT validation and operator/platform-admin roles implemented for current Core and Gateway operator APIs; the Console keeps a manually supplied JWT in page memory only |
 | Failure inspection and controlled recovery | Gateway inspection, immutable command audit, and authenticated platform-admin replay implemented, including the Console recovery control for eligible exhausted deliveries |
 | Gateway payload retention enforcement | Expiry timestamp implemented; payload cleanup planned |
-| Distributed tracing and alerting | OpenTelemetry propagation/export and alert rules planned |
+| Distributed tracing and alerting | OpenTelemetry propagation/export with local Collector redaction and Jaeger viewing implemented; alert rules planned |
 
 ## Non-goals
 

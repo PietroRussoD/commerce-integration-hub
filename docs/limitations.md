@@ -87,7 +87,8 @@ mistaken for available behavior.
   gauges are available. A
   version-controlled Prometheus and Grafana profile provides a local operations
   dashboard.
-  Distributed tracing, alerting rules, and production monitoring are not.
+  Optional local OpenTelemetry tracing through the redacting Collector to
+  Jaeger is implemented. Alerting rules and production monitoring are not.
   Deployment must restrict `/metrics` to trusted monitoring infrastructure.
 - Raw provider payloads are not retained by the canonical API.
 - The Connector Gateway does retain synthetic provider and canonical payloads
