@@ -111,6 +111,12 @@ static walkthrough; Jaeger is the live trace viewer.
 - Automatic instrumentation can create duplicate spans or expose attributes
   that are not appropriate for the demo. Review the emitted trace before
   enabling it by default.
+- A local Jaeger inspection of `GET /api/service-info` found the expected HTTP
+  method, route, response status and size, plus `client.address`, user agent,
+  server address, and port. It contained no request or response body, query
+  values, credentials, or order data. This is a narrow smoke-test review, not a
+  complete privacy audit of custom Gateway/Core spans; tracing therefore remains
+  disabled by default and this ADR remains Proposed until that review is done.
 - The first implemented durable hop creates a locally rooted Gateway receipt
   span after webhook authentication and validation, discarding any provider
   `traceparent` or `tracestate`. It persists only nullable `traceparent` and
