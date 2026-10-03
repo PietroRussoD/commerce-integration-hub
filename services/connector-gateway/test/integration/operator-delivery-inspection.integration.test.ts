@@ -47,6 +47,7 @@ describe("operator delivery inspection API", () => {
         const repository = new KyselyInboundDeliveryInspectionRepository(database);
         application = buildApplication({
             operatorDeliveries: {
+                withOperatorReplayTrace: (operation) => operation(undefined),
                 authorization: {
                     enabled: true,
                     verifyToken: createOperatorJwtVerifier({

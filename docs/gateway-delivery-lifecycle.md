@@ -253,6 +253,7 @@ sequenceDiagram
     participant C as Operator Console
     participant A as Gateway operator API
     participant DB as Gateway PostgreSQL
+    participant W as Gateway delivery worker
 
     C->>A: POST replay with JWT, reason, idempotency key
     A->>A: Verify JWT and require platform-admin
@@ -261,9 +262,12 @@ sequenceDiagram
     alt EXHAUSTED, active connector, retained payload
         DB->>DB: EXHAUSTED -> RECEIVED
         DB->>DB: Clear terminal error and schedule now
+        DB->>DB: Store new local trace context and latest prior attempt context separately
         DB->>DB: Insert SUCCEEDED audit record
         DB-->>A: REPLAYED
         A-->>C: 202 Accepted
+        W->>DB: Claim replayed delivery and restore trace contexts
+        W->>W: Start attempt span linked to prior attempt
     else Invalid state, inactive connector, or expired payload
         DB->>DB: Preserve delivery state
         DB->>DB: Insert REJECTED audit record
@@ -278,3 +282,8 @@ original outcome only when its action, target, and rationale match exactly; a
 different request returns an idempotency conflict. Historical attempts remain
 intact and their counter is not reset, so a replay does not bypass the bounded
 automatic retry policy or erase forensic evidence.
+The replay starts a new locally rooted trace rather than accepting the operator
+request's remote parent. The worker resumes that context and adds a span link to
+the latest prior attempt with complete W3C context; historical attempts without
+one remain replayable without a link. Link metadata is durable across the queue
+boundary and is not part of the delivery payload.

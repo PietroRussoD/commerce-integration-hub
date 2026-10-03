@@ -10,10 +10,13 @@ export interface ActiveDeliveryTrace {
 
 export type DeliveryTraceRunner = <Result>(
     parent: TraceContext | undefined,
+    link: TraceContext | undefined,
     operation: (activeTrace: ActiveDeliveryTrace | undefined) => Promise<Result>
 ) => Promise<Result>;
 
-export type CurrentTraceContext = () => TraceContext | undefined;
+export type OperatorReplayTraceRunner = <Result>(
+    operation: (traceContext: TraceContext | undefined) => Promise<Result>
+) => Promise<Result>;
 
 export type ProviderReceiptTraceRunner = <Result>(
     operation: (traceContext: TraceContext | undefined) => Promise<Result>

@@ -19,6 +19,7 @@ export interface ClaimedInboundDelivery {
     readonly connectorId: string;
     readonly deliveryId: string;
     readonly leaseToken: string;
+    readonly replayLinkContext?: TraceContext;
     readonly traceContext?: TraceContext;
 }
 

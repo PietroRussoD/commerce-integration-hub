@@ -218,6 +218,10 @@ erDiagram
         smallint last_http_status
         uuid correlation_id
         uuid last_core_order_id
+        varchar traceparent
+        varchar tracestate
+        varchar replay_link_traceparent
+        varchar replay_link_tracestate
         timestamptz received_at
         timestamptz updated_at
         timestamptz completed_at
@@ -236,6 +240,8 @@ erDiagram
         varchar safe_error_message
         integer duration_ms
         char trace_id
+        varchar traceparent
+        varchar tracestate
     }
 
     polling_checkpoints {
@@ -308,8 +314,14 @@ returning `202`; forwarding state is processed separately.
 `delivery_attempts` stores bounded technical evidence separately from delivery
 state. Attempt numbers are unique per delivery. Database constraints distinguish
 an open attempt from a completed one, validate outcome, duration, HTTP status,
-and trace ID shape, require delivered attempts to record `200` or `201`, and
-prevent successful attempts from carrying error data.
+and W3C trace-context shape, require delivered attempts to record `200` or
+`201`, and prevent successful attempts from carrying error data.
+Nullable `traceparent` and `tracestate` columns preserve the complete W3C
+context needed to create a later span link; the existing `trace_id` remains a
+compact operator-facing lookup value. `inbound_deliveries` stores the replay's
+new local context separately from the optional context of the latest prior
+attempt. These columns contain bounded tracing metadata, never business
+payloads, and allow older rows without tracing context.
 Fenced attempt creation is implemented atomically with the delivery attempt
 counter. Successful completion atomically closes the current attempt and moves
 the delivery to `DELIVERED`. Retryable completion atomically schedules

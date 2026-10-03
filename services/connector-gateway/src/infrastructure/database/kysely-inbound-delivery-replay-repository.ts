@@ -64,6 +64,14 @@ export class KyselyInboundDeliveryReplayRepository implements ReplayInboundDeliv
                 };
             }
 
+            const previousAttemptContext = await transaction
+                .selectFrom("delivery_attempts")
+                .select(["traceparent", "tracestate"])
+                .where("delivery_id", "=", command.deliveryId)
+                .where("traceparent", "is not", null)
+                .orderBy("attempt_number", "desc")
+                .executeTakeFirst();
+
             const replayed = await transaction
                 .updateTable("inbound_deliveries")
                 .set({
@@ -76,8 +84,10 @@ export class KyselyInboundDeliveryReplayRepository implements ReplayInboundDeliv
                     lease_token: null,
                     next_attempt_at: command.replayedAt,
                     safe_error_message: null,
-                    traceparent: null,
-                    tracestate: null,
+                    traceparent: command.traceContext?.traceparent ?? null,
+                    tracestate: command.traceContext?.tracestate ?? null,
+                    replay_link_traceparent: previousAttemptContext?.traceparent ?? null,
+                    replay_link_tracestate: previousAttemptContext?.tracestate ?? null,
                     status: "RECEIVED",
                     updated_at: command.replayedAt
                 })

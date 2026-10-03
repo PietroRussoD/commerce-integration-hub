@@ -15,6 +15,7 @@ import type {
     ReplayInboundDeliveryRejectionCode,
     ReplayInboundDeliveryUseCase
 } from "../../application/deliveries/replay-inbound-delivery.js";
+import type { OperatorReplayTraceRunner } from "../../application/observability/trace-context.js";
 import {
     configureOperatorAuthorization,
     type OperatorAuthorizationOptions
@@ -70,11 +71,12 @@ export interface OperatorDeliveryRouteOptions {
     readonly getDelivery: GetInboundDeliveryUseCase;
     readonly listDeliveries: ListInboundDeliveriesUseCase;
     readonly replayDelivery: ReplayInboundDeliveryUseCase;
+    readonly withOperatorReplayTrace: OperatorReplayTraceRunner;
 }
 
 export const operatorDeliveryRoute: FastifyPluginCallback<OperatorDeliveryRouteOptions> = (
     application,
-    { authorization, getDelivery, listDeliveries, replayDelivery },
+    { authorization, getDelivery, listDeliveries, replayDelivery, withOperatorReplayTrace },
     done
 ) => {
     const requireRole = configureOperatorAuthorization(application, authorization);
@@ -182,12 +184,15 @@ export const operatorDeliveryRoute: FastifyPluginCallback<OperatorDeliveryRouteO
             }
         },
         async (request, reply) => {
-            const result = await replayDelivery({
-                actorSubject: request.operatorPrincipal!.subject,
-                deliveryId: request.params.deliveryId,
-                idempotencyKey: request.headers["idempotency-key"],
-                reason: request.body.reason
-            });
+            const result = await withOperatorReplayTrace((traceContext) =>
+                replayDelivery({
+                    actorSubject: request.operatorPrincipal!.subject,
+                    deliveryId: request.params.deliveryId,
+                    idempotencyKey: request.headers["idempotency-key"],
+                    reason: request.body.reason,
+                    ...(traceContext === undefined ? {} : { traceContext })
+                })
+            );
             switch (result.outcome) {
                 case "REPLAYED":
                     reply.code(202);

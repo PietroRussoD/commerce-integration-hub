@@ -1,3 +1,5 @@
+import type { TraceContext } from "../observability/trace-context.js";
+
 const MAX_WORKER_ID_LENGTH = 100;
 const TRACE_ID_PATTERN = /^[0-9a-f]{32}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -6,6 +8,7 @@ export interface StartInboundDeliveryAttemptRequest {
     readonly deliveryId: string;
     readonly leaseToken: string;
     readonly traceId?: string;
+    readonly traceContext?: TraceContext;
 }
 
 export interface StartInboundDeliveryAttemptCommand extends StartInboundDeliveryAttemptRequest {
@@ -57,6 +60,17 @@ export function createStartInboundDeliveryAttemptUseCase({
         if (request.traceId !== undefined && !TRACE_ID_PATTERN.test(request.traceId)) {
             throw new Error("traceId must be 32 lower-case hexadecimal characters");
         }
+        if (request.traceContext !== undefined && request.traceId === undefined) {
+            throw new Error("traceId is required when traceContext is provided");
+        }
+        if (request.traceContext !== undefined) {
+            const traceparentMatch = /^00-([0-9a-f]{32})-[0-9a-f]{16}-[0-9a-f]{2}$/.exec(
+                request.traceContext.traceparent
+            );
+            if (traceparentMatch?.[1] !== request.traceId) {
+                throw new Error("traceId must match the trace ID in traceContext.traceparent");
+            }
+        }
 
         const attemptId = createAttemptId();
         assertUuid(attemptId, "createAttemptId result");
@@ -66,6 +80,7 @@ export function createStartInboundDeliveryAttemptUseCase({
             leaseToken: request.leaseToken,
             startedAt: new Date(currentTimeMilliseconds()),
             ...(request.traceId === undefined ? {} : { traceId: request.traceId }),
+            ...(request.traceContext === undefined ? {} : { traceContext: request.traceContext }),
             workerId
         });
     };

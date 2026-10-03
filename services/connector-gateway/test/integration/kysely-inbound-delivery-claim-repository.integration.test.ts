@@ -114,6 +114,29 @@ describe("KyselyInboundDeliveryClaimRepository", () => {
         ).resolves.toEqual([]);
     });
 
+    it("restores replay parent and link contexts from durable storage", async () => {
+        const traceContext = {
+            traceparent: "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01",
+            tracestate: "vendor=replay"
+        };
+        const replayLinkContext = {
+            traceparent: "00-11111111111111111111111111111111-2222222222222222-01",
+            tracestate: "vendor=previous"
+        };
+        await insertDelivery({
+            id: "0199037b-6400-7000-8000-000000000516",
+            eventId: "evt-replay-link",
+            nextAttemptAt: NOW,
+            receivedAt: NOW,
+            traceContext,
+            replayLinkContext
+        });
+
+        const claimed = await repository.claimEligible(claimCommand("worker-a", "000000000523", 1));
+
+        expect(claimed[0]).toMatchObject({ replayLinkContext, traceContext });
+    });
+
     it("gives concurrent workers disjoint bounded batches", async () => {
         await Promise.all(
             Array.from({ length: 6 }, (_, index) =>
@@ -170,6 +193,8 @@ describe("KyselyInboundDeliveryClaimRepository", () => {
         id,
         nextAttemptAt,
         receivedAt,
+        traceContext,
+        replayLinkContext,
         status = "RECEIVED"
     }: {
         connectorId?: string;
@@ -177,7 +202,9 @@ describe("KyselyInboundDeliveryClaimRepository", () => {
         id: string;
         nextAttemptAt: Date;
         receivedAt: Date;
+        replayLinkContext?: { readonly traceparent: string; readonly tracestate?: string };
         status?: InboundDeliveryStatus;
+        traceContext?: { readonly traceparent: string; readonly tracestate?: string };
     }): Promise<void> {
         await database
             .insertInto("inbound_deliveries")
@@ -211,6 +238,10 @@ describe("KyselyInboundDeliveryClaimRepository", () => {
                 last_http_status: null,
                 correlation_id: null,
                 last_core_order_id: null,
+                replay_link_traceparent: replayLinkContext?.traceparent ?? null,
+                replay_link_tracestate: replayLinkContext?.tracestate ?? null,
+                traceparent: traceContext?.traceparent ?? null,
+                tracestate: traceContext?.tracestate ?? null,
                 completed_at: null
             })
             .execute();

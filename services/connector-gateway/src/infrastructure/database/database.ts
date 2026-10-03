@@ -64,6 +64,8 @@ export interface InboundDeliveriesTable {
     readonly last_core_order_id: string | null;
     readonly traceparent: string | null;
     readonly tracestate: string | null;
+    readonly replay_link_traceparent: string | null;
+    readonly replay_link_tracestate: string | null;
     readonly received_at: Generated<Date>;
     readonly updated_at: Generated<Date>;
     readonly completed_at: Date | null;
@@ -95,6 +97,8 @@ export interface DeliveryAttemptsTable {
     readonly safe_error_message: string | null;
     readonly duration_ms: number | null;
     readonly trace_id: string | null;
+    readonly traceparent: string | null;
+    readonly tracestate: string | null;
 }
 
 export interface OperatorCommandAuditEntriesTable {

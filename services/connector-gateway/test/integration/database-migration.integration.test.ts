@@ -70,6 +70,10 @@ describe("connector gateway database migration", () => {
             expect.objectContaining({
                 migrationName: "008_add_delivery_trace_context",
                 status: "Success"
+            }),
+            expect.objectContaining({
+                migrationName: "009_add_replay_trace_links",
+                status: "Success"
             })
         ]);
         expect(secondRun).toEqual([]);

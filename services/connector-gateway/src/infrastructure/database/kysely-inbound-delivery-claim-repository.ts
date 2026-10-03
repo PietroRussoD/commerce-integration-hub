@@ -25,6 +25,8 @@ export class KyselyInboundDeliveryClaimRepository implements InboundDeliveryClai
                     "delivery.id",
                     "delivery.connector_id",
                     "delivery.canonical_payload",
+                    "delivery.replay_link_traceparent",
+                    "delivery.replay_link_tracestate",
                     "delivery.traceparent",
                     "delivery.tracestate"
                 ])
@@ -73,6 +75,16 @@ export class KyselyInboundDeliveryClaimRepository implements InboundDeliveryClai
                               ...(candidate.tracestate === null
                                   ? {}
                                   : { tracestate: candidate.tracestate })
+                          }
+                      }),
+                ...(candidate.replay_link_traceparent === null
+                    ? {}
+                    : {
+                          replayLinkContext: {
+                              traceparent: candidate.replay_link_traceparent,
+                              ...(candidate.replay_link_tracestate === null
+                                  ? {}
+                                  : { tracestate: candidate.replay_link_tracestate })
                           }
                       })
             }));
