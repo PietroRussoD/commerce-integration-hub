@@ -100,7 +100,8 @@ const application = buildApplication({
         authenticate: createConfiguredMarketplaceAWebhookAuthenticator(
             webhookSecurityConfiguration
         ),
-        receiveInboundDelivery
+        receiveInboundDelivery,
+        withProviderReceiptTrace: telemetry.withProviderReceiptTrace
     },
     metrics: metrics.exporter,
     operatorDeliveries: {
@@ -156,6 +157,7 @@ if (deliveryWorkerConfiguration.enabled) {
         forwarder: new FetchIntegrationCoreOrderClient({
             configuration: coreClientConfiguration
         }),
+        runWithDeliveryTraceContext: telemetry.runWithDeliveryTraceContext,
         startAttempt: createStartInboundDeliveryAttemptUseCase({
             ...commonWorkerDependencies,
             createAttemptId: randomUUID

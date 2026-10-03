@@ -14,6 +14,7 @@ import { migrateToLatest } from "../../src/infrastructure/database/migrator.js";
 const CORE_ORDER_ID = "0199037b-6400-7000-8000-000000000799";
 const CORE_SOURCE_API_KEY = "src_process_test.secret";
 const WEBHOOK_KEY_ID = "process-test-key";
+const UNTRUSTED_PROVIDER_TRACE_ID = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const WEBHOOK_SECRET = Buffer.alloc(32);
 const WEBHOOK_SECRET_BASE64 = WEBHOOK_SECRET.toString("base64");
 const WEBHOOK_PAYLOAD = JSON.stringify({
@@ -38,6 +39,7 @@ interface CapturedCoreRequest {
     readonly body: string;
     readonly method: string | undefined;
     readonly sourceApiKey: string | undefined;
+    readonly traceparent: string | undefined;
     readonly url: string | undefined;
 }
 
@@ -81,6 +83,8 @@ describe("Connector Gateway delivery worker process", () => {
                 INTEGRATION_CORE_TIMEOUT_MILLISECONDS: "500",
                 MARKETPLACE_A_WEBHOOK_CURRENT_KEY_ID: WEBHOOK_KEY_ID,
                 MARKETPLACE_A_WEBHOOK_CURRENT_SECRET_BASE64: WEBHOOK_SECRET_BASE64,
+                OTEL_SDK_DISABLED: "false",
+                OTEL_TRACES_SAMPLER: "always_off",
                 PORT: gatewayPort.toString()
             },
             stdio: ["ignore", "pipe", "pipe"]
@@ -134,6 +138,7 @@ describe("Connector Gateway delivery worker process", () => {
                 body: WEBHOOK_PAYLOAD,
                 headers: {
                     "content-type": "application/json",
+                    traceparent: `00-${UNTRUSTED_PROVIDER_TRACE_ID}-bbbbbbbbbbbbbbbb-01`,
                     "x-webhook-key-id": WEBHOOK_KEY_ID,
                     "x-webhook-signature": `v1=${signature}`,
                     "x-webhook-timestamp": timestamp
@@ -153,6 +158,8 @@ describe("Connector Gateway delivery worker process", () => {
                     "inbound_deliveries.last_core_order_id",
                     "inbound_deliveries.last_http_status",
                     "inbound_deliveries.status",
+                    "inbound_deliveries.traceparent",
+                    "delivery_attempts.trace_id",
                     "delivery_attempts.outcome"
                 ])
                 .where("inbound_deliveries.id", "=", accepted.deliveryId)
@@ -160,13 +167,19 @@ describe("Connector Gateway delivery worker process", () => {
             return delivery?.status === "DELIVERED" ? delivery : undefined;
         });
 
-        expect(persisted).toEqual({
-            attempt_count: 1,
-            last_core_order_id: CORE_ORDER_ID,
-            last_http_status: 201,
-            outcome: "DELIVERED",
-            status: "DELIVERED"
-        });
+        expect(persisted.attempt_count).toBe(1);
+        expect(persisted.last_core_order_id).toBe(CORE_ORDER_ID);
+        expect(persisted.last_http_status).toBe(201);
+        expect(persisted.outcome).toBe("DELIVERED");
+        expect(persisted.status).toBe("DELIVERED");
+        expect(persisted.traceparent).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/);
+        const storedTraceId = persisted.traceparent!.split("-")[1];
+        expect(storedTraceId).not.toBe(UNTRUSTED_PROVIDER_TRACE_ID);
+        const forwardedTraceparent = coreRequests[0]?.traceparent;
+        expect(forwardedTraceparent).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/);
+        expect(forwardedTraceparent!.split("-")[1]).toBe(storedTraceId);
+        expect(forwardedTraceparent!.split("-")[2]).not.toBe(persisted.traceparent!.split("-")[2]);
+        expect(persisted.trace_id).toBe(storedTraceId);
         expect(coreRequests).toHaveLength(1);
         expect(coreRequests[0]).toMatchObject({
             method: "POST",
@@ -226,6 +239,10 @@ async function captureCoreRequest(
         sourceApiKey:
             typeof request.headers["x-source-api-key"] === "string"
                 ? request.headers["x-source-api-key"]
+                : undefined,
+        traceparent:
+            typeof request.headers.traceparent === "string"
+                ? request.headers.traceparent
                 : undefined,
         url: request.url
     });

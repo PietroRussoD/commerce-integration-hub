@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ReceiveInboundDeliveryUseCase } from "../../application/deliveries/receive-inbound-delivery.js";
+import type { ProviderReceiptTraceRunner } from "../../application/observability/trace-context.js";
 import type {
     MarketplaceAWebhookAuthenticationInput,
     MarketplaceAWebhookAuthenticationResult
@@ -242,6 +243,32 @@ describe("MARKETPLACE_A webhook route", () => {
         expect(receiveInboundDelivery).toHaveBeenCalledOnce();
     });
 
+    it("persists the current W3C trace context with the authenticated receipt", async () => {
+        const receiveInboundDelivery = vi
+            .fn<ReceiveInboundDeliveryUseCase>()
+            .mockResolvedValue({ deliveryId: "0199037b-6400-7000-8000-000000000301", outcome: "CREATED" });
+        const traceContext = {
+            traceparent: "00-11111111111111111111111111111111-2222222222222222-01"
+        };
+        const application = buildTestApplication(
+            () => ({ authenticated: true }),
+            receiveInboundDelivery,
+            (operation) => operation(traceContext)
+        );
+
+        const response = await application.inject({
+            method: "POST",
+            url: MARKETPLACE_A_WEBHOOK_PATH,
+            headers: { "content-type": "application/json" },
+            payload: RAW_BODY
+        });
+
+        expect(response.statusCode).toBe(202);
+        expect(receiveInboundDelivery).toHaveBeenCalledWith(
+            expect.objectContaining({ traceContext })
+        );
+    });
+
     it("marks an equivalent replay without creating another delivery", async () => {
         const application = buildTestApplication(
             () => ({ authenticated: true }),
@@ -320,10 +347,15 @@ function buildTestApplication(
         Promise.resolve({
             deliveryId: "0199037b-6400-7000-8000-000000000300",
             outcome: "CREATED"
-        })
+        }),
+    withProviderReceiptTrace?: ProviderReceiptTraceRunner
 ): FastifyInstance {
     const application = Fastify();
     applications.push(application);
-    application.register(marketplaceAWebhookRoute, { authenticate, receiveInboundDelivery });
+    application.register(marketplaceAWebhookRoute, {
+        authenticate,
+        receiveInboundDelivery,
+        ...(withProviderReceiptTrace === undefined ? {} : { withProviderReceiptTrace })
+    });
     return application;
 }

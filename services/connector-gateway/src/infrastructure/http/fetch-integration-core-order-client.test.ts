@@ -78,6 +78,43 @@ describe("FetchIntegrationCoreOrderClient", () => {
         );
     });
 
+    it("propagates W3C trace context without adding it to the order payload", async () => {
+        const fetchImplementation = vi
+            .fn<typeof fetch>()
+            .mockResolvedValue(jsonResponse(201, { id: CORE_ORDER_ID }));
+        const client = createClient(fetchImplementation);
+        const traceContext = {
+            traceparent: "00-11111111111111111111111111111111-2222222222222222-01",
+            tracestate: "vendor=value"
+        };
+
+        await client.forward({ canonicalOrder, traceContext });
+
+        expect(fetchImplementation.mock.calls[0]?.[1]?.body).toBe(JSON.stringify(canonicalOrder));
+        expect(fetchImplementation.mock.calls[0]?.[1]?.headers).toEqual({
+            "Content-Type": "application/json",
+            "X-Source-API-Key": SOURCE_API_KEY,
+            traceparent: traceContext.traceparent,
+            tracestate: "vendor=value"
+        });
+    });
+
+    it("forwards traceparent when tracestate is absent", async () => {
+        const fetchImplementation = vi
+            .fn<typeof fetch>()
+            .mockResolvedValue(jsonResponse(201, { id: CORE_ORDER_ID }));
+        const client = createClient(fetchImplementation);
+        const traceparent = "00-11111111111111111111111111111111-2222222222222222-01";
+
+        await client.forward({ canonicalOrder, traceContext: { traceparent } });
+
+        expect(fetchImplementation.mock.calls[0]?.[1]?.headers).toEqual({
+            "Content-Type": "application/json",
+            "X-Source-API-Key": SOURCE_API_KEY,
+            traceparent
+        });
+    });
+
     it.each([401, 403] as const)("classifies HTTP %s as blocked configuration", async (status) => {
         const client = createClient(vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status })));
 

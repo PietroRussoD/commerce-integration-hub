@@ -9,6 +9,7 @@ import * as createDeliveryAttempts from "./migrations/004_create_delivery_attemp
 import * as alignDeliveryLifecycleStates from "./migrations/005_align_delivery_lifecycle_states.js";
 import * as addErpBPollingStorage from "./migrations/006_add_erp_b_polling_storage.js";
 import * as createOperatorCommandAudit from "./migrations/007_create_operator_command_audit.js";
+import * as addDeliveryTraceContext from "./migrations/008_add_delivery_trace_context.js";
 
 const migrations: Record<string, Migration> = {
     "001_create_delivery_ledger": createDeliveryLedger,
@@ -17,7 +18,8 @@ const migrations: Record<string, Migration> = {
     "004_create_delivery_attempts": createDeliveryAttempts,
     "005_align_delivery_lifecycle_states": alignDeliveryLifecycleStates,
     "006_add_erp_b_polling_storage": addErpBPollingStorage,
-    "007_create_operator_command_audit": createOperatorCommandAudit
+    "007_create_operator_command_audit": createOperatorCommandAudit,
+    "008_add_delivery_trace_context": addDeliveryTraceContext
 };
 
 const migrationProvider: MigrationProvider = {

@@ -1,4 +1,5 @@
 import type { CanonicalOrder } from "../orders/canonical-order.js";
+import type { TraceContext } from "../observability/trace-context.js";
 
 const MAX_BATCH_SIZE = 100;
 const MAX_LEASE_DURATION_MILLISECONDS = 300_000;
@@ -18,6 +19,7 @@ export interface ClaimedInboundDelivery {
     readonly connectorId: string;
     readonly deliveryId: string;
     readonly leaseToken: string;
+    readonly traceContext?: TraceContext;
 }
 
 export interface InboundDeliveryClaimRepository {

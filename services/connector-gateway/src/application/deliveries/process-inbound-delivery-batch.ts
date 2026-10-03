@@ -1,4 +1,7 @@
-import type { ClaimInboundDeliveriesUseCase } from "./claim-inbound-deliveries.js";
+import type {
+    ClaimInboundDeliveriesUseCase,
+    ClaimedInboundDelivery
+} from "./claim-inbound-deliveries.js";
 import type { CompleteDeliveredInboundDeliveryAttemptUseCase } from "./complete-delivered-inbound-delivery-attempt.js";
 import type {
     CompleteRetryableInboundDeliveryAttemptRequest,
@@ -13,6 +16,7 @@ import type {
     CanonicalOrderForwarder,
     ForwardCanonicalOrderResult
 } from "../forwarding/forward-canonical-order.js";
+import type { ActiveDeliveryTrace, DeliveryTraceRunner } from "../observability/trace-context.js";
 
 type CompleteRetryableInboundDeliveryAttemptUseCase = (
     request: CompleteRetryableInboundDeliveryAttemptRequest
@@ -28,6 +32,7 @@ export interface ProcessInboundDeliveryBatchDependencies {
     readonly completeRetryable: CompleteRetryableInboundDeliveryAttemptUseCase;
     readonly completeTerminal: CompleteTerminalInboundDeliveryAttemptUseCase;
     readonly forwarder: CanonicalOrderForwarder;
+    readonly runWithDeliveryTraceContext: DeliveryTraceRunner;
     readonly startAttempt: StartInboundDeliveryAttemptUseCase;
 }
 
@@ -54,6 +59,7 @@ export function createProcessInboundDeliveryBatchUseCase({
     completeRetryable,
     completeTerminal,
     forwarder,
+    runWithDeliveryTraceContext,
     startAttempt
 }: ProcessInboundDeliveryBatchDependencies) {
     return async ({
@@ -62,33 +68,56 @@ export function createProcessInboundDeliveryBatchUseCase({
         const claimedDeliveries = await claimInboundDeliveries();
         const outcomes = await Promise.all(
             claimedDeliveries.map(async (delivery): Promise<DeliveryProcessingOutcome> => {
-                const attempt = await startAttempt({
-                    deliveryId: delivery.deliveryId,
-                    leaseToken: delivery.leaseToken
-                });
-                if (attempt.outcome === "STALE_CLAIM") {
-                    return "STALE_CLAIM";
-                }
-
-                const forwardingResult = await forwarder.forward({
-                    canonicalOrder: delivery.canonicalOrder,
-                    ...(signal === undefined ? {} : { signal })
-                });
-                const completion = await completeAttempt(
-                    delivery.deliveryId,
-                    delivery.leaseToken,
-                    attempt,
-                    forwardingResult,
-                    { completeDelivered, completeRetryable, completeTerminal }
+                return runWithDeliveryTraceContext(delivery.traceContext, async (activeTrace) =>
+                    processClaimedDelivery(delivery, activeTrace, {
+                        completeDelivered,
+                        completeRetryable,
+                        completeTerminal,
+                        forwarder,
+                        signal,
+                        startAttempt
+                    })
                 );
-                return completion.outcome === "STALE_CLAIM"
-                    ? "STALE_CLAIM"
-                    : forwardingResult.outcome;
             })
         );
 
         return summarize(outcomes);
     };
+}
+
+interface ProcessClaimedDeliveryDependencies extends CompletionDependencies {
+    readonly forwarder: CanonicalOrderForwarder;
+    readonly signal: AbortSignal | undefined;
+    readonly startAttempt: StartInboundDeliveryAttemptUseCase;
+}
+
+async function processClaimedDelivery(
+    delivery: ClaimedInboundDelivery,
+    activeTrace: ActiveDeliveryTrace | undefined,
+    dependencies: ProcessClaimedDeliveryDependencies
+): Promise<DeliveryProcessingOutcome> {
+    const attempt = await dependencies.startAttempt({
+        deliveryId: delivery.deliveryId,
+        leaseToken: delivery.leaseToken,
+        ...(activeTrace?.traceId === undefined ? {} : { traceId: activeTrace.traceId })
+    });
+    if (attempt.outcome === "STALE_CLAIM") {
+        return "STALE_CLAIM";
+    }
+
+    const forwardingResult = await dependencies.forwarder.forward({
+        canonicalOrder: delivery.canonicalOrder,
+        ...(activeTrace === undefined ? {} : { traceContext: activeTrace.context }),
+        ...(dependencies.signal === undefined ? {} : { signal: dependencies.signal })
+    });
+    const completion = await completeAttempt(
+        delivery.deliveryId,
+        delivery.leaseToken,
+        attempt,
+        forwardingResult,
+        dependencies
+    );
+    return completion.outcome === "STALE_CLAIM" ? "STALE_CLAIM" : forwardingResult.outcome;
 }
 
 interface CompletionDependencies {

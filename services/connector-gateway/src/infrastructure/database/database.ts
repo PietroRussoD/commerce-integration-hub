@@ -62,6 +62,8 @@ export interface InboundDeliveriesTable {
     readonly last_http_status: number | null;
     readonly correlation_id: string | null;
     readonly last_core_order_id: string | null;
+    readonly traceparent: string | null;
+    readonly tracestate: string | null;
     readonly received_at: Generated<Date>;
     readonly updated_at: Generated<Date>;
     readonly completed_at: Date | null;

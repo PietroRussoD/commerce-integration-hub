@@ -33,6 +33,8 @@ export class KyselyInboundDeliveryRepository implements InboundDeliveryRepositor
                     safe_error_message: null,
                     last_http_status: null,
                     correlation_id: null,
+                    traceparent: command.traceContext?.traceparent ?? null,
+                    tracestate: command.traceContext?.tracestate ?? null,
                     last_core_order_id: null,
                     completed_at: null
                 })

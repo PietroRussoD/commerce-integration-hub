@@ -87,7 +87,15 @@ describe("Kysely inbound delivery replay repository", () => {
         await expect(
             database
                 .selectFrom("inbound_deliveries")
-                .select(["attempt_count", "completed_at", "error_code", "next_attempt_at", "status"])
+                .select([
+                    "attempt_count",
+                    "completed_at",
+                    "error_code",
+                    "next_attempt_at",
+                    "status",
+                    "traceparent",
+                    "tracestate"
+                ])
                 .where("id", "=", REPLAYABLE_DELIVERY_ID)
                 .executeTakeFirstOrThrow()
         ).resolves.toEqual({
@@ -95,7 +103,9 @@ describe("Kysely inbound delivery replay repository", () => {
             completed_at: null,
             error_code: null,
             next_attempt_at: REPLAYED_AT,
-            status: "RECEIVED"
+            status: "RECEIVED",
+            traceparent: null,
+            tracestate: null
         });
         const auditEntries = await database
             .selectFrom("operator_command_audit_entries")
@@ -163,6 +173,8 @@ function delivery(id: string, externalEventId: string, payloadExpiresAt: string)
         received_at: new Date("2026-09-11T10:00:00.000Z"),
         safe_error_message: "Core was temporarily unavailable",
         status: "EXHAUSTED" as const,
+        traceparent: "00-11111111111111111111111111111111-2222222222222222-01",
+        tracestate: "vendor=value",
         updated_at: new Date("2026-09-11T10:05:00.000Z")
     };
 }
