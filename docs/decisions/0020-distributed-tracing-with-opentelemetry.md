@@ -117,6 +117,17 @@ static walkthrough; Jaeger is the live trace viewer.
   values, credentials, or order data. This is a narrow smoke-test review, not a
   complete privacy audit of custom Gateway/Core spans; tracing therefore remains
   disabled by default and this ADR remains Proposed until that review is done.
+- An end-to-end local trace from a synthetic signed `MARKETPLACE_A` webhook
+  continued through the Gateway delivery attempt, Core HTTP ingestion, both
+  Core outbox dispatches, and Kafka publish/consume. The custom Gateway and
+  outbox spans had fixed names and no attributes. Automatic Core HTTP spans
+  included method, route, status, body sizes, client address, user agent, and
+  server address; Kafka spans included topic, consumer group/client IDs,
+  partition, and offset. The trace contained no body contents, order fields,
+  webhook signature, API key, or raw error message. This verifies the successful
+  path only; error-path attributes remain to be reviewed. The captured trace
+  begins with `connector-gateway.webhook.receipt`, so it does not show a Fastify
+  HTTP server span in that same trace.
 - The first implemented durable hop creates a locally rooted Gateway receipt
   span after webhook authentication and validation, discarding any provider
   `traceparent` or `tracestate`. It persists only nullable `traceparent` and
