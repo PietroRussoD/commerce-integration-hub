@@ -73,6 +73,7 @@ export const marketplaceAWebhookRoute: FastifyPluginCallback<
     application.post<MarketplaceAWebhookRoute>(
         MARKETPLACE_A_WEBHOOK_PATH,
         {
+            config: { otel: false },
             schema: {
                 response: {
                     202: WEBHOOK_ACCEPTED_SCHEMA,
