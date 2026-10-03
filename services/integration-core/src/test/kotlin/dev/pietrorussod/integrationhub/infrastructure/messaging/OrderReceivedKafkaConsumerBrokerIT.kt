@@ -302,5 +302,7 @@ class OrderReceivedKafkaConsumerBrokerTestProfile : QuarkusTestProfile {
             "mp.messaging.outgoing.integration-events-out.connector" to "smallrye-kafka",
             "integration-hub.kafka.topics.order-received" to "integration.order.received.consumer-test.v1",
             "integration-hub.kafka.topics.order-ready" to "integration.order.ready.consumer-test.v1",
+            "quarkus.otel.sdk.disabled" to "false",
+            "quarkus.otel.traces.exporter" to "none",
         )
 }

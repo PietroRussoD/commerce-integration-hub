@@ -1,4 +1,4 @@
-package dev.pietrorussod.integrationhub.api.telemetry
+package dev.pietrorussod.integrationhub.infrastructure.telemetry
 
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.SpanContext

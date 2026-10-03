@@ -2,6 +2,7 @@ package dev.pietrorussod.integrationhub.infrastructure.messaging
 
 import dev.pietrorussod.integrationhub.application.processing.OrderProcessingRejectedException
 import dev.pietrorussod.integrationhub.application.processing.OrderReceivedProcessor
+import dev.pietrorussod.integrationhub.infrastructure.telemetry.CurrentTraceContext
 import io.smallrye.reactive.messaging.annotations.Blocking
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
@@ -30,7 +31,7 @@ class OrderReceivedKafkaConsumer
             abortOn = [InvalidOrderReceivedEventException::class, OrderProcessingRejectedException::class],
         )
         fun consume(event: StructuredEvent) {
-            processor.process(messageMapper.map(event))
+            processor.process(messageMapper.map(event, CurrentTraceContext.capture()))
         }
 
         private companion object {

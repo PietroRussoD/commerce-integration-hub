@@ -24,6 +24,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.hamcrest.Matchers.equalTo
 import org.jooq.DSLContext
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.Duration
@@ -33,6 +34,9 @@ import java.util.UUID
 @QuarkusTest
 @TestProfile(OrderReceivedKafkaConsumerBrokerTestProfile::class)
 class OrderProcessingEndToEndBrokerIT {
+    private val traceId = "0123456789abcdef0123456789abcdef"
+    private val incomingSpanId = "0123456789abcdef"
+
     @Inject
     lateinit var dslContext: DSLContext
 
@@ -77,6 +81,8 @@ class OrderProcessingEndToEndBrokerIT {
                 val createResponse =
                     given()
                         .header(SOURCE_API_KEY_HEADER, credential.apiKey)
+                        .header("traceparent", "00-$traceId-$incomingSpanId-01")
+                        .header("tracestate", "vendor=value")
                         .contentType("application/json")
                         .body(orderRequest())
                         .post("/api/v1/orders")
@@ -96,6 +102,29 @@ class OrderProcessingEndToEndBrokerIT {
                         event?.get("aggregateId")?.textValue() == orderId.toString()
                     }
                 assertEquals("OrderReady", objectMapper.readTree(readyEvent.value())["eventType"].textValue())
+                val readyTraceParent = readyEvent.headerValue("traceparent").split('-')
+                assertEquals(traceId, readyTraceParent[1])
+                assertEquals("vendor=value", readyEvent.headerValue("tracestate"))
+
+                val persistedTraceParent =
+                    requireNotNull(
+                        dslContext
+                            .select(OUTBOX_EVENTS.TRACEPARENT)
+                            .from(OUTBOX_EVENTS)
+                            .where(OUTBOX_EVENTS.EVENT_TYPE.eq("OrderReady"))
+                            .fetchOne(OUTBOX_EVENTS.TRACEPARENT),
+                    ).split('-')
+                assertEquals(traceId, persistedTraceParent[1])
+                assertNotEquals(incomingSpanId, persistedTraceParent[2])
+                assertNotEquals(persistedTraceParent[2], readyTraceParent[2])
+                assertEquals(
+                    "vendor=value",
+                    dslContext
+                        .select(OUTBOX_EVENTS.TRACESTATE)
+                        .from(OUTBOX_EVENTS)
+                        .where(OUTBOX_EVENTS.EVENT_TYPE.eq("OrderReady"))
+                        .fetchOne(OUTBOX_EVENTS.TRACESTATE),
+                )
 
                 assertNoRecord(deadLetterConsumer, deadLetterTopic) { record ->
                     runCatching {
@@ -206,6 +235,9 @@ class OrderProcessingEndToEndBrokerIT {
           ]
         }
         """.trimIndent()
+
+    private fun ConsumerRecord<String, String>.headerValue(name: String): String =
+        String(headers().lastHeader(name).value(), Charsets.UTF_8)
 
     private companion object {
         val BROKER_TIMEOUT: Duration = Duration.ofSeconds(15)

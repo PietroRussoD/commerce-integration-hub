@@ -5,6 +5,7 @@ import dev.pietrorussod.integrationhub.application.order.OrderReceivedEvent
 import dev.pietrorussod.integrationhub.application.order.OrderRepository
 import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEvent
 import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEventRepository
+import dev.pietrorussod.integrationhub.application.telemetry.TraceContext
 import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
 import dev.pietrorussod.integrationhub.domain.order.Money
@@ -39,6 +40,7 @@ class ProcessOrderReceivedUseCaseTest {
     fun `processes a received order and records every successful effect`() {
         val fixture = RecordingCollaborators(receivedOrder())
         val ids = generatedIds.iterator()
+        val traceContext = TraceContext("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01", "vendor=value")
         val useCase =
             ProcessOrderReceivedUseCase(
                 processedMessageRepository = fixture,
@@ -57,6 +59,7 @@ class ProcessOrderReceivedUseCaseTest {
                     eventId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f60"),
                     orderId = orderId,
                     correlationId = correlationId,
+                    traceContext = traceContext,
                 ),
             )
 
@@ -80,6 +83,7 @@ class ProcessOrderReceivedUseCaseTest {
         assertEquals(2, fixture.pendingEvents.single().eventVersion)
         assertEquals("{\"status\":\"READY\"}", fixture.pendingEvents.single().payload)
         assertEquals(correlationId, fixture.pendingEvents.single().correlationId)
+        assertEquals(traceContext, fixture.pendingEvents.single().traceContext)
     }
 
     @Test

@@ -1,4 +1,4 @@
-package dev.pietrorussod.integrationhub.api.telemetry
+package dev.pietrorussod.integrationhub.infrastructure.telemetry
 
 import dev.pietrorussod.integrationhub.application.telemetry.TraceContext
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator
@@ -12,10 +12,7 @@ object CurrentTraceContext {
             .inject(Context.current(), values, MapSetter)
 
         val traceparent = values[TRACEPARENT_HEADER] ?: return null
-        return TraceContext(
-            traceparent = traceparent,
-            tracestate = values[TRACESTATE_HEADER],
-        )
+        return TraceContext(traceparent, values[TRACESTATE_HEADER])
     }
 
     private object MapSetter : io.opentelemetry.context.propagation.TextMapSetter<MutableMap<String, String>> {

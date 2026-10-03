@@ -35,6 +35,8 @@ class JooqOutboxEventRepository
                     .set(OUTBOX_EVENTS.EVENT_VERSION, event.eventVersion)
                     .set(OUTBOX_EVENTS.PAYLOAD, JSON.valueOf(event.payload))
                     .set(OUTBOX_EVENTS.CORRELATION_ID, event.correlationId)
+                    .set(OUTBOX_EVENTS.TRACEPARENT, event.traceContext?.traceparent)
+                    .set(OUTBOX_EVENTS.TRACESTATE, event.traceContext?.tracestate)
                     .set(OUTBOX_EVENTS.CREATED_AT, event.createdAt.atOffset(ZoneOffset.UTC))
                     .set(OUTBOX_EVENTS.STATUS, PENDING_STATUS)
                     .set(OUTBOX_EVENTS.NEXT_ATTEMPT_AT, event.createdAt.atOffset(ZoneOffset.UTC))
