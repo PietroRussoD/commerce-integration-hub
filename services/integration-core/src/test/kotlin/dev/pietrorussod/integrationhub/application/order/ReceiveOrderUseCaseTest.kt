@@ -1,5 +1,6 @@
 package dev.pietrorussod.integrationhub.application.order
 
+import dev.pietrorussod.integrationhub.application.telemetry.TraceContext
 import dev.pietrorussod.integrationhub.domain.order.Currency
 import dev.pietrorussod.integrationhub.domain.order.ExternalOrderId
 import dev.pietrorussod.integrationhub.domain.order.Order
@@ -29,6 +30,11 @@ class ReceiveOrderUseCaseTest {
     fun `creates an order for a new source identity`() {
         val repository = InMemoryOrderRepository()
         val useCase = useCase(repository)
+        val traceContext =
+            TraceContext(
+                traceparent = "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01",
+                tracestate = "vendor=value",
+            )
 
         val result =
             useCase.receive(
@@ -39,6 +45,7 @@ class ReceiveOrderUseCaseTest {
                     currency = "EUR",
                     declaredTotalAmount = BigDecimal("39.98"),
                     items = listOf(itemCommand()),
+                    traceContext = traceContext,
                 ),
             )
 
@@ -63,6 +70,7 @@ class ReceiveOrderUseCaseTest {
                 correlationId = fixedCorrelationId,
                 order = result.order,
                 occurredAt = fixedClock.instant(),
+                traceContext = traceContext,
             ),
             repository.savedEvents.single(),
         )

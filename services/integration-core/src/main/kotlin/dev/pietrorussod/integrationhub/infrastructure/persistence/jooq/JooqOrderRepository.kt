@@ -213,6 +213,8 @@ class JooqOrderRepository
                 .set(OUTBOX_EVENTS.EVENT_VERSION, ORDER_RECEIVED_EVENT_VERSION)
                 .set(OUTBOX_EVENTS.PAYLOAD, payload)
                 .set(OUTBOX_EVENTS.CORRELATION_ID, event.correlationId)
+                .set(OUTBOX_EVENTS.TRACEPARENT, event.traceContext?.traceparent)
+                .set(OUTBOX_EVENTS.TRACESTATE, event.traceContext?.tracestate)
                 .set(OUTBOX_EVENTS.CREATED_AT, event.occurredAt.atOffset(ZoneOffset.UTC))
                 .set(OUTBOX_EVENTS.STATUS, PENDING_OUTBOX_STATUS)
                 .set(OUTBOX_EVENTS.NEXT_ATTEMPT_AT, event.occurredAt.atOffset(ZoneOffset.UTC))

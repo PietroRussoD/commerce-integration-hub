@@ -1,5 +1,6 @@
 package dev.pietrorussod.integrationhub.application.order
 
+import dev.pietrorussod.integrationhub.application.telemetry.TraceContext
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -10,4 +11,5 @@ data class ReceiveOrderCommand(
     val currency: String,
     val declaredTotalAmount: BigDecimal,
     val items: List<ReceiveOrderItemCommand>,
+    val traceContext: TraceContext? = null,
 )
