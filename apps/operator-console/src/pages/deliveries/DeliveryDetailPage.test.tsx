@@ -17,6 +17,7 @@ const mockedGetOperatorDelivery = vi.mocked(getOperatorDelivery);
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  vi.unstubAllEnvs();
 });
 
 test("does not query a delivery without an operator token", async () => {
@@ -27,6 +28,7 @@ test("does not query a delivery without an operator token", async () => {
 });
 
 test("renders the payload retention metadata and safe attempt history", async () => {
+  vi.stubEnv("VITE_JAEGER_UI_URL", "http://localhost:16686");
   mockedGetOperatorDelivery.mockResolvedValue({
     attemptCount: 2,
     attempts: [
@@ -40,7 +42,7 @@ test("renders the payload retention metadata and safe attempt history", async ()
         outcome: "RETRYABLE_FAILURE",
         safeErrorMessage: "The Core endpoint did not respond before the timeout",
         startedAt: "2026-09-12T12:05:00Z",
-        traceId: "trace-42",
+        traceId: "0123456789abcdef0123456789abcdef",
       },
     ],
     completedAt: null,
@@ -70,6 +72,10 @@ test("renders the payload retention metadata and safe attempt history", async ()
   expect(await screen.findByText("event-42")).toBeInTheDocument();
   expect(screen.getByText(/Retained until/)).toBeInTheDocument();
   expect(screen.getByText("Retryable failure")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Open trace 0123456789abcdef0123456789abcdef in Jaeger" })).toHaveAttribute(
+    "href",
+    "http://localhost:16686/trace/0123456789abcdef0123456789abcdef",
+  );
   expect(screen.getByRole("button", { name: "Replay delivery" })).toBeInTheDocument();
   expect(screen.getAllByText("The Core endpoint did not respond before the timeout")).toHaveLength(2);
   expect(mockedGetOperatorDelivery).toHaveBeenCalledWith({
