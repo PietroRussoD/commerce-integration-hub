@@ -891,6 +891,16 @@
                 }
               }
             }
+          },
+          "500" : {
+            "description" : "Unexpected server error",
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security" : [ {

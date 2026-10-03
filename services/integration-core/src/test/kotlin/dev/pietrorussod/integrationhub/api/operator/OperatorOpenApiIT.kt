@@ -1,9 +1,11 @@
 package dev.pietrorussod.integrationhub.api.operator
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.RestAssured.given
 import org.hamcrest.Matchers.empty
 import org.hamcrest.Matchers.equalTo
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 @QuarkusTest
@@ -25,5 +27,28 @@ class OperatorOpenApiIT {
             .body("paths.'/api/v1/operator/orders/search/status'.get.security[0].$OPERATOR_JWT_SECURITY_SCHEME", empty<Any>())
             .body("components.securitySchemes.sourceApiKey.type", equalTo("apiKey"))
             .body("paths.'/api/v1/orders'.post.security[0].sourceApiKey", empty<Any>())
+    }
+
+    @Test
+    fun `documents generic server errors for source order ingestion`() {
+        val responseBody =
+            given()
+                .accept("application/json")
+                .`when`()
+                .get("/openapi/integration-core")
+                .then()
+                .statusCode(200)
+                .extract()
+                .asString()
+        val errorResponse =
+            ObjectMapper()
+                .readTree(responseBody)
+                .at("/paths/~1api~1v1~1orders/post/responses/500")
+
+        assertEquals("Unexpected server error", errorResponse.path("description").asText())
+        assertEquals(
+            "#/components/schemas/ProblemDetails",
+            errorResponse.at("/content/application~1problem+json/schema/\$ref").asText(),
+        )
     }
 }

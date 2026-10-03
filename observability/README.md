@@ -1,18 +1,23 @@
 # Local Observability
 
-The optional `observability` Compose profile runs Prometheus, Grafana, and
-Jaeger for local development and portfolio demonstrations. It is not a
-production monitoring topology.
+The optional `observability` Compose profile runs Prometheus, Grafana, the
+OpenTelemetry Collector, and Jaeger for local development and portfolio
+demonstrations. It is not a production monitoring topology.
 
 ```mermaid
 flowchart LR
-    Core[Integration Core /metrics]
-    Gateway[Connector Gateway /metrics]
+    Core[Integration Core]
+    Gateway[Connector Gateway]
+    Collector[OpenTelemetry Collector]
     Prometheus[(Prometheus)]
     Grafana[Grafana dashboard]
-    Core -->|OTLP gRPC| Jaeger[Jaeger]
+    Core -->|OTLP gRPC| Collector
+    Gateway -->|OTLP gRPC| Collector
+    Collector -->|redact exception details; OTLP gRPC| Jaeger[Jaeger]
     Jaeger[Jaeger] --> TraceUI[Jaeger trace UI]
 
+    Core -->|/metrics| Prometheus
+    Gateway -->|/metrics| Prometheus
     Prometheus -->|scrape every 5 seconds| Core
     Prometheus -->|scrape every 5 seconds| Gateway
     Grafana -->|PromQL| Prometheus
@@ -24,16 +29,19 @@ Start the complete topology from the repository root:
 OTEL_SDK_DISABLED=false CONNECTOR_GATEWAY_OTEL_SDK_DISABLED=false docker compose --profile gateway --profile observability up --build -d
 ```
 
-Start Jaeger with tracing enabled in Integration Core:
+Start the trace path with tracing enabled in Integration Core:
 
 ```bash
-OTEL_SDK_DISABLED=false docker compose --profile observability up --build -d integration-core jaeger
+OTEL_SDK_DISABLED=false docker compose --profile observability up --build -d integration-core otel-collector jaeger
 ```
 
 Tracing remains disabled by default. The Jaeger all-in-one service uses
 temporary in-memory storage, so its trace history is lost when it stops. The
-OTLP receiver is reachable only inside the Compose network; only the UI is
-published to the host.
+Collector and Jaeger OTLP receiver are reachable only inside the Compose
+network; only the Jaeger UI is published to the host. Before forwarding traces
+to Jaeger, the Collector removes `exception.message` and
+`exception.stacktrace` from exception events. If the transform fails, it drops
+the trace instead of exporting unredacted exception details.
 
 Open [Jaeger](http://localhost:16686) and select the `integration-core`
 service. Generate a trace with a request to the service-info endpoint:
@@ -64,8 +72,8 @@ Verify that the Connector Gateway exports Fastify request spans to Jaeger:
 ```
 
 The isolated smoke test enables Gateway tracing, calls `/health/live`, and
-checks that Jaeger lists `connector-gateway` after receiving the trace. It
-removes its containers and volumes when it finishes.
+checks that Jaeger lists `connector-gateway` after receiving the trace through
+the Collector. It removes its containers and volumes when it finishes.
 
 Start only the metrics services alongside an already running topology:
 

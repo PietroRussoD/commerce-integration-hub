@@ -71,7 +71,7 @@ for command in curl docker jq; do
 done
 
 printf 'Starting an isolated Connector Gateway and Jaeger stack...\n'
-compose up --build --detach --wait --wait-timeout 180 connector-gateway jaeger
+compose up --build --detach --wait --wait-timeout 180 connector-gateway jaeger otel-collector
 
 printf 'Calling the Gateway liveness endpoint...\n'
 curl --fail --silent --show-error "http://127.0.0.1:${CONNECTOR_GATEWAY_PORT}/health/live" |

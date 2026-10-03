@@ -91,6 +91,11 @@ class OrderResource(
             description = "Missing or invalid source API key",
             content = [Content(mediaType = PROBLEM_JSON, schema = Schema(implementation = ProblemDetails::class))],
         ),
+        APIResponse(
+            responseCode = "500",
+            description = "Unexpected server error",
+            content = [Content(mediaType = PROBLEM_JSON, schema = Schema(implementation = ProblemDetails::class))],
+        ),
     )
     fun receive(
         @Context requestContext: ContainerRequestContext,
