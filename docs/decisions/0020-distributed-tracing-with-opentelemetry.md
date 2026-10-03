@@ -22,8 +22,10 @@ Kafka, and an `@Incoming` consumer with `TracingMetadata.withPrevious`. Node
 26.0.0 with `@fastify/otel` 0.21.1 and OpenTelemetry JS SDK 0.222.0 propagated
 one trace through a Fastify request, `fetch`, and a second local service. The
 Node probe used API 1.9.1, HTTP instrumentation 0.222.0, Undici instrumentation
-0.32.0, and trace SDK 2.11.0. Runtime disablement, exporter outage behavior in
-the actual services, durable propagation, and the Jaeger image remain to be
+0.32.0, and trace SDK 2.11.0. The local Integration Core image exported an
+automatically instrumented HTTP span to Jaeger 2.21.0 over OTLP on
+2026-10-03. The production-profile default-off behavior, exporter outage
+behavior in the actual services, and durable propagation remain to be
 verified.
 
 ## Decision
