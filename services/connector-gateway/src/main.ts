@@ -39,6 +39,7 @@ import { KyselyOperationalMetricsSource } from "./infrastructure/database/kysely
 import { FetchIntegrationCoreOrderClient } from "./infrastructure/http/fetch-integration-core-order-client.js";
 import { readIntegrationCoreClientConfiguration } from "./infrastructure/http/integration-core-client-configuration.js";
 import { createConnectorGatewayMetrics } from "./infrastructure/observability/connector-gateway-metrics.js";
+import { startConnectorGatewayTelemetry } from "./infrastructure/observability/connector-gateway-telemetry.js";
 import { createOperatorJwtVerifier } from "./infrastructure/security/operator-jwt-verifier.js";
 import { readOperatorSecurityConfiguration } from "./infrastructure/security/operator-security-configuration.js";
 import {
@@ -80,6 +81,7 @@ const webhookSecurityConfiguration = readMarketplaceAWebhookSecurityConfiguratio
 const deliveryWorkerConfiguration = readDeliveryWorkerConfiguration(process.env);
 const erpBPollingConfiguration = readErpBPollingConfiguration(process.env);
 const operatorSecurityConfiguration = readOperatorSecurityConfiguration(process.env);
+const telemetry = startConnectorGatewayTelemetry();
 const database = createDatabase(databaseConfiguration);
 const metrics = createConnectorGatewayMetrics({
     operationalMetricsSource: new KyselyOperationalMetricsSource(database)
@@ -114,7 +116,10 @@ const application = buildApplication({
         listDeliveries: createListInboundDeliveriesUseCase(deliveryInspectionRepository),
         replayDelivery: createReplayInboundDeliveryUseCase({ repository: deliveryReplayRepository })
     },
-    readiness: () => databaseReadiness.isReady()
+    readiness: () => databaseReadiness.isReady(),
+    ...(telemetry.instrumentation === undefined
+        ? {}
+        : { telemetryPlugin: telemetry.instrumentation.plugin() })
 });
 let deliveryWorker: DeliveryWorkerScheduler | undefined;
 let erpBPolling: ErpBPollingScheduler | undefined;
@@ -211,6 +216,7 @@ if (erpBPollingConfiguration.enabled) {
 application.addHook("onClose", async () => {
     await Promise.all([deliveryWorker?.stop(), erpBPolling?.stop()]);
     await database.destroy();
+    await telemetry.shutdown();
 });
 
 async function shutDown(signal: NodeJS.Signals): Promise<void> {

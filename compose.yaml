@@ -111,6 +111,9 @@ services:
       OPERATOR_OIDC_ENABLED: "${OPERATOR_OIDC_ENABLED:-false}"
       OPERATOR_OIDC_ISSUER: "${OPERATOR_OIDC_ISSUER:-https://identity.example.invalid/realms/integration-hub}"
       OPERATOR_OIDC_JWKS_URL: "${OPERATOR_OIDC_JWKS_URL:-https://identity.example.invalid/realms/integration-hub/jwks}"
+      OTEL_SDK_DISABLED: "${CONNECTOR_GATEWAY_OTEL_SDK_DISABLED:-true}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: connector-gateway
     ports:
       - "${CONNECTOR_GATEWAY_PORT:-8081}:8081"
     depends_on:
@@ -118,6 +121,9 @@ services:
         condition: service_completed_successfully
       provider-simulator:
         condition: service_healthy
+      jaeger:
+        condition: service_started
+        required: false
     healthcheck:
       test:
         - CMD

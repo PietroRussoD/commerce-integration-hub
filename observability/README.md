@@ -21,7 +21,7 @@ flowchart LR
 Start the complete topology from the repository root:
 
 ```bash
-OTEL_SDK_DISABLED=false docker compose --profile gateway --profile observability up --build -d
+OTEL_SDK_DISABLED=false CONNECTOR_GATEWAY_OTEL_SDK_DISABLED=false docker compose --profile gateway --profile observability up --build -d
 ```
 
 Start Jaeger with tracing enabled in Integration Core:
@@ -56,6 +56,16 @@ The isolated smoke test enables tracing but deliberately does not start Jaeger.
 It checks that the request returns `200`, that its sampled trace context is in
 the request log, and that the asynchronous OTLP export failure is logged. The
 script removes its containers and volumes when it finishes.
+
+Verify that the Connector Gateway exports Fastify request spans to Jaeger:
+
+```bash
+./scripts/verify-v1.1-gateway-tracing.sh
+```
+
+The isolated smoke test enables Gateway tracing, calls `/health/live`, and
+checks that Jaeger lists `connector-gateway` after receiving the trace. It
+removes its containers and volumes when it finishes.
 
 Start only the metrics services alongside an already running topology:
 

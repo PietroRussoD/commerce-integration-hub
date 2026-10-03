@@ -26,9 +26,10 @@ Node probe used API 1.9.1, HTTP instrumentation 0.222.0, Undici instrumentation
 automatically instrumented HTTP span to Jaeger 2.21.0 over OTLP on
 2026-10-03. A local Compose smoke test also confirmed that a sampled operator
 read request still returns `200` when the OTLP endpoint is unavailable; the
-export failure is logged asynchronously. The production-profile default-off
-behavior, exporter outage behavior in the actual Gateway, and durable
-propagation remain to be verified.
+export failure is logged asynchronously. A separate Compose smoke test
+confirmed that a Fastify liveness request creates a Gateway trace received by
+Jaeger. Durable propagation across the Gateway worker boundary and Kafka
+remains to be verified.
 
 ## Decision
 

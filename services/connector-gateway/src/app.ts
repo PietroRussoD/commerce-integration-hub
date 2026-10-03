@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import fastifySwagger from "@fastify/swagger";
+import type { FastifyPluginCallback } from "fastify";
 
 import {
     type OperatorDeliveryRouteOptions,
@@ -17,6 +18,7 @@ export interface BuildApplicationOptions {
     metrics?: MetricsExporter;
     operatorDeliveries?: OperatorDeliveryRouteOptions;
     readiness?: () => Promise<boolean>;
+    telemetryPlugin?: FastifyPluginCallback;
 }
 
 interface HealthResponse {
@@ -61,6 +63,10 @@ export function buildApplication(options: BuildApplicationOptions = {}): Fastify
         ajv: { customOptions: { removeAdditional: false } },
         logger: options.logger ?? false
     });
+
+    if (options.telemetryPlugin !== undefined) {
+        application.register(options.telemetryPlugin);
+    }
 
     application.register(fastifySwagger, {
         mode: "dynamic",

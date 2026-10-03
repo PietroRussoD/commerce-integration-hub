@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { FastifyOtelInstrumentation } from "@fastify/otel";
 
 import { buildApplication } from "./app.js";
 
@@ -52,6 +53,17 @@ describe("health endpoint", () => {
             expect(response.statusCode).toBe(200);
             expect(response.json()).toEqual({ status: "UP" });
         }
+    });
+
+    it("registers Fastify instrumentation before the application routes", async () => {
+        const instrumentation = new FastifyOtelInstrumentation({ instrumentHooks: false });
+        const application = buildApplication({ telemetryPlugin: instrumentation.plugin() });
+        applications.push(application);
+
+        const response = await application.inject({ method: "GET", url: "/health/live" });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toEqual({ status: "UP" });
     });
 
     it("documents the protected operator delivery boundary", async () => {
