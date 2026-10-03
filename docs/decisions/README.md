@@ -41,6 +41,8 @@ implementation chronology.
   rebuild, validation, and atomic read-alias cutover.
 - [ADR 0019](0019-protect-operator-apis-with-external-jwt.md): external OIDC
   bearer tokens, JWKS validation, and operator/platform-admin authorization.
+- [ADR 0020](0020-distributed-tracing-with-opentelemetry.md): OpenTelemetry
+  traces across HTTP, Kafka, and durable work boundaries; local Jaeger viewer.
 
 Accepted records are not edited to hide a later change of direction. Later
 extensions or replacements are recorded in a new ADR and linked to the earlier
