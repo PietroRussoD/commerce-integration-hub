@@ -18,6 +18,9 @@ import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchOrderInde
 import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchOrderSearchDocumentWriter
 import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchTestContainer
 import io.micrometer.core.instrument.MeterRegistry
+import io.opentelemetry.api.trace.SpanKind
+import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter
+import io.opentelemetry.sdk.trace.data.SpanData
 import io.quarkus.test.common.QuarkusTestResource
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager
 import io.quarkus.test.junit.QuarkusTest
@@ -80,6 +83,9 @@ class OrderReadySearchProjectionIT {
 
     @Inject
     lateinit var meterRegistry: MeterRegistry
+
+    @Inject
+    lateinit var spanExporter: InMemorySpanExporter
 
     @Inject
     lateinit var orderSearchRepository: OrderSearchRepository
@@ -154,16 +160,28 @@ class OrderReadySearchProjectionIT {
     }
 
     @Test
-    fun `projects an OrderReady record from Kafka into OpenSearch`() {
+    fun `projects an OrderReady record into OpenSearch under its Kafka trace`() {
         val event = event()
+        val traceId = "0123456789abcdef0123456789abcdef"
+        val producerSpanId = "0123456789abcdef"
+        spanExporter.reset()
 
         newProducer().use { producer ->
-            producer
-                .send(ProducerRecord(topic, event.aggregateId.toString(), objectMapper.writeValueAsString(event)))
-                .get(10, TimeUnit.SECONDS)
+            val record = ProducerRecord(topic, event.aggregateId.toString(), objectMapper.writeValueAsString(event))
+            record.headers().add(
+                "traceparent",
+                "00-$traceId-$producerSpanId-01".toByteArray(StandardCharsets.UTF_8),
+            )
+            record.headers().add("tracestate", "vendor=value".toByteArray(StandardCharsets.UTF_8))
+            producer.send(record).get(10, TimeUnit.SECONDS)
         }
 
         val stored = awaitProjectedDocument(event.aggregateId)
+        val consumerSpan = awaitConsumerSpan(traceId)
+
+        assertEquals(SpanKind.CONSUMER, consumerSpan.kind)
+        assertEquals(producerSpanId, consumerSpan.parentSpanId)
+        assertEquals("value", consumerSpan.spanContext.traceState.get("vendor"))
         assertEquals(3, stored.getInt("aggregateVersion"))
         assertEquals("order-1001", stored.getString("externalOrderId"))
         assertEquals("READY", stored.getString("status"))
@@ -323,6 +341,17 @@ class OrderReadySearchProjectionIT {
         throw AssertionError("Order was not projected before the timeout")
     }
 
+    private fun awaitConsumerSpan(traceId: String): SpanData {
+        val deadline = System.nanoTime() + Duration.ofSeconds(10).toNanos()
+        while (System.nanoTime() < deadline) {
+            spanExporter.finishedSpanItems
+                .firstOrNull { it.spanContext.traceId == traceId && it.kind == SpanKind.CONSUMER }
+                ?.let { return it }
+            Thread.sleep(10)
+        }
+        throw AssertionError("OrderReady consumer span was not exported for trace $traceId")
+    }
+
     private fun awaitProjectionProgress(expectedEventOccurredAt: Instant): OrderSearchProjectionProgress {
         val deadline = System.nanoTime() + Duration.ofSeconds(20).toNanos()
         while (System.nanoTime() < deadline) {
@@ -430,6 +459,9 @@ class OrderReadySearchProjectionBrokerTestProfile : QuarkusTestProfile {
             "mp.messaging.incoming.order-ready-search-in.topic" to "integration.order.ready.search-test.v2",
             "mp.messaging.incoming.order-ready-search-in.dead-letter-queue.topic" to
                 "integration.order.ready.search-test.dlq.v2",
+            "quarkus.otel.sdk.disabled" to "false",
+            "quarkus.otel.traces.exporter" to "cdi",
+            "quarkus.otel.bsp.schedule.delay" to "10ms",
         )
 }
 
