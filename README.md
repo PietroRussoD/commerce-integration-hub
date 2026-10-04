@@ -104,6 +104,11 @@ interactive System Map, external operator JWT authorization, safe Gateway
 delivery inspection, and audited `platform-admin` replay. Its release evidence
 is recorded in the release notes.
 
+The `v1.1.0` milestone adds opt-in OpenTelemetry tracing across the Gateway and
+Core, including persisted context across durable work, Kafka propagation,
+operator links to Jaeger, and local exception-data redaction. Its verification
+and operational limits are recorded in the [release notes](docs/releases/v1.1.0.md).
+
 ## Repository structure
 
 ```text
