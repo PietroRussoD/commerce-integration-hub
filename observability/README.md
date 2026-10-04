@@ -75,6 +75,17 @@ The isolated smoke test enables Gateway tracing, calls `/health/live`, and
 checks that Jaeger lists `connector-gateway` after receiving the trace through
 the Collector. It removes its containers and volumes when it finishes.
 
+## Inspect an operator replay link
+
+For an eligible exhausted delivery, submit a replay from the Operator Console
+as a `platform-admin`, then open the attempt's Jaeger link. The replay has a
+new trace ID by design. In Jaeger's Trace Timeline, select the
+`connector-gateway.delivery.attempt` span, expand **Links (1)** in its details,
+and click **`< span in another trace >`** to open the previous attempt. Jaeger
+does not show the link type in that label; the stored span link is
+`FOLLOWS_FROM`. A link is present only when the previous attempt has complete
+persisted trace context.
+
 Start only the metrics services alongside an already running topology:
 
 ```bash
