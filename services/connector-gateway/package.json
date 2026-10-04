@@ -9,6 +9,8 @@
     },
     "scripts": {
         "dev": "tsx watch src/main.ts",
+        "dev:local-operator-identity": "tsx scripts/local-operator-identity.ts",
+        "dev:send-replay-webhook": "tsx scripts/send-replay-demo-webhook.ts",
         "start": "node dist/main.js",
         "build": "tsc -p tsconfig.build.json",
         "lint": "eslint .",

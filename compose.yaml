@@ -101,7 +101,7 @@ services:
       ERP_B_PAGE_LIMIT: "2"
       ERP_B_POLLING_ENABLED: "${CONNECTOR_GATEWAY_ERP_B_POLLING_ENABLED:-false}"
       ERP_B_POLLING_WORKER_ID: erp-b-poller-compose
-      INTEGRATION_CORE_BASE_URL: http://integration-core:8080
+      INTEGRATION_CORE_BASE_URL: "${INTEGRATION_CORE_BASE_URL:-http://integration-core:8080}"
       INTEGRATION_CORE_SOURCE_API_KEY: "${INTEGRATION_CORE_SOURCE_API_KEY:-}"
       MARKETPLACE_A_WEBHOOK_CURRENT_KEY_ID: local-key
       MARKETPLACE_A_WEBHOOK_CURRENT_SECRET_BASE64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
@@ -109,8 +109,8 @@ services:
       OPERATOR_OIDC_AUDIENCE: "${OPERATOR_OIDC_AUDIENCE:-integration-hub-operator-api}"
       OPERATOR_OIDC_CLOCK_SKEW_SECONDS: "${OPERATOR_OIDC_CLOCK_SKEW_SECONDS:-30}"
       OPERATOR_OIDC_ENABLED: "${OPERATOR_OIDC_ENABLED:-false}"
-      OPERATOR_OIDC_ISSUER: "${OPERATOR_OIDC_ISSUER:-https://identity.example.invalid/realms/integration-hub}"
-      OPERATOR_OIDC_JWKS_URL: "${OPERATOR_OIDC_JWKS_URL:-https://identity.example.invalid/realms/integration-hub/jwks}"
+      OPERATOR_OIDC_ISSUER: "${OPERATOR_OIDC_ISSUER:-http://host.docker.internal:8095}"
+      OPERATOR_OIDC_JWKS_URL: "${OPERATOR_OIDC_JWKS_URL:-http://host.docker.internal:8095/jwks}"
       OTEL_SDK_DISABLED: "${CONNECTOR_GATEWAY_OTEL_SDK_DISABLED:-true}"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       OTEL_SERVICE_NAME: connector-gateway
