@@ -169,6 +169,11 @@ static walkthrough; Jaeger is the live trace viewer.
   consumption, the second durable outbox record, and `OrderReady` publication.
   The persisted consumer span and final producer span have distinct span IDs,
   while the trace ID and `tracestate` remain continuous.
+- A broker-backed projection integration test injects W3C `traceparent` and
+  `tracestate` headers into an `OrderReady` Kafka record and verifies that the
+  OpenSearch consumer creates a `CONSUMER` span with the same trace ID, the
+  supplied parent span ID, and propagated `tracestate` while indexing the
+  order.
 - The real application configuration, propagation tests, and local privacy
   review satisfy the acceptance criteria for this decision. Production
   deployments must provide an equivalent Collector redaction policy before
