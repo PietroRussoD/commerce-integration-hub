@@ -19,7 +19,7 @@ services:
 
 
   opensearch:
-    image: opensearchproject/opensearch:3.8.0
+    image: opensearchproject/opensearch:3.9.0
     profiles: ["search"]
     environment:
       discovery.type: single-node
@@ -243,7 +243,7 @@ services:
       start_period: 5s
 
   prometheus:
-    image: prom/prometheus:v3.14.0
+    image: prom/prometheus:v3.15.0
     profiles: ["observability"]
     command:
       - --config.file=/etc/prometheus/prometheus.yml
@@ -256,7 +256,7 @@ services:
       - prometheus-data:/prometheus
 
   grafana:
-    image: grafana/grafana:13.2.2
+    image: grafana/grafana:13.2.3
     profiles: ["observability"]
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
