@@ -18,6 +18,7 @@ import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchOrderInde
 import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchOrderSearchDocumentWriter
 import dev.pietrorussod.integrationhub.infrastructure.search.OpenSearchTestContainer
 import io.micrometer.core.instrument.MeterRegistry
+import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter
 import io.opentelemetry.sdk.trace.data.SpanData
@@ -57,6 +58,9 @@ import java.util.concurrent.TimeUnit
 @TestProfile(OrderReadySearchProjectionBrokerTestProfile::class)
 @QuarkusTestResource(OpenSearchProjectionTestResource::class, restrictToAnnotatedClass = true)
 class OrderReadySearchProjectionIT {
+    @Inject
+    lateinit var openTelemetry: OpenTelemetry
+
     @Inject
     lateinit var objectMapper: ObjectMapper
 
@@ -98,6 +102,30 @@ class OrderReadySearchProjectionIT {
 
     @ConfigProperty(name = "mp.messaging.incoming.order-ready-search-in.dead-letter-queue.topic")
     lateinit var deadLetterTopic: String
+
+    @ConfigProperty(name = "quarkus.otel.sdk.disabled")
+    lateinit var sdkDisabled: String
+
+    @ConfigProperty(name = "quarkus.otel.traces.exporter")
+    lateinit var exporterMode: String
+
+    @Test
+    fun `exports a finished span to the configured exporter`() {
+        assertEquals("false", sdkDisabled)
+        assertEquals("cdi", exporterMode)
+        spanExporter.reset()
+
+        val span = openTelemetry.getTracer("integration-core-test").spanBuilder("sdk-enabled-check").startSpan()
+        assertTrue(span.isRecording)
+        span.end()
+
+        repeat(100) {
+            if (spanExporter.finishedSpanItems.any { it.name == "sdk-enabled-check" }) return
+            Thread.sleep(10)
+        }
+
+        assertEquals(1, spanExporter.finishedSpanItems.count { it.name == "sdk-enabled-check" })
+    }
 
     @Test
     fun `creates the versioned index and keeps alias initialization idempotent`() {
