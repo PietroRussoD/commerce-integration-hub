@@ -282,7 +282,7 @@ services:
       - "127.0.0.1:${JAEGER_UI_PORT:-16686}:16686"
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.161.0
+    image: otel/opentelemetry-collector-contrib:0.162.0
     profiles: ["observability"]
     command: ["--config=/etc/otelcol-contrib/config.yaml"]
     volumes:
