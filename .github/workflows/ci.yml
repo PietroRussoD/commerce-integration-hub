@@ -125,7 +125,7 @@ jobs:
 
       - name: Upload connector gateway coverage
         if: always()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: connector-gateway-coverage
           path: services/connector-gateway/coverage
@@ -200,7 +200,7 @@ jobs:
 
       - name: Upload operator console coverage
         if: always()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: operator-console-coverage
           path: apps/operator-console/coverage
@@ -239,7 +239,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: integration-core-coverage
           path: services/integration-core/target/site/jacoco
@@ -247,7 +247,7 @@ jobs:
           retention-days: 14
 
       - name: Upload software bill of materials
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: integration-core-sbom
           path: services/integration-core/target/sbom/integration-core.cdx.json
