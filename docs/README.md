@@ -37,6 +37,14 @@ Read in this order to follow one order through the system.
 9. [Messaging contracts](contracts/commerce-events.asyncapi.yaml): the
    canonical Kafka envelope, event payloads, headers, and dead-letter topics.
 
+## Operating it
+
+- [Local Kubernetes environment](../deploy/README.md): the cluster, the mesh, the
+  observability stack, and the scripts that create and verify them.
+- [Failure runbook](runbooks/failures.md): what each failure does to the Hub,
+  what to look at, and what to do.
+- [Alert runbook](runbooks/alerts.md): what each alert means and how to respond.
+
 ## Frontend
 
 - [Accessibility plan](accessibility.md): the target, what is automatically
