@@ -62,7 +62,13 @@ Run from the repository root:
 
 ```bash
 ./scripts/check-module-versions.sh
+helm lint deploy/charts/commerce-integration-hub
+docker run --rm --entrypoint promtool -v "$PWD/observability/prometheus:/rules:ro" \
+  prom/prometheus:v3.15.0 test rules /rules/alerts.test.yml
 ```
+
+The scripts in `scripts/k8s/` need a local cluster and are not part of these
+checks; they are described in `deploy/README.md`.
 
 Before committing, review the complete diff for secrets, proprietary data,
 generated artifacts, and documentation that claims unimplemented behavior.
