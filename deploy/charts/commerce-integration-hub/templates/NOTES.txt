@@ -1,0 +1,9 @@
+Commerce Integration Hub {{ .Chart.AppVersion }} installed in namespace {{ .Release.Namespace }}.
+
+  Integration Core:   service/integration-core:8080
+  Connector Gateway:  service/connector-gateway:8081
+{{- if not .Values.connectorGateway.deliveryWorker.enabled }}
+
+The Gateway's delivery worker is off: it needs a source credential from the Core.
+Run scripts/k8s/provision-source.sh to create one and turn it on.
+{{- end }}
