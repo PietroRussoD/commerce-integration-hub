@@ -14,6 +14,8 @@
 #   core-errors      every call to the Core fails with 503 for 20 s (needs the mesh)
 #   gateway-lease    the Core is slow and a Gateway pod is killed with deliveries in
 #                    flight: its leases must expire and be recovered (needs the mesh)
+#   core-db-blackhole  all traffic to the Core's PostgreSQL primary is dropped for 40 s,
+#                    without closing a connection, as a lost node does (needs tc on the nodes)
 #   broker           the Redpanda broker pod is killed
 #   node             a worker node stops for a minute (the one with the Core's primary)
 #   none             nothing fails (a check of the script itself)
@@ -51,7 +53,7 @@ readonly SENDER="verify-sender-$RUN_ID"
 require_command python3
 
 case "$SCENARIO" in
-pods | core-primary | gateway-primary | core-slow | core-errors | gateway-lease | broker | node | none) ;;
+pods | core-primary | gateway-primary | core-slow | core-errors | gateway-lease | core-db-blackhole | broker | node | none) ;;
 *) fail "Unknown scenario: $SCENARIO (see the usage at the top of this script)." ;;
 esac
 case "$SCENARIO" in
@@ -235,6 +237,22 @@ expect_alert() {
     done
     printf '  FAIL  %s did not reach Alertmanager\n' "$alert"
     failures=$((failures + 1))
+}
+
+# Drops every packet towards the Core's PostgreSQL primary for 40 s, then lets them
+# through again. Unlike killing the pod, no connection is closed: the Core's
+# threads wait on sockets that never answer, as they do when a node is lost.
+blackhole_core_primary() {
+    local primary ip node device
+    primary="$(kube -n "$DATA_NAMESPACE" get cluster core -o 'jsonpath={.status.currentPrimary}')"
+    ip="$(kube -n "$DATA_NAMESPACE" get pod "$primary" -o 'jsonpath={.status.podIP}')"
+    node="$(kube -n "$DATA_NAMESPACE" get pod "$primary" -o 'jsonpath={.spec.nodeName}')"
+    device="$(docker exec "$node" ip route get "$ip" | awk '{for (i = 1; i <= NF; i++) if ($i == "dev") print $(i + 1)}')"
+    docker exec "$node" tc qdisc replace dev "$device" root netem loss 100%
+    printf '  dropping all traffic to %s (%s) for 40 s\n' "$primary" "$ip"
+    sleep 40
+    docker exec "$node" tc qdisc del dev "$device" root
+    printf '  traffic restored\n'
 }
 
 # Stops the worker node that hosts the primary of the Core's PostgreSQL cluster for
@@ -426,6 +444,7 @@ main() {
     core-primary) kill_primary core ;;
     gateway-primary) kill_primary gateway ;;
     core-slow) ;;
+    core-db-blackhole) blackhole_core_primary ;;
     core-errors)
         inject_core_fault core-errors
         sleep 20

@@ -41,6 +41,7 @@ scripts/k8s/verify-failures.sh gateway-primary # ... while the Gateway's Postgre
 scripts/k8s/verify-failures.sh core-slow       # ... while every call to the Core takes 3 s longer (mesh)
 scripts/k8s/verify-failures.sh core-errors     # ... while the Core refuses every call for 20 s (mesh)
 scripts/k8s/verify-failures.sh gateway-lease   # ... a Gateway pod killed with deliveries in flight (mesh)
+scripts/k8s/verify-failures.sh core-db-blackhole # ... while all traffic to the Core's database primary is dropped for 40 s
 scripts/k8s/verify-failures.sh broker          # ... while the Redpanda broker is killed
 scripts/k8s/verify-failures.sh node            # ... while the node with the Core's primary stops for a minute
 scripts/k8s/measure-ingestion.sh 1000          # accept latency of 1000 orders and replica lag
@@ -150,6 +151,13 @@ delivery and one order per webhook, every delivery `DELIVERED` and every order
 `OrderReceived` and `OrderReady` event written and published once, each
 `OrderReceived` event recorded once by the order processor, and no delivered
 order missing from the Core.
+
+The Core's JDBC connections have a connect timeout of 5 s and a socket timeout of
+30 s (`DB_CONNECT_TIMEOUT_SECONDS`, `DB_SOCKET_TIMEOUT_SECONDS`). Without them,
+a database that stops answering without closing its connections, as a lost node
+does, left the Core's worker threads blocked for ever until the pods were
+restarted: `core-db-blackhole` leaves 51 of 60 orders unaccepted after four
+minutes without the timeouts, and settles them in under two minutes with them.
 
 Replication between the PostgreSQL instances is synchronous (`preferred`), so a
 failover does not lose a commit the services have already acknowledged; the last
