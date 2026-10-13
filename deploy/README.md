@@ -18,8 +18,9 @@ and [Limitations](../docs/limitations.md).
 | Kafka | Redpanda operator, one broker; the four topics are `Topic` resources |
 | Applications | the Helm chart `deploy/charts/commerce-integration-hub`: Integration Core and Connector Gateway with two replicas each, the provider simulator, and the Gateway migration as a Job |
 
-OpenSearch, the operator console and the observability stack are not part of
-this increment.
+| Observability (optional) | `observability.sh` installs Prometheus with the alert rules, Alertmanager, the OpenTelemetry Collector, Jaeger and Grafana in the `observability` namespace, and turns tracing on in the Core and the Gateway |
+
+OpenSearch and the operator console are not part of this environment.
 
 ## Requirements
 
@@ -37,6 +38,8 @@ scripts/k8s/verify-failures.sh pods            # 60 webhooks while a Core pod an
 scripts/k8s/verify-failures.sh core-primary    # ... while the Core's PostgreSQL primary is killed
 scripts/k8s/verify-failures.sh gateway-primary # ... while the Gateway's PostgreSQL primary is killed
 scripts/k8s/measure-ingestion.sh 1000          # accept latency of 1000 orders and replica lag
+scripts/k8s/observability.sh                   # Prometheus, Alertmanager, Jaeger, Grafana; turns tracing on
+scripts/k8s/verify-alerts.sh                   # cause two failures and check the alerts reach Alertmanager
 scripts/k8s/down.sh            # delete the cluster
 ```
 
@@ -50,6 +53,41 @@ To look at the cluster, use the environment's own kubeconfig:
 export KUBECONFIG="$HOME/.kube/hub-local.yaml"
 kubectl -n hub get pods
 ```
+
+## Observability
+
+`scripts/k8s/observability.sh` installs the stack with the configuration files of
+[`observability/`](../observability/README.md): the alert rules
+(`prometheus/alerts.yml`), `alertmanager.yml`, the Collector and the Grafana
+provisioning, loaded into ConfigMaps, so Compose and the cluster share them.
+`observability.sh remove` takes it away and turns tracing off. `HUB_GRAFANA=false`
+leaves Grafana out, the heaviest piece (about 370 MB).
+
+Prometheus finds the application pods itself, so every replica is a target of its
+own: a Service would send each scrape to a different replica and interleave
+their counters. Its only permission is to read the pods of the `hub` namespace.
+The application pods being the targets means a pod that disappears leaves no
+`up` series, so `HubTargetDown` cannot see it; `HubNoTargets` covers the case
+where no replica of an application exists.
+
+To open the interfaces from this machine, forward a port of the environment's own
+kubeconfig:
+
+```bash
+export KUBECONFIG="$HOME/.kube/hub-local.yaml"
+kubectl -n observability port-forward svc/prometheus   9090:9090   # alerts and targets
+kubectl -n observability port-forward svc/alertmanager 9093:9093
+kubectl -n observability port-forward svc/jaeger       16686:16686 # traces
+kubectl -n observability port-forward svc/grafana      3000:3000
+```
+
+A trace of one order runs through the Gateway's webhook receipt, the Core's
+`POST /api/v1/orders`, the outbox, and the Kafka publish and receive up to
+`OrderReady`. Alertmanager shows the alerts and sends them nowhere.
+
+`scripts/k8s/verify-alerts.sh` scales the Core to zero and rolls out a Gateway
+image that does not exist, checks that `HubNoTargets` and `HubTargetDown` reach
+Alertmanager, and undoes both.
 
 ## Failures in the middle of the flow
 

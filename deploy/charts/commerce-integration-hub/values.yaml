@@ -13,6 +13,12 @@ images:
   # The images are built locally and loaded into the kind nodes.
   pullPolicy: IfNotPresent
 
+# Traces go to the OpenTelemetry Collector of the observability stack. The stack
+# is optional: scripts/k8s/observability.sh installs it and turns this on.
+tracing:
+  enabled: false
+  endpoint: http://otel-collector.observability:4317
+
 integrationCore:
   replicas: 2
   database:

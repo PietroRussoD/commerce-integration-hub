@@ -29,6 +29,19 @@ An unready pod is usually waiting for its database or broker.
 down: providers retry webhooks, and pending deliveries and outbox events wait in
 PostgreSQL.
 
+## HubNoTargets
+
+**Means:** Prometheus has no target at all for the Core or the Gateway: every
+replica is gone (scaled to zero, deleted) or the target discovery is broken. In
+the Kubernetes environment a pod that disappears leaves no `up` series, so
+`HubTargetDown` cannot report it; this rule does.
+
+**Check:** `kubectl -n hub get deployments,pods`, and the Prometheus
+`/service-discovery` page if the pods exist.
+
+**Do:** restore the Deployment. Nothing is lost meanwhile: providers retry
+webhooks, and pending deliveries and outbox events wait in PostgreSQL.
+
 ## OutboxEventsWaitingTooLong
 
 **Means:** the oldest Core outbox event has waited more than ten minutes to be

@@ -24,6 +24,6 @@ receivers:
 inhibit_rules:
   # While a service cannot be scraped, its tickets are noise. Its pages still
   # come through: one replica being down does not mean the others are fine.
-  - source_matchers: ['alertname="HubTargetDown"']
+  - source_matchers: ['alertname=~"HubTargetDown|HubNoTargets"']
     target_matchers: ['severity="ticket"']
     equal: [service]

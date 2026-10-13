@@ -27,6 +27,23 @@ groups:
           description: "Prometheus has not reached {{ $labels.instance }} for a minute: the process is down, unready or unreachable."
           runbook_url: docs/runbooks/alerts.md#hubtargetdown
 
+      - alert: HubNoTargets
+        # Where targets are discovered rather than listed, a pod that is gone has
+        # no `up` series at all, so HubTargetDown cannot see it. This catches the
+        # case where no replica of an application exists (a scale to zero, a
+        # deleted Deployment).
+        expr: |
+          label_replace(absent(up{job="integration-core"}), "service", "integration-core", "", "")
+            or
+          label_replace(absent(up{job="connector-gateway"}), "service", "connector-gateway", "", "")
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: "No {{ $labels.service }} instance is being scraped"
+          description: "Prometheus sees no {{ $labels.service }} target at all: no replica exists, or discovery is broken."
+          runbook_url: docs/runbooks/alerts.md#hubnotargets
+
   - name: hub-integration-core
     rules:
       - alert: OutboxEventsWaitingTooLong

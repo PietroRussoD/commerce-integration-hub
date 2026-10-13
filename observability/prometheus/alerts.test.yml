@@ -28,6 +28,39 @@ tests:
               description: "Prometheus has not reached core-1:8080 for a minute: the process is down, unready or unreachable."
               runbook_url: docs/runbooks/alerts.md#hubtargetdown
 
+  - name: an application whose replicas have all disappeared
+    interval: 1m
+    input_series:
+      - series: 'up{job="connector-gateway", instance="gateway-1:8081"}'
+        values: '1 1 1 1 1 1'
+      - series: 'up{job="integration-core", instance="core-1:8080"}'
+        # A pod that disappears has its series marked stale at once.
+        values: '1 1 stale stale stale stale'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: HubNoTargets
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: HubNoTargets
+        exp_alerts:
+          - exp_labels: { severity: page, service: integration-core, job: integration-core }
+            exp_annotations:
+              summary: "No integration-core instance is being scraped"
+              description: "Prometheus sees no integration-core target at all: no replica exists, or discovery is broken."
+              runbook_url: docs/runbooks/alerts.md#hubnotargets
+
+  - name: both applications present
+    interval: 1m
+    input_series:
+      - series: 'up{job="connector-gateway", instance="gateway-1:8081"}'
+        values: '1x10'
+      - series: 'up{job="integration-core", instance="core-1:8080"}'
+        values: '1x10'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: HubNoTargets
+        exp_alerts: []
+
   - name: outbox events waiting longer and longer, seen by two replicas
     interval: 1m
     input_series:
