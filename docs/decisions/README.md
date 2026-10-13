@@ -43,6 +43,8 @@ implementation chronology.
   bearer tokens, JWKS validation, and operator/platform-admin authorization.
 - [ADR 0020](0020-distributed-tracing-with-opentelemetry.md): OpenTelemetry
   traces across HTTP, Kafka, and durable work boundaries; local Jaeger viewer.
+- [ADR 0021](0021-local-kubernetes-deployment.md) (Proposed): optional local
+  Kubernetes environment with kind, CloudNativePG, Redpanda, and Istio ambient.
 
 Accepted records are not edited to hide a later change of direction. Later
 extensions or replacements are recorded in a new ADR and linked to the earlier
