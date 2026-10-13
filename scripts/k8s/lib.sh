@@ -97,14 +97,27 @@ source_key_exists() {
     kube -n "$APP_NAMESPACE" get secret gateway-source-key >/dev/null 2>&1
 }
 
+# Whether the observability stack is installed.
+observability_installed() {
+    assert_local_cluster
+    kube -n observability get deployment otel-collector >/dev/null 2>&1
+}
+
 # Installs or upgrades the chart. The delivery worker runs exactly when the source
-# credential exists, so running this again never turns it off.
+# credential exists, and tracing exactly when the observability stack is
+# installed, so running this again never turns either off.
 install_chart() {
-    local worker=false
+    local worker=false tracing=false
     if source_key_exists; then
         worker=true
     fi
-    helm_cmd upgrade --install hub "$DEPLOY_DIR/charts/commerce-integration-hub"         --namespace "$APP_NAMESPACE" --create-namespace --wait --timeout 10m         --set "connectorGateway.deliveryWorker.enabled=$worker" "$@"
+    if observability_installed; then
+        tracing=true
+    fi
+    helm_cmd upgrade --install hub "$DEPLOY_DIR/charts/commerce-integration-hub" \
+        --namespace "$APP_NAMESPACE" --create-namespace --wait --timeout 10m \
+        --set "connectorGateway.deliveryWorker.enabled=$worker" \
+        --set "tracing.enabled=$tracing" "$@"
 }
 
 cluster_exists() {

@@ -101,7 +101,9 @@ spec:
             - { name: OPERATOR_OIDC_CLOCK_SKEW_SECONDS, value: "30" }
             - { name: OPERATOR_OIDC_ISSUER, value: "http://identity.example.invalid" }
             - { name: OPERATOR_OIDC_JWKS_URL, value: "http://identity.example.invalid/jwks" }
-            - { name: OTEL_SDK_DISABLED, value: "true" }
+            - { name: OTEL_SDK_DISABLED, value: {{ not .Values.tracing.enabled | quote }} }
+            - { name: OTEL_EXPORTER_OTLP_ENDPOINT, value: {{ .Values.tracing.endpoint | quote }} }
+            - { name: OTEL_SERVICE_NAME, value: connector-gateway }
           startupProbe:
             httpGet: { path: /health/ready, port: http }
             periodSeconds: 3

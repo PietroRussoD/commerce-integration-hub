@@ -59,7 +59,8 @@ spec:
             - { name: OPERATOR_OIDC_AUTH_SERVER_URL, value: "https://identity.example.invalid/realms/integration-hub" }
             - { name: OPERATOR_OIDC_ISSUER, value: "https://identity.example.invalid/realms/integration-hub" }
             - { name: OPERATOR_OIDC_CLOCK_SKEW_SECONDS, value: "30" }
-            - { name: OTEL_SDK_DISABLED, value: "true" }
+            - { name: OTEL_SDK_DISABLED, value: {{ not .Values.tracing.enabled | quote }} }
+            - { name: OTEL_EXPORTER_OTLP_ENDPOINT, value: {{ .Values.tracing.endpoint | quote }} }
           startupProbe:
             httpGet: { path: /health/ready, port: http }
             periodSeconds: 3

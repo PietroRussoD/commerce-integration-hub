@@ -119,6 +119,10 @@ docker run --rm --entrypoint promtool -v "$PWD/observability/prometheus:/rules:r
   prom/prometheus:v3.15.0 test rules /rules/alerts.test.yml
 ```
 
+In the local Kubernetes environment the same rules run in a Prometheus that
+discovers the application pods (see [`deploy/README.md`](../deploy/README.md));
+`HubNoTargets` exists for the case where discovery finds no pod at all.
+
 Alertmanager ([`alertmanager/alertmanager.yml`](alertmanager/alertmanager.yml))
 groups and shows the alerts but sends them nowhere; a receiver is the only
 thing to add to deliver them. The thresholds are demonstrative, since the Hub
