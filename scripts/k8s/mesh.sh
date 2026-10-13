@@ -5,9 +5,10 @@
 # in the application namespace, and a Gateway API ingress for the APIs.
 #
 # The application and observability namespaces join the mesh; the data
-# namespace (PostgreSQL, Redpanda) stays out of it. There is no waypoint yet, so
-# the mesh works at layer 4 only and cannot retry HTTP requests: retries stay in
-# the applications (ADR 0023).
+# namespace (PostgreSQL, Redpanda) stays out of it. The only waypoint, in front of
+# the Integration Core, carries the Core's caller policy and an explicit no-retry
+# policy, so the mesh never retries a call: retries stay in the applications
+# (ADR 0023).
 #
 # Usage:
 #   scripts/k8s/mesh.sh          install (or update)
@@ -72,17 +73,24 @@ install_mesh() {
         fi
     done
 
-    printf 'Applying mutual TLS, authorization and the ingress.\n'
+    printf 'Applying mutual TLS, authorization, the ingress and the Core waypoint.\n'
     kube apply -f "$MESH_DIR/peer-authentication.yaml" -f "$MESH_DIR/authorization.yaml" >/dev/null
     kube apply -f "$MESH_DIR/ingress.yaml" >/dev/null
     kube -n hub-ingress wait --for=condition=Programmed gateway/hub-ingress --timeout=180s >/dev/null ||
         fail "The ingress gateway was not programmed."
+    kube apply -f "$MESH_DIR/waypoint.yaml" >/dev/null
+    kube -n "$APP_NAMESPACE" wait --for=condition=Programmed gateway/core-waypoint --timeout=180s >/dev/null ||
+        fail "The Core waypoint was not programmed."
+    # From here on, calls to the Core Service go through the waypoint.
+    kube -n "$APP_NAMESPACE" label service integration-core istio.io/use-waypoint=core-waypoint --overwrite >/dev/null
 
     printf 'Restarting the meshed workloads.\n'
     restart_meshed_workloads
 }
 
 remove_mesh() {
+    kube -n "$APP_NAMESPACE" label service integration-core istio.io/use-waypoint- >/dev/null 2>&1 || true
+    kube delete -f "$MESH_DIR/waypoint.yaml" --ignore-not-found >/dev/null
     kube delete -f "$MESH_DIR/ingress.yaml" --ignore-not-found >/dev/null
     kube delete -f "$MESH_DIR/authorization.yaml" -f "$MESH_DIR/peer-authentication.yaml" --ignore-not-found >/dev/null
     local namespace
