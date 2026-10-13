@@ -1,0 +1,108 @@
+{{- $core := .Values.integrationCore }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: integration-core
+  labels:
+    app.kubernetes.io/name: integration-core
+    {{- include "hub.labels" . | nindent 4 }}
+spec:
+  replicas: {{ $core.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: integration-core
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: integration-core
+        {{- include "hub.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: integration-core
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        seccompProfile: { type: RuntimeDefault }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: integration-core
+      containers:
+        - name: integration-core
+          image: {{ include "hub.image" .Values.images.integrationCore }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 8080 }
+          env:
+            # Every replica names its workers after its own pod, so claims and
+            # leases in PostgreSQL say which replica holds them.
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - { name: OUTBOX_WORKER_ID, value: "$(POD_NAME)" }
+            - { name: ORDER_SEARCH_RECONCILIATION_WORKER_ID, value: "$(POD_NAME)" }
+            - { name: DB_JDBC_URL, value: {{ $core.database.jdbcUrl | quote }} }
+            - name: DB_USERNAME
+              valueFrom: { secretKeyRef: { name: {{ $core.database.secretName }}, key: username } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ $core.database.secretName }}, key: password } }
+            - { name: KAFKA_BOOTSTRAP_SERVERS, value: {{ $core.kafka.bootstrapServers | quote }} }
+            - { name: OPENSEARCH_URL, value: {{ $core.openSearchUrl | quote }} }
+            - { name: ORDER_SEARCH_PROJECTION_ENABLED, value: "false" }
+            - { name: ORDER_SEARCH_RECONCILIATION_ENABLED, value: "false" }
+            - name: INTEGRATION_HUB_SECURITY_SOURCE_CREDENTIAL_PEPPERS
+              valueFrom: { secretKeyRef: { name: hub-synthetic, key: sourceCredentialPeppers } }
+            - { name: OPERATOR_AUTHORIZATION_ENABLED, value: "false" }
+            - { name: OPERATOR_OIDC_ENABLED, value: "false" }
+            - { name: OPERATOR_OIDC_AUDIENCE, value: integration-hub-operator-api }
+            - { name: OPERATOR_OIDC_AUTH_SERVER_URL, value: "https://identity.example.invalid/realms/integration-hub" }
+            - { name: OPERATOR_OIDC_ISSUER, value: "https://identity.example.invalid/realms/integration-hub" }
+            - { name: OPERATOR_OIDC_CLOCK_SKEW_SECONDS, value: "30" }
+            - { name: OTEL_SDK_DISABLED, value: "true" }
+          startupProbe:
+            httpGet: { path: /health/ready, port: http }
+            periodSeconds: 3
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: { path: /health/ready, port: http }
+            periodSeconds: 5
+          # Liveness does not look at the database: a database outage must make
+          # the pod unready, not restart it.
+          livenessProbe:
+            httpGet: { path: /health/live, port: http }
+            periodSeconds: 10
+          resources:
+            {{- toYaml $core.resources | nindent 12 }}
+          securityContext:
+            {{- include "hub.containerSecurity" . | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: integration-core
+  labels:
+    app.kubernetes.io/name: integration-core
+    {{- include "hub.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: integration-core
+  ports:
+    - { name: http, port: 8080, targetPort: http }
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: integration-core
+  labels:
+    {{- include "hub.labels" . | nindent 4 }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: integration-core

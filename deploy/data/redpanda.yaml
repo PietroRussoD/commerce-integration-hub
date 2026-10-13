@@ -1,0 +1,32 @@
+# One Redpanda broker, in place of the single `redpanda` container of Compose.
+apiVersion: cluster.redpanda.com/v1alpha2
+kind: Redpanda
+metadata:
+  name: redpanda
+  namespace: hub-data
+spec:
+  clusterSpec:
+    image:
+      tag: v26.2.1
+    statefulset:
+      replicas: 1
+    tls:
+      enabled: false
+    external:
+      enabled: false
+    console:
+      enabled: false
+    auth:
+      sasl:
+        enabled: false
+    resources:
+      cpu:
+        cores: 1
+        overprovisioned: true
+      memory:
+        container:
+          max: 1.5Gi
+    storage:
+      persistentVolume:
+        enabled: true
+        size: 2Gi

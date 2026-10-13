@@ -1,0 +1,143 @@
+{{- $gateway := .Values.connectorGateway }}
+{{- $worker := $gateway.deliveryWorker }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: connector-gateway-migrate
+  labels:
+    app.kubernetes.io/name: connector-gateway-migrate
+    {{- include "hub.labels" . | nindent 4 }}
+  annotations:
+    # The schema is migrated before the Gateway starts, on install and upgrade.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 4
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: connector-gateway-migrate
+    spec:
+      restartPolicy: OnFailure
+      # A hook runs before the chart's service accounts exist, so it uses the
+      # default one, without a token.
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532 # the images' `nonroot` user, by number
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: migrate
+          image: {{ include "hub.image" .Values.images.connectorGateway }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          args: ["dist/database-migrate.js"]
+          env:
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: {{ $gateway.database.secretName }}, key: uri } }
+          securityContext:
+            {{- include "hub.containerSecurity" . | nindent 12 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: connector-gateway
+  labels:
+    app.kubernetes.io/name: connector-gateway
+    {{- include "hub.labels" . | nindent 4 }}
+spec:
+  replicas: {{ $gateway.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: connector-gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: connector-gateway
+        {{- include "hub.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: connector-gateway
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532 # the images' `nonroot` user, by number
+        seccompProfile: { type: RuntimeDefault }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: connector-gateway
+      containers:
+        - name: connector-gateway
+          image: {{ include "hub.image" .Values.images.connectorGateway }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 8081 }
+          env:
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: {{ $gateway.database.secretName }}, key: uri } }
+            - { name: DELIVERY_WORKER_ENABLED, value: {{ $worker.enabled | quote }} }
+            - { name: DELIVERY_WORKER_ID, value: "$(POD_NAME)" }
+            {{- if $worker.enabled }}
+            - name: INTEGRATION_CORE_SOURCE_API_KEY
+              valueFrom: { secretKeyRef: { name: {{ $worker.sourceKeySecretName }}, key: {{ $worker.sourceKeySecretKey }} } }
+            {{- end }}
+            - { name: INTEGRATION_CORE_BASE_URL, value: "http://integration-core:8080" }
+            - name: ERP_B_API_TOKEN
+              valueFrom: { secretKeyRef: { name: hub-synthetic, key: erpBApiToken } }
+            - { name: ERP_B_BASE_URL, value: "http://provider-simulator:8080" }
+            - { name: ERP_B_PAGE_LIMIT, value: "2" }
+            - { name: ERP_B_POLLING_ENABLED, value: {{ $gateway.erpBPolling.enabled | quote }} }
+            - { name: ERP_B_POLLING_WORKER_ID, value: "$(POD_NAME)" }
+            - name: MARKETPLACE_A_WEBHOOK_CURRENT_KEY_ID
+              valueFrom: { secretKeyRef: { name: hub-synthetic, key: webhookKeyId } }
+            - name: MARKETPLACE_A_WEBHOOK_CURRENT_SECRET_BASE64
+              valueFrom: { secretKeyRef: { name: hub-synthetic, key: webhookSecretBase64 } }
+            - { name: OPERATOR_AUTHORIZATION_ENABLED, value: "false" }
+            - { name: OPERATOR_OIDC_ENABLED, value: "false" }
+            - { name: OPERATOR_OIDC_AUDIENCE, value: integration-hub-operator-api }
+            - { name: OPERATOR_OIDC_CLOCK_SKEW_SECONDS, value: "30" }
+            - { name: OPERATOR_OIDC_ISSUER, value: "http://identity.example.invalid" }
+            - { name: OPERATOR_OIDC_JWKS_URL, value: "http://identity.example.invalid/jwks" }
+            - { name: OTEL_SDK_DISABLED, value: "true" }
+          startupProbe:
+            httpGet: { path: /health/ready, port: http }
+            periodSeconds: 3
+            failureThreshold: 40
+          readinessProbe:
+            httpGet: { path: /health/ready, port: http }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health/live, port: http }
+            periodSeconds: 10
+          resources:
+            {{- toYaml $gateway.resources | nindent 12 }}
+          securityContext:
+            {{- include "hub.containerSecurity" . | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: connector-gateway
+  labels:
+    app.kubernetes.io/name: connector-gateway
+    {{- include "hub.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: connector-gateway
+  ports:
+    - { name: http, port: 8081, targetPort: http }
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: connector-gateway
+  labels:
+    {{- include "hub.labels" . | nindent 4 }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: connector-gateway
