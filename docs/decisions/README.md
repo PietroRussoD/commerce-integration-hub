@@ -48,6 +48,9 @@ implementation chronology.
 - [ADR 0022](0022-synchronous-postgresql-replication.md) (Proposed):
   synchronous `preferred` replication for the Kubernetes PostgreSQL clusters,
   with measured latency and availability trade-offs.
+- [ADR 0023](0023-ambient-mesh-and-application-retries.md) (Proposed): Istio
+  ambient mesh, strict mutual TLS, authorization by workload identity, a Gateway
+  API ingress, and retries kept in the applications.
 
 Accepted records are not edited to hide a later change of direction. Later
 extensions or replacements are recorded in a new ADR and linked to the earlier

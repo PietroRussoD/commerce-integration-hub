@@ -108,6 +108,8 @@ metadata:
   labels: { app.kubernetes.io/name: measure-client }
 spec:
   restartPolicy: Never
+  # The identity the mesh lets reach the applications for tests (deploy/mesh).
+  serviceAccountName: hub-test-client
   automountServiceAccountToken: false
   securityContext:
     runAsNonRoot: true

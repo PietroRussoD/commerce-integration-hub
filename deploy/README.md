@@ -18,6 +18,7 @@ and [Limitations](../docs/limitations.md).
 | Kafka | Redpanda operator, one broker; the four topics are `Topic` resources |
 | Applications | the Helm chart `deploy/charts/commerce-integration-hub`: Integration Core and Connector Gateway with two replicas each, the provider simulator, and the Gateway migration as a Job |
 
+| Service mesh (optional) | `mesh.sh` installs Istio in ambient mode for `hub` and `observability`, strict mutual TLS, authorization by workload identity, and a Gateway API ingress |
 | Observability (optional) | `observability.sh` installs Prometheus with the alert rules, Alertmanager, the OpenTelemetry Collector, Jaeger and Grafana in the `observability` namespace, and turns tracing on in the Core and the Gateway |
 
 OpenSearch and the operator console are not part of this environment.
@@ -40,6 +41,8 @@ scripts/k8s/verify-failures.sh gateway-primary # ... while the Gateway's Postgre
 scripts/k8s/measure-ingestion.sh 1000          # accept latency of 1000 orders and replica lag
 scripts/k8s/observability.sh                   # Prometheus, Alertmanager, Jaeger, Grafana; turns tracing on
 scripts/k8s/verify-alerts.sh                   # cause two failures and check the alerts reach Alertmanager
+scripts/k8s/mesh.sh                            # Istio ambient, strict mTLS, authorization, Gateway API ingress
+scripts/k8s/verify-mesh.sh                     # who gets through the mesh, and who is refused
 scripts/k8s/down.sh            # delete the cluster
 ```
 
@@ -53,6 +56,36 @@ To look at the cluster, use the environment's own kubeconfig:
 export KUBECONFIG="$HOME/.kube/hub-local.yaml"
 kubectl -n hub get pods
 ```
+
+## Service mesh
+
+`scripts/k8s/mesh.sh` installs Istio (pinned in `versions.env`) in ambient mode
+and puts the `hub` and `observability` namespaces in the mesh; `hub-data` stays
+out. In `hub` every connection must be mutual TLS, and
+[`deploy/mesh/authorization.yaml`](mesh/authorization.yaml) says who may call
+whom, by service account: nothing is allowed by default, the Core accepts the
+Gateway, the ingress, Prometheus and the test identity, the Gateway accepts the
+ingress, Prometheus and the test identity, and the simulator accepts only the
+Gateway. The pods of the verification scripts run as `hub-test-client`.
+
+There is no waypoint, so the mesh works at layer 4 and cannot retry HTTP
+requests: retries stay in the applications
+([ADR 0023](../docs/decisions/0023-ambient-mesh-and-application-retries.md)).
+
+With the mesh installed the APIs are reached through the ingress, which routes
+`/providers/`, `/api/v1/operator/deliveries` and `/api/v1/` and nothing else:
+
+```bash
+export KUBECONFIG="$HOME/.kube/hub-local.yaml"
+kubectl -n hub-ingress port-forward svc/hub-ingress-istio 8080:80
+```
+
+`smoke.sh` uses the ingress by itself when the mesh is installed.
+`verify-mesh.sh` checks that every pod speaks mutual TLS, that a pod outside the
+mesh and a meshed pod with an identity nobody allowed are both refused, that the
+allowed callers get through, that Prometheus still scrapes every replica, and
+that the ingress does not expose health or metrics. `mesh.sh remove` takes it
+all away.
 
 ## Observability
 

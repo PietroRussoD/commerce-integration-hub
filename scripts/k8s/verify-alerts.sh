@@ -24,17 +24,15 @@ require_command curl
 require_command python3
 observability_installed || fail "The observability stack is not installed: run scripts/k8s/observability.sh first."
 
-port_forward_pid=""
 undo=""
 
 cleanup() {
     [[ -n "$undo" ]] && eval "$undo" >/dev/null 2>&1 || true
-    [[ -n "$port_forward_pid" ]] && kill "$port_forward_pid" 2>/dev/null || true
+    stop_port_forwards
 }
 trap cleanup EXIT
 
-kube -n observability port-forward --address 127.0.0.1 svc/alertmanager "$ALERTMANAGER_PORT:9093" >/dev/null 2>&1 &
-port_forward_pid=$!
+start_port_forward observability svc/alertmanager "$ALERTMANAGER_PORT:9093"
 for ((attempt = 0; attempt < 20; attempt += 1)); do
     curl --silent --output /dev/null "http://127.0.0.1:$ALERTMANAGER_PORT/-/ready" && break
     sleep 1
