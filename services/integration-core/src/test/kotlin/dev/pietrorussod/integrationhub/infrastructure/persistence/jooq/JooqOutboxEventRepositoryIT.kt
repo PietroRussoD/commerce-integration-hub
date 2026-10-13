@@ -1,6 +1,8 @@
 package dev.pietrorussod.integrationhub.infrastructure.persistence.jooq
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import dev.pietrorussod.integrationhub.application.outbox.OutboxBacklog
+import dev.pietrorussod.integrationhub.application.outbox.OutboxBacklogReader
 import dev.pietrorussod.integrationhub.application.outbox.OutboxEventRepository
 import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEvent
 import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEventRepository
@@ -42,6 +44,9 @@ class JooqOutboxEventRepositoryIT {
 
     @Inject
     lateinit var pendingEventRepository: PendingOutboxEventRepository
+
+    @Inject
+    lateinit var backlogReader: OutboxBacklogReader
 
     @Inject
     lateinit var dslContext: DSLContext
@@ -294,6 +299,48 @@ class JooqOutboxEventRepositoryIT {
         assertEquals(null, record.claimId)
         assertEquals(null, record.claimedBy)
         assertEquals(null, record.claimedAt)
+    }
+
+    @Test
+    fun `reads an empty backlog`() {
+        assertEquals(OutboxBacklog(waitingEvents = 0, oldestWaitingCreatedAt = null, failedEvents = 0), backlogReader.read())
+    }
+
+    @Test
+    fun `counts pending and claimed events as waiting and failed events apart`() {
+        val publishedId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f81")
+        val failedId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f82")
+        val claimedId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f83")
+        val retryLaterId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f84")
+        val dueId = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f85")
+        insertEvent(publishedId, createdAt = now.minusSeconds(300), nextAttemptAt = now.minusSeconds(300))
+        insertEvent(failedId, createdAt = now.minusSeconds(200), nextAttemptAt = now.minusSeconds(200))
+        insertEvent(claimedId, createdAt = now.minusSeconds(100), nextAttemptAt = now.minusSeconds(100))
+        insertEvent(retryLaterId, createdAt = now.minusSeconds(50), nextAttemptAt = now.plusSeconds(60))
+        insertEvent(dueId, createdAt = now.minusSeconds(20), nextAttemptAt = now.minusSeconds(20))
+        // Claimed one at a time, the events are taken oldest first.
+        val publishedClaim = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f91")
+        val failedClaim = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f92")
+        val openClaim = UUID.fromString("018f38c2-1b95-7cc4-bb89-72d26a6f9f93")
+        repository.claimPending(publishedClaim, "publisher-1", now, batchSize = 1)
+        assertTrue(repository.markPublished(publishedId, publishedClaim, "publisher-1", now))
+        repository.claimPending(failedClaim, "publisher-1", now, batchSize = 1)
+        assertTrue(
+            repository.markFailed(
+                failedId,
+                failedClaim,
+                "publisher-1",
+                now,
+                "INVALID_EVENT_PAYLOAD",
+                "Event payload cannot be published",
+            ),
+        )
+        assertEquals(listOf(claimedId), repository.claimPending(openClaim, "publisher-1", now, batchSize = 1).map { it.id })
+
+        assertEquals(
+            OutboxBacklog(waitingEvents = 3, oldestWaitingCreatedAt = now.minusSeconds(100), failedEvents = 1),
+            backlogReader.read(),
+        )
     }
 
     @Test
