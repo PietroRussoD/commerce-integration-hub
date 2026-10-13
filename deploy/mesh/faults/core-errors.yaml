@@ -1,0 +1,24 @@
+# Fault injected at the Core's waypoint (scripts/k8s/verify-failures.sh core-errors).
+# Every call to the Core fails with 503, for as long as this is applied.
+# It replaces the Core's VirtualService; applying deploy/mesh/waypoint.yaml
+# restores it. The no-retry policy is kept: the mesh must not retry.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: integration-core
+  namespace: hub
+spec:
+  hosts:
+    - integration-core.hub.svc.cluster.local
+  http:
+    - fault:
+        abort:
+          percentage: { value: 100 }
+          httpStatus: 503
+      route:
+        - destination:
+            host: integration-core.hub.svc.cluster.local
+            port:
+              number: 8080
+      retries:
+        attempts: 0

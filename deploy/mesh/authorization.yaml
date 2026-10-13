@@ -10,9 +10,11 @@ metadata:
   namespace: hub
 spec: {}
 ---
-# The Core takes orders from the Gateway and, through the ingress, from sources
-# and operators. Prometheus scrapes it. The test client is the identity of the
-# verification scripts' pods (scripts/k8s/verify-*.sh, measure-ingestion.sh).
+# The Core's pods accept connections from three places only: its own waypoint
+# (every call made to the Core Service goes through it), the ingress (which
+# reaches the pods directly), and Prometheus (which scrapes the pods directly).
+# Nobody can bypass the waypoint by calling a pod: the callers it admits are not
+# named here.
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
@@ -27,13 +29,33 @@ spec:
     - from:
         - source:
             principals:
-              - cluster.local/ns/hub/sa/connector-gateway
+              - cluster.local/ns/hub/sa/core-waypoint
               - cluster.local/ns/hub-ingress/sa/hub-ingress-istio
               - cluster.local/ns/observability/sa/prometheus
-              - cluster.local/ns/hub/sa/hub-test-client
       to:
         - operation:
             ports: ["8080"]
+---
+# Who may call the Core Service, checked at the waypoint, where the caller's own
+# identity is still known. The test identity is the one the pods of the
+# verification scripts (scripts/k8s/verify-*.sh, measure-ingestion.sh) run as.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: integration-core-callers
+  namespace: hub
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: core-waypoint
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/hub/sa/connector-gateway
+              - cluster.local/ns/hub/sa/hub-test-client
 ---
 # The Gateway takes provider webhooks and operator requests through the ingress.
 apiVersion: security.istio.io/v1

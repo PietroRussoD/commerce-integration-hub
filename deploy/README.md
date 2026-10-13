@@ -38,6 +38,11 @@ scripts/k8s/smoke.sh           # one signed webhook, followed until the order is
 scripts/k8s/verify-failures.sh pods            # 60 webhooks while a Core pod and a Gateway pod are killed
 scripts/k8s/verify-failures.sh core-primary    # ... while the Core's PostgreSQL primary is killed
 scripts/k8s/verify-failures.sh gateway-primary # ... while the Gateway's PostgreSQL primary is killed
+scripts/k8s/verify-failures.sh core-slow       # ... while every call to the Core takes 3 s longer (mesh)
+scripts/k8s/verify-failures.sh core-errors     # ... while the Core refuses every call for 20 s (mesh)
+scripts/k8s/verify-failures.sh gateway-lease   # ... a Gateway pod killed with deliveries in flight (mesh)
+scripts/k8s/verify-failures.sh broker          # ... while the Redpanda broker is killed
+scripts/k8s/verify-failures.sh node            # ... while the node with the Core's primary stops for a minute
 scripts/k8s/measure-ingestion.sh 1000          # accept latency of 1000 orders and replica lag
 scripts/k8s/observability.sh                   # Prometheus, Alertmanager, Jaeger, Grafana; turns tracing on
 scripts/k8s/verify-alerts.sh                   # cause two failures and check the alerts reach Alertmanager
@@ -68,9 +73,15 @@ Gateway, the ingress, Prometheus and the test identity, the Gateway accepts the
 ingress, Prometheus and the test identity, and the simulator accepts only the
 Gateway. The pods of the verification scripts run as `hub-test-client`.
 
-There is no waypoint, so the mesh works at layer 4 and cannot retry HTTP
-requests: retries stay in the applications
+One waypoint, `core-waypoint`, stands in front of the Core only. It carries the
+caller policy for the Core (`integration-core-callers`: the Gateway and the test
+identity), an **explicit no-retry policy** (`attempts: 0`), and is where network
+faults are injected for the failure tests. The Core's pods admit the waypoint,
+the ingress and Prometheus, so nobody can bypass the waypoint by calling a pod.
+The mesh never retries a call: retries stay in the applications
 ([ADR 0023](../docs/decisions/0023-ambient-mesh-and-application-retries.md)).
+`verify-mesh.sh` checks that, with the policy, a call answered 503 and a call
+whose connection is dropped each reach a stand-in server once.
 
 With the mesh installed the APIs are reached through the ingress, which routes
 `/providers/`, `/api/v1/operator/deliveries` and `/api/v1/` and nothing else:
@@ -126,9 +137,14 @@ Alertmanager, and undoes both.
 
 `verify-failures.sh` sends 60 signed webhooks from a pod inside the cluster,
 retrying a failed request with the same bytes for up to three minutes, as a
-provider would. While they are sent, it kills one Core pod and one Gateway pod
-(`pods`), or the primary of one PostgreSQL cluster (`core-primary`,
-`gateway-primary`). It then checks both databases: every webhook accepted, one
+provider would. While they are sent, something fails: pods are killed (`pods`),
+a PostgreSQL primary is killed (`core-primary`, `gateway-primary`), the Core is
+made slow or refuses calls at its waypoint (`core-slow`, `core-errors`), a
+Gateway pod is killed while the Core is slow so that its leases must be recovered
+(`gateway-lease`), the broker is killed (`broker`), or the node with the Core's
+primary stops (`node`). The scenarios that inject a fault check that it took
+effect, from the attempts the Gateway recorded. The script then checks both
+databases: every webhook accepted, one
 delivery and one order per webhook, every delivery `DELIVERED` and every order
 `READY`, each order's three status transitions exactly once, each
 `OrderReceived` and `OrderReady` event written and published once, each

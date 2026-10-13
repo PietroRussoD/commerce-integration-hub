@@ -37,9 +37,15 @@ Verified on 2026-10-13 with Istio 1.31.1 in ambient mode and Gateway API v1.6.3
 - the mesh components take about 190 MB (istiod, three ztunnels and CNI agents,
   the ingress proxy).
 
-In the spike (ADR 0021) a namespace waypoint did not retry an upstream `503`,
-but it does carry a default retry policy for connection failures. Without a
-waypoint the mesh has no layer-7 proxy in the path at all.
+Retries were measured on 2026-10-13 with a stand-in server behind the Core's
+waypoint that counts the requests it receives. With no explicit retry policy, one
+call that failed with a `503`, and one whose connection was dropped without an
+answer, each reached the server once: the waypoint did not retry either. A retry
+on a connection that cannot be established at all was not provoked, so whether
+the waypoint's defaults would retry that is not known here. That default also
+belongs to the Istio version, so the guarantee below does not rest on it.
+Without a waypoint the mesh has no layer-7 proxy in the path at all, and so
+nothing to retry with.
 
 ## Decision
 
@@ -55,11 +61,14 @@ waypoint the mesh has no layer-7 proxy in the path at all.
   has its own service account for this.
 - **A Gateway API ingress** (`deploy/mesh/ingress.yaml`) that routes only
   `/providers/`, `/api/v1/operator/deliveries` and `/api/v1/`.
-- **No waypoint for now.** The mesh works at layer 4 only, so it cannot retry,
-  time out or rewrite an HTTP request: **retries stay in the applications**.
-  When a waypoint is added for fault injection, it must carry an explicit
-  no-retry policy for the calls from the Gateway to the Core, and the Core's
-  authorization moves to the waypoint, which is the caller ztunnel then sees.
+- **One waypoint, in front of the Core only**, for the Core's caller policy and
+  for fault injection in the failure tests. The mesh does not retry: the
+  waypoint carries an **explicit no-retry policy** (`attempts: 0`) for calls to
+  the Core, verified by `scripts/k8s/verify-mesh.sh`, so the rule does not depend
+  on a default. **Retries stay in the applications.** Because ztunnel then sees
+  the waypoint as the caller, the Core's pods admit the waypoint, the ingress and
+  Prometheus, and the callers allowed to reach the Core are named on the waypoint
+  (`integration-core-callers`).
 - A **test identity**, `hub-test-client`, for the pods of the verification
   scripts, allowed explicitly and named as such.
 
@@ -71,9 +80,9 @@ waypoint the mesh has no layer-7 proxy in the path at all.
 - **Kubernetes NetworkPolicies.** They restrict by pod labels and IPs, not by
   cryptographic identity, and do not encrypt; they would be a sensible extra
   layer, not a replacement.
-- **A waypoint from the start.** It gives layer-7 policies and metrics, but puts
-  a proxy with its own retry defaults in front of every call and changes who the
-  destination sees as the caller.
+- **A waypoint for every service.** It gives layer-7 policies and metrics, but
+  puts a proxy in front of every call and changes who each destination sees as
+  the caller. One for the Core is enough for what is needed here.
 - **Linkerd.** A valid mesh; Istio with Gateway API is the more common
   combination.
 
@@ -87,7 +96,8 @@ waypoint the mesh has no layer-7 proxy in the path at all.
 - Traffic to PostgreSQL and Redpanda leaves the mesh and is not encrypted by it.
 - The mesh adds about a millisecond at the median and a few at the tail to an
   order's acceptance, on this machine.
-- Fault injection (the next increment) needs a waypoint and the explicit
-  no-retry policy described above.
-- Accept this record after the waypoint and its retry policy are in place and
-  verified.
+- The ingress reaches the Core's pods directly, not through the waypoint, so its
+  calls are subject to the pods' policy, not to the waypoint's; Prometheus
+  likewise.
+- Accept this record after the failure tests of the next increment have run
+  through the waypoint.

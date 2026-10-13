@@ -10,6 +10,12 @@
 #   pods             one Core pod and one Gateway pod are killed without a grace period
 #   core-primary     the primary of the Core's PostgreSQL cluster is killed (failover)
 #   gateway-primary  the primary of the Gateway's PostgreSQL cluster is killed (failover)
+#   core-slow        every call to the Core takes 3 s longer (needs the mesh)
+#   core-errors      every call to the Core fails with 503 for 20 s (needs the mesh)
+#   gateway-lease    the Core is slow and a Gateway pod is killed with deliveries in
+#                    flight: its leases must expire and be recovered (needs the mesh)
+#   broker           the Redpanda broker pod is killed
+#   node             a worker node stops for a minute (the one with the Core's primary)
 #   none             nothing fails (a check of the script itself)
 #
 # The script then waits for every delivery and order to settle and checks the
@@ -24,7 +30,8 @@
 #
 # Run scripts/k8s/up.sh and scripts/k8s/provision-source.sh first.
 #
-# Usage: scripts/k8s/verify-failures.sh [pods|core-primary|gateway-primary|none]
+# Usage: scripts/k8s/verify-failures.sh [pods|core-primary|gateway-primary|core-slow|
+#                                         core-errors|gateway-lease|broker|node|none]
 #   VERIFY_ORDERS=60          webhooks to send
 #   VERIFY_WAIT_SECONDS=300   time allowed for everything to settle
 
@@ -44,8 +51,13 @@ readonly SENDER="verify-sender-$RUN_ID"
 require_command python3
 
 case "$SCENARIO" in
-pods | core-primary | gateway-primary | none) ;;
-*) fail "Unknown scenario: $SCENARIO (use pods, core-primary, gateway-primary or none)." ;;
+pods | core-primary | gateway-primary | core-slow | core-errors | gateway-lease | broker | node | none) ;;
+*) fail "Unknown scenario: $SCENARIO (see the usage at the top of this script)." ;;
+esac
+case "$SCENARIO" in
+core-slow | core-errors | gateway-lease)
+    mesh_installed || fail "Scenario $SCENARIO injects the fault at the Core's waypoint: run scripts/k8s/mesh.sh first."
+    ;;
 esac
 
 cleanup() {
@@ -179,6 +191,71 @@ YAML
         fail "The sender pod did not start."
 }
 
+# Injects a fault at the Core's waypoint, or takes it away again. A fault replaces
+# the Core's VirtualService; the base file (no retries) restores it.
+inject_core_fault() {
+    kube apply -f "$DEPLOY_DIR/mesh/faults/$1.yaml" >/dev/null
+    sleep 8
+    printf '  fault injected at the Core waypoint: %s\n' "$1"
+}
+
+clear_core_fault() {
+    kube apply -f "$DEPLOY_DIR/mesh/waypoint.yaml" >/dev/null
+    printf '  fault removed\n'
+}
+
+# The names of the alerts active in Alertmanager, when the observability stack is
+# installed; nothing otherwise.
+active_alerts() {
+    observability_installed || return 0
+    start_port_forward observability svc/alertmanager 19094:9093
+    local names="" attempt
+    for ((attempt = 0; attempt < 10; attempt += 1)); do
+        names="$(curl --silent "http://127.0.0.1:19094/api/v2/alerts" 2>/dev/null | python3 -c '
+import json, sys
+for alert in json.load(sys.stdin):
+    if alert["status"]["state"] == "active":
+        print(alert["labels"]["alertname"])' 2>/dev/null)" && break
+        sleep 1
+    done
+    stop_port_forwards
+    printf '%s' "$names"
+}
+
+# Waits for an alert to be active in Alertmanager. Skipped without the stack.
+expect_alert() {
+    local alert=$1 started=$SECONDS
+    observability_installed || return 0
+    while ((SECONDS - started < ${2:-150})); do
+        if active_alerts | grep -qx "$alert"; then
+            printf '  ok    %s reached Alertmanager after %d s\n' "$alert" "$((SECONDS - started))"
+            return 0
+        fi
+        sleep 10
+    done
+    printf '  FAIL  %s did not reach Alertmanager\n' "$alert"
+    failures=$((failures + 1))
+}
+
+# Stops the worker node that hosts the primary of the Core's PostgreSQL cluster for
+# a minute, then starts it again and waits for it to rejoin. Everything on it
+# stops: the primary, possibly a Core and a Gateway replica, perhaps the broker.
+stop_primary_node() {
+    local primary node
+    primary="$(kube -n "$DATA_NAMESPACE" get cluster core -o 'jsonpath={.status.currentPrimary}')"
+    node="$(kube -n "$DATA_NAMESPACE" get pod "$primary" -o 'jsonpath={.spec.nodeName}')"
+    printf '  stopping node %s, which hosts %s (the Core primary)\n' "$node" "$primary"
+    docker stop "$node" >/dev/null
+    sleep 60
+    docker start "$node" >/dev/null
+    printf '  node %s started again\n' "$node"
+    local attempt
+    for ((attempt = 0; attempt < 90; attempt += 1)); do
+        kube get node "$node" -o 'jsonpath={.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null | grep -q True && break
+        sleep 2
+    done
+}
+
 # Kills a pod of the deployment at once, as a crash would.
 kill_one_pod() {
     local pod
@@ -201,6 +278,14 @@ wait_for_sender() {
 delivery_counts() {
     gateway_sql "select count(*), count(*) filter (where status = 'DELIVERED')
         from inbound_deliveries where external_event_id like 'evt-verify-$RUN_ID-%'"
+}
+
+# How many of the run's outbox events are published; the last OrderReady of an
+# order is published after the order is READY, and after a backoff if the broker
+# was away.
+published_event_count() {
+    core_sql "select count(*) from outbox_events where status = 'PUBLISHED'
+        and aggregate_id in (select id from orders where external_order_id like 'VERIFY-$RUN_ID-%')"
 }
 
 order_counts() {
@@ -230,19 +315,20 @@ kill_primary() {
 }
 
 wait_to_settle() {
-    local deliveries orders
+    local deliveries orders events
     for ((second = 0; second < WAIT_SECONDS; second += 5)); do
         # A database can be unreachable for a moment during a failover.
         deliveries="$(delivery_counts 2>/dev/null || printf 'unavailable')"
         orders="$(order_counts 2>/dev/null || printf 'unavailable')"
-        if [[ "$deliveries" == "$ORDERS|$ORDERS" && "$orders" == "$ORDERS|$ORDERS" ]]; then
+        events="$(published_event_count 2>/dev/null || printf 'unavailable')"
+        if [[ "$deliveries" == "$ORDERS|$ORDERS" && "$orders" == "$ORDERS|$ORDERS" && "$events" == "$((ORDERS * 2))" ]]; then
             printf '  settled after about %d s\n' "$second"
             return 0
         fi
         sleep 5
     done
-    printf '  not settled after %d s: deliveries (total|delivered) %s, orders (total|ready) %s\n' \
-        "$WAIT_SECONDS" "$deliveries" "$orders"
+    printf '  not settled after %d s: deliveries (total|delivered) %s, orders (total|ready) %s, events published %s\n' \
+        "$WAIT_SECONDS" "$deliveries" "$orders" "$events"
 }
 
 failures=0
@@ -322,6 +408,12 @@ main() {
             BEGIN { n = split(pods, pairs, ";"); for (i = 1; i <= n; i++) { split(pairs[i], f, "="); name[f[1]] = f[2] } }
             $1 == "integration.order.received.v1" { print "  partition " $2 " -> " ($NF in name ? name[$NF] : $NF) }' || true
 
+    # A slow Core must be slow before the first webhook arrives, or the deliveries
+    # are forwarded, quickly, before it is.
+    case "$SCENARIO" in
+    core-slow | gateway-lease) inject_core_fault core-slow ;;
+    esac
+
     printf 'Sending.\n'
     start_sender
     sleep 3
@@ -333,12 +425,36 @@ main() {
         ;;
     core-primary) kill_primary core ;;
     gateway-primary) kill_primary gateway ;;
+    core-slow) ;;
+    core-errors)
+        inject_core_fault core-errors
+        sleep 20
+        clear_core_fault
+        ;;
+    gateway-lease)
+        # Three seconds in, the Gateway replicas hold leases on deliveries that
+        # are waiting for the slow Core.
+        kill_one_pod connector-gateway
+        ;;
+    broker)
+        kube -n "$DATA_NAMESPACE" delete pod redpanda-0 --grace-period=0 --force >/dev/null 2>&1
+        printf '  killed redpanda-0, the broker\n'
+        ;;
+    node) stop_primary_node ;;
     none) ;;
     esac
     local sender_summary
     sender_summary="$(wait_for_sender)"
     printf '  sender: %s\n' "$sender_summary"
     accepted="$(printf '%s' "$sender_summary" | python3 -c 'import json, sys; print(json.load(sys.stdin)["accepted"])' 2>/dev/null || printf '0')"
+
+    # A slow Core stays slow while the deliveries are forwarded, then is released.
+    case "$SCENARIO" in
+    core-slow | gateway-lease)
+        sleep 15
+        clear_core_fault
+        ;;
+    esac
 
     printf 'Waiting for deliveries and orders to settle.\n'
     wait_to_settle
@@ -348,6 +464,34 @@ main() {
 
     printf 'Checking the databases.\n'
     verify_databases
+
+    # A fault that changes nothing proves nothing: the attempts the Gateway recorded
+    # show whether it took effect.
+    case "$SCENARIO" in
+    core-slow | gateway-lease)
+        check "delivery attempts that took 3 s or more (the delay took effect)" "yes" \
+            "$(gateway_sql "select case when count(*) > 0 then 'yes' else 'no' end from delivery_attempts a
+                join inbound_deliveries d on d.id = a.delivery_id
+                where d.external_event_id like 'evt-verify-$RUN_ID-%' and a.duration_ms >= 3000")"
+        ;;
+    core-errors)
+        check "delivery attempts the Core refused with 503 (the outage took effect)" "yes" \
+            "$(gateway_sql "select case when count(*) > 0 then 'yes' else 'no' end from delivery_attempts a
+                join inbound_deliveries d on d.id = a.delivery_id
+                where d.external_event_id like 'evt-verify-$RUN_ID-%' and a.http_status = 503")"
+        ;;
+    esac
+
+    case "$SCENARIO" in
+    gateway-lease)
+        # The killed pod's deliveries were leased for 60 s; another replica recovers them.
+        check "deliveries recovered after their lease expired" "yes" \
+            "$(gateway_sql "select case when count(*) filter (where attempt_count > 1) > 0 then 'yes' else 'no' end
+                from inbound_deliveries where external_event_id like 'evt-verify-$RUN_ID-%'")"
+        expect_alert GatewayDeliveryClaimsRecovered 120
+        ;;
+    core-errors) printf '  info  alerts active at the end: %s\n' "$(active_alerts | tr '\n' ' ')" ;;
+    esac
 
     if ((failures > 0)); then
         fail "$failures check(s) failed."
