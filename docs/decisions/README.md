@@ -45,6 +45,9 @@ implementation chronology.
   traces across HTTP, Kafka, and durable work boundaries; local Jaeger viewer.
 - [ADR 0021](0021-local-kubernetes-deployment.md) (Proposed): optional local
   Kubernetes environment with kind, CloudNativePG, Redpanda, and Istio ambient.
+- [ADR 0022](0022-synchronous-postgresql-replication.md) (Proposed):
+  synchronous `preferred` replication for the Kubernetes PostgreSQL clusters,
+  with measured latency and availability trade-offs.
 
 Accepted records are not edited to hide a later change of direction. Later
 extensions or replacements are recorded in a new ADR and linked to the earlier
