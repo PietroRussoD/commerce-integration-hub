@@ -1,0 +1,200 @@
+# Alert rules for the Hub, shared by the Compose observability profile and the
+# local Kubernetes environment. Every rule has a test in alerts.test.yml and a
+# section in docs/runbooks/alerts.md.
+#
+# Severity: `page` means work has stopped or will be lost without a person;
+# `ticket` means a degradation to look at during working hours.
+#
+# The thresholds are demonstrative: the Hub has no load test and no production
+# traffic to calibrate them against. Where they come from is noted on each rule.
+#
+# Gauges that describe a shared database (backlogs, ages, failed events) report
+# the same value from every replica, so they are aggregated with `max`. Counters
+# are local to each process and are summed.
+
+groups:
+  - name: hub-availability
+    rules:
+      - alert: HubTargetDown
+        # `service` names the application, so that this alert can silence the
+        # others of the same service (see alertmanager.yml).
+        expr: label_replace(up{job=~"integration-core|connector-gateway"}, "service", "$1", "job", "(.*)") == 0
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          summary: "{{ $labels.service }} ({{ $labels.instance }}) cannot be scraped"
+          description: "Prometheus has not reached {{ $labels.instance }} for a minute: the process is down, unready or unreachable."
+          runbook_url: docs/runbooks/alerts.md#hubtargetdown
+
+  - name: hub-integration-core
+    rules:
+      - alert: OutboxEventsWaitingTooLong
+        # Normal age is seconds. A burst of 6,200 orders took about five minutes
+        # to drain (ADR 0022), so ten minutes means publishing has stopped or
+        # cannot keep up.
+        expr: max(integration_hub_outbox_backlog_oldest_age_seconds) > 600
+        for: 5m
+        labels:
+          severity: page
+          service: integration-core
+        annotations:
+          summary: "The oldest outbox event has waited {{ $value | humanizeDuration }}"
+          description: "Orders are accepted but their events are not reaching Kafka, so they do not progress to READY."
+          runbook_url: docs/runbooks/alerts.md#outboxeventswaitingtoolong
+
+      - alert: OutboxBacklogLarge
+        # About ten events a second are published with two replicas: a thousand
+        # waiting for fifteen minutes means arrivals exceed that for a long time.
+        expr: max(integration_hub_outbox_backlog_events) > 1000
+        for: 15m
+        labels:
+          severity: ticket
+          service: integration-core
+        annotations:
+          summary: "{{ $value }} outbox events are waiting to be published"
+          description: "Orders arrive faster than the outbox publishes them."
+          runbook_url: docs/runbooks/alerts.md#outboxbackloglarge
+
+      - alert: OutboxEventsFailed
+        # A failed event is terminal: its order will not progress without a person.
+        expr: max(integration_hub_outbox_failed_events) > 0
+        labels:
+          severity: page
+          service: integration-core
+        annotations:
+          summary: "{{ $value }} outbox events failed terminally"
+          description: "These events will not be published again on their own; their orders are stuck."
+          runbook_url: docs/runbooks/alerts.md#outboxeventsfailed
+
+      - alert: OutboxBacklogUnknown
+        # The gauges read NaN when their last refresh failed; NaN is the only
+        # value that is not equal to itself.
+        expr: count(integration_hub_outbox_backlog_events != integration_hub_outbox_backlog_events) > 0
+        for: 5m
+        labels:
+          severity: ticket
+          service: integration-core
+        annotations:
+          summary: "The outbox backlog cannot be read"
+          description: "The Core cannot query its outbox for the backlog metrics, so the outbox alerts above are blind."
+          runbook_url: docs/runbooks/alerts.md#outboxbacklogunknown
+
+      - alert: OutboxDispatchFailuresHigh
+        # More than one claimed event in ten rescheduled or failed.
+        expr: |
+          sum(rate(integration_hub_outbox_dispatch_events_total{outcome=~"rescheduled|failed"}[10m]))
+            / clamp_min(sum(rate(integration_hub_outbox_dispatch_events_total{outcome="claimed"}[10m])), 1e-9)
+            > 0.1
+        for: 10m
+        labels:
+          severity: ticket
+          service: integration-core
+        annotations:
+          summary: "{{ $value | humanizePercentage }} of claimed outbox events fail to publish"
+          description: "Publishing to Kafka is failing often; events are retried with backoff."
+          runbook_url: docs/runbooks/alerts.md#outboxdispatchfailureshigh
+
+      - alert: OutboxClaimsRecovered
+        # A recovered claim means a publisher stopped while holding events.
+        expr: sum(increase(integration_hub_outbox_recovery_events_total[15m])) > 0
+        labels:
+          severity: ticket
+          service: integration-core
+        annotations:
+          summary: "Expired outbox claims were recovered in the last 15 minutes"
+          description: "A Core replica stopped while publishing; its events were published late, after the claim timeout."
+          runbook_url: docs/runbooks/alerts.md#outboxclaimsrecovered
+
+      - alert: SearchProjectionLagging
+        # The processing delay of the latest projected event; unlike the watermark
+        # age, it does not grow when no orders arrive.
+        # In seconds, for the summary below.
+        expr: max(integration_hub_order_search_projection_processing_delay_milliseconds) / 1000 > 60
+        for: 10m
+        labels:
+          severity: ticket
+          service: integration-core
+        annotations:
+          summary: "Orders reach search {{ $value | humanizeDuration }} late"
+          description: "The OpenSearch projection is running behind the order events."
+          runbook_url: docs/runbooks/alerts.md#searchprojectionlagging
+
+  - name: hub-connector-gateway
+    rules:
+      - alert: GatewayDeliveryBacklogStale
+        # Same reasoning as the outbox: deliveries are normally forwarded in seconds.
+        expr: max(connector_gateway_delivery_backlog_oldest_age_seconds) > 600
+        for: 5m
+        labels:
+          severity: page
+          service: connector-gateway
+        annotations:
+          summary: "The oldest delivery has waited {{ $value | humanizeDuration }} to be forwarded"
+          description: "Webhooks are accepted but not forwarded to the Core."
+          runbook_url: docs/runbooks/alerts.md#gatewaydeliverybacklogstale
+
+      - alert: GatewayDeliveryWorkerStalled
+        # Only where the worker has run at least once: a Gateway started without a
+        # source credential runs no worker at all.
+        expr: |
+          (time() - max(connector_gateway_delivery_worker_last_completed_unixtime) > 300)
+            and max(connector_gateway_delivery_worker_last_completed_unixtime) > 0
+        for: 2m
+        labels:
+          severity: page
+          service: connector-gateway
+        annotations:
+          summary: "No delivery worker cycle has completed for {{ $value | humanizeDuration }}"
+          description: "The delivery worker has stopped on every Gateway replica."
+          runbook_url: docs/runbooks/alerts.md#gatewaydeliveryworkerstalled
+
+      - alert: GatewayPermanentDeliveryFailure
+        expr: sum(increase(connector_gateway_delivery_worker_deliveries_total{outcome="permanent_failure"}[15m])) > 0
+        labels:
+          severity: page
+          service: connector-gateway
+        annotations:
+          summary: "Deliveries failed permanently in the last 15 minutes"
+          description: "The Core rejected deliveries in a way that retrying cannot fix; they need replay after a fix."
+          runbook_url: docs/runbooks/alerts.md#gatewaypermanentdeliveryfailure
+
+      - alert: GatewayDeliveryFailuresHigh
+        # More than one claimed delivery in five failed and retried.
+        expr: |
+          sum(rate(connector_gateway_delivery_worker_deliveries_total{outcome="retryable_failure"}[10m]))
+            / clamp_min(sum(rate(connector_gateway_delivery_worker_deliveries_total{outcome="claimed"}[10m])), 1e-9)
+            > 0.2
+        for: 10m
+        labels:
+          severity: ticket
+          service: connector-gateway
+        annotations:
+          summary: "{{ $value | humanizePercentage }} of deliveries to the Core fail and are retried"
+          description: "The Core is slow, unavailable or rejecting requests; deliveries are retried with backoff."
+          runbook_url: docs/runbooks/alerts.md#gatewaydeliveryfailureshigh
+
+      - alert: GatewayDeliveryClaimsRecovered
+        expr: sum(increase(connector_gateway_delivery_worker_recovery_total{outcome="recovered"}[15m])) > 0
+        labels:
+          severity: ticket
+          service: connector-gateway
+        annotations:
+          summary: "Expired delivery leases were recovered in the last 15 minutes"
+          description: "A Gateway replica stopped while forwarding; its deliveries were retried after the lease expired."
+          runbook_url: docs/runbooks/alerts.md#gatewaydeliveryclaimsrecovered
+
+      - alert: ErpBPollingStale
+        # Only once polling has succeeded at least once, so that a Gateway with
+        # polling off does not alert.
+        expr: |
+          max(connector_gateway_erp_b_polling_checkpoint_age_seconds) > 900
+            and max(connector_gateway_erp_b_polling_last_successful_unixtime) > 0
+        for: 5m
+        labels:
+          severity: page
+          service: connector-gateway
+        annotations:
+          summary: "ERP_B has not been polled successfully for {{ $value | humanizeDuration }}"
+          description: "New ERP_B orders are not being collected."
+          runbook_url: docs/runbooks/alerts.md#erpbpollingstale

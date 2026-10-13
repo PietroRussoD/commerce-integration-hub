@@ -1,0 +1,327 @@
+# Tests for alerts.yml. Run from the repository root:
+#   docker run --rm --entrypoint promtool -v "$PWD/observability/prometheus:/rules:ro" \
+#     prom/prometheus:v3.15.0 test rules /rules/alerts.test.yml
+
+rule_files:
+  - alerts.yml
+
+evaluation_interval: 1m
+
+tests:
+  - name: a target that cannot be scraped
+    interval: 1m
+    input_series:
+      - series: 'up{job="integration-core", instance="core-1:8080"}'
+        values: '1 1 0 0 0 0'
+      - series: 'up{job="connector-gateway", instance="gateway-1:8081"}'
+        values: '1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: HubTargetDown
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: HubTargetDown
+        exp_alerts:
+          - exp_labels: { severity: page, service: integration-core, job: integration-core, instance: "core-1:8080" }
+            exp_annotations:
+              summary: "integration-core (core-1:8080) cannot be scraped"
+              description: "Prometheus has not reached core-1:8080 for a minute: the process is down, unready or unreachable."
+              runbook_url: docs/runbooks/alerts.md#hubtargetdown
+
+  - name: outbox events waiting longer and longer, seen by two replicas
+    interval: 1m
+    input_series:
+      - series: 'integration_hub_outbox_backlog_oldest_age_seconds{instance="core-1:8080"}'
+        values: '0+60x20'
+      - series: 'integration_hub_outbox_backlog_oldest_age_seconds{instance="core-2:8080"}'
+        values: '0+60x20'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: OutboxEventsWaitingTooLong
+        exp_alerts: []
+      - eval_time: 16m
+        alertname: OutboxEventsWaitingTooLong
+        exp_alerts:
+          - exp_labels: { severity: page, service: integration-core }
+            exp_annotations:
+              summary: "The oldest outbox event has waited 16m 0s"
+              description: "Orders are accepted but their events are not reaching Kafka, so they do not progress to READY."
+              runbook_url: docs/runbooks/alerts.md#outboxeventswaitingtoolong
+
+  - name: a large outbox backlog
+    interval: 1m
+    input_series:
+      - series: 'integration_hub_outbox_backlog_events{instance="core-1:8080"}'
+        values: '1200x20'
+    alert_rule_test:
+      - eval_time: 14m
+        alertname: OutboxBacklogLarge
+        exp_alerts: []
+      - eval_time: 15m
+        alertname: OutboxBacklogLarge
+        exp_alerts:
+          - exp_labels: { severity: ticket, service: integration-core }
+            exp_annotations:
+              summary: "1200 outbox events are waiting to be published"
+              description: "Orders arrive faster than the outbox publishes them."
+              runbook_url: docs/runbooks/alerts.md#outboxbackloglarge
+
+  - name: terminally failed outbox events
+    interval: 1m
+    input_series:
+      - series: 'integration_hub_outbox_failed_events{instance="core-1:8080"}'
+        values: '0 0 2 2'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: OutboxEventsFailed
+        exp_alerts: []
+      - eval_time: 2m
+        alertname: OutboxEventsFailed
+        exp_alerts:
+          - exp_labels: { severity: page, service: integration-core }
+            exp_annotations:
+              summary: "2 outbox events failed terminally"
+              description: "These events will not be published again on their own; their orders are stuck."
+              runbook_url: docs/runbooks/alerts.md#outboxeventsfailed
+
+  - name: a backlog that cannot be read on one replica
+    interval: 1m
+    input_series:
+      - series: 'integration_hub_outbox_backlog_events{instance="core-1:8080"}'
+        values: 'NaN NaN NaN NaN NaN NaN NaN'
+      - series: 'integration_hub_outbox_backlog_events{instance="core-2:8080"}'
+        values: '5 5 5 5 5 5 5'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: OutboxBacklogUnknown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: OutboxBacklogUnknown
+        exp_alerts:
+          - exp_labels: { severity: ticket, service: integration-core }
+            exp_annotations:
+              summary: "The outbox backlog cannot be read"
+              description: "The Core cannot query its outbox for the backlog metrics, so the outbox alerts above are blind."
+              runbook_url: docs/runbooks/alerts.md#outboxbacklogunknown
+
+  - name: a backlog that can be read does not look unknown
+    interval: 1m
+    input_series:
+      - series: 'integration_hub_outbox_backlog_events{instance="core-1:8080"}'
+        values: '0 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: OutboxBacklogUnknown
+        exp_alerts: []
+
+  - name: outbox publishing that fails often, summed over two replicas
+    interval: 1m
+    input_series:
+      - series: 'integration_hub_outbox_dispatch_events_total{instance="core-1:8080", outcome="claimed"}'
+        values: '0+50x30'
+      - series: 'integration_hub_outbox_dispatch_events_total{instance="core-2:8080", outcome="claimed"}'
+        values: '0+50x30'
+      - series: 'integration_hub_outbox_dispatch_events_total{instance="core-1:8080", outcome="rescheduled"}'
+        values: '0+20x30'
+      - series: 'integration_hub_outbox_dispatch_events_total{instance="core-2:8080", outcome="failed"}'
+        values: '0+0x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: OutboxDispatchFailuresHigh
+        exp_alerts:
+          - exp_labels: { severity: ticket, service: integration-core }
+            exp_annotations:
+              summary: "20% of claimed outbox events fail to publish"
+              description: "Publishing to Kafka is failing often; events are retried with backoff."
+              runbook_url: docs/runbooks/alerts.md#outboxdispatchfailureshigh
+
+  - name: occasional outbox publishing failures
+    interval: 1m
+    input_series:
+      - series: 'integration_hub_outbox_dispatch_events_total{instance="core-1:8080", outcome="claimed"}'
+        values: '0+100x30'
+      - series: 'integration_hub_outbox_dispatch_events_total{instance="core-1:8080", outcome="rescheduled"}'
+        values: '0+5x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: OutboxDispatchFailuresHigh
+        exp_alerts: []
+
+  - name: an expired outbox claim recovered
+    interval: 1m
+    input_series:
+      - series: 'integration_hub_outbox_recovery_events_total{instance="core-1:8080"}'
+        values: '0 0 0 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: OutboxClaimsRecovered
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: OutboxClaimsRecovered
+        exp_alerts:
+          - exp_labels: { severity: ticket, service: integration-core }
+            exp_annotations:
+              summary: "Expired outbox claims were recovered in the last 15 minutes"
+              description: "A Core replica stopped while publishing; its events were published late, after the claim timeout."
+              runbook_url: docs/runbooks/alerts.md#outboxclaimsrecovered
+      - eval_time: 20m
+        alertname: OutboxClaimsRecovered
+        exp_alerts: []
+
+  - name: a search projection running behind
+    interval: 1m
+    input_series:
+      - series: 'integration_hub_order_search_projection_processing_delay_milliseconds{instance="core-1:8080"}'
+        values: '120000x20'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: SearchProjectionLagging
+        exp_alerts: []
+      - eval_time: 10m
+        alertname: SearchProjectionLagging
+        exp_alerts:
+          - exp_labels: { severity: ticket, service: integration-core }
+            exp_annotations:
+              summary: "Orders reach search 2m 0s late"
+              description: "The OpenSearch projection is running behind the order events."
+              runbook_url: docs/runbooks/alerts.md#searchprojectionlagging
+
+  - name: Gateway deliveries waiting longer and longer
+    interval: 1m
+    input_series:
+      - series: 'connector_gateway_delivery_backlog_oldest_age_seconds{instance="gateway-1:8081"}'
+        values: '0+60x20'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: GatewayDeliveryBacklogStale
+        exp_alerts: []
+      - eval_time: 16m
+        alertname: GatewayDeliveryBacklogStale
+        exp_alerts:
+          - exp_labels: { severity: page, service: connector-gateway }
+            exp_annotations:
+              summary: "The oldest delivery has waited 16m 0s to be forwarded"
+              description: "Webhooks are accepted but not forwarded to the Core."
+              runbook_url: docs/runbooks/alerts.md#gatewaydeliverybacklogstale
+
+  - name: a delivery worker that stopped completing cycles
+    interval: 1m
+    input_series:
+      - series: 'connector_gateway_delivery_worker_last_completed_unixtime{instance="gateway-1:8081"}'
+        values: '60x20'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: GatewayDeliveryWorkerStalled
+        exp_alerts: []
+      - eval_time: 9m
+        alertname: GatewayDeliveryWorkerStalled
+        exp_alerts:
+          - exp_labels: { severity: page, service: connector-gateway }
+            exp_annotations:
+              summary: "No delivery worker cycle has completed for 8m 0s"
+              description: "The delivery worker has stopped on every Gateway replica."
+              runbook_url: docs/runbooks/alerts.md#gatewaydeliveryworkerstalled
+
+  - name: a Gateway whose delivery worker never ran
+    interval: 1m
+    input_series:
+      - series: 'connector_gateway_delivery_worker_last_completed_unixtime{instance="gateway-1:8081"}'
+        values: '0x20'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: GatewayDeliveryWorkerStalled
+        exp_alerts: []
+
+  - name: a permanent delivery failure
+    interval: 1m
+    input_series:
+      - series: 'connector_gateway_delivery_worker_deliveries_total{instance="gateway-1:8081", outcome="permanent_failure"}'
+        values: '0 0 1 1'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: GatewayPermanentDeliveryFailure
+        exp_alerts: []
+      - eval_time: 2m
+        alertname: GatewayPermanentDeliveryFailure
+        exp_alerts:
+          - exp_labels: { severity: page, service: connector-gateway }
+            exp_annotations:
+              summary: "Deliveries failed permanently in the last 15 minutes"
+              description: "The Core rejected deliveries in a way that retrying cannot fix; they need replay after a fix."
+              runbook_url: docs/runbooks/alerts.md#gatewaypermanentdeliveryfailure
+
+  - name: deliveries to the Core that fail often
+    interval: 1m
+    input_series:
+      - series: 'connector_gateway_delivery_worker_deliveries_total{instance="gateway-1:8081", outcome="claimed"}'
+        values: '0+100x30'
+      - series: 'connector_gateway_delivery_worker_deliveries_total{instance="gateway-1:8081", outcome="retryable_failure"}'
+        values: '0+30x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: GatewayDeliveryFailuresHigh
+        exp_alerts:
+          - exp_labels: { severity: ticket, service: connector-gateway }
+            exp_annotations:
+              summary: "30% of deliveries to the Core fail and are retried"
+              description: "The Core is slow, unavailable or rejecting requests; deliveries are retried with backoff."
+              runbook_url: docs/runbooks/alerts.md#gatewaydeliveryfailureshigh
+
+  - name: occasional delivery failures
+    interval: 1m
+    input_series:
+      - series: 'connector_gateway_delivery_worker_deliveries_total{instance="gateway-1:8081", outcome="claimed"}'
+        values: '0+100x30'
+      - series: 'connector_gateway_delivery_worker_deliveries_total{instance="gateway-1:8081", outcome="retryable_failure"}'
+        values: '0+10x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: GatewayDeliveryFailuresHigh
+        exp_alerts: []
+
+  - name: an expired delivery lease recovered
+    interval: 1m
+    input_series:
+      - series: 'connector_gateway_delivery_worker_recovery_total{instance="gateway-1:8081", outcome="recovered"}'
+        values: '0 0 0 2 2 2'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: GatewayDeliveryClaimsRecovered
+        exp_alerts:
+          - exp_labels: { severity: ticket, service: connector-gateway }
+            exp_annotations:
+              summary: "Expired delivery leases were recovered in the last 15 minutes"
+              description: "A Gateway replica stopped while forwarding; its deliveries were retried after the lease expired."
+              runbook_url: docs/runbooks/alerts.md#gatewaydeliveryclaimsrecovered
+
+  - name: ERP_B polling that stopped succeeding
+    interval: 1m
+    input_series:
+      - series: 'connector_gateway_erp_b_polling_checkpoint_age_seconds{instance="gateway-1:8081"}'
+        values: '0+60x30'
+      - series: 'connector_gateway_erp_b_polling_last_successful_unixtime{instance="gateway-1:8081"}'
+        values: '100x30'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ErpBPollingStale
+        exp_alerts: []
+      - eval_time: 21m
+        alertname: ErpBPollingStale
+        exp_alerts:
+          - exp_labels: { severity: page, service: connector-gateway }
+            exp_annotations:
+              summary: "ERP_B has not been polled successfully for 21m 0s"
+              description: "New ERP_B orders are not being collected."
+              runbook_url: docs/runbooks/alerts.md#erpbpollingstale
+
+  - name: a Gateway with ERP_B polling off
+    interval: 1m
+    input_series:
+      - series: 'connector_gateway_erp_b_polling_checkpoint_age_seconds{instance="gateway-1:8081"}'
+        values: '0+60x30'
+      - series: 'connector_gateway_erp_b_polling_last_successful_unixtime{instance="gateway-1:8081"}'
+        values: '0x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: ErpBPollingStale
+        exp_alerts: []
