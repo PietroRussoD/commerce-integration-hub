@@ -86,6 +86,40 @@ kind_with_kubeconfig() {
     kind "$@" --name "$CLUSTER_NAME" --kubeconfig "$HUB_KUBECONFIG"
 }
 
+# Port-forwards started by start_port_forward, stopped by stop_port_forwards.
+PORT_FORWARD_PIDS=()
+
+# Starts a port-forward to 127.0.0.1 in the background. kubectl is started here
+# directly, so that the recorded process is kubectl itself: backgrounding the
+# `kube` function would record a subshell and leave kubectl running.
+#
+# Usage: start_port_forward <namespace> <resource> <local-port>:<remote-port>
+start_port_forward() {
+    assert_local_cluster
+    kubectl --kubeconfig "$HUB_KUBECONFIG" --context "$KUBE_CONTEXT" -n "$1" \
+        port-forward --address 127.0.0.1 "$2" "$3" >/dev/null 2>&1 &
+    PORT_FORWARD_PIDS+=("$!")
+}
+
+stop_port_forwards() {
+    local pid
+    for pid in "${PORT_FORWARD_PIDS[@]:-}"; do
+        [[ -n "$pid" ]] && kill "$pid" 2>/dev/null || true
+    done
+    PORT_FORWARD_PIDS=()
+}
+
+istio_cmd() {
+    assert_local_cluster
+    istioctl --kubeconfig "$HUB_KUBECONFIG" --context "$KUBE_CONTEXT" "$@"
+}
+
+# Whether the service mesh and its ingress are installed.
+mesh_installed() {
+    assert_local_cluster
+    kube -n hub-ingress get gateway hub-ingress >/dev/null 2>&1
+}
+
 kind_load_image() {
     kind load docker-image "$1" --name "$CLUSTER_NAME"
 }

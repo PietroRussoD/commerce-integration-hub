@@ -1,0 +1,10 @@
+# Inside the application namespace every connection must be mutual TLS: a pod
+# outside the mesh cannot reach the applications at all.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: strict-mtls
+  namespace: hub
+spec:
+  mtls:
+    mode: STRICT
