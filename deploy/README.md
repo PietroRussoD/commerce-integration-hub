@@ -96,8 +96,9 @@ kubectl -n hub-ingress port-forward svc/hub-ingress-istio 8080:80
 `verify-mesh.sh` checks that every pod speaks mutual TLS, that a pod outside the
 mesh and a meshed pod with an identity nobody allowed are both refused, that the
 allowed callers get through, that Prometheus still scrapes every replica, and
-that the ingress does not expose health or metrics. `mesh.sh remove` takes it
-all away.
+that the ingress does not expose health or metrics. The checks that involve
+Prometheus run only when the observability stack is installed. `mesh.sh remove`
+takes it all away.
 
 ## Observability
 
@@ -105,7 +106,10 @@ all away.
 [`observability/`](../observability/README.md): the alert rules
 (`prometheus/alerts.yml`), `alertmanager.yml`, the Collector and the Grafana
 provisioning, loaded into ConfigMaps, so Compose and the cluster share them.
-`observability.sh remove` takes it away and turns tracing off. `HUB_GRAFANA=false`
+`observability.sh remove` takes it away and turns tracing off. With the mesh
+installed, it puts the `observability` namespace in the mesh first, so that
+Prometheus can still scrape the applications; either order of the two scripts
+works. `HUB_GRAFANA=false`
 leaves Grafana out, the heaviest piece (about 370 MB).
 
 Prometheus finds the application pods itself, so every replica is a target of its
