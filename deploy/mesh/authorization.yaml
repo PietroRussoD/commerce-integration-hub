@@ -1,0 +1,100 @@
+# Who may call whom in the application namespace, by workload identity (service
+# account). ztunnel enforces these at layer 4: they name the caller and the port,
+# not the path. Anything not allowed here is refused.
+
+# Nothing is allowed unless a policy below allows it.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-nothing
+  namespace: hub
+spec: {}
+---
+# The Core's pods accept connections from three places only: its own waypoint
+# (every call made to the Core Service goes through it), the ingress (which
+# reaches the pods directly), and Prometheus (which scrapes the pods directly).
+# Nobody can bypass the waypoint by calling a pod: the callers it admits are not
+# named here.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: integration-core
+  namespace: hub
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: integration-core
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/hub/sa/core-waypoint
+              - cluster.local/ns/hub-ingress/sa/hub-ingress-istio
+              - cluster.local/ns/observability/sa/prometheus
+      to:
+        - operation:
+            ports: ["8080"]
+---
+# Who may call the Core Service, checked at the waypoint, where the caller's own
+# identity is still known. The test identity is the one the pods of the
+# verification scripts (scripts/k8s/verify-*.sh, measure-ingestion.sh) run as.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: integration-core-callers
+  namespace: hub
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: core-waypoint
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/hub/sa/connector-gateway
+              - cluster.local/ns/hub/sa/hub-test-client
+---
+# The Gateway takes provider webhooks and operator requests through the ingress.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: connector-gateway
+  namespace: hub
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: connector-gateway
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/hub-ingress/sa/hub-ingress-istio
+              - cluster.local/ns/observability/sa/prometheus
+              - cluster.local/ns/hub/sa/hub-test-client
+      to:
+        - operation:
+            ports: ["8081"]
+---
+# The ERP_B simulator is only polled by the Gateway.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: provider-simulator
+  namespace: hub
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: provider-simulator
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/hub/sa/connector-gateway
+      to:
+        - operation:
+            ports: ["8080"]

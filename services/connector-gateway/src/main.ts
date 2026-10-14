@@ -82,7 +82,14 @@ const deliveryWorkerConfiguration = readDeliveryWorkerConfiguration(process.env)
 const erpBPollingConfiguration = readErpBPollingConfiguration(process.env);
 const operatorSecurityConfiguration = readOperatorSecurityConfiguration(process.env);
 const telemetry = startConnectorGatewayTelemetry();
-const database = createDatabase(databaseConfiguration);
+// An idle connection the database closes is dropped by the pool; only its code is
+// logged, never its message, which can carry connection details.
+const database = createDatabase(databaseConfiguration, (error) => {
+    application.log.warn(
+        { code: (error as { code?: unknown }).code, name: error.name },
+        "An idle database connection was lost; the pool discards it"
+    );
+});
 const metrics = createConnectorGatewayMetrics({
     operationalMetricsSource: new KyselyOperationalMetricsSource(database)
 });

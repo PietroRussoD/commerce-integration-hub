@@ -1,0 +1,142 @@
+# Prometheus, Alertmanager, the OpenTelemetry Collector, Jaeger and Grafana, in
+# their own namespace. Their configuration files are the ones in observability/,
+# loaded into ConfigMaps by scripts/k8s/observability.sh.
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: prometheus, namespace: observability }
+---
+# Prometheus may only read the pods of the application namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: { name: prometheus-discovery, namespace: hub }
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: { name: prometheus-discovery, namespace: hub }
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: Role, name: prometheus-discovery }
+subjects:
+  - { kind: ServiceAccount, name: prometheus, namespace: observability }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: prometheus, namespace: observability }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/name: prometheus } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: prometheus } }
+    spec:
+      serviceAccountName: prometheus
+      securityContext: { runAsNonRoot: true, runAsUser: 65534, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v3.15.0
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=24h
+            - --web.enable-lifecycle
+          ports: [{ name: http, containerPort: 9090 }]
+          readinessProbe: { httpGet: { path: /-/ready, port: http }, periodSeconds: 5 }
+          resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { memory: 512Mi } }
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts:
+            - { name: config, mountPath: /etc/prometheus }
+            - { name: data, mountPath: /prometheus }
+      volumes:
+        - { name: config, configMap: { name: prometheus-config } }
+        - { name: data, emptyDir: {} }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: prometheus, namespace: observability }
+spec: { selector: { app.kubernetes.io/name: prometheus }, ports: [{ name: http, port: 9090, targetPort: http }] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: alertmanager, namespace: observability }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/name: alertmanager } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: alertmanager } }
+    spec:
+      automountServiceAccountToken: false
+      securityContext: { runAsNonRoot: true, runAsUser: 65534, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: alertmanager
+          image: prom/alertmanager:v0.34.1
+          args: [--config.file=/etc/alertmanager/alertmanager.yml, --storage.path=/alertmanager]
+          ports: [{ name: http, containerPort: 9093 }]
+          readinessProbe: { httpGet: { path: /-/ready, port: http }, periodSeconds: 5 }
+          resources: { requests: { cpu: 10m, memory: 32Mi }, limits: { memory: 128Mi } }
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts:
+            - { name: config, mountPath: /etc/alertmanager }
+            - { name: data, mountPath: /alertmanager }
+      volumes:
+        - { name: config, configMap: { name: alertmanager-config } }
+        - { name: data, emptyDir: {} }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: alertmanager, namespace: observability }
+spec: { selector: { app.kubernetes.io/name: alertmanager }, ports: [{ name: http, port: 9093, targetPort: http }] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: jaeger, namespace: observability }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/name: jaeger } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: jaeger } }
+    spec:
+      automountServiceAccountToken: false
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: jaeger
+          image: cr.jaegertracing.io/jaegertracing/jaeger:2.21.0
+          ports: [{ name: otlp-grpc, containerPort: 4317 }, { name: ui, containerPort: 16686 }]
+          readinessProbe: { httpGet: { path: /, port: ui }, periodSeconds: 5 }
+          resources: { requests: { cpu: 20m, memory: 64Mi }, limits: { memory: 256Mi } }
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: jaeger, namespace: observability }
+spec:
+  selector: { app.kubernetes.io/name: jaeger }
+  ports: [{ name: otlp-grpc, port: 4317, targetPort: otlp-grpc }, { name: ui, port: 16686, targetPort: ui }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: otel-collector, namespace: observability }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/name: otel-collector } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: otel-collector } }
+    spec:
+      automountServiceAccountToken: false
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:0.161.0
+          args: [--config=/etc/otelcol-contrib/config.yaml]
+          ports: [{ name: otlp-grpc, containerPort: 4317 }, { name: otlp-http, containerPort: 4318 }]
+          resources: { requests: { cpu: 20m, memory: 64Mi }, limits: { memory: 256Mi } }
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts: [{ name: config, mountPath: /etc/otelcol-contrib }]
+      volumes: [{ name: config, configMap: { name: otel-collector-config } }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: otel-collector, namespace: observability }
+spec:
+  selector: { app.kubernetes.io/name: otel-collector }
+  ports: [{ name: otlp-grpc, port: 4317, targetPort: otlp-grpc }, { name: otlp-http, port: 4318, targetPort: otlp-http }]

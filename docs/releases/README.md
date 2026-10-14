@@ -6,8 +6,8 @@ records how a release is produced.
 
 ## One version for the whole repository
 
-The Integration Core, the Connector Gateway, and the Operator Console are
-versioned together. A single annotated `vX.Y.Z` tag identifies the release, and
+The Integration Core, the Connector Gateway, the Operator Console, and the
+Helm chart are versioned together. A single annotated `vX.Y.Z` tag identifies the release, and
 `.github/workflows/release-image.yml` promotes every published image to that
 same tag. A module therefore advances even when the release did not change it.
 
@@ -29,10 +29,12 @@ decision and its alternatives are recorded in
    - `services/integration-core/pom.xml`
    - `services/connector-gateway/package.json`
    - `apps/operator-console/package.json`
+   - `deploy/charts/commerce-integration-hub/Chart.yaml` (`version` and
+     `appVersion`)
 2. **Build the milestone.** Implement one acceptance-tested increment at a time,
    keeping `main` buildable and accurately documented.
 3. **Prepare the release.** Commit `🔖 Prepare vX.Y.Z release`, which drops the
-   `-SNAPSHOT` suffix from all three manifests, adds `docs/releases/vX.Y.Z.md`,
+   `-SNAPSHOT` suffix from all three manifests and the chart, adds `docs/releases/vX.Y.Z.md`,
    and updates the README and any documentation that claims new behavior.
 4. **Verify.** Run the required checks in `AGENTS.md` and record the results,
    including the green GitHub Actions run, in the release note.
@@ -43,7 +45,8 @@ decision and its alternatives are recorded in
 
 ## Enforcement
 
-`scripts/check-module-versions.sh` fails when the three manifests disagree. CI
+`scripts/check-module-versions.sh` fails when the three manifests and the Helm
+chart disagree. CI
 runs it on every push and pull request, and the release workflow runs it with the
 tag name so that a tag whose manifests do not match it cannot promote images.
 
@@ -66,3 +69,4 @@ Run it locally at any time:
 - [v0.9.0](v0.9.0.md): durable search projection progress and observability.
 - [v1.0.0](v1.0.0.md): governed operator workflows and versioned contracts.
 - [v1.1.0](v1.1.0.md): distributed tracing across durable workflows.
+- [v1.2.0](v1.2.0.md): a local Kubernetes environment with failure tests.

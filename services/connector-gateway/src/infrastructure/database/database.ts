@@ -123,14 +123,54 @@ export interface GatewayDatabase {
     readonly polling_checkpoints: PollingCheckpointsTable;
 }
 
-export function createDatabase(configuration: DatabaseConfiguration): Kysely<GatewayDatabase> {
+export type PoolErrorHandler = (error: Error) => void;
+
+/**
+ * The connection pool. When the database closes a connection (a failover, a
+ * restart, an administrator terminating a session), the client emits `error`. An
+ * `error` event nobody listens to is an unhandled error in Node.js, and it ends the
+ * process: the Gateway would die every time PostgreSQL drops a connection. Two
+ * places need a listener:
+ *
+ * - the pool, for a client that is idle in it, which re-emits the error;
+ * - the client itself, for one that is checked out and between two queries, which
+ *   the pool does not listen to.
+ *
+ * The pool removes a broken client by itself, and a query that was running on it
+ * fails with its own error, so the listeners only report. An idle client reaches
+ * both, with the same error, which is reported once.
+ */
+export function createPool(
+    configuration: DatabaseConfiguration,
+    onPoolError: PoolErrorHandler = () => undefined
+): Pool {
+    const reported = new WeakSet<Error>();
+    const report: PoolErrorHandler = (error) => {
+        if (reported.has(error)) {
+            return;
+        }
+        reported.add(error);
+        onPoolError(error);
+    };
+    const pool = new Pool({
+        connectionTimeoutMillis: configuration.connectionTimeoutMilliseconds,
+        connectionString: configuration.connectionString,
+        max: configuration.maxPoolSize
+    });
+    pool.on("error", report);
+    pool.on("connect", (client) => {
+        client.on("error", report);
+    });
+    return pool;
+}
+
+export function createDatabase(
+    configuration: DatabaseConfiguration,
+    onPoolError?: PoolErrorHandler
+): Kysely<GatewayDatabase> {
     return new Kysely<GatewayDatabase>({
         dialect: new PostgresDialect({
-            pool: new Pool({
-                connectionTimeoutMillis: configuration.connectionTimeoutMilliseconds,
-                connectionString: configuration.connectionString,
-                max: configuration.maxPoolSize
-            })
+            pool: createPool(configuration, onPoolError)
         })
     });
 }
