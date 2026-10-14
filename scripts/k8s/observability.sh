@@ -34,6 +34,12 @@ load_configmap() {
 
 install_stack() {
     kube create namespace "$NAMESPACE" --dry-run=client -o yaml | kube apply -f - >/dev/null
+    # With the mesh installed, strict mutual TLS refuses anything outside it, so
+    # Prometheus must join the mesh to scrape the applications. The label is set
+    # before the pods exist, so that they start inside it.
+    if mesh_installed; then
+        kube label namespace "$NAMESPACE" istio.io/dataplane-mode=ambient --overwrite >/dev/null
+    fi
 
     load_configmap prometheus-config \
         --from-file=prometheus.yml="$DEPLOY_DIR/observability/prometheus.yml" \

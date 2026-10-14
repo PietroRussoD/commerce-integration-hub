@@ -61,14 +61,16 @@ wait_for_alert() {
     return 1
 }
 
-# Waits for an alert to stop being active, so that a scenario starts clean.
+# Waits for an alert to stop being active, so that a scenario starts clean. An
+# alert that is already active before the failure is caused would pass the check
+# without proving anything, so the script refuses to go on.
 wait_until_clear() {
     local alert=$1 started=$SECONDS
     while ((SECONDS - started < WAIT_SECONDS)); do
         active_alerts | grep -qx "$alert" || return 0
         sleep 5
     done
-    printf '  note  %s is still active after %d s; the next check may be affected\n' "$alert" "$WAIT_SECONDS"
+    fail "$alert is already active and does not clear: something is wrong before the failure is caused (see the alerts in Alertmanager)."
 }
 
 failures=0

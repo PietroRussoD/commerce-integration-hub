@@ -13,7 +13,8 @@
 #     without the explicit no-retry policy it does;
 #   - the ingress routes the APIs and not the health or metrics endpoints.
 #
-# Run scripts/k8s/mesh.sh first.
+# Run scripts/k8s/mesh.sh first. The checks that involve Prometheus run only if
+# the observability stack is installed (scripts/k8s/observability.sh).
 #
 # Usage: scripts/k8s/verify-mesh.sh
 
@@ -102,7 +103,9 @@ readonly SIMULATOR_URL="http://provider-simulator.$APP_NAMESPACE:8080/health"
 
 printf 'Mesh membership.\n'
 workloads="$(istio_cmd ztunnel-config workloads 2>/dev/null)"
-for namespace in "$APP_NAMESPACE" observability; do
+meshed_namespaces=("$APP_NAMESPACE")
+observability_installed && meshed_namespaces+=(observability)
+for namespace in "${meshed_namespaces[@]}"; do
     # A waypoint is a proxy of the mesh, not a workload that joins it.
     running="$(kube -n "$namespace" get pods --field-selector=status.phase=Running \
         -l '!gateway.networking.k8s.io/gateway-name' --no-headers 2>/dev/null | wc -l | tr -d ' ')"
@@ -133,27 +136,31 @@ gateway_to_core="$(kube -n "$APP_NAMESPACE" exec deploy/connector-gateway -c con
     /nodejs/bin/node -e "fetch('$CORE_URL').then(r => console.log(r.status)).catch(() => console.log('refused'))" 2>/dev/null || true)"
 check "the Gateway calling the Core" 200 "$gateway_to_core"
 
-printf 'Prometheus inside the mesh.\n'
-start_port_forward observability svc/prometheus "$PROMETHEUS_PORT:9090"
-for ((attempt = 0; attempt < 20; attempt += 1)); do
-    curl --silent --output /dev/null "http://127.0.0.1:$PROMETHEUS_PORT/-/ready" && break
-    sleep 1
-done
-expected_targets="$(kube -n "$APP_NAMESPACE" get pods -l 'app.kubernetes.io/name in (integration-core,connector-gateway)' \
-    --field-selector=status.phase=Running --no-headers | wc -l | tr -d ' ')"
-# Pods that have just restarted are scraped for the first time within a scrape
-# interval, so wait for them rather than count too early.
-targets=""
-for ((attempt = 0; attempt < 12; attempt += 1)); do
-    targets="$(curl --silent "http://127.0.0.1:$PROMETHEUS_PORT/api/v1/targets" | python3 -c '
+if observability_installed; then
+    printf 'Prometheus inside the mesh.\n'
+    start_port_forward observability svc/prometheus "$PROMETHEUS_PORT:9090"
+    for ((attempt = 0; attempt < 20; attempt += 1)); do
+        curl --silent --output /dev/null "http://127.0.0.1:$PROMETHEUS_PORT/-/ready" && break
+        sleep 1
+    done
+    expected_targets="$(kube -n "$APP_NAMESPACE" get pods -l 'app.kubernetes.io/name in (integration-core,connector-gateway)' \
+        --field-selector=status.phase=Running --no-headers | wc -l | tr -d ' ')"
+    # Pods that have just restarted are scraped for the first time within a scrape
+    # interval, so wait for them rather than count too early.
+    targets=""
+    for ((attempt = 0; attempt < 12; attempt += 1)); do
+        targets="$(curl --silent "http://127.0.0.1:$PROMETHEUS_PORT/api/v1/targets" | python3 -c '
 import json, sys
 targets = json.load(sys.stdin)["data"]["activeTargets"]
 up = sum(target["health"] == "up" for target in targets)
 print(f"{up}/{len(targets)}")')"
-    [[ "$targets" == "$expected_targets/$expected_targets" ]] && break
-    sleep 5
-done
-check "application replicas Prometheus scrapes successfully" "$expected_targets/$expected_targets" "$targets"
+        [[ "$targets" == "$expected_targets/$expected_targets" ]] && break
+        sleep 5
+    done
+    check "application replicas Prometheus scrapes successfully" "$expected_targets/$expected_targets" "$targets"
+else
+    printf 'Prometheus inside the mesh.\n  note  the observability stack is not installed: the Prometheus checks are skipped\n'
+fi
 
 # A stand-in server behind the Core's waypoint that fails two ways, and counts
 # the requests it receives: `/fail` answers 503, and `/close` closes the
