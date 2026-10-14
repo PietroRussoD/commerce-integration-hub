@@ -68,5 +68,7 @@ retries until the database settles; the pod comes back by itself.
 
 The Connector Gateway's own database calls have no explicit timeouts. In the
 scenarios the Gateway did not stall, but the Core's defect shows that a client
-without them can. The scenarios do not cover OpenSearch, sustained load, or
+without them can. (Its pods used to restart whenever PostgreSQL closed a
+connection, because its connection pool did not listen for the clients' `error`
+events; that is fixed, and a database failover now restarts no Gateway pod.) The scenarios do not cover OpenSearch, sustained load, or
 more than one failure at a time.
