@@ -1,6 +1,6 @@
 # ADR 0023: Ambient Service Mesh, Identity-Based Authorization, and Application Retries
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-13
 
 ## Context
@@ -99,5 +99,5 @@ nothing to retry with.
 - The ingress reaches the Core's pods directly, not through the waypoint, so its
   calls are subject to the pods' policy, not to the waypoint's; Prometheus
   likewise.
-- Accept this record after the failure tests of the next increment have run
-  through the waypoint.
+- The failure scenarios that inject faults at the waypoint (`core-slow`,
+  `core-errors`, `gateway-lease`) were run through it and passed on 2026-10-13.

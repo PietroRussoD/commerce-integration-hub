@@ -1,6 +1,6 @@
 # ADR 0021: Local Kubernetes Deployment
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-12
 
 ## Context
@@ -85,12 +85,15 @@ Compose remains the simplest way to run and test the project.
 
 - The project gains a second runtime to keep working, with its own scripts,
   chart, and documentation.
-- The full stack fits in 8 GB at rest with about 2.5 GB to spare; load,
-  OpenSearch, and later additions such as Argo CD may require 10 to 12 GB.
+- The full stack, with the mesh and the observability stack, uses about 5.4 GB
+  of the 8 GB given to Docker, leaving about 2 GB; load, OpenSearch, and later
+  additions such as Argo CD may require 10 to 12 GB.
 - Images must be available for arm64. The published GHCR images are
   `linux/amd64` only, so local builds are loaded into kind until the release
   workflow builds both platforms.
 - The Gateway's source API key must be provisioned in the cluster before its
   delivery worker can run.
-- Accept this record only after the chart, the probes, and a two-replica test
-  have been verified in the real applications.
+- The chart, the probes, a two-replica test, database failover, and the failure
+  scenarios were verified in the real applications on 2026-10-13; the decisions
+  that followed are recorded in ADR 0022 (replication) and ADR 0023 (the service
+  mesh).
