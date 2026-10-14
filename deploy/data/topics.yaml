@@ -1,0 +1,54 @@
+# The topics that `redpanda-init` creates in Compose, as resources of the
+# Redpanda operator.
+---
+apiVersion: cluster.redpanda.com/v1alpha2
+kind: Topic
+metadata:
+  name: integration-order-received-v1
+  namespace: hub-data
+spec:
+  overwriteTopicName: integration.order.received.v1
+  partitions: 3
+  replicationFactor: 1
+  cluster:
+    clusterRef:
+      name: redpanda
+---
+apiVersion: cluster.redpanda.com/v1alpha2
+kind: Topic
+metadata:
+  name: integration-order-ready-v2
+  namespace: hub-data
+spec:
+  overwriteTopicName: integration.order.ready.v2
+  partitions: 3
+  replicationFactor: 1
+  cluster:
+    clusterRef:
+      name: redpanda
+---
+apiVersion: cluster.redpanda.com/v1alpha2
+kind: Topic
+metadata:
+  name: integration-order-received-dlq-v1
+  namespace: hub-data
+spec:
+  overwriteTopicName: integration.order.received.dlq.v1
+  partitions: 3
+  replicationFactor: 1
+  cluster:
+    clusterRef:
+      name: redpanda
+---
+apiVersion: cluster.redpanda.com/v1alpha2
+kind: Topic
+metadata:
+  name: integration-order-ready-search-dlq-v2
+  namespace: hub-data
+spec:
+  overwriteTopicName: integration.order.ready.search.dlq.v2
+  partitions: 3
+  replicationFactor: 1
+  cluster:
+    clusterRef:
+      name: redpanda

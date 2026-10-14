@@ -1,0 +1,29 @@
+# Alerts reach no one in this local stack: they are shown in the Alertmanager UI
+# (http://127.0.0.1:9093) and on the Prometheus alerts page. To deliver them,
+# add a receiver and route to it; the commented example shows the shape.
+
+route:
+  receiver: nobody
+  group_by: [alertname, service]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers: ['severity="page"']
+      receiver: nobody
+      repeat_interval: 1h
+
+receivers:
+  - name: nobody
+  # - name: on-call
+  #   slack_configs:
+  #     - api_url_file: /etc/alertmanager/secrets/slack-webhook-url
+  #       channel: "#hub-alerts"
+  #       send_resolved: true
+
+inhibit_rules:
+  # While a service cannot be scraped, its tickets are noise. Its pages still
+  # come through: one replica being down does not mean the others are fine.
+  - source_matchers: ['alertname=~"HubTargetDown|HubNoTargets"']
+    target_matchers: ['severity="ticket"']
+    equal: [service]

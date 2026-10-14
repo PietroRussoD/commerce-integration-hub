@@ -1,6 +1,8 @@
 package dev.pietrorussod.integrationhub.infrastructure.persistence.jooq
 
 import dev.pietrorussod.integrationhub.application.outbox.ClaimedOutboxEvent
+import dev.pietrorussod.integrationhub.application.outbox.OutboxBacklog
+import dev.pietrorussod.integrationhub.application.outbox.OutboxBacklogReader
 import dev.pietrorussod.integrationhub.application.outbox.OutboxEventRepository
 import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEvent
 import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEventRepository
@@ -12,6 +14,7 @@ import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import org.jooq.DSLContext
 import org.jooq.JSON
+import org.jooq.impl.DSL
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.UUID
@@ -22,7 +25,38 @@ class JooqOutboxEventRepository
     constructor(
         private val dslContext: DSLContext,
     ) : OutboxEventRepository,
-        PendingOutboxEventRepository {
+        PendingOutboxEventRepository,
+        OutboxBacklogReader {
+        // One query per status, so that each one reads its own partial index.
+        override fun read(): OutboxBacklog {
+            val pending = waitingWithStatus(PENDING_STATUS)
+            val publishing = waitingWithStatus(PUBLISHING_STATUS)
+            val failed =
+                dslContext
+                    .selectCount()
+                    .from(OUTBOX_EVENTS)
+                    .where(OUTBOX_EVENTS.STATUS.eq(FAILED_STATUS))
+                    .fetchSingle()
+                    .value1()
+                    .toLong()
+
+            return OutboxBacklog(
+                waitingEvents = pending.first + publishing.first,
+                oldestWaitingCreatedAt = listOfNotNull(pending.second, publishing.second).minOrNull(),
+                failedEvents = failed,
+            )
+        }
+
+        private fun waitingWithStatus(status: String): Pair<Long, Instant?> {
+            val record =
+                dslContext
+                    .select(DSL.count(), DSL.min(OUTBOX_EVENTS.CREATED_AT))
+                    .from(OUTBOX_EVENTS)
+                    .where(OUTBOX_EVENTS.STATUS.eq(status))
+                    .fetchSingle()
+            return record.value1().toLong() to record.value2()?.toInstant()
+        }
+
         @Transactional
         override fun append(event: PendingOutboxEvent) {
             val insertedRows =

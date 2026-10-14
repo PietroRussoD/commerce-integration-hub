@@ -88,7 +88,10 @@ mistaken for available behavior.
   version-controlled Prometheus and Grafana profile provides a local operations
   dashboard.
   Optional local OpenTelemetry tracing through the redacting Collector to
-  Jaeger is implemented. Alerting rules and production monitoring are not.
+  Jaeger is implemented. Alert rules, tested with `promtool`, and a local
+  Alertmanager that delivers to no receiver are implemented; their thresholds
+  are demonstrative, without load testing. Notification channels, on-call
+  routing, and production monitoring are not.
   Deployment must restrict `/metrics` to trusted monitoring infrastructure.
 - Raw provider payloads are not retained by the canonical API.
 - The Connector Gateway does retain synthetic provider and canonical payloads
@@ -99,9 +102,27 @@ mistaken for available behavior.
 ## Deployment and Scale
 
 - Docker Compose provides a reproducible local demonstration, not a production
-  deployment topology. Cloud infrastructure, secret-manager integration,
-  backup automation, high availability, and disaster-recovery procedures are
-  not included.
+  deployment topology. An optional local Kubernetes environment (`deploy/`,
+  `scripts/k8s/`) adds two replicas of the Core and the Gateway on different
+  nodes, a PostgreSQL primary and synchronous replica for each service, an
+  ambient service mesh with mutual TLS and identity-based authorization, and
+  failure tests that kill pods, databases, the broker and a node and check for
+  lost or duplicated orders. It runs on one machine, builds its own images (the
+  published ones are `linux/amd64` only), and exposes nothing publicly. Cloud
+  infrastructure, secret-manager integration, backup automation, disaster-recovery
+  procedures, GitOps, and multi-architecture published images are not included.
+- The failure tests inject one failure at a time and do not cover OpenSearch,
+  sustained load, or the Gateway's own database timeouts, which are not
+  explicit. The Core's JDBC connect and socket timeouts exist because a database
+  that stops answering without closing its connections once left orders unprocessed
+  until the pods were restarted ([failure runbook](runbooks/failures.md)).
+- The Core's outbox publishes about ten events a second with two replicas; a
+  burst of orders above that queues, without loss, and is visible through the
+  outbox backlog gauges and their alerts. Throughput has not been tuned or
+  load tested.
+- Traffic between the services and PostgreSQL or Redpanda is not encrypted by
+  the service mesh, and Prometheus may call any endpoint of the Core's port, not
+  only `/metrics`.
 - The release has not been load-tested and makes no throughput or latency claim.
 - Orders support `EUR`, `GBP`, and `USD`. Values remain in their original
   currency; foreign-exchange conversion is not performed.

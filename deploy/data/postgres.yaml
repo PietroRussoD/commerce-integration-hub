@@ -1,0 +1,58 @@
+# One PostgreSQL cluster per service, each with a primary and a replica on
+# different nodes. Their credentials are created by CloudNativePG in the
+# `<name>-app` Secret.
+#
+# Replication is synchronous, so a failover does not lose a commit the services
+# have already acknowledged; `preferred` lets writes continue, asynchronously,
+# once the replica's node is known to be down. See ADR 0022.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: core
+  namespace: hub-data
+spec:
+  instances: 2
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: preferred
+  storage:
+    size: 1Gi
+  bootstrap:
+    initdb:
+      database: integration_hub
+      owner: integration_hub
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: gateway
+  namespace: hub-data
+spec:
+  instances: 2
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: preferred
+  storage:
+    size: 1Gi
+  bootstrap:
+    initdb:
+      database: connector_gateway
+      owner: connector_gateway
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname

@@ -1,0 +1,38 @@
+# A waypoint in front of the Integration Core only: the one layer-7 proxy in the
+# mesh. It carries the Core's caller policy (the identity of the real caller is
+# still visible here) and the explicit no-retry policy, and it is where network
+# faults are injected for the failure tests.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: core-waypoint
+  namespace: hub
+  labels:
+    istio.io/waypoint-for: service
+spec:
+  gatewayClassName: istio-waypoint
+  listeners:
+    - name: mesh
+      port: 15008
+      protocol: HBONE
+---
+# The mesh must not retry a call to the Core: the Gateway already retries a
+# delivery with bounded, classified backoff (ADR 0014), and an extra retry in the
+# mesh would multiply those attempts. Without this policy the waypoint retries
+# connection failures by default (see scripts/k8s/verify-mesh.sh).
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: integration-core
+  namespace: hub
+spec:
+  hosts:
+    - integration-core.hub.svc.cluster.local
+  http:
+    - route:
+        - destination:
+            host: integration-core.hub.svc.cluster.local
+            port:
+              number: 8080
+      retries:
+        attempts: 0

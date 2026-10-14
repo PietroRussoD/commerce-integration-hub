@@ -178,8 +178,10 @@ the actual delay is sampled between 50% and 100% of that limit. Once the maximum
 attempt count is reached, the decision is `Exhausted` rather than another retry.
 
 The policy, terminal transition, publisher orchestrator, and runtime
-configuration are connected. Bounded dispatch and recovery metrics are
-implemented; alerting rules are not.
+configuration are connected. Bounded dispatch and recovery metrics, backlog
+gauges (waiting events, the oldest one's age, terminally failed events), and
+tested alert rules on them are implemented; see the
+[alert runbook](runbooks/alerts.md).
 
 ## Expiry and ambiguous publication
 

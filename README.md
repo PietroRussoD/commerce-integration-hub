@@ -109,6 +109,14 @@ Core, including persisted context across durable work, Kafka propagation,
 operator links to Jaeger, and local exception-data redaction. Its verification
 and operational limits are recorded in the [release notes](docs/releases/v1.1.0.md).
 
+The `v1.2.0` milestone adds an optional local Kubernetes environment, in
+[`deploy/`](deploy/README.md): replicas on different nodes, PostgreSQL failover
+with synchronous replication, an ambient service mesh, tested alert rules, and
+failure tests that check for lost or duplicated orders. Docker Compose remains the
+simplest way to run the project. The [release notes](docs/releases/v1.2.0.md)
+record what the tests found, including a database-timeout defect in the Core that
+they led to fixing.
+
 ## Repository structure
 
 ```text
@@ -119,8 +127,10 @@ services/
   integration-core/  Kotlin/Quarkus authoritative order service
 tools/
   provider-simulator/ Deterministic local external-provider fixture
-observability/        Local Prometheus and Grafana configuration
+deploy/               Optional local Kubernetes environment: cluster, chart, mesh
+observability/        Prometheus, Alertmanager, Grafana and Collector configuration
 scripts/              Reproducible release-level local verification
+scripts/k8s/          Create, operate and verify the Kubernetes environment
 ```
 
 ## Build

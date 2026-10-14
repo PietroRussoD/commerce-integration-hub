@@ -1,0 +1,67 @@
+# Local, single-purpose defaults. Nothing here is a production setting.
+
+images:
+  integrationCore:
+    repository: hub-local/integration-core
+    tag: dev
+  connectorGateway:
+    repository: hub-local/connector-gateway
+    tag: dev
+  providerSimulator:
+    repository: hub-local/provider-simulator
+    tag: dev
+  # The images are built locally and loaded into the kind nodes.
+  pullPolicy: IfNotPresent
+
+# Traces go to the OpenTelemetry Collector of the observability stack. The stack
+# is optional: scripts/k8s/observability.sh installs it and turns this on.
+tracing:
+  enabled: false
+  endpoint: http://otel-collector.observability:4317
+
+integrationCore:
+  replicas: 2
+  database:
+    # The Secret has `username` and `password`; scripts/k8s/up.sh copies it from
+    # the namespace where the database operator created it.
+    secretName: core-db
+    jdbcUrl: jdbc:postgresql://core-rw.hub-data:5432/integration_hub
+  kafka:
+    bootstrapServers: redpanda.hub-data.svc.cluster.local:9093
+  # Search is not part of this environment: the projection stays off.
+  openSearchUrl: http://opensearch.invalid:9200
+  resources:
+    requests: { cpu: 100m, memory: 384Mi }
+    limits: { memory: 768Mi }
+
+connectorGateway:
+  replicas: 2
+  database:
+    # The Secret has `uri` (a PostgreSQL connection URL).
+    secretName: gateway-db
+  deliveryWorker:
+    # Needs a Core source credential: scripts/k8s/provision-source.sh creates it
+    # and turns this on.
+    enabled: false
+    sourceKeySecretName: gateway-source-key
+    sourceKeySecretKey: apiKey
+  erpBPolling:
+    enabled: false
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 384Mi }
+
+providerSimulator:
+  enabled: true
+  scenario: MIXED
+  resources:
+    requests: { cpu: 20m, memory: 64Mi }
+    limits: { memory: 192Mi }
+
+# Synthetic values for local use only, the same ones as compose.yaml. They are
+# not secrets: the stack is reachable from this machine alone.
+synthetic:
+  sourceCredentialPeppers: "1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+  webhookKeyId: local-key
+  webhookSecretBase64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+  erpBApiToken: local-erp-b-token

@@ -43,6 +43,14 @@ implementation chronology.
   bearer tokens, JWKS validation, and operator/platform-admin authorization.
 - [ADR 0020](0020-distributed-tracing-with-opentelemetry.md): OpenTelemetry
   traces across HTTP, Kafka, and durable work boundaries; local Jaeger viewer.
+- [ADR 0021](0021-local-kubernetes-deployment.md): optional local
+  Kubernetes environment with kind, CloudNativePG, Redpanda, and Istio ambient.
+- [ADR 0022](0022-synchronous-postgresql-replication.md):
+  synchronous `preferred` replication for the Kubernetes PostgreSQL clusters,
+  with measured latency and availability trade-offs.
+- [ADR 0023](0023-ambient-mesh-and-application-retries.md): Istio
+  ambient mesh, strict mutual TLS, authorization by workload identity, a Gateway
+  API ingress, and retries kept in the applications.
 
 Accepted records are not edited to hide a later change of direction. Later
 extensions or replacements are recorded in a new ADR and linked to the earlier

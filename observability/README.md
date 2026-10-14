@@ -1,8 +1,8 @@
 # Local Observability
 
-The optional `observability` Compose profile runs Prometheus, Grafana, the
-OpenTelemetry Collector, and Jaeger for local development and portfolio
-demonstrations. It is not a production monitoring topology.
+The optional `observability` Compose profile runs Prometheus, Alertmanager,
+Grafana, the OpenTelemetry Collector, and Jaeger for local development and
+portfolio demonstrations. It is not a production monitoring topology.
 
 ```mermaid
 flowchart LR
@@ -21,6 +21,7 @@ flowchart LR
     Prometheus -->|scrape every 5 seconds| Core
     Prometheus -->|scrape every 5 seconds| Gateway
     Grafana -->|PromQL| Prometheus
+    Prometheus -->|firing alerts| Alertmanager[(Alertmanager)]
 ```
 
 Start the complete topology from the repository root:
@@ -89,11 +90,13 @@ persisted trace context.
 Start only the metrics services alongside an already running topology:
 
 ```bash
-docker compose --profile observability up -d prometheus grafana
+docker compose --profile observability up -d prometheus alertmanager grafana
 ```
 
 - Grafana: [http://localhost:3000](http://localhost:3000)
 - Prometheus targets: [http://localhost:9090/targets](http://localhost:9090/targets)
+- Prometheus alerts: [http://localhost:9090/alerts](http://localhost:9090/alerts)
+- Alertmanager: [http://localhost:9093](http://localhost:9093)
 - Jaeger: [http://localhost:16686](http://localhost:16686)
 
 Grafana opens without login because both published ports are bound to localhost
@@ -103,6 +106,42 @@ editing them in the UI. Prometheus retains local samples for 24 hours.
 
 Services that are not running appear as `DOWN` targets. This does not prevent
 Prometheus or Grafana from starting.
+
+## Alerts
+
+[`prometheus/alerts.yml`](prometheus/alerts.yml) holds the alert rules for the
+Core and the Gateway, each with a `page` or `ticket` severity and a section in
+the [alert runbook](../docs/runbooks/alerts.md). The same file is meant for the
+local Kubernetes environment. Every rule is tested with `promtool`:
+
+```bash
+docker run --rm --entrypoint promtool -v "$PWD/observability/prometheus:/rules:ro" \
+  prom/prometheus:v3.15.0 test rules /rules/alerts.test.yml
+```
+
+In the local Kubernetes environment the same rules run in a Prometheus that
+discovers the application pods (see [`deploy/README.md`](../deploy/README.md));
+`HubNoTargets` exists for the case where discovery finds no pod at all.
+
+Alertmanager ([`alertmanager/alertmanager.yml`](alertmanager/alertmanager.yml))
+groups and shows the alerts but sends them nowhere; a receiver is the only
+thing to add to deliver them. The thresholds are demonstrative, since the Hub
+has no load test or production traffic to calibrate them.
+
+## Outbox backlog
+
+The Core reports its outbox backlog from PostgreSQL every 15 seconds:
+
+- `integration_hub_outbox_backlog_events`: events waiting to be published
+  (pending or claimed by a publisher);
+- `integration_hub_outbox_backlog_oldest_age_seconds`: how long the oldest of
+  them has waited, or 0 when none waits;
+- `integration_hub_outbox_failed_events`: events that failed terminally and will
+  not be published without an operator.
+
+They describe the shared database, so every Core replica reports the same
+values: aggregate them with `max`, not `sum`. A failed refresh makes them NaN,
+so that a stale value never looks current.
 
 ## Search projection progress
 
