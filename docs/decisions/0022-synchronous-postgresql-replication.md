@@ -1,6 +1,6 @@
 # ADR 0022: Synchronous PostgreSQL Replication in the Kubernetes Environment
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-13
 
 ## Context
@@ -93,4 +93,5 @@ environment cannot afford a third instance per cluster on an 8 GB machine.
   per replica (`dispatch.batch-size=5` every `1s`), about ten per second with
   two replicas, or about five orders per second through to `READY`. A burst
   above that is not lost but queues: 6,200 orders posted in seconds took about
-  five minutes to drain. The outbox age is the alert to add first.
+  five minutes to drain. The outbox backlog gauges and the alerts
+  `OutboxEventsWaitingTooLong` and `OutboxBacklogLarge` make that delay visible.
