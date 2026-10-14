@@ -69,3 +69,4 @@ Run it locally at any time:
 - [v0.9.0](v0.9.0.md): durable search projection progress and observability.
 - [v1.0.0](v1.0.0.md): governed operator workflows and versioned contracts.
 - [v1.1.0](v1.1.0.md): distributed tracing across durable workflows.
+- [v1.2.0](v1.2.0.md): a local Kubernetes environment with failure tests.
