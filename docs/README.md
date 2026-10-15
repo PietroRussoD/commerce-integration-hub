@@ -39,6 +39,8 @@ Read in this order to follow one order through the system.
 
 ## Operating it
 
+- [Local demo](local-demo.md): the base Compose stack, console, optional
+  Gateway, search, metrics and tracing paths.
 - [Local Kubernetes environment](../deploy/README.md): the cluster, the mesh, the
   observability stack, and the scripts that create and verify them.
 - [Failure runbook](runbooks/failures.md): what each failure does to the Hub,
@@ -49,6 +51,11 @@ Read in this order to follow one order through the system.
 
 - [Accessibility plan](accessibility.md): the target, what is automatically
   verified, and what remains a manual audit.
+
+## Development
+
+- [Development and verification](development.md): prerequisites, module checks,
+  browser tests, secret scanning and deployment validation.
 
 ## Decisions and releases
 

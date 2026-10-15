@@ -24,8 +24,9 @@ full reindexing, and durable projection-progress reporting while PostgreSQL
 remains authoritative. HTTP correlation IDs are returned on success and error
 responses and are persisted with ingestion events.
 
-The service persists a canonical payload fingerprint with each order. Reusing a
-source identity returns `ALREADY_RECEIVED` for equivalent content and
+The service persists a canonical payload fingerprint with each order. Reusing
+the same authenticated source system and external order ID returns
+`ALREADY_RECEIVED` for equivalent content and
 `PAYLOAD_CONFLICT` when the payload differs.
 
 ## Architecture
@@ -169,7 +170,7 @@ operator command until dedicated authorization and audit controls are added to
 that operation.
 
 The search profile, its local startup command, and the status endpoint are
-documented in the repository [local demo](../../README.md#local-demo). The
+documented in the [local demo guide](../../docs/local-demo.md#optional-order-search). The
 design and cutover decisions are recorded in
 [ADR 0015](../../docs/decisions/0015-rebuildable-opensearch-order-projection.md)
 and [ADR 0018](../../docs/decisions/0018-safe-opensearch-reindex-cutover.md).
