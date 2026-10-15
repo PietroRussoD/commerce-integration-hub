@@ -2,7 +2,7 @@
 
 An optional environment that runs the Hub on a local Kubernetes cluster, to
 exercise it under conditions Docker Compose cannot reproduce: replicas on
-different nodes, database failover, and (in later increments) a service mesh and
+different nodes, database failover, a service mesh and
 injected network faults. Compose remains the simplest way to run the project.
 
 This is a local demonstration. It has no cloud deployment, no public endpoint,
@@ -17,7 +17,6 @@ and [Limitations](../docs/limitations.md).
 | PostgreSQL | CloudNativePG, two clusters (`core`, `gateway`), a primary and a replica each, on different nodes |
 | Kafka | Redpanda operator, one broker; the four topics are `Topic` resources |
 | Applications | the Helm chart `deploy/charts/commerce-integration-hub`: Integration Core and Connector Gateway with two replicas each, the provider simulator, and the Gateway migration as a Job |
-
 | Service mesh (optional) | `mesh.sh` installs Istio in ambient mode for `hub` and `observability`, strict mutual TLS, authorization by workload identity, and a Gateway API ingress |
 | Observability (optional) | `observability.sh` installs Prometheus with the alert rules, Alertmanager, the OpenTelemetry Collector, Jaeger and Grafana in the `observability` namespace, and turns tracing on in the Core and the Gateway |
 

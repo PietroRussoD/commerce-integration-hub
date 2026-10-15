@@ -138,44 +138,28 @@ live runtime state nor invokes operational commands.
 
 ### Provider-specific Connector Gateway
 
-Implemented for the current `MARKETPLACE_A` webhook path. The Node.js and
-TypeScript gateway has a registered
-`MARKETPLACE_A` HTTP adapter covering exact raw-body authentication, key
-rotation, strict provider validation, canonical mapping, and receipt-command
-fingerprinting. Its Kysely-managed PostgreSQL delivery-ledger schema and
-constraints are integration-tested. Its transactional repository classifies
-first receipts, equivalent replays, and conflicting content under concurrent
-requests without replacing the original delivery. The running route composes
-authentication, mapping, the receipt use case, and PostgreSQL lifecycle, and
-returns `202` only after durable commit. The opt-in worker composes bounded
-concurrent claims, fenced attempts, the typed Integration Core HTTP client,
-bounded retries, terminal outcomes, expired-lease recovery, metrics, and
-graceful shutdown. Compose currently leaves that worker disabled until a source
-credential is supplied. The strict `ERP_B` page parser, canonical mapper,
-versioned per-item fingerprint, and page classifier are implemented. The
-classifier separates forwardable changes from durable poison-item evidence,
-collapses equivalent in-page duplicates, and rejects conflicting identities.
-Its transactional page repository stores both outcomes and advances the fenced
-checkpoint atomically, while equivalent replays remain idempotent and stale
-pollers cannot advance it. Pollers acquire an available or expired checkpoint
-lease through one conditional database update; concurrent workers cannot both
-acquire it. Matching owner/token checks fence renewal and clean release;
-renewal cannot revive an expired lease or shorten an existing one. The provider
-HTTP adapter is implemented with bounded configuration, bearer authentication,
-opaque cursor encoding, timeout/cancellation, manual redirects, bounded streamed
-responses, strict page parsing, and typed outcomes. A single-page use case now
-composes fetch, classification, poison evidence, and fenced atomic commit while
-preserving provider and persistence failures. The bounded multi-page runner
-acquires and releases ownership, renews only before another page, aggregates
-durable progress, and stops cleanly at its page limit. Runtime configuration,
-and a cancellation-aware non-overlapping scheduler are implemented and opt-in.
-Polling outcome metrics are implemented and exposed with bounded labels. An
-optional Compose profile collects Core and Gateway metrics in Prometheus and
-provisions a repository-owned Grafana operations dashboard. The opt-in process
-composition and fenced configuration-block persistence are implemented. A
-PostgreSQL-backed process test and deterministic Compose provider verify the
-complete two-page polling path. The gateway owns
-delivery state but does not mutate authoritative order state.
+Implemented for two synthetic providers. For `MARKETPLACE_A`, the Node.js and
+TypeScript Gateway verifies the webhook signature against the original request
+bytes, validates the provider format and maps it to the common order model.
+It returns `202` only after saving the delivery in its own PostgreSQL database.
+Equivalent requests retain the original delivery identity; conflicting content
+for that provider event returns `409`.
+
+For `ERP_B`, the Gateway polls a cursor-based order API. It saves accepted items,
+records rejected items and advances the page checkpoint in one transaction.
+Exclusive, time-limited ownership and token checks prevent an expired poller
+from changing a checkpoint owned by another worker. Provider authentication
+failures block further polling for that connector.
+
+A separate forwarding worker sends saved orders to the Core, records each
+attempt and applies bounded retries or terminal outcomes. The Gateway owns
+delivery state; the Core owns authoritative order state. Forwarding and polling
+are disabled by default in Compose. Forwarding requires a provisioned Core
+source credential. HTTP timeouts, response-size limits, concurrency controls
+and metrics are implemented and covered by local integration and process tests.
+See the [Gateway guide](../services/connector-gateway/README.md),
+[delivery lifecycle](gateway-delivery-lifecycle.md) and
+[polling diagrams](erp-b-polling.md) for their detailed policies.
 
 ### Event Subscription
 
@@ -224,6 +208,7 @@ read model; external subscribers remain planned.
 | Failure inspection and controlled recovery | Gateway inspection, immutable command audit, and authenticated platform-admin replay implemented, including the Console recovery control for eligible exhausted deliveries |
 | Gateway payload retention enforcement | Expiry timestamp implemented; payload cleanup planned |
 | Distributed tracing and alerting | OpenTelemetry propagation/export with local Collector redaction and Jaeger viewing implemented; tested alert rules, outbox backlog gauges, and a local Alertmanager without receivers implemented |
+| Local Kubernetes environment | Implemented with replicas, synchronous PostgreSQL replication, an optional ambient service mesh and failure checks; runs on one machine |
 
 ## Non-goals
 
@@ -231,8 +216,7 @@ read model; external subscribers remain planned.
 - Replacing business rules owned by source systems.
 - Arbitrary user-defined integration workflows.
 - End-to-end exactly-once delivery guarantees.
-- Production multi-region or Kubernetes deployment in the initial portfolio
-  scope.
+- Production deployment, cloud infrastructure and multi-region availability.
 
 ## Further Reading
 
