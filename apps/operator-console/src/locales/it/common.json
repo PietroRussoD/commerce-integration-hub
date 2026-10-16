@@ -97,7 +97,9 @@
       "reasonRequired": "È necessaria una motivazione per ripetere la consegna",
       "submit": "Conferma ripetizione",
       "replayed": "Il comando di ripetizione {{commandId}} è stato accettato.",
-      "inProgress": "Il comando di ripetizione {{commandId}} è già in corso."
+      "inProgress": "Il comando di ripetizione {{commandId}} è già in corso.",
+      "pending": "In attesa della risposta del Gateway. Chiudere questo dialog non annulla la richiesta.",
+      "pendingRequests": "Richieste di ripetizione in attesa della risposta del Gateway: {{count}}. Chiudere il dialog, navigare nella console o cambiare token non le annulla. Ricaricare la pagina o uscire dalla console fa perdere questo monitoraggio locale."
     }
   },
   "orders": {

@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, RefreshCw, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -49,7 +49,7 @@ type StatusFilter = "ALL" | NonNullable<ListOperatorDeliveriesParameters["status
 
 export function DeliveriesPage() {
   const { t } = useTranslation();
-  const { accessToken, identity } = useAccessToken();
+  const { accessToken, identity, cacheScope } = useAccessToken();
   const [provider, setProvider] = useState<ProviderFilter>("ALL");
   const [status, setStatus] = useState<StatusFilter>("ALL");
   const [cursors, setCursors] = useState<Array<string | undefined>>([undefined]);
@@ -57,7 +57,7 @@ export function DeliveriesPage() {
   const canReadDeliveries =
     accessToken !== undefined && (identity?.roles.has("operator") === true || identity?.roles.has("platform-admin") === true);
   const query = useQuery({
-    queryKey: ["operator-deliveries", { accessToken, cursor, limit: PAGE_SIZE, provider, status }],
+    queryKey: ["operator-deliveries", cacheScope, { cursor, limit: PAGE_SIZE, provider, status }],
     queryFn: ({ signal }) =>
       listOperatorDeliveries({
         accessToken: accessToken!,
@@ -68,7 +68,7 @@ export function DeliveriesPage() {
         status: status === "ALL" ? undefined : status,
       }),
     enabled: canReadDeliveries,
-    placeholderData: keepPreviousData,
+    placeholderData: (previous, previousQuery) => previousQuery?.queryKey[1] === cacheScope ? previous : undefined,
   });
 
   function updateFilters(nextProvider: ProviderFilter, nextStatus: StatusFilter) {

@@ -6,6 +6,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { AccessTokenControl } from "../auth/AccessTokenControl";
 import { useAccessToken } from "../auth/accessTokenContext";
 import { storeBrowserLocale, supportedLocales, type SupportedLocale } from "../i18n/i18n";
+import { PendingReplayNotice } from "../pages/deliveries/PendingReplayNotice";
 import type { BrandTheme } from "../theme/brandThemes";
 
 type NavigationItem = {
@@ -97,6 +98,7 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
           className="min-w-0 px-4 py-6 focus:outline-none sm:px-7 sm:py-8 lg:px-10 lg:py-10"
         >
           <div className="mx-auto w-full max-w-[1280px]">
+            <PendingReplayNotice />
             <Outlet />
           </div>
         </main>

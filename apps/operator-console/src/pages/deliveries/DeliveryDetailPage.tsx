@@ -11,12 +11,12 @@ import { ReplayDeliveryAction } from "./ReplayDeliveryAction";
 
 export function DeliveryDetailPage() {
   const { t } = useTranslation();
-  const { accessToken, identity } = useAccessToken();
+  const { accessToken, identity, cacheScope } = useAccessToken();
   const deliveryId = useParams<{ deliveryId: string }>().deliveryId ?? "";
   const canReadDelivery =
     accessToken !== undefined && (identity?.roles.has("operator") === true || identity?.roles.has("platform-admin") === true);
   const query = useQuery({
-    queryKey: ["operator-delivery", { accessToken, deliveryId }],
+    queryKey: ["operator-delivery", cacheScope, deliveryId],
     queryFn: ({ signal }) => getOperatorDelivery({ accessToken: accessToken!, deliveryId, signal }),
     enabled: canReadDelivery && deliveryId.length > 0,
   });
@@ -46,10 +46,10 @@ export function DeliveryDetailPage() {
           <div className="space-y-5">
             <div className="flex justify-end">
               <ReplayDeliveryAction
+                key={`${cacheScope}:${query.data.deliveryId}`}
                 accessToken={accessToken!}
                 canReplay={identity?.roles.has("platform-admin") === true && query.data.status === "EXHAUSTED"}
                 deliveryId={query.data.deliveryId}
-                onReplayAccepted={() => void query.refetch()}
               />
             </div>
             <DeliveryDetailContent delivery={query.data} />

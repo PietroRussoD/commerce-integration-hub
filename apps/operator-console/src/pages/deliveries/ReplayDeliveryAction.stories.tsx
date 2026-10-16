@@ -2,7 +2,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
 
+import { AccessTokenProvider } from "../../auth/AccessTokenProvider";
 import { ReplayDeliveryAction } from "./ReplayDeliveryAction";
+import { ReplayRequestsProvider } from "./ReplayRequestsProvider";
 
 const meta = {
   title: "Deliveries/ReplayDeliveryAction",
@@ -13,12 +15,11 @@ const meta = {
     accessToken: "synthetic-story-token",
     canReplay: true,
     deliveryId: "c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21",
-    onReplayAccepted: () => undefined,
   },
   decorators: [
     (Story) => (
       <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
-        <Story />
+        <AccessTokenProvider><ReplayRequestsProvider><Story /></ReplayRequestsProvider></AccessTokenProvider>
       </QueryClientProvider>
     ),
   ],

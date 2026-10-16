@@ -97,7 +97,9 @@
       "reasonRequired": "A replay reason is required",
       "submit": "Confirm replay",
       "replayed": "Replay command {{commandId}} was accepted.",
-      "inProgress": "Replay command {{commandId}} is already in progress."
+      "inProgress": "Replay command {{commandId}} is already in progress.",
+      "pending": "Waiting for the Gateway response. Closing this dialog does not cancel the request.",
+      "pendingRequests": "Replay requests awaiting a Gateway response: {{count}}. Closing the dialog, navigating within the console, or changing the token does not cancel them. Reloading or leaving the console loses this local tracking."
     }
   },
   "orders": {
