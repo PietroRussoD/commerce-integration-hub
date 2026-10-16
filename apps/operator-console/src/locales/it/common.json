@@ -427,6 +427,11 @@
       "submitting": "Invio in corso...",
       "viewOrder": "Visualizza ordine"
     },
+    "submission": {
+      "title": "Ordine inviato",
+      "pending": "Invio in corso... Campi e scenari non sono disponibili fino alla risposta.",
+      "draftChanged": "La bozza è stata modificata. Questa risposta si riferisce all’ordine inviato riportato qui sotto."
+    },
     "success": {
       "created": "Ordine creato",
       "replayed": "Ordine equivalente ripetuto"

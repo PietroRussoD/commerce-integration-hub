@@ -3,7 +3,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { IntegrationCoreApiError, type ReceiveOrderResult } from "../../api/integrationCoreClient";
+import { IntegrationCoreApiError, type ReceiveOrderRequest, type ReceiveOrderResult } from "../../api/integrationCoreClient";
 import { IconButton } from "../../components/ui/IconButton";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { type SimulatorFormValues, useOrderSimulator } from "./useOrderSimulator";
@@ -25,22 +25,23 @@ export function SimulatorPage() {
   const { t } = useTranslation();
   const simulator = useOrderSimulator();
   const [isSourceApiKeyVisible, setIsSourceApiKeyVisible] = useState(false);
-  const externalIdError = findFieldError(simulator.error, "externalId");
-  const currencyError = findFieldError(simulator.error, "currency");
-  const declaredTotalError = findFieldError(simulator.error, "declaredTotalAmount");
-  const skuError = findFieldError(simulator.error, "items[0].sku");
-  const quantityError = findFieldError(simulator.error, "items[0].quantity");
-  const unitPriceError = findFieldError(simulator.error, "items[0].unitPrice");
+  const validationError = simulator.isDraftChanged ? null : simulator.error;
+  const externalIdError = findFieldError(validationError, "externalId");
+  const currencyError = findFieldError(validationError, "currency");
+  const declaredTotalError = findFieldError(validationError, "declaredTotalAmount");
+  const skuError = findFieldError(validationError, "items[0].sku");
+  const quantityError = findFieldError(validationError, "items[0].quantity");
+  const unitPriceError = findFieldError(validationError, "items[0].unitPrice");
 
   useEffect(() => {
-    if (!(simulator.error instanceof IntegrationCoreApiError)) return;
+    if (!(validationError instanceof IntegrationCoreApiError)) return;
 
-    const fieldErrors = simulator.error.problem?.errors;
+    const fieldErrors = validationError.problem?.errors;
     const firstInvalidFieldId = Object.entries(fieldElementIds).find(([field]) =>
       fieldErrors?.some((error) => error.field === field),
     )?.[1];
     if (firstInvalidFieldId !== undefined) document.getElementById(firstInvalidFieldId)?.focus();
-  }, [simulator.error]);
+  }, [validationError]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,25 +55,25 @@ export function SimulatorPage() {
       <div className="mt-5 border-b border-app-border pb-5">
         <h2 className="text-sm font-semibold text-app-foreground-strong">{t("simulator.scenarios.title")}</h2>
         <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={t("simulator.scenarios.ariaLabel")}>
-          <ScenarioButton icon={FilePlus2} label={t("simulator.scenarios.freshOrder")} onClick={simulator.loadFreshOrder} />
+          <ScenarioButton icon={FilePlus2} label={t("simulator.scenarios.freshOrder")} onClick={simulator.loadFreshOrder} disabled={simulator.isPending} />
           <ScenarioButton
             icon={Copy}
             label={t("simulator.scenarios.equivalentReplay")}
             onClick={simulator.loadReplay}
-            disabled={!simulator.canReplay}
+            disabled={simulator.isPending || !simulator.canReplay}
           />
           <ScenarioButton
             icon={ShieldAlert}
             label={t("simulator.scenarios.conflict")}
             onClick={simulator.loadConflict}
-            disabled={!simulator.canReplay}
+            disabled={simulator.isPending || !simulator.canReplay}
           />
-          <ScenarioButton icon={CircleX} label={t("simulator.scenarios.invalidTotal")} onClick={simulator.loadInvalidOrder} />
+          <ScenarioButton icon={CircleX} label={t("simulator.scenarios.invalidTotal")} onClick={simulator.loadInvalidOrder} disabled={simulator.isPending} />
         </div>
       </div>
 
       <form onSubmit={handleSubmit} aria-busy={simulator.isPending} className="mt-5 space-y-7">
-        <fieldset className="grid gap-4 border-0 p-0 sm:grid-cols-2">
+        <fieldset disabled={simulator.isPending} className="grid gap-4 border-0 p-0 sm:grid-cols-2">
           <legend className="mb-3 text-lg font-semibold">{t("simulator.authentication.title")}</legend>
           <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong sm:col-span-2">
             <label htmlFor="source-api-key">{t("simulator.authentication.apiKey")}</label>
@@ -104,7 +105,7 @@ export function SimulatorPage() {
           </div>
         </fieldset>
 
-        <fieldset className="grid gap-4 border-0 border-t border-app-border p-0 pt-6 sm:grid-cols-2 lg:grid-cols-3">
+        <fieldset disabled={simulator.isPending} className="grid gap-4 border-0 border-t border-app-border p-0 pt-6 sm:grid-cols-2 lg:grid-cols-3">
           <legend className="mb-3 text-lg font-semibold">{t("simulator.order.title")}</legend>
           <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
             <label htmlFor="order-external-id">{t("simulator.order.externalId")}</label>
@@ -153,7 +154,7 @@ export function SimulatorPage() {
           </div>
         </fieldset>
 
-        <fieldset className="grid gap-4 border-0 border-t border-app-border p-0 pt-6 sm:grid-cols-3">
+        <fieldset disabled={simulator.isPending} className="grid gap-4 border-0 border-t border-app-border p-0 pt-6 sm:grid-cols-3">
           <legend className="mb-3 text-lg font-semibold">{t("simulator.item.title")}</legend>
           <div className="grid gap-1.5 text-sm font-medium text-app-foreground-strong">
             <label htmlFor="order-item-sku">{t("simulator.item.sku")}</label>
@@ -212,14 +213,18 @@ export function SimulatorPage() {
           </button>
         </div>
         {simulator.isPending ? (
-          <p role="status" className="sr-only">
-            {t("simulator.actions.submitting")}
+          <p role="status" className="text-sm text-app-foreground-secondary">
+            {t("simulator.submission.pending")}
           </p>
         ) : null}
       </form>
 
-      {simulator.result !== undefined ? <SimulationSuccess result={simulator.result} /> : null}
-      {simulator.error !== null ? <SimulationError error={simulator.error} /> : null}
+      {simulator.result !== undefined && simulator.submittedRequest !== undefined ? (
+        <SimulationSuccess result={simulator.result} request={simulator.submittedRequest} isDraftChanged={simulator.isDraftChanged} />
+      ) : null}
+      {simulator.error !== null && simulator.submittedRequest !== undefined ? (
+        <SimulationError error={simulator.error} request={simulator.submittedRequest} isDraftChanged={simulator.isDraftChanged} />
+      ) : null}
     </section>
   );
 }
@@ -264,7 +269,26 @@ function ScenarioButton({
   );
 }
 
-function SimulationSuccess({ result }: { result: ReceiveOrderResult }) {
+function SubmissionContext({ request, isDraftChanged }: { request: ReceiveOrderRequest; isDraftChanged: boolean }) {
+  const { t } = useTranslation();
+  const item = request.items[0];
+  return (
+    <div className="mt-4 text-sm">
+      {isDraftChanged ? <p className="mb-3 font-semibold">{t("simulator.submission.draftChanged")}</p> : null}
+      <h2 className="font-semibold">{t("simulator.submission.title")}</h2>
+      <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+        <div><dt>{t("simulator.order.externalId")}</dt><dd className="break-all font-mono">{request.externalId}</dd></div>
+        <div><dt>{t("simulator.order.currency")}</dt><dd>{request.currency}</dd></div>
+        <div><dt>{t("simulator.order.declaredTotal")}</dt><dd>{request.declaredTotalAmount}</dd></div>
+        <div><dt>{t("simulator.item.sku")}</dt><dd className="break-all font-mono">{item?.sku}</dd></div>
+        <div><dt>{t("simulator.item.quantity")}</dt><dd>{item?.quantity}</dd></div>
+        <div><dt>{t("simulator.item.unitPrice")}</dt><dd>{item?.unitPrice}</dd></div>
+      </dl>
+    </div>
+  );
+}
+
+function SimulationSuccess({ result, request, isDraftChanged }: { result: ReceiveOrderResult; request: ReceiveOrderRequest; isDraftChanged: boolean }) {
   const { t } = useTranslation();
   const title = result.outcome === "CREATED" ? t("simulator.success.created") : t("simulator.success.replayed");
 
@@ -272,9 +296,10 @@ function SimulationSuccess({ result }: { result: ReceiveOrderResult }) {
     <div role="status" className="mt-6 border-t border-emerald-200 bg-emerald-50 px-4 py-4 text-emerald-950">
       <div className="flex items-start gap-3">
         <CheckCircle2 aria-hidden="true" size={20} className="mt-0.5 shrink-0 text-emerald-700" />
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="font-semibold">{title}</p>
           <p className="mt-1 break-all font-mono text-xs text-emerald-800">{result.order.id}</p>
+          <SubmissionContext request={request} isDraftChanged={isDraftChanged} />
           <Link to={`/orders/${result.order.id}`} className="mt-3 inline-block text-sm font-semibold underline underline-offset-4">
             {t("simulator.actions.viewOrder")}
           </Link>
@@ -284,7 +309,7 @@ function SimulationSuccess({ result }: { result: ReceiveOrderResult }) {
   );
 }
 
-function SimulationError({ error }: { error: Error }) {
+function SimulationError({ error, request, isDraftChanged }: { error: Error; request: ReceiveOrderRequest; isDraftChanged: boolean }) {
   const { t } = useTranslation();
   const fieldErrors = error instanceof IntegrationCoreApiError ? error.problem?.errors : undefined;
 
@@ -292,7 +317,7 @@ function SimulationError({ error }: { error: Error }) {
     <div role="alert" className="mt-6 border-t border-red-200 bg-red-50 px-4 py-4 text-red-950">
       <div className="flex items-start gap-3">
         <TriangleAlert aria-hidden="true" size={20} className="mt-0.5 shrink-0 text-red-700" />
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="font-semibold">{t("simulator.error.title")}</p>
           <p className="mt-1 text-sm">{error.message}</p>
           {fieldErrors !== undefined && fieldErrors.length > 0 ? (
@@ -304,6 +329,7 @@ function SimulationError({ error }: { error: Error }) {
               ))}
             </ul>
           ) : null}
+          <SubmissionContext request={request} isDraftChanged={isDraftChanged} />
         </div>
       </div>
     </div>
