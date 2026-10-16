@@ -52,6 +52,30 @@ reasoned, idempotent replay command for an eligible exhausted delivery. The
 simulator requires a source API key provisioned by the Integration Core
 administrative CLI.
 
+### Pending replay requests
+
+Replay requests are tracked above the routes for the lifetime of the loaded
+console. Closing and reopening the dialog preserves a pending request and its
+reason. Navigating within the console, replacing the token, or removing it does
+not cancel a POST already sent. A shared synchronous lock prevents a second
+request for the same delivery until the first HTTP request settles, including
+after navigation or a token change. Different deliveries can be requested
+independently; POSTs are never automatically retried.
+
+A live status notice across pages explains pending requests without exposing
+delivery IDs, reasons, or credentials from another session. On completion,
+delivery list and target detail caches are invalidated only for the initiating
+session, even if its page has unmounted. Gateway reads now use the same opaque
+session scopes as Core reads; tokens are not included in their cache keys, and
+list placeholders are not carried across session changes.
+
+This tracking is in memory: reloading, closing the tab, or leaving the console
+loses it and cannot undo a server-side command. The notice explains this limit.
+Recovery with a stable idempotency key after a lost response and persistent
+acceptance feedback are separate follow-up increments. `IN_PROGRESS` in a
+Gateway response describes the audited command, not an outstanding browser
+request or a successful delivery.
+
 With the Integration Core OpenSearch profile enabled, the Orders page enables
 projected-order search only after the status endpoint reports the read alias as
 available. Operators can search item descriptions, an exact external order ID,

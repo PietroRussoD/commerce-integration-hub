@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { replayOperatorDelivery } from "../../api/connectorGatewayClient";
@@ -52,7 +52,6 @@ test("does not render a recovery control without platform-admin permission", () 
         accessToken="operator-token"
         canReplay={false}
         deliveryId="c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21"
-        onReplayAccepted={vi.fn()}
       />
     </AppProviders>,
   );
@@ -73,7 +72,6 @@ test("associates a request error with the reason without marking the reason inva
 });
 
 test("submits an idempotent replay command and reports an accepted replay", async () => {
-  const onReplayAccepted = vi.fn();
   const randomUUID = vi.fn(() => "426a23e6-5234-4d38-9907-e2979ab2d9f5");
   vi.stubGlobal("crypto", { randomUUID });
   mockedReplayOperatorDelivery.mockResolvedValue({
@@ -82,14 +80,14 @@ test("submits an idempotent replay command and reports an accepted replay", asyn
     outcome: "REPLAYED",
   });
 
-  renderAction({ onReplayAccepted });
+  renderAction();
   randomUUID.mockClear();
 
   fireEvent.click(screen.getByRole("button", { name: "Replay delivery" }));
   fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "The Core endpoint is available again" } });
   fireEvent.click(screen.getByRole("button", { name: "Confirm replay" }));
 
-  expect(await screen.findByRole("status")).toHaveTextContent("Replay command c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21 was accepted.");
+  await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Replay command c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21 was accepted."));
   expect(randomUUID).toHaveBeenCalledOnce();
   expect(mockedReplayOperatorDelivery).toHaveBeenCalledWith({
     accessToken: "admin-token",
@@ -97,17 +95,37 @@ test("submits an idempotent replay command and reports an accepted replay", asyn
     idempotencyKey: "426a23e6-5234-4d38-9907-e2979ab2d9f5",
     reason: "The Core endpoint is available again",
   });
-  expect(onReplayAccepted).toHaveBeenCalledOnce();
 });
 
-function renderAction({ onReplayAccepted = vi.fn() }: { onReplayAccepted?: () => void } = {}) {
+test("closing and reopening a pending replay preserves the request and blocks another submission", async () => {
+  let resolve!: (response: Awaited<ReturnType<typeof replayOperatorDelivery>>) => void;
+  mockedReplayOperatorDelivery.mockReturnValueOnce(new Promise((done) => { resolve = done; }));
+  renderAction();
+  fireEvent.click(screen.getByRole("button", { name: "Replay delivery" }));
+  fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "Synthetic recovery check" } });
+  fireEvent.click(screen.getByRole("button", { name: "Confirm replay" }));
+  await waitFor(() => expect(mockedReplayOperatorDelivery).toHaveBeenCalledOnce());
+  fireEvent.click(screen.getByRole("button", { name: "Close replay delivery dialog" }));
+  fireEvent.click(screen.getByRole("button", { name: "Replay delivery" }));
+
+  expect(screen.getByLabelText("Reason")).toHaveValue("Synthetic recovery check");
+  expect(screen.getByLabelText("Reason")).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Confirm replay" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Close replay delivery dialog" })).toHaveFocus();
+  fireEvent.submit(screen.getByLabelText("Reason").closest("form")!);
+  expect(mockedReplayOperatorDelivery).toHaveBeenCalledOnce();
+
+  await act(async () => resolve({ commandId: "synthetic-command", idempotent: false, outcome: "IN_PROGRESS" }));
+  await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Replay command synthetic-command is already in progress."));
+});
+
+function renderAction() {
   return render(
     <AppProviders>
       <ReplayDeliveryAction
         accessToken="admin-token"
         canReplay
         deliveryId="c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21"
-        onReplayAccepted={onReplayAccepted}
       />
     </AppProviders>,
   );

@@ -5,6 +5,7 @@ import { I18nextProvider, useTranslation } from "react-i18next";
 
 import { AccessTokenProvider } from "../auth/AccessTokenProvider";
 import { appI18n, resolveSupportedLocale } from "../i18n/i18n";
+import { ReplayRequestsProvider } from "../pages/deliveries/ReplayRequestsProvider";
 
 function createQueryClient() {
   return new QueryClient({
@@ -24,7 +25,7 @@ export function AppProviders({ children, i18nInstance = appI18n }: { children: R
     <I18nextProvider i18n={i18nInstance} defaultNS="common">
       <DocumentLocale />
       <QueryClientProvider client={queryClient}>
-        <AccessTokenProvider>{children}</AccessTokenProvider>
+        <AccessTokenProvider><ReplayRequestsProvider>{children}</ReplayRequestsProvider></AccessTokenProvider>
       </QueryClientProvider>
     </I18nextProvider>
   );
