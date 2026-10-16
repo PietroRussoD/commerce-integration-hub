@@ -226,6 +226,50 @@ test("has no automatically detectable accessibility violations in the simulator"
   await expectNoAccessibilityViolations(container);
 });
 
+test("keeps accepted request values separate from an edited draft and scenario", async () => {
+  receiveOrderMock.mockResolvedValue({
+    outcome: "CREATED",
+    order: { id: "018f38c2-1b95-7cc4-bb89-72d26a6f9f88", sourceSystem: "MARKETPLACE_A", externalId: "SENT-ORDER", currency: "EUR", totalAmount: "39.98", status: "RECEIVED", receivedAt: "2026-10-16T12:00:00Z", items: [] },
+  });
+  renderSimulator();
+  fireEvent.change(screen.getByLabelText("Source API key"), { target: { value: "synthetic-key.secret" } });
+  fireEvent.change(screen.getByLabelText("External order ID"), { target: { value: "SENT-ORDER" } });
+  fireEvent.click(screen.getByRole("button", { name: "Submit order" }));
+  const response = await screen.findByRole("status");
+  expect(response).toHaveTextContent("SENT-ORDER");
+  fireEvent.change(screen.getByLabelText("SKU"), { target: { value: "EDITED-SKU" } });
+  expect(response).toHaveTextContent("The draft has changed");
+  expect(response).toHaveTextContent("DEMO-SKU-001");
+  expect(response).not.toHaveTextContent("EDITED-SKU");
+  expect(response).not.toHaveTextContent("synthetic-key.secret");
+  fireEvent.change(screen.getByLabelText("SKU"), { target: { value: "DEMO-SKU-001" } });
+  expect(response).not.toHaveTextContent("The draft has changed");
+  fireEvent.click(screen.getByRole("button", { name: "Fresh order" }));
+  expect(response).toHaveTextContent("SENT-ORDER");
+  expect(response).toHaveTextContent("The draft has changed");
+  expect(receiveOrderMock).toHaveBeenCalledTimes(1);
+});
+
+test("keeps an earlier validation response without marking an edited draft invalid", async () => {
+  receiveOrderMock.mockRejectedValue(new IntegrationCoreApiError(400, {
+    type: "urn:problem:request-validation", title: "Request validation failed", status: 400,
+    detail: "Synthetic invalid quantity", instance: "/api/v1/orders", code: "REQUEST_VALIDATION_FAILED",
+    errors: [{ field: "items[0].quantity", message: "Synthetic rejected quantity" }],
+  }));
+  renderSimulator();
+  fireEvent.change(screen.getByLabelText("Source API key"), { target: { value: "synthetic-key.secret" } });
+  fireEvent.click(screen.getByRole("button", { name: "Submit order" }));
+  const response = await screen.findByRole("alert");
+  const quantity = screen.getByLabelText("Quantity");
+  expect(quantity).toHaveAttribute("aria-invalid", "true");
+  fireEvent.change(quantity, { target: { value: "3" } });
+  expect(quantity).toHaveAttribute("aria-invalid", "false");
+  expect(quantity).not.toHaveAttribute("aria-describedby");
+  expect(response).toHaveTextContent("The draft has changed");
+  expect(response).toHaveTextContent("Synthetic rejected quantity");
+  expect(response).toHaveTextContent("Submitted order");
+});
+
 function renderSimulator(locale: SupportedLocale = "en") {
   const queryClient = new QueryClient({
     defaultOptions: {

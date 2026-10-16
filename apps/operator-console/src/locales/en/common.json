@@ -427,6 +427,11 @@
       "submitting": "Submitting...",
       "viewOrder": "View order"
     },
+    "submission": {
+      "title": "Submitted order",
+      "pending": "Submitting... Fields and scenarios are unavailable until a response arrives.",
+      "draftChanged": "The draft has changed. This response belongs to the submitted order shown below."
+    },
     "success": {
       "created": "Order created",
       "replayed": "Equivalent order replayed"

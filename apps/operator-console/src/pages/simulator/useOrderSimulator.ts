@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   receiveOrder,
@@ -28,6 +28,8 @@ export interface OrderSimulator {
   loadInvalidOrder: () => void;
   canReplay: boolean;
   isPending: boolean;
+  submittedRequest?: ReceiveOrderRequest;
+  isDraftChanged: boolean;
   result?: ReceiveOrderResult;
   error: Error | null;
 }
@@ -35,16 +37,24 @@ export interface OrderSimulator {
 export function useOrderSimulator(): OrderSimulator {
   const [form, setForm] = useState<SimulatorFormValues>(createInitialForm);
   const [lastAcceptedRequest, setLastAcceptedRequest] = useState<ReceiveOrderRequest>();
+  const submissionPending = useRef(false);
   const mutation = useMutation({
     mutationFn: (parameters: ReceiveOrderParameters) => receiveOrder(parameters),
+    retry: false,
     onSuccess: (_result, parameters) => setLastAcceptedRequest(parameters.request),
+    onSettled: () => { submissionPending.current = false; },
   });
 
   function updateField<K extends keyof SimulatorFormValues>(field: K, value: SimulatorFormValues[K]) {
+    if (submissionPending.current) return;
     setForm((current) => ({ ...current, [field]: value }));
   }
 
   function submit() {
+    // Lock before React renders the pending state, including repeated submits
+    // or scenario handlers invoked in the same event turn.
+    if (submissionPending.current) return;
+    submissionPending.current = true;
     mutation.mutate({
       sourceApiKey: form.sourceApiKey,
       request: toRequest(form),
@@ -52,6 +62,7 @@ export function useOrderSimulator(): OrderSimulator {
   }
 
   function loadRequest(request: ReceiveOrderRequest) {
+    if (submissionPending.current) return;
     const item = request.items[0];
     if (item === undefined) return;
 
@@ -64,7 +75,6 @@ export function useOrderSimulator(): OrderSimulator {
       quantity: item.quantity,
       unitPrice: item.unitPrice,
     }));
-    mutation.reset();
   }
 
   function loadFreshOrder() {
@@ -100,9 +110,22 @@ export function useOrderSimulator(): OrderSimulator {
     loadInvalidOrder,
     canReplay: lastAcceptedRequest !== undefined,
     isPending: mutation.isPending,
+    submittedRequest: mutation.variables?.request,
+    isDraftChanged: mutation.variables !== undefined && (
+      mutation.variables.sourceApiKey !== form.sourceApiKey ||
+      !matchesSubmittedOrder(form, mutation.variables.request)
+    ),
     result: mutation.data,
     error: mutation.error,
   };
+}
+
+function matchesSubmittedOrder(form: SimulatorFormValues, request: ReceiveOrderRequest): boolean {
+  const item = request.items[0];
+  return form.externalId === request.externalId &&
+    form.currency === request.currency &&
+    form.declaredTotalAmount === request.declaredTotalAmount &&
+    form.sku === item?.sku && form.quantity === item?.quantity && form.unitPrice === item?.unitPrice;
 }
 
 function createInitialForm(): SimulatorFormValues {

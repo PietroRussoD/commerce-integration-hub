@@ -52,6 +52,27 @@ reasoned, idempotent replay command for an eligible exhausted delivery. The
 simulator requires a source API key provisioned by the Integration Core
 administrative CLI.
 
+### Simulator submission lifecycle
+
+The simulator locks its fields and all scenario actions while an order submission
+is pending. A synchronous guard also rejects repeated submission and editing
+handlers before React renders the disabled controls. POST requests are never
+automatically retried. Both success and failure release the lock.
+
+The response retains a read-only summary of the submitted external ID, currency,
+declared total and item values. Editing the draft or choosing another scenario
+keeps that response and marks it as belonging to the submitted order. Previous
+validation errors remain in the response summary but are not attached to changed
+draft fields. No source API key is rendered in the summary. Equivalent replay and
+conflict scenarios continue to use the last accepted request.
+
+This state belongs to the mounted simulator page; leaving the page does not
+cancel a POST already sent and loses its local feedback. The simulator does not
+provide cross-page command recovery. Unit tests exercise synchronous duplicate
+submission and scenario guards, failure recovery and response attribution.
+Chromium checks use delayed, synthetic API responses at desktop, tablet and
+smartphone widths, including Italian, and do not ingest orders into a live Core.
+
 ### Token expiry and access recovery
 
 The token dialog displays the declared subject, recognized operational roles and
