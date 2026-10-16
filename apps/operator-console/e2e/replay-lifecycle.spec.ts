@@ -56,7 +56,7 @@ for (const failure of [false, true]) {
         await expect(page.getByRole("button", { name: "Confirm replay" })).toBeEnabled();
       } else {
         // Completion invalidates the detail even though its original page unmounted.
-        await expect(page.getByText("Received", { exact: true })).toBeVisible();
+        await expect(page.locator("dd").filter({ hasText: /^Received$/ })).toBeVisible();
         await expect(page.getByRole("button", { name: "Replay delivery", exact: true })).toHaveCount(0);
       }
       expect(mock.posts).toHaveLength(1);

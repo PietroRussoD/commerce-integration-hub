@@ -8,6 +8,7 @@ import { useAccessToken } from "../../auth/accessTokenContext";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { DeliveryDetailContent } from "./DeliveryDetailContent";
 import { ReplayDeliveryAction } from "./ReplayDeliveryAction";
+import { ReplayDeliveryFeedback } from "./ReplayDeliveryFeedback";
 
 export function DeliveryDetailPage() {
   const { t } = useTranslation();
@@ -40,6 +41,7 @@ export function DeliveryDetailPage() {
 
       <div className="mt-5">
         {!canReadDelivery ? <AccessNotice hasToken={accessToken !== undefined} /> : null}
+        {canReadDelivery ? <ReplayDeliveryFeedback deliveryId={deliveryId} /> : null}
         {canReadDelivery && query.isPending ? <DeliveryDetailLoading /> : null}
         {canReadDelivery && query.isError ? <DeliveryDetailError onRetry={() => void query.refetch()} /> : null}
         {canReadDelivery && query.data !== undefined ? (

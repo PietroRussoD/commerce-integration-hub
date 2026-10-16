@@ -19,10 +19,15 @@ export function ReplayRequestsProvider({ children }: { children: ReactNode }) {
 
   const reset = useCallback((deliveryId: string, cacheScope: string) => {
     const key = replayRequestKey(cacheScope, deliveryId);
-    if (pending.current.has(deliveryId) || isReplayUnresolved(commands.current.get(key))) return;
+    const current = commands.current.get(key);
+    if (pending.current.has(deliveryId) || isReplayUnresolved(current)) return;
+    if (current?.lastResponse !== undefined) {
+      updateRequest(key, { ...current, data: undefined, error: undefined });
+      return;
+    }
     commands.current.delete(key);
     setRequests(new Map(commands.current));
-  }, []);
+  }, [updateRequest]);
 
   const submit = useCallback(async (request: ReplayRequest): Promise<ReplayOperatorDeliveryResponse> => {
     // Lock synchronously, before React renders disabled controls. The lock belongs
@@ -39,6 +44,7 @@ export function ReplayRequestsProvider({ children }: { children: ReactNode }) {
       deliveryId: request.deliveryId,
       idempotencyKey: unresolved ? previous!.idempotencyKey : crypto.randomUUID(),
       reason,
+      lastResponse: unresolved ? previous?.lastResponse : undefined,
     };
     pending.current.add(request.deliveryId);
     updateRequest(key, { ...state, isPending: true, isUncertain: unresolved });
@@ -56,13 +62,15 @@ export function ReplayRequestsProvider({ children }: { children: ReactNode }) {
       // data, without invalidating a new identity's active queries.
       void queryClient.invalidateQueries({ queryKey: ["operator-deliveries", request.cacheScope] });
       void queryClient.invalidateQueries({ queryKey: ["operator-delivery", request.cacheScope, request.deliveryId] });
-      updateRequest(key, { ...state, isPending: false, isUncertain: false, data: response });
+      updateRequest(key, { ...state, isPending: false, isUncertain: false, data: response, lastResponse: response });
       return response;
     } catch (error) {
+      const isUncertain = isOutcomeUncertain(error, unresolved);
       updateRequest(key, {
         ...state,
         isPending: false,
-        isUncertain: isOutcomeUncertain(error, unresolved),
+        isUncertain,
+        lastResponse: isUncertain ? state.lastResponse : undefined,
         error: error instanceof Error ? error : new Error(String(error)),
       });
       throw error;

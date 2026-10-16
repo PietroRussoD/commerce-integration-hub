@@ -71,9 +71,21 @@ list placeholders are not carried across session changes.
 
 This tracking is in memory: reloading, closing the tab, or leaving the console
 loses it and cannot undo a server-side command. The notice explains this limit.
-Persistent acceptance feedback after the delivery leaves the replayable state
-is a separate follow-up increment. `IN_PROGRESS` in a Gateway response describes
-the audited command, not an outstanding browser request or a successful delivery.
+The delivery detail keeps the last confirmed replay response and command ID
+outside the conditional replay control. It survives closing the dialog,
+navigation back to that detail, and the refreshed delivery leaving `EXHAUSTED`.
+The response remains visible while the detail loads or its refresh fails.
+An open dialog remains available until dismissed, with focus returning to the
+main content when its trigger is no longer available. Opening a new draft keeps
+the previous confirmation; confirming a new intention replaces it.
+
+`REPLAYED` confirms that the delivery was requeued. The current delivery status
+and attempt history describe subsequent sending outcomes. `IN_PROGRESS` reports
+that the Gateway registered the command and its result is still pending. The
+feedback explicitly distinguishes these responses from a successful delivery.
+Both responses remain scoped to the originating token session; a replacement
+token never displays another session's confirmation. Browser tests verify this
+behavior with synthetic responses at 320 and 1440 pixels.
 
 ### Recovering an unconfirmed replay
 
