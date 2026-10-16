@@ -6,15 +6,18 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 import {
+  IntegrationCoreApiError,
   getOperatorOrderSearchProjectionStatus,
   listOperatorOrders,
   searchOperatorOrders,
 } from "../../api/integrationCoreClient";
+import { AccessTokenProvider } from "../../auth/AccessTokenProvider";
 import { createAppI18n, type SupportedLocale } from "../../i18n/i18n";
 import { expectNoAccessibilityViolations } from "../../test/accessibility";
 import { OrdersPage } from "./OrdersPage";
 
-vi.mock("../../api/integrationCoreClient", () => ({
+vi.mock("../../api/integrationCoreClient", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../../api/integrationCoreClient")>(),
   getOperatorOrderSearchProjectionStatus: vi.fn(),
   listOperatorOrders: vi.fn(),
   searchOperatorOrders: vi.fn(),
@@ -369,10 +372,43 @@ test("has no automatically detectable accessibility violations in the loaded ord
   await expectNoAccessibilityViolations(container);
 });
 
+test.each([
+  [401, "en", "Access to orders requires an operator token accepted by the Core"],
+  [403, "en", "The Core denied access to orders"],
+  [401, "it", "Per accedere agli ordini serve un token operatore accettato dal Core"],
+  [403, "it", "Il Core ha negato l’accesso agli ordini"],
+] as const)("explains Core %i in %s without retrying protected reads", async (status, locale, message) => {
+  listOperatorOrdersMock.mockRejectedValue(new IntegrationCoreApiError(status));
+  getOperatorOrderSearchProjectionStatusMock.mockRejectedValue(new IntegrationCoreApiError(status));
+  renderOrdersPage(locale);
+
+  await waitFor(() => expect(screen.getAllByRole("alert")).toHaveLength(2));
+  for (const alert of screen.getAllByRole("alert")) expect(alert).toHaveTextContent(message);
+  expect(screen.queryByRole("button", { name: locale === "it" ? "Riprova" : "Retry" })).not.toBeInTheDocument();
+  expect(listOperatorOrdersMock).toHaveBeenCalledTimes(1);
+  expect(getOperatorOrderSearchProjectionStatusMock).toHaveBeenCalledTimes(1);
+});
+
+test.each([401, 403])("explains projected search %i without a retry action", async (status) => {
+  listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
+  searchOperatorOrdersMock.mockRejectedValue(new IntegrationCoreApiError(status));
+  renderOrdersPage();
+  const searchbox = screen.getByRole("searchbox", { name: "Search projected orders" });
+  await waitFor(() => expect(searchbox).toBeEnabled());
+  fireEvent.change(searchbox, { target: { value: "blue" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search projected orders" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(status === 401
+    ? "Access to orders requires an operator token accepted by the Core"
+    : "The Core denied access to orders");
+  expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+  expect(searchOperatorOrdersMock).toHaveBeenCalledTimes(1);
+});
+
 function renderOrdersPage(locale: SupportedLocale = "en") {
   const queryClient = new QueryClient({
     defaultOptions: {
-      queries: { retry: false },
+      queries: { retry: false, retryDelay: 0 },
     },
   });
 
@@ -388,5 +424,5 @@ function renderOrdersPage(locale: SupportedLocale = "en") {
 }
 
 function TestProviders({ children, queryClient }: { children: ReactNode; queryClient: QueryClient }) {
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return <QueryClientProvider client={queryClient}><AccessTokenProvider>{children}</AccessTokenProvider></QueryClientProvider>;
 }

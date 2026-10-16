@@ -37,9 +37,17 @@ list and detail views use the read-only operator API. The Deliveries navigation
 item appears after a non-expired JWT with an `operator` or `platform-admin`
 `groups` claim is supplied through the header control; the token is held only in
 page memory. The Console inspects these claims only to shape its UI and does not
-verify the signature. The Gateway independently verifies the token and enforces
-authorization. The delivery views provide payload-free delivery
-summaries and attempt history from the Gateway. A `platform-admin` can submit a
+verify the signature. The token is sent as a bearer credential to all four Core
+operator reads (list, detail, search status, and projected search) and to Gateway
+operator requests. Each service independently verifies it and enforces
+authorization when operator security is enabled. Core reads remain available
+without a token in an unprotected local profile. Applying a different token or
+removing it gives Core queries a fresh cache scope, including when the subject
+is unchanged; bearer credentials are never part of their cache keys. Core
+`401` and `403` responses show distinct access messages and are not automatically
+retried. Source ingestion continues to use its separate source API key.
+
+The delivery views provide payload-free delivery summaries and attempt history from the Gateway. A `platform-admin` can submit a
 reasoned, idempotent replay command for an eligible exhausted delivery. The
 simulator requires a source API key provisioned by the Integration Core
 administrative CLI.

@@ -4,12 +4,14 @@ import { I18nextProvider } from "react-i18next";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { getOperatorOrder, type OperatorOrderDetail } from "../../api/integrationCoreClient";
+import { IntegrationCoreApiError, getOperatorOrder, type OperatorOrderDetail } from "../../api/integrationCoreClient";
+import { AccessTokenProvider } from "../../auth/AccessTokenProvider";
 import { createAppI18n, type SupportedLocale } from "../../i18n/i18n";
 import { expectNoAccessibilityViolations } from "../../test/accessibility";
 import { OrderDetailPage } from "./OrderDetailPage";
 
-vi.mock("../../api/integrationCoreClient", () => ({
+vi.mock("../../api/integrationCoreClient", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../../api/integrationCoreClient")>(),
   getOperatorOrder: vi.fn(),
 }));
 
@@ -208,10 +210,21 @@ test("has no automatically detectable accessibility violations in loaded order d
   await expectNoAccessibilityViolations(container);
 });
 
+test.each([401, 403])("explains order detail %i without retrying", async (status) => {
+  getOperatorOrderMock.mockRejectedValue(new IntegrationCoreApiError(status));
+  renderOrderDetailPage();
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(status === 401
+    ? "Access to orders requires an operator token accepted by the Core"
+    : "The Core denied access to orders");
+  expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+  expect(getOperatorOrderMock).toHaveBeenCalledTimes(1);
+});
+
 function renderOrderDetailPage(locale: SupportedLocale = "en") {
   const queryClient = new QueryClient({
     defaultOptions: {
-      queries: { retry: false },
+      queries: { retry: false, retryDelay: 0 },
     },
   });
 
@@ -219,9 +232,11 @@ function renderOrderDetailPage(locale: SupportedLocale = "en") {
     <I18nextProvider i18n={createAppI18n(locale)} defaultNS="common">
       <MemoryRouter initialEntries={["/orders/018f38c2-1b95-7cc4-bb89-72d26a6f9f88"]}>
         <QueryClientProvider client={queryClient}>
+          <AccessTokenProvider>
           <Routes>
             <Route path="/orders/:orderId" element={<OrderDetailPage />} />
           </Routes>
+          </AccessTokenProvider>
         </QueryClientProvider>
       </MemoryRouter>
     </I18nextProvider>,

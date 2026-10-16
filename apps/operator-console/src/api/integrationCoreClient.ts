@@ -44,6 +44,7 @@ export class IntegrationCoreApiError extends Error {
 }
 
 export interface ListOperatorOrdersParameters {
+  accessToken?: string;
   status?: "RECEIVED" | "PROCESSING" | "READY";
   limit?: number;
   offset?: number;
@@ -51,15 +52,18 @@ export interface ListOperatorOrdersParameters {
 }
 
 export interface GetOperatorOrderParameters {
+  accessToken?: string;
   orderId: string;
   signal?: AbortSignal;
 }
 
 export interface GetOperatorOrderSearchProjectionStatusParameters {
+  accessToken?: string;
   signal?: AbortSignal;
 }
 
 export interface SearchOperatorOrdersParameters {
+  accessToken?: string;
   q?: string;
   sourceSystem?: string;
   externalOrderId?: string;
@@ -74,6 +78,7 @@ export interface SearchOperatorOrdersParameters {
 }
 
 export async function listOperatorOrders({
+  accessToken,
   status,
   limit,
   offset,
@@ -87,46 +92,48 @@ export async function listOperatorOrders({
 
   const query = search.size > 0 ? `?${search.toString()}` : "";
   const response = await fetch(`/api/v1/operator/orders${query}`, {
-    headers: { Accept: "application/json" },
+    headers: operatorHeaders(accessToken),
     signal,
   });
 
   if (!response.ok) {
-    throw new Error(`Operator order request failed with status ${response.status}`);
+    throw new IntegrationCoreApiError(response.status, await readProblem(response));
   }
 
   return response.json() as Promise<OperatorOrderPage>;
 }
 
-export async function getOperatorOrder({ orderId, signal }: GetOperatorOrderParameters): Promise<OperatorOrderDetail> {
+export async function getOperatorOrder({ accessToken, orderId, signal }: GetOperatorOrderParameters): Promise<OperatorOrderDetail> {
   const response = await fetch(`/api/v1/operator/orders/${encodeURIComponent(orderId)}`, {
-    headers: { Accept: "application/json" },
+    headers: operatorHeaders(accessToken),
     signal,
   });
 
   if (!response.ok) {
-    throw new Error(`Operator order detail request failed with status ${response.status}`);
+    throw new IntegrationCoreApiError(response.status, await readProblem(response));
   }
 
   return response.json() as Promise<OperatorOrderDetail>;
 }
 
 export async function getOperatorOrderSearchProjectionStatus({
+  accessToken,
   signal,
 }: GetOperatorOrderSearchProjectionStatusParameters = {}): Promise<OperatorOrderSearchProjectionStatus> {
   const response = await fetch("/api/v1/operator/orders/search/status", {
-    headers: { Accept: "application/json" },
+    headers: operatorHeaders(accessToken),
     signal,
   });
 
   if (!response.ok) {
-    throw new Error(`Operator order search projection status request failed with status ${response.status}`);
+    throw new IntegrationCoreApiError(response.status, await readProblem(response));
   }
 
   return response.json() as Promise<OperatorOrderSearchProjectionStatus>;
 }
 
 export async function searchOperatorOrders({
+  accessToken,
   q,
   sourceSystem,
   externalOrderId,
@@ -159,7 +166,7 @@ export async function searchOperatorOrders({
 
   const query = search.size > 0 ? `?${search.toString()}` : "";
   const response = await fetch(`/api/v1/operator/orders/search${query}`, {
-    headers: { Accept: "application/json" },
+    headers: operatorHeaders(accessToken),
     signal,
   });
 
@@ -198,6 +205,12 @@ export async function receiveOrder({
     order: (await response.json()) as ReceiveOrderResponse,
     outcome: response.status === 201 ? "CREATED" : "REPLAYED",
   };
+}
+
+function operatorHeaders(accessToken?: string): HeadersInit {
+  return accessToken === undefined
+    ? { Accept: "application/json" }
+    : { Accept: "application/json", Authorization: `Bearer ${accessToken}` };
 }
 
 async function readProblem(response: Response): Promise<IntegrationCoreProblem | undefined> {

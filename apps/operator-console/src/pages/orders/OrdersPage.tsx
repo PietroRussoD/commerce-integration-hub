@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, RefreshCw, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -10,6 +10,7 @@ import {
   type ListOperatorOrdersParameters,
   type OperatorOrderPage,
 } from "../../api/integrationCoreClient";
+import { useAccessToken } from "../../auth/accessTokenContext";
 import { IconButton } from "../../components/ui/IconButton";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { StatusBadge } from "../../components/ui/StatusBadge";
@@ -18,6 +19,7 @@ import { formatDateTime, formatLabel, formatMoney, orderStatusLabelKeys } from "
 import { SearchProjectionStatus } from "./SearchProjectionStatus";
 import { ProjectedOrderSearch } from "./ProjectedOrderSearch";
 import { getSearchProjectionStatusRefetchInterval } from "./searchProjectionPolling";
+import { operatorOrderAccessFailure, retryOperatorOrderQuery } from "./operatorOrderQueries";
 
 const PAGE_SIZE = 25;
 const statusOptions = ["ALL", "RECEIVED", "PROCESSING", "READY"] as const;
@@ -30,23 +32,30 @@ type StatusFilter = "ALL" | NonNullable<ListOperatorOrdersParameters["status"]>;
 
 export function OrdersPage() {
   const { t } = useTranslation();
+  const { accessToken, cacheScope } = useAccessToken();
   const [status, setStatus] = useState<StatusFilter>("ALL");
   const [offset, setOffset] = useState(0);
   const query = useQuery({
-    queryKey: ["operator-orders", { status, offset, limit: PAGE_SIZE }],
+    queryKey: ["operator-orders", cacheScope, { status, offset, limit: PAGE_SIZE }],
     queryFn: ({ signal }) =>
       listOperatorOrders({
+        accessToken,
         status: status === "ALL" ? undefined : status,
         limit: PAGE_SIZE,
         offset,
         signal,
       }),
-    placeholderData: keepPreviousData,
+    placeholderData: (previousData, previousQuery) =>
+      previousQuery?.queryKey[1] === cacheScope ? previousData : undefined,
+    retry: retryOperatorOrderQuery,
   });
   const searchProjectionQuery = useQuery({
-    queryKey: ["operator-order-search-projection-status"],
-    queryFn: ({ signal }) => getOperatorOrderSearchProjectionStatus({ signal }),
-    refetchInterval: (query) => getSearchProjectionStatusRefetchInterval(query.state.data),
+    queryKey: ["operator-order-search-projection-status", cacheScope],
+    queryFn: ({ signal }) => getOperatorOrderSearchProjectionStatus({ accessToken, signal }),
+    retry: retryOperatorOrderQuery,
+    refetchInterval: (query) => operatorOrderAccessFailure(query.state.error) === undefined
+      ? getSearchProjectionStatusRefetchInterval(query.state.data)
+      : false,
   });
 
   async function refresh() {
@@ -98,20 +107,21 @@ export function OrdersPage() {
         status={searchProjectionQuery.data}
         isPending={searchProjectionQuery.isPending}
         isError={searchProjectionQuery.isError}
+        error={searchProjectionQuery.error}
       />
 
       <ProjectedOrderSearch
-        isAvailable={searchProjectionQuery.data?.availability === "AVAILABLE"}
+        isAvailable={!searchProjectionQuery.isError && searchProjectionQuery.data?.availability === "AVAILABLE"}
         isAvailabilityKnown={searchProjectionQuery.data !== undefined}
       />
 
       <div className="mt-5 overflow-hidden rounded-md border border-app-border bg-app-surface">
         {query.isPending ? <OrdersLoading /> : null}
-        {query.isError ? <OrdersError onRetry={() => void query.refetch()} /> : null}
-        {query.data !== undefined ? <OrdersTable page={query.data} /> : null}
+        {query.isError ? <OrdersError error={query.error} onRetry={() => void query.refetch()} /> : null}
+        {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined ? <OrdersTable page={query.data} /> : null}
       </div>
 
-      {query.data !== undefined && query.data.total > 0 ? (
+      {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined && query.data.total > 0 ? (
         <Pagination
           page={query.data}
           onPrevious={() => setOffset((current) => Math.max(0, current - PAGE_SIZE))}
@@ -202,14 +212,16 @@ function OrdersLoading() {
   );
 }
 
-function OrdersError({ onRetry }: { onRetry: () => void }) {
+function OrdersError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation();
+  const accessFailure = operatorOrderAccessFailure(error);
 
   return (
     <div role="alert" className="flex flex-col items-center px-6 py-14 text-center">
       <TriangleAlert aria-hidden="true" size={24} className="text-red-700" />
-      <p className="mt-3 font-medium">{t("orders.error")}</p>
-      <button
+      <p className="mt-3 font-medium">{t(accessFailure === undefined ? "orders.error" : `orders.access.${accessFailure}`)}</p>
+      {accessFailure === undefined ? (
+        <button
         type="button"
         onClick={onRetry}
         className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm font-medium hover:bg-app-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
@@ -217,6 +229,7 @@ function OrdersError({ onRetry }: { onRetry: () => void }) {
         <RefreshCw aria-hidden="true" size={16} />
         {t("orders.actions.retry")}
       </button>
+      ) : null}
     </div>
   );
 }

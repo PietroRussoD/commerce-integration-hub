@@ -55,6 +55,7 @@ test("submits an idempotent replay command and reports an accepted replay", asyn
   });
 
   renderAction({ onReplayAccepted });
+  randomUUID.mockClear();
 
   fireEvent.click(screen.getByRole("button", { name: "Replay delivery" }));
   fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "The Core endpoint is available again" } });

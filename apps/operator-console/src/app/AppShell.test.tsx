@@ -153,6 +153,7 @@ test("has no automatically detectable accessibility violations in the applicatio
 });
 
 const operatorAccessTokenContext: AccessTokenContextValue = {
+  cacheScope: "test-session",
   accessToken: "operator-token",
   clearAccessToken: () => undefined,
   identity: {

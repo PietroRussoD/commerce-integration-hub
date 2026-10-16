@@ -4,16 +4,20 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
 import { getOperatorOrder } from "../../api/integrationCoreClient";
+import { useAccessToken } from "../../auth/accessTokenContext";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { OrderDetailContent } from "./OrderDetailContent";
+import { operatorOrderAccessFailure, retryOperatorOrderQuery } from "./operatorOrderQueries";
 
 export function OrderDetailPage() {
   const { t } = useTranslation();
+  const { accessToken, cacheScope } = useAccessToken();
   const orderId = useParams<{ orderId: string }>().orderId ?? "";
   const query = useQuery({
-    queryKey: ["operator-order", orderId],
-    queryFn: ({ signal }) => getOperatorOrder({ orderId, signal }),
+    queryKey: ["operator-order", cacheScope, orderId],
+    queryFn: ({ signal }) => getOperatorOrder({ accessToken, orderId, signal }),
     enabled: orderId.length > 0,
+    retry: retryOperatorOrderQuery,
   });
 
   return (
@@ -35,8 +39,8 @@ export function OrderDetailPage() {
 
       <div className="mt-5">
         {query.isPending ? <OrderDetailLoading /> : null}
-        {query.isError ? <OrderDetailError onRetry={() => void query.refetch()} /> : null}
-        {query.data !== undefined ? <OrderDetailContent order={query.data} /> : null}
+        {query.isError ? <OrderDetailError error={query.error} onRetry={() => void query.refetch()} /> : null}
+        {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined ? <OrderDetailContent order={query.data} /> : null}
       </div>
     </section>
   );
@@ -54,14 +58,16 @@ function OrderDetailLoading() {
   );
 }
 
-function OrderDetailError({ onRetry }: { onRetry: () => void }) {
+function OrderDetailError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation();
+  const accessFailure = operatorOrderAccessFailure(error);
 
   return (
     <div role="alert" className="flex flex-col items-center rounded-md border border-app-border bg-app-surface px-6 py-14 text-center">
       <TriangleAlert aria-hidden="true" size={24} className="text-red-700" />
-      <p className="mt-3 font-medium">{t("orderDetail.error")}</p>
-      <button
+      <p className="mt-3 font-medium">{t(accessFailure === undefined ? "orderDetail.error" : `orders.access.${accessFailure}`)}</p>
+      {accessFailure === undefined ? (
+        <button
         type="button"
         onClick={onRetry}
         className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm font-medium hover:bg-app-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
@@ -69,6 +75,7 @@ function OrderDetailError({ onRetry }: { onRetry: () => void }) {
         <RefreshCw aria-hidden="true" size={16} />
         {t("orderDetail.retry")}
       </button>
+      ) : null}
     </div>
   );
 }

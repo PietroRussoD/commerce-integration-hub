@@ -3,6 +3,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { MemoryRouter } from "react-router-dom";
 import { expect, userEvent, within } from "storybook/test";
 
+import { AccessTokenProvider } from "../../auth/AccessTokenProvider";
+
 import { ProjectedOrderSearch } from "./ProjectedOrderSearch";
 
 const meta = {
@@ -18,9 +20,11 @@ const meta = {
     (Story) => (
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+          <AccessTokenProvider>
           <div className="max-w-4xl">
             <Story />
           </div>
+          </AccessTokenProvider>
         </QueryClientProvider>
       </MemoryRouter>
     ),
