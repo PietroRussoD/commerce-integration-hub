@@ -98,6 +98,10 @@
       "submit": "Conferma ripetizione",
       "replayed": "Il comando di ripetizione {{commandId}} è stato accettato.",
       "inProgress": "Il comando di ripetizione {{commandId}} è già in corso.",
+      "recover": "Recupera esito della richiesta",
+      "retrySame": "Ripeti la stessa richiesta",
+      "uncertain": "Esito non confermato. Il Gateway potrebbe avere già accettato questo comando. Ripeti la stessa richiesta per recuperarne il risultato; motivazione e identità del comando saranno conservate.",
+      "rejected": "Il Gateway ha rifiutato questa richiesta.",
       "pending": "In attesa della risposta del Gateway. Chiudere questo dialog non annulla la richiesta.",
       "pendingRequests": "Richieste di ripetizione in attesa della risposta del Gateway: {{count}}. Chiudere il dialog, navigare nella console o cambiare token non le annulla. Ricaricare la pagina o uscire dalla console fa perdere questo monitoraggio locale."
     }

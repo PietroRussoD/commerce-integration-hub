@@ -49,6 +49,7 @@ export function DeliveryDetailPage() {
                 key={`${cacheScope}:${query.data.deliveryId}`}
                 accessToken={accessToken!}
                 canReplay={identity?.roles.has("platform-admin") === true && query.data.status === "EXHAUSTED"}
+                canRecover={identity?.roles.has("platform-admin") === true}
                 deliveryId={query.data.deliveryId}
               />
             </div>

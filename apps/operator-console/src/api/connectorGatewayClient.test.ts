@@ -93,6 +93,19 @@ function jsonResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json" }, status: 200 });
 }
 
+test.each([
+  { status: 202, body: "{" },
+  { status: 202, body: JSON.stringify({}) },
+  { status: 202, body: JSON.stringify({ commandId: "invalid", idempotent: false, outcome: "REPLAYED" }) },
+  { status: 202, body: JSON.stringify({ commandId: "c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21", idempotent: false, outcome: "UNKNOWN" }) },
+  { status: 200, body: JSON.stringify({ commandId: "c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21", idempotent: false, outcome: "REPLAYED" }) },
+])("does not treat an unrecognized replay response as confirmation ($status, $body)", async ({ status, body }) => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body, { status })));
+  await expect(replayOperatorDelivery({
+    accessToken: "synthetic-admin-token", deliveryId: "delivery-42", idempotencyKey: "synthetic-key", reason: "Synthetic recovery",
+  })).rejects.toThrow();
+});
+
 function problemResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), { headers: { "Content-Type": "application/problem+json" }, status: 403 });
 }

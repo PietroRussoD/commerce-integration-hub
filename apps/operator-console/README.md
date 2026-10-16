@@ -71,10 +71,40 @@ list placeholders are not carried across session changes.
 
 This tracking is in memory: reloading, closing the tab, or leaving the console
 loses it and cannot undo a server-side command. The notice explains this limit.
-Recovery with a stable idempotency key after a lost response and persistent
-acceptance feedback are separate follow-up increments. `IN_PROGRESS` in a
-Gateway response describes the audited command, not an outstanding browser
-request or a successful delivery.
+Persistent acceptance feedback after the delivery leaves the replayable state
+is a separate follow-up increment. `IN_PROGRESS` in a Gateway response describes
+the audited command, not an outstanding browser request or a successful delivery.
+
+### Recovering an unconfirmed replay
+
+The Console creates one idempotency key when an operator confirms a replay
+intention. Network failures, server errors, unrecognized errors, or invalid
+acceptance responses leave its outcome unconfirmed: the Gateway may already
+have accepted the command. Closing/reopening the dialog or navigating within
+the same token session preserves the key and the trimmed reason. The recovery
+form keeps that reason read-only and offers **Retry the same request**. No
+automatic replay retry is performed.
+
+The same action can check an `IN_PROGRESS` command again. Recovery remains
+available to a platform-admin even when the delivery is no longer `EXHAUSTED`,
+because the Gateway resolves a known command before checking replay eligibility.
+An authorization or validation failure during recovery cannot resolve an earlier
+uncertain outcome. A recognized audited replay rejection does resolve it.
+After an explicit rejection, a new confirmation is a new intention and receives
+a new key, even for the same delivery and reason. An unresolved intention must
+be resolved before its reason can change.
+
+Command metadata is isolated by the opaque token-session scope and delivery.
+Replacing or removing the token does not transfer a recovery intention or its
+key into the new session, even when the claimed subject is unchanged. Records
+from separate sessions cannot overwrite each other, and the in-flight delivery
+lock still applies across sessions. Metadata stays in memory, with no bearer
+credential in the registry or browser storage; reload loses recovery metadata.
+
+`pnpm test:e2e` covers this flow with synthetic APIs, including a simulated
+server acceptance followed by a lost HTTP response. It does not send real
+Gateway replay commands. The Gateway integration suite separately checks the
+database-backed replay and idempotency rules.
 
 With the Integration Core OpenSearch profile enabled, the Orders page enables
 projected-order search only after the status endpoint reports the read alias as

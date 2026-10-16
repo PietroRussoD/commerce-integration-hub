@@ -1,14 +1,11 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { replayOperatorDelivery } from "../../api/connectorGatewayClient";
+import { ConnectorGatewayApiError, replayOperatorDelivery } from "../../api/connectorGatewayClient";
 import { AppProviders } from "../../app/AppProviders";
 import { ReplayDeliveryAction } from "./ReplayDeliveryAction";
 
-vi.mock("../../api/connectorGatewayClient", () => ({
-  ConnectorGatewayApiError: class ConnectorGatewayApiError extends Error {},
-  replayOperatorDelivery: vi.fn(),
-}));
+vi.mock(import("../../api/connectorGatewayClient"), async (importOriginal) => ({ ...await importOriginal(), replayOperatorDelivery: vi.fn() }));
 
 const mockedReplayOperatorDelivery = vi.mocked(replayOperatorDelivery);
 
@@ -117,6 +114,38 @@ test("closing and reopening a pending replay preserves the request and blocks an
 
   await act(async () => resolve({ commandId: "synthetic-command", idempotent: false, outcome: "IN_PROGRESS" }));
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Replay command synthetic-command is already in progress."));
+});
+
+test("reopens an uncertain command with an immutable reason and retries the same intention", async () => {
+  mockedReplayOperatorDelivery.mockRejectedValueOnce(new TypeError("Lost response")).mockResolvedValueOnce({
+    commandId: "synthetic-command", idempotent: true, outcome: "REPLAYED",
+  });
+  renderAction();
+  fireEvent.click(screen.getByRole("button", { name: "Replay delivery" }));
+  fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "Synthetic recovery check" } });
+  fireEvent.click(screen.getByRole("button", { name: "Confirm replay" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Outcome unconfirmed");
+  fireEvent.click(screen.getByRole("button", { name: "Close replay delivery dialog" }));
+  fireEvent.click(screen.getByRole("button", { name: "Resolve replay request" }));
+  expect(screen.getByLabelText("Reason")).toHaveValue("Synthetic recovery check");
+  expect(screen.getByLabelText("Reason")).toHaveAttribute("readonly");
+  expect(screen.getByLabelText("Reason")).toHaveFocus();
+  fireEvent.click(screen.getByRole("button", { name: "Retry the same request" }));
+  await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("was accepted"));
+  expect(mockedReplayOperatorDelivery.mock.calls[1][0]).toEqual(mockedReplayOperatorDelivery.mock.calls[0][0]);
+});
+
+test("a definitive rejection keeps the reason editable for a new confirmed intention", async () => {
+  mockedReplayOperatorDelivery.mockRejectedValueOnce(new ConnectorGatewayApiError(409, {
+    type: "urn:problem:connector-not-active", title: "Delivery replay rejected", status: 409, detail: "Synthetic rejection",
+  }));
+  renderAction();
+  fireEvent.click(screen.getByRole("button", { name: "Replay delivery" }));
+  fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "Synthetic recovery check" } });
+  fireEvent.click(screen.getByRole("button", { name: "Confirm replay" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("The Gateway rejected this request");
+  expect(screen.getByLabelText("Reason")).not.toHaveAttribute("readonly");
+  expect(screen.getByRole("button", { name: "Confirm replay" })).toBeEnabled();
 });
 
 function renderAction() {

@@ -98,6 +98,10 @@
       "submit": "Confirm replay",
       "replayed": "Replay command {{commandId}} was accepted.",
       "inProgress": "Replay command {{commandId}} is already in progress.",
+      "recover": "Resolve replay request",
+      "retrySame": "Retry the same request",
+      "uncertain": "Outcome unconfirmed. The Gateway may already have accepted this command. Retry the same request to recover its result; the reason and command identity will be preserved.",
+      "rejected": "The Gateway rejected this request.",
       "pending": "Waiting for the Gateway response. Closing this dialog does not cancel the request.",
       "pendingRequests": "Replay requests awaiting a Gateway response: {{count}}. Closing the dialog, navigating within the console, or changing the token does not cancel them. Reloading or leaving the console loses this local tracking."
     }
