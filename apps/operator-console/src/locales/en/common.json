@@ -28,7 +28,15 @@
       "apply": "Use token",
       "clear": "Remove token",
       "invalid": "The access token format is invalid",
-      "expired": "The access token has expired"
+      "expired": "The access token has expired",
+      "replace": "Set or replace token",
+      "memory": "The token is kept only in this page’s memory. Reloading or closing the page removes it.",
+      "verification": "Subject, roles and expiry below are declared claims, not proof of access. Each service verifies the signature and permissions independently.",
+      "subject": "Declared subject",
+      "roles": "Recognized operational roles (declared)",
+      "noRoles": "None",
+      "expiresAt": "Declared expiry (local time)",
+      "sessionExpired": "The access token has expired and was removed. Set a new token to restore authenticated access. Requests already sent are not cancelled."
     }
   },
   "deliveries": {
@@ -41,7 +49,7 @@
     },
     "table": { "event": "Event", "provider": "Provider", "status": "Status", "attempts": "Attempts", "received": "Received", "error": "Error" },
     "actions": { "refresh": "Refresh deliveries", "retry": "Retry", "previousPage": "Previous page", "nextPage": "Next page" },
-    "access": { "required": "An operator access token is required to inspect deliveries.", "forbidden": "The configured access token does not grant an operational role." },
+    "access": { "required": "An operator access token is required to inspect deliveries.", "forbidden": "The configured access token does not grant an operational role.", "unauthorized": "The Gateway did not accept this token (401). Set or replace it.", "denied": "The Gateway denied this operation (403). A valid token with the required permissions is needed." },
     "loading": "Loading deliveries",
     "empty": "No deliveries found",
     "error": "Unable to load deliveries"

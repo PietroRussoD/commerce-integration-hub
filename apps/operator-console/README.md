@@ -52,6 +52,35 @@ reasoned, idempotent replay command for an eligible exhausted delivery. The
 simulator requires a source API key provisioned by the Integration Core
 administrative CLI.
 
+### Token expiry and access recovery
+
+The token dialog displays the declared subject, recognized operational roles and
+expiry in local time. These claims are not verified by the browser. The dialog
+also explains the memory-only policy and each service's independent validation.
+An expiry timer removes the credential and identity, hides authenticated Gateway
+content and switches to a fresh anonymous cache scope. Focus and visibility
+changes recheck the clock after suspended or delayed timers; long expiries do not
+overflow the browser timeout. Already submitted replay requests keep running and
+remain associated with their originating session.
+
+Core and Gateway access errors offer a direct action to open the shared token
+dialog. Gateway `401` means the credential was not accepted; `403` means the
+operation was denied. Both stop automatic query retries and hide cached Gateway
+rows, detail and replay controls. A service rejection does not clear the token
+globally, since the other service may independently accept it. Applying a different
+valid token starts fresh queries in a new scope. Reusing the same rejected token
+does not create a new session. Replay authentication or permission errors also
+offer token recovery without opening two modal dialogs or automatically resending
+the command. Replacing a token does not transfer an unresolved command intention
+between sessions; the recovery policy below still applies.
+
+Unit tests cover exact expiry, renewal, long timers, background clock changes and
+confirmation before a delayed expiry timer. Chromium tests cover cached Gateway
+reads rejected with `401`/`403`, credential replacement for both services, replay
+access errors, expiry during a pending POST, late-response isolation and loss of
+the credential on reload. Browser API responses and JWTs are synthetic; these
+checks do not verify a live OIDC login or a browser-to-backend authenticated flow.
+
 ### New send attempts
 
 The **Request a new send attempt** section explains the requirements to all

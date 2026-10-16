@@ -27,6 +27,7 @@ export function inspectAccessToken(token: string, now = Date.now()): AccessToken
     }
 
     const expiresAt = new Date(expirationSeconds * 1_000);
+    if (!Number.isFinite(expiresAt.getTime())) return { kind: "invalid" };
     if (expiresAt.getTime() <= now) return { kind: "expired" };
 
     return {

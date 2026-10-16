@@ -9,12 +9,14 @@ import {
   type ListOperatorDeliveriesParameters,
   type OperatorDeliveryPage,
 } from "../../api/connectorGatewayClient";
+import { AccessTokenButton } from "../../auth/AccessTokenButton";
 import { useAccessToken } from "../../auth/accessTokenContext";
 import { IconButton } from "../../components/ui/IconButton";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatLabel } from "../orders/orderFormatters";
+import { operatorDeliveryAccessFailure, retryOperatorDeliveryQuery } from "./operatorDeliveryQueries";
 
 const PAGE_SIZE = 25;
 const providerOptions = ["ALL", "ERP_B", "MARKETPLACE_A"] as const;
@@ -67,9 +69,12 @@ export function DeliveriesPage() {
         signal,
         status: status === "ALL" ? undefined : status,
       }),
+    retry: retryOperatorDeliveryQuery,
     enabled: canReadDeliveries,
     placeholderData: (previous, previousQuery) => previousQuery?.queryKey[1] === cacheScope ? previous : undefined,
   });
+
+  const accessFailure = operatorDeliveryAccessFailure(query.error);
 
   function updateFilters(nextProvider: ProviderFilter, nextStatus: StatusFilter) {
     setProvider(nextProvider);
@@ -82,7 +87,7 @@ export function DeliveriesPage() {
       <PageHeader
         titleId="deliveries-heading"
         title={t("deliveries.title")}
-        description={query.data === undefined ? "\u00a0" : t("deliveries.total", { count: query.data.items.length })}
+        description={query.data === undefined || accessFailure !== undefined ? "\u00a0" : t("deliveries.total", { count: query.data.items.length })}
         actions={
           <div className="flex flex-wrap items-end gap-2">
             <label className="grid gap-1 text-xs font-medium text-app-foreground-secondary">
@@ -119,11 +124,11 @@ export function DeliveriesPage() {
       <div className="mt-5 overflow-hidden rounded-md border border-app-border bg-app-surface">
         {!canReadDeliveries ? <DeliveryAccessNotice hasToken={accessToken !== undefined} /> : null}
         {canReadDeliveries && query.isPending ? <DeliveriesLoading /> : null}
-        {canReadDeliveries && query.isError ? <DeliveriesError onRetry={() => void query.refetch()} /> : null}
-        {canReadDeliveries && query.data !== undefined ? <DeliveriesTable page={query.data} /> : null}
+        {canReadDeliveries && query.isError ? <DeliveriesError error={query.error} onRetry={() => void query.refetch()} /> : null}
+        {canReadDeliveries && query.data !== undefined && accessFailure === undefined ? <DeliveriesTable page={query.data} /> : null}
       </div>
 
-      {canReadDeliveries && query.data !== undefined && (cursors.length > 1 || query.data.nextCursor !== null) ? (
+      {canReadDeliveries && query.data !== undefined && accessFailure === undefined && (cursors.length > 1 || query.data.nextCursor !== null) ? (
         <Pagination
           hasNext={query.data.nextCursor !== null}
           hasPrevious={cursors.length > 1}
@@ -137,7 +142,12 @@ export function DeliveriesPage() {
 
 function DeliveryAccessNotice({ hasToken }: { hasToken: boolean }) {
   const { t } = useTranslation();
-  return <p role="alert" className="px-6 py-16 text-center text-sm text-app-foreground-muted">{t(hasToken ? "deliveries.access.forbidden" : "deliveries.access.required")}</p>;
+  return (
+    <div role="alert" className="px-6 py-16 text-center text-sm text-app-foreground-muted">
+      <p>{t(hasToken ? "deliveries.access.forbidden" : "deliveries.access.required")}</p>
+      <AccessTokenButton />
+    </div>
+  );
 }
 
 function DeliveriesTable({ page }: { page: OperatorDeliveryPage }) {
@@ -186,16 +196,19 @@ function DeliveriesLoading() {
   return <div role="status" aria-label={t("deliveries.loading")} className="space-y-3 px-4 py-5">{Array.from({ length: 5 }, (_, index) => <div key={index} className="h-12 animate-pulse rounded bg-app-surface-muted" />)}</div>;
 }
 
-function DeliveriesError({ onRetry }: { onRetry: () => void }) {
+function DeliveriesError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation();
+  const accessFailure = operatorDeliveryAccessFailure(error);
   return (
     <div role="alert" className="flex flex-col items-center px-6 py-14 text-center">
       <TriangleAlert aria-hidden="true" size={24} className="text-red-700" />
-      <p className="mt-3 font-medium">{t("deliveries.error")}</p>
-      <button type="button" onClick={onRetry} className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm font-medium hover:bg-app-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">
-        <RefreshCw aria-hidden="true" size={16} />
-        {t("deliveries.actions.retry")}
-      </button>
+      <p className="mt-3 font-medium">{t(accessFailure === undefined ? "deliveries.error" : `deliveries.access.${accessFailure}`)}</p>
+      {accessFailure !== undefined ? <AccessTokenButton /> : (
+        <button type="button" onClick={onRetry} className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm font-medium hover:bg-app-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">
+          <RefreshCw aria-hidden="true" size={16} />
+          {t("deliveries.actions.retry")}
+        </button>
+      )}
     </div>
   );
 }

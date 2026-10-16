@@ -1,10 +1,10 @@
-import { act, cleanup, renderHook } from "@testing-library/react";
-import { afterEach, expect, test } from "vitest";
+import { act, cleanup, fireEvent, renderHook } from "@testing-library/react";
+import { afterEach, expect, test, vi } from "vitest";
 
 import { AccessTokenProvider } from "./AccessTokenProvider";
 import { useAccessToken } from "./accessTokenContext";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 test("isolates renewed tokens for the same subject and fresh anonymous access", () => {
   const { result } = renderHook(useAccessToken, { wrapper: AccessTokenProvider });
@@ -52,3 +52,60 @@ test("a remounted provider cannot reuse a previous provider's cache scope", () =
 function token(id: string): string {
   return `${btoa(JSON.stringify({ alg: "RS256" }))}.${btoa(JSON.stringify({ sub: "synthetic-operator", exp: 1_900_000_000, jti: id }))}.signature`;
 }
+
+function expiringToken(expiresAt: number, id = "expiring") {
+  return `${btoa("{}")}.${btoa(JSON.stringify({ sub: "synthetic-operator", exp: expiresAt / 1_000, jti: id }))}.signature`;
+}
+
+test("expires at the exact boundary into a fresh anonymous scope", () => {
+  vi.useFakeTimers();
+  const { result } = renderHook(useAccessToken, { wrapper: AccessTokenProvider });
+  const originalAnonymousScope = result.current.cacheScope;
+  act(() => { result.current.setAccessToken(expiringToken(Date.now() + 1_000)); });
+  const authenticatedScope = result.current.cacheScope;
+  act(() => { vi.advanceTimersByTime(999); });
+  expect(result.current.accessToken).toBeDefined();
+  act(() => { vi.advanceTimersByTime(1); });
+  expect(result.current.accessToken).toBeUndefined();
+  expect(result.current.identity).toBeUndefined();
+  expect(result.current.hasExpired).toBe(true);
+  expect(result.current.cacheScope).not.toBe(authenticatedScope);
+  expect(result.current.cacheScope).not.toBe(originalAnonymousScope);
+});
+
+test("renewal cancels the old expiry and clears the expiry notice", () => {
+  vi.useFakeTimers();
+  const { result } = renderHook(useAccessToken, { wrapper: AccessTokenProvider });
+  act(() => { result.current.setAccessToken(expiringToken(Date.now() + 1_000)); });
+  const renewed = expiringToken(Date.now() + 10_000, "renewed");
+  act(() => { result.current.setAccessToken(renewed); });
+  const renewedScope = result.current.cacheScope;
+  act(() => { vi.advanceTimersByTime(1_000); });
+  expect(result.current.accessToken).toBe(renewed);
+  expect(result.current.cacheScope).toBe(renewedScope);
+  act(() => { vi.advanceTimersByTime(9_000); });
+  expect(result.current.hasExpired).toBe(true);
+  act(() => { result.current.setAccessToken(expiringToken(Date.now() + 1_000)); });
+  expect(result.current.hasExpired).toBe(false);
+});
+
+test.each(["focus", "visibilitychange"])("rechecks expiry after delayed timers on %s", (event) => {
+  vi.useFakeTimers();
+  const { result } = renderHook(useAccessToken, { wrapper: AccessTokenProvider });
+  act(() => { result.current.setAccessToken(expiringToken(Date.now() + 1_000)); });
+  vi.setSystemTime(Date.now() + 2_000);
+  fireEvent(event === "focus" ? window : document, new Event(event));
+  expect(result.current.hasExpired).toBe(true);
+  expect(result.current.accessToken).toBeUndefined();
+});
+
+test("does not overflow the browser timeout for long-lived tokens", () => {
+  vi.useFakeTimers();
+  const { result } = renderHook(useAccessToken, { wrapper: AccessTokenProvider });
+  const duration = 2_147_483_647 + 1_000;
+  act(() => { result.current.setAccessToken(expiringToken(Date.now() + duration)); });
+  act(() => { vi.advanceTimersByTime(2_147_483_647); });
+  expect(result.current.accessToken).toBeDefined();
+  act(() => { vi.advanceTimersByTime(1_000); });
+  expect(result.current.hasExpired).toBe(true);
+});

@@ -10,6 +10,7 @@ import {
   type ListOperatorOrdersParameters,
   type OperatorOrderPage,
 } from "../../api/integrationCoreClient";
+import { AccessTokenButton } from "../../auth/AccessTokenButton";
 import { useAccessToken } from "../../auth/accessTokenContext";
 import { IconButton } from "../../components/ui/IconButton";
 import { PageHeader } from "../../components/ui/PageHeader";
@@ -220,6 +221,7 @@ function OrdersError({ error, onRetry }: { error: unknown; onRetry: () => void }
     <div role="alert" className="flex flex-col items-center px-6 py-14 text-center">
       <TriangleAlert aria-hidden="true" size={24} className="text-red-700" />
       <p className="mt-3 font-medium">{t(accessFailure === undefined ? "orders.error" : `orders.access.${accessFailure}`)}</p>
+      {accessFailure !== undefined ? <AccessTokenButton /> : null}
       {accessFailure === undefined ? (
         <button
         type="button"

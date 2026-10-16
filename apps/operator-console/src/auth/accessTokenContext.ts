@@ -4,6 +4,7 @@ import type { AccessTokenIdentity, AccessTokenInspection } from "./accessToken";
 
 export interface AccessTokenContextValue {
   cacheScope: string;
+  hasExpired: boolean;
   accessToken: string | undefined;
   identity: AccessTokenIdentity | undefined;
   clearAccessToken: () => void;

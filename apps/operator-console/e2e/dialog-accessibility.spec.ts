@@ -20,7 +20,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 768, height: 1024
     await submit.click();
     await expect(field).toBeFocused();
     await expect(field).toHaveAttribute("aria-invalid", "true");
-    await expect(field).toHaveAttribute("aria-describedby", "operator-access-token-error");
+    await expect(field).toHaveAttribute("aria-describedby", "operator-access-token-help operator-access-token-error");
     await expect(dialog.getByRole("alert")).toHaveText("The access token format is invalid");
     await field.fill(token());
     await expect(field).not.toHaveAttribute("aria-invalid", "true");
