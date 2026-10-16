@@ -170,14 +170,27 @@ test("confirmation rechecks expiry even when the retention timer has not fired",
   expect(mockedReplayOperatorDelivery).not.toHaveBeenCalled();
 });
 
-function renderAction() {
+function renderAction(accessToken = "admin-token") {
   return render(
     <AppProviders>
       <ReplayDeliveryAction
-        accessToken="admin-token"
+        accessToken={accessToken}
         hasReplayPermission
         delivery={replayTarget}
       />
     </AppProviders>,
   );
 }
+
+test("confirmation checks token expiry even before its session timer runs", () => {
+  vi.useFakeTimers();
+  const expiresAt = Date.now() + 1_000;
+  const accessToken = `${btoa("{}")}.${btoa(JSON.stringify({ sub: "synthetic-admin", exp: expiresAt / 1_000 }))}.signature`;
+  renderAction(accessToken);
+  fireEvent.click(screen.getByRole("button", { name: "Request a new send attempt" }));
+  fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "Synthetic recovery" } });
+  vi.setSystemTime(expiresAt);
+  fireEvent.submit(screen.getByLabelText("Reason").closest("form")!);
+  expect(screen.getByRole("alert")).toHaveTextContent("The access token has expired");
+  expect(mockedReplayOperatorDelivery).not.toHaveBeenCalled();
+});

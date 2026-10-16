@@ -8,7 +8,8 @@ import { AccessTokenContext, type AccessTokenContextValue } from "../../auth/acc
 import { expectNoAccessibilityViolations } from "../../test/accessibility";
 import { DeliveriesPage } from "./DeliveriesPage";
 
-vi.mock("../../api/connectorGatewayClient", () => ({ listOperatorDeliveries: vi.fn() }));
+vi.mock(import("../../api/connectorGatewayClient"), async (importOriginal) => ({
+  ...await importOriginal(), listOperatorDeliveries: vi.fn() }));
 
 const mockedListOperatorDeliveries = vi.mocked(listOperatorDeliveries);
 
@@ -80,6 +81,7 @@ function renderPage(contextValue: AccessTokenContextValue = noAccessTokenContext
 
 const noAccessTokenContext: AccessTokenContextValue = {
   cacheScope: "test-session",
+  hasExpired: false,
   accessToken: undefined,
   clearAccessToken: vi.fn(),
   identity: undefined,
@@ -88,6 +90,7 @@ const noAccessTokenContext: AccessTokenContextValue = {
 
 const operatorAccessTokenContext: AccessTokenContextValue = {
   cacheScope: "test-session",
+  hasExpired: false,
   accessToken: "operator-token",
   clearAccessToken: vi.fn(),
   identity: {

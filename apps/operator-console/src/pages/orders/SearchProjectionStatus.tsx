@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import type { OperatorOrderSearchProjectionStatus } from "../../api/integrationCoreClient";
+import { AccessTokenButton } from "../../auth/AccessTokenButton";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatDurationMilliseconds } from "./orderFormatters";
@@ -48,6 +49,7 @@ export function SearchProjectionStatus({ status, isPending, isError, error }: Se
         <p role={accessFailure === undefined ? undefined : "alert"} className="text-sm text-app-foreground-secondary">
           {t(accessFailure === undefined ? "orders.searchProjection.unavailable" : `orders.access.${accessFailure}`)}
         </p>
+        {accessFailure !== undefined ? <AccessTokenButton /> : null}
       </section>
     );
   }

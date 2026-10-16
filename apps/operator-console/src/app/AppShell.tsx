@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
+import { AccessTokenExpiryNotice } from "../auth/AccessTokenExpiryNotice";
 import { AccessTokenControl } from "../auth/AccessTokenControl";
 import { useAccessToken } from "../auth/accessTokenContext";
 import { storeBrowserLocale, supportedLocales, type SupportedLocale } from "../i18n/i18n";
@@ -98,6 +99,7 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
           className="min-w-0 px-4 py-6 focus:outline-none sm:px-7 sm:py-8 lg:px-10 lg:py-10"
         >
           <div className="mx-auto w-full max-w-[1280px]">
+            <AccessTokenExpiryNotice />
             <PendingReplayNotice />
             <Outlet />
           </div>

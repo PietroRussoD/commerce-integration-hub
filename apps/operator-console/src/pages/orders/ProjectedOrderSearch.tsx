@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { searchOperatorOrders, type OperatorOrderSearchPage } from "../../api/integrationCoreClient";
+import { AccessTokenButton } from "../../auth/AccessTokenButton";
 import { useAccessToken } from "../../auth/accessTokenContext";
 import { IconButton } from "../../components/ui/IconButton";
 import { StatusBadge } from "../../components/ui/StatusBadge";
@@ -186,9 +187,10 @@ function SearchError({ error, onRetry }: { error: unknown; onRetry: () => void }
   const accessFailure = operatorOrderAccessFailure(error);
 
   return (
-    <div role="alert" className="flex items-center gap-3 px-4 py-5 text-sm text-app-foreground-secondary">
+    <div role="alert" className="flex flex-wrap items-center gap-3 px-4 py-5 text-sm text-app-foreground-secondary">
       <TriangleAlert aria-hidden="true" size={18} className="shrink-0 text-red-700" />
       <p className="flex-1">{t(accessFailure === undefined ? "orders.search.error" : `orders.access.${accessFailure}`)}</p>
+      {accessFailure !== undefined ? <AccessTokenButton /> : null}
       {accessFailure === undefined ? (
         <IconButton label={t("orders.actions.retry")} onClick={onRetry}>
         <RefreshCw aria-hidden="true" size={17} />

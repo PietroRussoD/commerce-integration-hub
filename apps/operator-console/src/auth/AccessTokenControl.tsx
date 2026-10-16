@@ -4,24 +4,27 @@ import { useTranslation } from "react-i18next";
 
 import { IconButton } from "../components/ui/IconButton";
 import { ModalDialog } from "../components/ui/ModalDialog";
+import { resolveIntlLocale } from "../i18n/i18n";
+import { formatDateTime } from "../pages/orders/orderFormatters";
 import { useAccessToken } from "./accessTokenContext";
+import { useAccessTokenDialog } from "./accessTokenDialogContext";
 
 export function AccessTokenControl() {
-  const { t } = useTranslation();
-  const { accessToken, clearAccessToken, identity, setAccessToken } = useAccessToken();
+  const { t, i18n } = useTranslation();
+  const { accessToken, clearAccessToken, hasExpired, identity, setAccessToken } = useAccessToken();
   const [candidate, setCandidate] = useState("");
   const [feedback, setFeedback] = useState<"expired" | "invalid">();
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, open, close } = useAccessTokenDialog();
   const tokenInputRef = useRef<HTMLInputElement>(null);
 
   function openDialog() {
     setCandidate("");
     setFeedback(undefined);
-    setIsOpen(true);
+    open();
   }
 
   function closeDialog() {
-    setIsOpen(false);
+    close();
     setCandidate("");
     setFeedback(undefined);
   }
@@ -56,14 +59,22 @@ export function AccessTokenControl() {
               <h2 id="access-token-dialog-title" className="text-base font-semibold text-app-foreground">
                 {t("shell.accessToken.title")}
               </h2>
-              {identity !== undefined ? (
-                <p className="mt-1 break-all text-xs text-app-foreground-muted">{identity.subject}</p>
-              ) : null}
             </div>
             <IconButton label={t("shell.accessToken.close")} onClick={closeDialog} variant="ghost">
               <X aria-hidden="true" size={18} />
             </IconButton>
           </div>
+
+          {hasExpired ? <p role="status" className="mt-4 text-sm text-red-700">{t("shell.accessToken.sessionExpired")}</p> : null}
+          <p id="operator-access-token-help" className="mt-4 text-sm text-app-foreground-secondary">{t("shell.accessToken.memory")}</p>
+          <p className="mt-2 text-sm text-app-foreground-secondary">{t("shell.accessToken.verification")}</p>
+          {identity !== undefined ? (
+            <dl className="mt-4 space-y-2 text-sm">
+              <div><dt className="text-app-foreground-secondary">{t("shell.accessToken.subject")}</dt><dd className="break-all">{identity.subject}</dd></div>
+              <div><dt className="text-app-foreground-secondary">{t("shell.accessToken.roles")}</dt><dd>{[...identity.roles].join(", ") || t("shell.accessToken.noRoles")}</dd></div>
+              <div><dt className="text-app-foreground-secondary">{t("shell.accessToken.expiresAt")}</dt><dd><time dateTime={identity.expiresAt.toISOString()}>{formatDateTime(identity.expiresAt.toISOString(), resolveIntlLocale(i18n.resolvedLanguage))}</time></dd></div>
+            </dl>
+          ) : null}
 
           <form className="mt-5 space-y-4" onSubmit={submit} noValidate>
             <div>
@@ -79,7 +90,7 @@ export function AccessTokenControl() {
                   setFeedback(undefined);
                 }}
                 aria-invalid={feedback !== undefined || undefined}
-                aria-describedby={feedback === undefined ? undefined : "operator-access-token-error"}
+                aria-describedby={feedback === undefined ? "operator-access-token-help" : "operator-access-token-help operator-access-token-error"}
                 type="password"
                 autoComplete="off"
                 spellCheck={false}

@@ -31,6 +31,7 @@ test("reports a token with a passed expiry as expired", () => {
 
 test.each([
   "not-a-jwt",
+  createToken({ sub: "operator-42", exp: 1e20 }),
   createToken({ exp: 1_800_000_000 }),
   createToken({ sub: "operator-42" }),
   createToken({ sub: "operator-42", exp: "tomorrow" }),

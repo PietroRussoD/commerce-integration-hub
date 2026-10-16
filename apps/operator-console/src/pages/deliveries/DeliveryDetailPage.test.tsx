@@ -7,7 +7,8 @@ import { AppProviders } from "../../app/AppProviders";
 import { createAppRoutes } from "../../app/router";
 import { AccessTokenContext, type AccessTokenContextValue } from "../../auth/accessTokenContext";
 
-vi.mock("../../api/connectorGatewayClient", () => ({
+vi.mock(import("../../api/connectorGatewayClient"), async (importOriginal) => ({
+  ...await importOriginal(),
   getOperatorDelivery: vi.fn(),
   listOperatorDeliveries: vi.fn(),
 }));
@@ -101,6 +102,7 @@ function renderDeliveryDetail(contextValue: AccessTokenContextValue) {
 
 const noAccessTokenContext: AccessTokenContextValue = {
   cacheScope: "test-session",
+  hasExpired: false,
   accessToken: undefined,
   clearAccessToken: vi.fn(),
   identity: undefined,
@@ -109,6 +111,7 @@ const noAccessTokenContext: AccessTokenContextValue = {
 
 const operatorAccessTokenContext: AccessTokenContextValue = {
   cacheScope: "test-session",
+  hasExpired: false,
   accessToken: "operator-token",
   clearAccessToken: vi.fn(),
   identity: {

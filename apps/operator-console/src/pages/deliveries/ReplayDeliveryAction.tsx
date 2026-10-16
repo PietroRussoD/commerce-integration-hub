@@ -2,6 +2,9 @@ import { RotateCw, X } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { inspectAccessToken } from "../../auth/accessToken";
+import { AccessTokenButton } from "../../auth/AccessTokenButton";
+import { operatorDeliveryAccessFailure } from "./operatorDeliveryQueries";
 import { useAccessToken } from "../../auth/accessTokenContext";
 import { IconButton } from "../../components/ui/IconButton";
 import { ModalDialog } from "../../components/ui/ModalDialog";
@@ -37,6 +40,7 @@ export function ReplayDeliveryAction({ accessToken, hasReplayPermission, deliver
   const isPending = pendingDeliveryIds.has(deliveryId);
   const isSuccess = request?.data !== undefined;
   const unresolved = isReplayUnresolved(request);
+  const accessFailure = operatorDeliveryAccessFailure(request?.error);
   const rejectionReason = getReplayRejectionReason(request?.error);
 
   useEffect(() => {
@@ -72,7 +76,11 @@ export function ReplayDeliveryAction({ accessToken, hasReplayPermission, deliver
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isPending) return;
+    if (isPending || accessFailure !== undefined) return;
+    if (inspectAccessToken(accessToken).kind === "expired") {
+      setSubmissionBlock(t("shell.accessToken.expired"));
+      return;
+    }
     // Recheck the wall clock at confirmation even if a background timer or React
     // render is delayed. Recovery uses the original intent, whose audit result
     // the Gateway resolves before applying new-replay eligibility rules.
@@ -161,14 +169,15 @@ export function ReplayDeliveryAction({ accessToken, hasReplayPermission, deliver
                 {validationMessage !== undefined ? <p id="delivery-replay-reason-error" role="alert" className="mt-2 text-sm text-red-700">{validationMessage}</p> : null}
                 {request?.error !== undefined ? (
                   <p id="delivery-replay-request-error" role="alert" className="mt-2 text-sm text-red-700">
-                    {t(request.isUncertain ? "deliveryDetail.replay.uncertain" : "deliveryDetail.replay.rejected")} {rejectionReason === undefined ? request.error.message : t(`deliveryDetail.replay.blocked.${rejectionReason}`)}
+                    {t(request.isUncertain ? "deliveryDetail.replay.uncertain" : "deliveryDetail.replay.rejected")} {accessFailure !== undefined ? t(`deliveries.access.${accessFailure}`) : rejectionReason === undefined ? request.error.message : t(`deliveryDetail.replay.blocked.${rejectionReason}`)}
                   </p>
                 ) : null}
               </div>
+              {accessFailure !== undefined ? <AccessTokenButton onBeforeOpen={closeDialog} /> : null}
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={isPending || (!canReplay && !unresolved)}
+                  disabled={isPending || accessFailure !== undefined || (!canReplay && !unresolved)}
                   className="inline-flex h-9 items-center gap-2 rounded-md bg-app-navigation-active px-3 text-sm font-semibold text-app-navigation-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <RotateCw aria-hidden="true" size={16} className={isPending ? "animate-spin" : undefined} />
