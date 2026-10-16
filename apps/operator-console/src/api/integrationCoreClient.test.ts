@@ -31,6 +31,48 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+const operatorReads = [
+  { name: "list", read: (accessToken?: string, signal?: AbortSignal) => listOperatorOrders({ accessToken, signal }) },
+  { name: "detail", read: (accessToken?: string, signal?: AbortSignal) => getOperatorOrder({ accessToken, signal, orderId: "order-42" }) },
+  { name: "projection status", read: (accessToken?: string, signal?: AbortSignal) => getOperatorOrderSearchProjectionStatus({ accessToken, signal }) },
+  { name: "search", read: (accessToken?: string, signal?: AbortSignal) => searchOperatorOrders({ accessToken, signal, q: "blue" }) },
+];
+
+test.each(operatorReads)("sends the bearer credential and cancellation signal for $name", async ({ read }) => {
+  const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+  const signal = new AbortController().signal;
+  vi.stubGlobal("fetch", fetchMock);
+
+  await read("synthetic-token", signal);
+
+  expect(fetchMock).toHaveBeenCalledWith(expect.any(String), {
+    headers: { Accept: "application/json", Authorization: "Bearer synthetic-token" },
+    signal,
+  });
+});
+
+test.each(operatorReads)("omits Authorization without an operator token for $name", async ({ read }) => {
+  const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+  vi.stubGlobal("fetch", fetchMock);
+
+  await read();
+
+  expect(fetchMock).toHaveBeenCalledWith(expect.any(String), {
+    headers: { Accept: "application/json" },
+    signal: undefined,
+  });
+});
+
+test.each(operatorReads)("preserves 401 and 403 as typed errors for $name", async ({ read }) => {
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+
+  for (const status of [401, 403]) {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status }));
+    await expect(read("synthetic-token")).rejects.toMatchObject({ name: "IntegrationCoreApiError", status });
+  }
+});
+
 test("requests operator orders with encoded filters", async () => {
   const responseBody = { items: [], limit: 10, offset: 20, total: 0 };
   const fetchMock = vi.fn().mockResolvedValue(
@@ -51,7 +93,7 @@ test("requests operator orders with encoded filters", async () => {
 test("rejects unsuccessful operator order responses", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 503 })));
 
-  await expect(listOperatorOrders()).rejects.toThrow("Operator order request failed with status 503");
+  await expect(listOperatorOrders()).rejects.toThrow("Integration Core request failed with status 503");
 });
 
 test("requests an operator order by its encoded ID", async () => {
@@ -86,7 +128,7 @@ test("rejects unsuccessful operator order detail responses", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 404 })));
 
   await expect(getOperatorOrder({ orderId: "missing-order" })).rejects.toThrow(
-    "Operator order detail request failed with status 404",
+    "Integration Core request failed with status 404",
   );
 });
 

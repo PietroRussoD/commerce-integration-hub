@@ -43,6 +43,72 @@ test("searches projected orders after the projection becomes available", async (
   expect(new URL(searchRequest?.url() ?? "").searchParams.get("q")).toBe("browser");
 });
 
+test("isolates all Core reads when applying, renewing and removing a token", async ({ page }) => {
+  // Synthetic claims and signatures test the console, not backend JWT validation.
+  const firstToken = createOperatorToken(["operator"], "first");
+  const renewedToken = createOperatorToken(["operator"], "renewed");
+  const requests: { path: string; authorization: string | undefined }[] = [];
+  let anonymousLabel = "ANONYMOUS-INITIAL";
+  let releaseFirst!: () => void;
+  const firstGate = new Promise<void>((resolve) => { releaseFirst = resolve; });
+  let releaseRenewed!: () => void;
+  const renewedGate = new Promise<void>((resolve) => { releaseRenewed = resolve; });
+  await page.route("**/api/v1/operator/orders**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    const authorization = route.request().headers()["authorization"];
+    requests.push({ path, authorization });
+    const label = authorization === `Bearer ${firstToken}` ? "TOKEN-FIRST"
+      : authorization === `Bearer ${renewedToken}` ? "TOKEN-RENEWED" : anonymousLabel;
+    if (authorization === `Bearer ${firstToken}`) await firstGate;
+    if (authorization === `Bearer ${renewedToken}`) await renewedGate;
+    const body = path.endsWith("/search/status") ? searchProjectionStatus
+      : path.endsWith("/search") ? { ...projectedOrderPage, items: projectedOrderPage.items.map((order) => ({ ...order, externalOrderId: `${label}-SEARCH` })) }
+      : path.endsWith(`/${orderId}`) ? { ...orderDetail, externalOrderId: label }
+      : { ...orderPage, items: orderPage.items.map((order) => ({ ...order, externalOrderId: label })) };
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+  });
+  await page.goto("/orders");
+  await expect(page.getByRole("link", { name: "ANONYMOUS-INITIAL", exact: true })).toBeVisible();
+  await submitSearch(page);
+  await expect(page.getByRole("link", { name: "ANONYMOUS-INITIAL-SEARCH", exact: true })).toBeVisible();
+
+  await applyToken(page, firstToken);
+  await expect(page.getByRole("link", { name: /^ANONYMOUS-INITIAL/ })).toHaveCount(0);
+  await expect(page.getByRole("status", { name: "Loading orders" })).toBeVisible();
+  releaseFirst();
+  await expect(page.getByRole("link", { name: "TOKEN-FIRST", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "TOKEN-FIRST-SEARCH", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "TOKEN-FIRST", exact: true }).click();
+  await expect(page.getByText("TOKEN-FIRST", { exact: true })).toBeVisible();
+
+  await applyToken(page, renewedToken);
+  await expect(page.getByText("TOKEN-FIRST", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("status", { name: "Loading order details" })).toBeVisible();
+  releaseRenewed();
+  await expect(page.getByText("TOKEN-RENEWED", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Orders", exact: true }).last().click();
+  await expect(page.getByRole("link", { name: "TOKEN-RENEWED", exact: true })).toBeVisible();
+  await submitSearch(page);
+  await expect(page.getByRole("link", { name: "TOKEN-RENEWED-SEARCH", exact: true })).toBeVisible();
+
+  anonymousLabel = "ANONYMOUS-RETURN";
+  await page.getByRole("button", { name: "Manage operator access token" }).click();
+  await page.getByRole("button", { name: "Remove token" }).click();
+  await page.getByRole("button", { name: "Close access token dialog" }).click();
+  await expect(page.getByRole("link", { name: "ANONYMOUS-RETURN", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "ANONYMOUS-RETURN-SEARCH", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: /^TOKEN-/ })).toHaveCount(0);
+  await page.getByRole("link", { name: "ANONYMOUS-RETURN", exact: true }).click();
+  await expect(page.getByText("ANONYMOUS-RETURN", { exact: true })).toBeVisible();
+
+  for (const token of [firstToken, renewedToken]) {
+    for (const path of ["/api/v1/operator/orders", "/api/v1/operator/orders/search/status", "/api/v1/operator/orders/search", `/api/v1/operator/orders/${orderId}`]) {
+      expect(requests).toContainEqual({ path, authorization: `Bearer ${token}` });
+    }
+  }
+  expect(requests.filter(({ authorization }) => authorization === undefined).length).toBeGreaterThan(3);
+});
+
 test("submits an order and opens the accepted result", async ({ page }) => {
   await mockOperatorApi(page);
   let receivedRequest: Request | undefined;
@@ -234,7 +300,20 @@ async function mockGatewayApi(page: Page, onReplay?: (request: Request) => void)
   });
 }
 
-function createOperatorToken(groups: string[]): string {
+async function applyToken(page: Page, token: string) {
+  await page.getByRole("button", { name: /^(Set|Manage) operator access token$/ }).click();
+  await page.getByRole("textbox", { name: "Access token" }).fill(token);
+  await page.getByRole("button", { name: "Use token" }).click();
+}
+
+async function submitSearch(page: Page) {
+  const search = page.getByRole("searchbox", { name: "Search projected orders" });
+  await expect(search).toBeEnabled();
+  await search.fill("browser");
+  await page.getByRole("button", { name: "Search projected orders" }).click();
+}
+
+function createOperatorToken(groups: string[], jti = "default"): string {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
-  return `${encode({ alg: "RS256", typ: "JWT" })}.${encode({ sub: "operator-e2e", exp: 1_900_000_000, groups })}.signature`;
+  return `${encode({ alg: "RS256", typ: "JWT" })}.${encode({ sub: "operator-e2e", exp: 1_900_000_000, groups, jti })}.signature`;
 }

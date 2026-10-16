@@ -1,14 +1,16 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, RefreshCw, Search, SlidersHorizontal, TriangleAlert, X } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { searchOperatorOrders, type OperatorOrderSearchPage } from "../../api/integrationCoreClient";
+import { useAccessToken } from "../../auth/accessTokenContext";
 import { IconButton } from "../../components/ui/IconButton";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatLabel, formatMoney, orderStatusLabelKeys } from "./orderFormatters";
+import { operatorOrderAccessFailure, retryOperatorOrderQuery } from "./operatorOrderQueries";
 
 const SEARCH_PAGE_SIZE = 25;
 
@@ -26,6 +28,7 @@ export function ProjectedOrderSearch({
   isAvailabilityKnown: boolean;
 }) {
   const { t } = useTranslation();
+  const { accessToken, cacheScope } = useAccessToken();
   const [searchText, setSearchText] = useState("");
   const [externalOrderId, setExternalOrderId] = useState("");
   const [sku, setSku] = useState("");
@@ -33,10 +36,12 @@ export function ProjectedOrderSearch({
   const [submittedCriteria, setSubmittedCriteria] = useState<SearchCriteria>();
   const [offset, setOffset] = useState(0);
   const query = useQuery({
-    queryKey: ["operator-projected-order-search", { ...submittedCriteria, limit: SEARCH_PAGE_SIZE, offset }],
-    queryFn: ({ signal }) => searchOperatorOrders({ ...submittedCriteria, limit: SEARCH_PAGE_SIZE, offset, signal }),
+    queryKey: ["operator-projected-order-search", cacheScope, { ...submittedCriteria, limit: SEARCH_PAGE_SIZE, offset }],
+    queryFn: ({ signal }) => searchOperatorOrders({ accessToken, ...submittedCriteria, limit: SEARCH_PAGE_SIZE, offset, signal }),
     enabled: isAvailable && submittedCriteria !== undefined,
-    placeholderData: keepPreviousData,
+    placeholderData: (previousData, previousQuery) =>
+      previousQuery?.queryKey[1] === cacheScope ? previousData : undefined,
+    retry: retryOperatorOrderQuery,
   });
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -132,8 +137,8 @@ export function ProjectedOrderSearch({
       {isAvailable && submittedCriteria !== undefined ? (
         <div className="mt-3 overflow-hidden rounded-md border border-app-border bg-app-surface">
           {query.isPending ? <SearchLoading /> : null}
-          {query.isError ? <SearchError onRetry={() => void query.refetch()} /> : null}
-          {query.data !== undefined ? (
+          {query.isError ? <SearchError error={query.error} onRetry={() => void query.refetch()} /> : null}
+          {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined ? (
             <>
               <SearchResults page={query.data} />
               {query.data.total > 0 ? (
@@ -176,16 +181,19 @@ function SearchLoading() {
   );
 }
 
-function SearchError({ onRetry }: { onRetry: () => void }) {
+function SearchError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation();
+  const accessFailure = operatorOrderAccessFailure(error);
 
   return (
     <div role="alert" className="flex items-center gap-3 px-4 py-5 text-sm text-app-foreground-secondary">
       <TriangleAlert aria-hidden="true" size={18} className="shrink-0 text-red-700" />
-      <p className="flex-1">{t("orders.search.error")}</p>
-      <IconButton label={t("orders.actions.retry")} onClick={onRetry}>
+      <p className="flex-1">{t(accessFailure === undefined ? "orders.search.error" : `orders.access.${accessFailure}`)}</p>
+      {accessFailure === undefined ? (
+        <IconButton label={t("orders.actions.retry")} onClick={onRetry}>
         <RefreshCw aria-hidden="true" size={17} />
       </IconButton>
+      ) : null}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { createContext, useContext } from "react";
 import type { AccessTokenIdentity, AccessTokenInspection } from "./accessToken";
 
 export interface AccessTokenContextValue {
+  cacheScope: string;
   accessToken: string | undefined;
   identity: AccessTokenIdentity | undefined;
   clearAccessToken: () => void;

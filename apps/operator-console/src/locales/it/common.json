@@ -101,6 +101,10 @@
     }
   },
   "orders": {
+    "access": {
+      "unauthorized": "Per accedere agli ordini serve un token operatore accettato dal Core. Impostalo o sostituiscilo dal controllo del token in alto.",
+      "forbidden": "Il Core ha negato l’accesso agli ordini. Usa un token con permessi operator o platform-admin."
+    },
     "title": "Ordini",
     "total": "Totale: {{count}}",
     "filter": {

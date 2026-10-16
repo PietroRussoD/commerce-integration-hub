@@ -100,6 +100,7 @@ function renderDeliveryDetail(contextValue: AccessTokenContextValue) {
 }
 
 const noAccessTokenContext: AccessTokenContextValue = {
+  cacheScope: "test-session",
   accessToken: undefined,
   clearAccessToken: vi.fn(),
   identity: undefined,
@@ -107,6 +108,7 @@ const noAccessTokenContext: AccessTokenContextValue = {
 };
 
 const operatorAccessTokenContext: AccessTokenContextValue = {
+  cacheScope: "test-session",
   accessToken: "operator-token",
   clearAccessToken: vi.fn(),
   identity: {

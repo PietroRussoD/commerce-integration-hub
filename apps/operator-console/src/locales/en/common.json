@@ -101,6 +101,10 @@
     }
   },
   "orders": {
+    "access": {
+      "unauthorized": "Access to orders requires an operator token accepted by the Core. Set or replace it using the access token control in the header.",
+      "forbidden": "The Core denied access to orders. Use a token with operator or platform-admin permissions."
+    },
     "title": "Orders",
     "total": "Total: {{count}}",
     "filter": {

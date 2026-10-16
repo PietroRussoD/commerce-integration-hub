@@ -5,10 +5,13 @@ import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatDurationMilliseconds } from "./orderFormatters";
 
+import { operatorOrderAccessFailure } from "./operatorOrderQueries";
+
 interface SearchProjectionStatusProps {
   status?: OperatorOrderSearchProjectionStatus;
   isPending: boolean;
   isError: boolean;
+  error?: unknown;
 }
 
 const availabilityPresentation = {
@@ -24,8 +27,9 @@ const reindexPhasePresentation = {
   READY_FOR_CUTOVER: { badgeStatus: "PROCESSING", labelKey: "orders.searchProjection.reindex.phases.readyForCutover" },
 } as const;
 
-export function SearchProjectionStatus({ status, isPending, isError }: SearchProjectionStatusProps) {
+export function SearchProjectionStatus({ status, isPending, isError, error }: SearchProjectionStatusProps) {
   const { t, i18n } = useTranslation();
+  const accessFailure = operatorOrderAccessFailure(error);
   const locale = resolveIntlLocale(i18n.resolvedLanguage);
 
   if (isPending) {
@@ -41,7 +45,9 @@ export function SearchProjectionStatus({ status, isPending, isError }: SearchPro
   if (isError || status === undefined) {
     return (
       <section aria-label={t("orders.searchProjection.title")} className="mt-5 rounded-md border border-app-border bg-app-surface px-4 py-3">
-        <p className="text-sm text-app-foreground-secondary">{t("orders.searchProjection.unavailable")}</p>
+        <p role={accessFailure === undefined ? undefined : "alert"} className="text-sm text-app-foreground-secondary">
+          {t(accessFailure === undefined ? "orders.searchProjection.unavailable" : `orders.access.${accessFailure}`)}
+        </p>
       </section>
     );
   }
