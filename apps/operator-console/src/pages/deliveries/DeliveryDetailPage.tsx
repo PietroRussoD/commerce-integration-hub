@@ -46,15 +46,14 @@ export function DeliveryDetailPage() {
         {canReadDelivery && query.isError ? <DeliveryDetailError onRetry={() => void query.refetch()} /> : null}
         {canReadDelivery && query.data !== undefined ? (
           <div className="space-y-5">
-            <div className="flex justify-end">
-              <ReplayDeliveryAction
-                key={`${cacheScope}:${query.data.deliveryId}`}
-                accessToken={accessToken!}
-                canReplay={identity?.roles.has("platform-admin") === true && query.data.status === "EXHAUSTED"}
-                canRecover={identity?.roles.has("platform-admin") === true}
-                deliveryId={query.data.deliveryId}
-              />
-            </div>
+            <ReplayDeliveryAction
+              key={`${cacheScope}:${query.data.deliveryId}`}
+              accessToken={accessToken!}
+              hasReplayPermission={identity?.roles.has("platform-admin") === true}
+              delivery={query.data}
+              isRefreshing={query.isFetching}
+              isReadError={query.isError}
+            />
             <DeliveryDetailContent delivery={query.data} />
           </div>
         ) : null}

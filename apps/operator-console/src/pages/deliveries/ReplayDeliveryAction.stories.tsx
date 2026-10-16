@@ -13,8 +13,8 @@ const meta = {
   parameters: { layout: "padded" },
   args: {
     accessToken: "synthetic-story-token",
-    canReplay: true,
-    deliveryId: "c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21",
+    hasReplayPermission: true,
+    delivery: { deliveryId: "c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21", status: "EXHAUSTED", connectorStatus: "ACTIVE", payloadRetained: true, payloadExpiresAt: new Date(Date.now() + 86_400_000).toISOString() },
   },
   decorators: [
     (Story) => (
@@ -32,17 +32,17 @@ export const Available: Story = {};
 
 export const DialogOpen: Story = {
   play: async ({ canvasElement }) => {
-    await userEvent.click(within(canvasElement).getByRole("button", { name: "Replay delivery" }));
+    await userEvent.click(within(canvasElement).getByRole("button", { name: "Request a new send attempt" }));
     await expect(within(document.body).getByRole("dialog")).toBeInTheDocument();
   },
 };
 
 export const ReasonRequired: Story = {
   play: async ({ canvasElement }) => {
-    await userEvent.click(within(canvasElement).getByRole("button", { name: "Replay delivery" }));
+    await userEvent.click(within(canvasElement).getByRole("button", { name: "Request a new send attempt" }));
 
     const dialog = within(document.body).getByRole("dialog");
-    await userEvent.click(within(dialog).getByRole("button", { name: "Confirm replay" }));
+    await userEvent.click(within(dialog).getByRole("button", { name: "Confirm request" }));
 
     await expect(within(dialog).getByRole("alert")).toHaveTextContent("A replay reason is required");
   },

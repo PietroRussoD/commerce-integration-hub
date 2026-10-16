@@ -56,12 +56,12 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 768, height: 1024
       await page.getByRole("button", { name: "Set operator access token" }).click();
       await page.getByLabel("Access token", { exact: true }).fill(token());
       await page.getByRole("button", { name: "Use token" }).click();
-      const trigger = page.getByRole("button", { name: "Replay delivery", exact: true });
+      const trigger = page.getByRole("button", { name: "Request a new send attempt", exact: true });
       await trigger.click();
       const dialog = page.getByRole("dialog");
       const reason = dialog.getByLabel("Reason");
-      const close = dialog.getByRole("button", { name: "Close replay delivery dialog" });
-      const submit = dialog.getByRole("button", { name: "Confirm replay" });
+      const close = dialog.getByRole("button", { name: "Close send attempt dialog" });
+      const submit = dialog.getByRole("button", { name: "Confirm request" });
       await expect(reason).toBeFocused();
       await assertModalKeyboard(page, dialog, close, submit);
       await submit.click();

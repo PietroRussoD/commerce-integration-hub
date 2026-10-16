@@ -32,7 +32,7 @@ export const deliveryDetail = {
       durationMilliseconds: 1_250,
       errorCode: "CORE_UNAVAILABLE",
       httpStatus: 503,
-      outcome: "RETRYABLE_FAILURE",
+      outcome: "RETRYABLE_FAILURE" as const,
       safeErrorMessage: "The Core endpoint did not respond before the timeout",
       startedAt: "2026-09-12T12:05:00Z",
       traceId: "trace-e2e-42",
@@ -43,7 +43,7 @@ export const deliveryDetail = {
   connectorStatus: "ACTIVE",
   mappingVersion: "erp-b-v2",
   nextAttemptAt: "2026-09-12T12:10:00Z",
-  payloadExpiresAt: "2026-09-13T12:00:00Z",
+  payloadExpiresAt: new Date(Date.now() + 86_400_000).toISOString(),
   payloadRetained: true,
   safeErrorMessage: "The Core endpoint did not respond before the timeout",
 };

@@ -7,6 +7,7 @@ import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatDurationMilliseconds, formatLabel } from "../orders/orderFormatters";
 import { jaegerTraceUrl } from "./jaegerTraceUrl";
+import { useDeliveryPayloadState } from "./useDeliveryPayloadState";
 
 const statusLabelKeys = {
   BLOCKED_CONFIGURATION: "deliveries.status.blockedConfiguration",
@@ -32,7 +33,13 @@ function DeliverySummary({ delivery }: { delivery: OperatorDeliveryDetail }) {
   const { t, i18n } = useTranslation();
   const locale = resolveIntlLocale(i18n.resolvedLanguage);
   const providerLabel = delivery.provider === "ERP_B" ? "deliveries.provider.erpB" : "deliveries.provider.marketplaceA";
-  const retentionLabel = delivery.payloadRetained ? "deliveryDetail.retention.retained" : "deliveryDetail.retention.expired";
+  const payload = useDeliveryPayloadState(delivery);
+  const retentionLabels = {
+    available: "deliveryDetail.retention.retained",
+    expired: "deliveryDetail.retention.expired",
+    missing: "deliveryDetail.retention.missing",
+    unknown: "deliveryDetail.retention.unknown",
+  } as const;
 
   return (
     <dl className="grid gap-px overflow-hidden rounded-md border border-app-border bg-app-border sm:grid-cols-2 lg:grid-cols-3">
@@ -51,7 +58,7 @@ function DeliverySummary({ delivery }: { delivery: OperatorDeliveryDetail }) {
       <SummaryField label={t("deliveryDetail.summary.nextAttempt")} value={formatDateTime(delivery.nextAttemptAt, locale)} />
       <SummaryField
         label={t("deliveryDetail.summary.payloadRetention")}
-        value={t(retentionLabel, { expiresAt: formatDateTime(delivery.payloadExpiresAt, locale) })}
+        value={t(retentionLabels[payload], { expiresAt: payload === "available" || payload === "expired" ? formatDateTime(delivery.payloadExpiresAt, locale) : "" })}
       />
       <SummaryField label={t("deliveryDetail.summary.coreOrder")} value={delivery.lastCoreOrderId ?? "-"} />
       <SummaryField label={t("deliveryDetail.summary.httpStatus")} value={delivery.lastHttpStatus?.toString() ?? "-"} />

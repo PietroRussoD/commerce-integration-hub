@@ -24,17 +24,17 @@ for (const width of [320, 1440]) {
       });
       await page.goto(`/deliveries/${deliveryId}`);
       await applyToken(page, "first");
-      await page.getByRole("button", { name: "Replay delivery", exact: true }).click();
+      await page.getByRole("button", { name: "Request a new send attempt", exact: true }).click();
       await page.getByLabel("Reason").fill("Synthetic recovery check");
-      await page.getByRole("button", { name: "Confirm replay" }).click();
-      const dialog = page.getByRole("dialog", { name: "Replay delivery" });
+      await page.getByRole("button", { name: "Confirm request" }).click();
+      const dialog = page.getByRole("dialog", { name: "Request a new send attempt" });
       await expect(dialog.getByRole("status")).toContainText(commandId);
       await expect(dialog.getByRole("status")).toContainText(outcome === "REPLAYED" ? "was accepted" : "already in progress");
       if (outcome === "REPLAYED") {
         await expect(page.locator("dd").filter({ hasText: /^Received$/ })).toBeVisible();
-        await expect(page.getByRole("button", { name: "Replay delivery", exact: true, includeHidden: true })).toHaveCount(0);
+        await expect(page.getByRole("button", { name: "Request a new send attempt", exact: true, includeHidden: true })).toBeDisabled();
       }
-      const close = dialog.getByRole("button", { name: "Close replay delivery dialog" });
+      const close = dialog.getByRole("button", { name: "Close send attempt dialog" });
       await expect(close).toBeFocused();
       await page.keyboard.press("Escape");
       await expect(dialog).toHaveCount(0);

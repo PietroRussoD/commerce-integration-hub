@@ -72,7 +72,9 @@
     },
     "retention": {
       "retained": "Conservato fino a {{expiresAt}}",
-      "expired": "Scaduto alle {{expiresAt}}"
+      "expired": "Scaduto alle {{expiresAt}}",
+      "missing": "Payload originale non disponibile",
+      "unknown": "Scadenza di conservazione non disponibile"
     },
     "attempts": {
       "title": "Tentativi di consegna",
@@ -90,12 +92,28 @@
       "outcome": { "retryableFailure": "Errore riprovabile" }
     },
     "replay": {
-      "open": "Ripeti consegna",
-      "title": "Ripeti consegna",
-      "close": "Chiudi dialog ripeti consegna",
+      "open": "Richiedi nuovo tentativo",
+      "title": "Richiedi nuovo tentativo",
+      "close": "Chiudi dialog nuovo tentativo",
+      "sectionTitle": "Nuovo tentativo di invio",
+      "viewPending": "Visualizza richiesta in corso",
+      "guidance": "Rimette in coda una consegna idonea con tentativi esauriti. I tentativi precedenti restano conteggiati. Il Gateway verifica nuovamente le condizioni; l’accettazione conferma la rimessa in coda e l’invio successivo avrà un proprio esito.",
+      "recoveryGuidance": "Questo controllo riguarda la richiesta precedente. Puoi recuperarne l’esito anche quando un nuovo tentativo di invio non è disponibile.",
+      "blocked": {
+        "permission": "Per richiedere un nuovo tentativo di invio serve il ruolo platform-admin.",
+        "state": "È possibile rimettere in coda solo le consegne con tentativi esauriti.",
+        "connector": "Il connettore deve essere attivo per richiedere un nuovo tentativo di invio.",
+        "payloadMissing": "Il payload originale non è più disponibile.",
+        "payloadExpired": "Il periodo di conservazione del payload originale è scaduto.",
+        "payloadUnknown": "Non è possibile verificare la scadenza di conservazione del payload.",
+        "updating": "Aggiornamento delle condizioni della consegna. Attendi il completamento della lettura in corso.",
+        "deliveryMissing": "Il Gateway non ha trovato questa consegna.",
+        "payloadUnavailable": "Il Gateway segnala che il payload originale è assente o che la sua conservazione è scaduta.",
+        "readFailed": "Non è stato possibile aggiornare le condizioni della consegna. Riprova la lettura del dettaglio prima di richiedere un nuovo tentativo."
+      },
       "reason": "Motivazione",
       "reasonRequired": "È necessaria una motivazione per ripetere la consegna",
-      "submit": "Conferma ripetizione",
+      "submit": "Conferma richiesta",
       "replayed": "Il comando di ripetizione {{commandId}} è stato accettato.",
       "inProgress": "Il comando di ripetizione {{commandId}} è già in corso.",
       "feedbackLabel": "Ultima risposta confermata alla richiesta",

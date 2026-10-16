@@ -38,7 +38,7 @@ for (const failure of [false, true]) {
       await page.keyboard.press("Escape");
       await expect(pendingNotice(page)).toContainText("does not cancel");
       await expect(pendingNotice(page)).toContainText("Reloading or leaving");
-      await page.getByRole("button", { name: "Replay delivery", exact: true }).click();
+      await page.getByRole("button", { name: "View pending request", exact: true }).click();
       await assertPendingDialog(page);
       await expect(page.getByLabel("Reason")).toHaveValue("Synthetic recovery check");
       await page.keyboard.press("Escape");
@@ -47,17 +47,17 @@ for (const failure of [false, true]) {
       await expect(pendingNotice(page)).toContainText("awaiting a Gateway response: 1");
       await page.getByRole("link", { name: "Deliveries", exact: true }).click();
       await page.getByRole("link", { name: "DELIVERY-E2E-001" }).click();
-      await page.getByRole("button", { name: "Replay delivery", exact: true }).click();
+      await page.getByRole("button", { name: "View pending request", exact: true }).click();
       await assertPendingDialog(page);
       expect(mock.posts).toHaveLength(1);
       mock.release();
       if (failure) {
-        await expect(page.getByRole("alert")).toContainText("Synthetic rejection");
-        await expect(page.getByRole("button", { name: "Confirm replay" })).toBeEnabled();
+        await expect(page.getByRole("alert")).toContainText("Only exhausted deliveries");
+        await expect(page.getByRole("button", { name: "Confirm request" })).toBeDisabled();
       } else {
         // Completion invalidates the detail even though its original page unmounted.
         await expect(page.locator("dd").filter({ hasText: /^Received$/ })).toBeVisible();
-        await expect(page.getByRole("button", { name: "Replay delivery", exact: true })).toHaveCount(0);
+        await expect(page.getByRole("button", { name: "Request a new send attempt", exact: true, includeHidden: true })).toBeDisabled();
       }
       expect(mock.posts).toHaveLength(1);
       expect(mock.posts[0].headers()["authorization"]).toBe(`Bearer ${token("first")}`);
@@ -87,7 +87,7 @@ for (const remove of [false, true]) {
       await expect(pendingNotice(page)).not.toContainText(deliveryId);
       await expect(pendingNotice(page)).not.toContainText("Synthetic recovery check");
       if (remove) await applyToken(page, token("second"));
-      await page.getByRole("button", { name: "Replay delivery", exact: true }).click();
+      await page.getByRole("button", { name: "View pending request", exact: true }).click();
       await assertPendingDialog(page);
       await expect(page.getByLabel("Reason")).toHaveValue("");
       await page.keyboard.press("Escape");
@@ -117,7 +117,7 @@ async function mockGateway(page: Page, failure = false) {
   });
   await page.route("**/gateway-api/api/v1/operator/deliveries/*", async (route) => {
     detailReads.push(route.request());
-    await route.fulfill({ status: 200, json: { ...deliveryDetail, status: completed && !failure ? "RECEIVED" : "EXHAUSTED" } });
+    await route.fulfill({ status: 200, json: { ...deliveryDetail, status: completed ? "RECEIVED" : "EXHAUSTED" } });
   });
   await page.route("**/gateway-api/api/v1/operator/deliveries/*/replay", async (route) => {
     posts.push(route.request());
@@ -137,17 +137,17 @@ async function applyToken(page: Page, value: string) {
 }
 
 async function startReplay(page: Page) {
-  await page.getByRole("button", { name: "Replay delivery", exact: true }).click();
+  await page.getByRole("button", { name: "Request a new send attempt", exact: true }).click();
   await page.getByLabel("Reason").fill("Synthetic recovery check");
-  await page.getByRole("button", { name: "Confirm replay" }).click();
+  await page.getByRole("button", { name: "Confirm request" }).click();
 }
 
 async function assertPendingDialog(page: Page) {
-  const dialog = page.getByRole("dialog", { name: "Replay delivery" });
+  const dialog = page.getByRole("dialog", { name: "Request a new send attempt" });
   await expect(dialog.getByRole("status")).toContainText("Waiting for the Gateway response");
   await expect(dialog.getByLabel("Reason")).toBeDisabled();
-  await expect(dialog.getByRole("button", { name: "Confirm replay" })).toBeDisabled();
-  await expect(dialog.getByRole("button", { name: "Close replay delivery dialog" })).toBeFocused();
+  await expect(dialog.getByRole("button", { name: "Confirm request" })).toBeDisabled();
+  await expect(dialog.getByRole("button", { name: "Close send attempt dialog" })).toBeFocused();
 }
 
 function token(subject: string) {
