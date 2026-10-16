@@ -1,6 +1,6 @@
-import { type ButtonHTMLAttributes, type ReactNode } from "react";
+import { type ComponentPropsWithRef, type ReactNode } from "react";
 
-type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "aria-label" | "children" | "title"> & {
+type IconButtonProps = Omit<ComponentPropsWithRef<"button">, "aria-label" | "children" | "title"> & {
   label: string;
   children: ReactNode;
   variant?: "bordered" | "ghost";

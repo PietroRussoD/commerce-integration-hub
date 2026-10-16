@@ -1,5 +1,14 @@
 import "@testing-library/jest-dom/vitest";
 
+// jsdom does not implement the native modal API. Keyboard containment and
+// background inertness are tested in Chromium, not emulated here.
+HTMLDialogElement.prototype.showModal = function () {
+  this.open = true;
+};
+HTMLDialogElement.prototype.close = function () {
+  this.open = false;
+};
+
 const storedValues = new Map<string, string>();
 const localStorageMock: Storage = {
   get length() {
