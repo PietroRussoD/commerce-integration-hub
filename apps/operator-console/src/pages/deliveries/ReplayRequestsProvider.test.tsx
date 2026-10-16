@@ -159,6 +159,25 @@ test("an unresolved command cannot change reason and is not overwritten by anoth
   expect(JSON.stringify(Array.from(result.current.requests.values()))).not.toContain("token");
 });
 
+test("opening a new draft preserves confirmation until a separate intention is submitted", async () => {
+  const next = deferred();
+  replay.mockResolvedValueOnce(response).mockReturnValueOnce(next.promise);
+  const { result } = renderRequests();
+  const key = replayRequestKey(request.cacheScope, request.deliveryId);
+  await act(async () => { await result.current.submit(request); });
+  act(() => result.current.reset(request.deliveryId, request.cacheScope));
+  expect(result.current.requests.get(key)?.data).toBeUndefined();
+  expect(result.current.requests.get(key)?.lastResponse).toEqual(response);
+
+  let sent!: Promise<ReplayOperatorDeliveryResponse>;
+  act(() => { sent = result.current.submit(request); });
+  expect(result.current.requests.get(key)?.lastResponse).toBeUndefined();
+  expect(replay.mock.calls[1][0].idempotencyKey).not.toBe(replay.mock.calls[0][0].idempotencyKey);
+  const nextResponse = { ...response, commandId: "next-command" };
+  await act(async () => { next.resolve(nextResponse); await sent; });
+  expect(result.current.requests.get(key)?.lastResponse).toEqual(nextResponse);
+});
+
 function renderRequests() {
   const client = new QueryClient();
   const wrapper = ({ children }: { children: ReactNode }) => (

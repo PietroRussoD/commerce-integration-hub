@@ -14,6 +14,8 @@ export interface ReplayRequestState {
   isPending: boolean;
   isUncertain: boolean;
   data?: ReplayOperatorDeliveryResponse;
+  // Keep the last confirmed response when reopening the form for a new intention.
+  lastResponse?: ReplayOperatorDeliveryResponse;
   error?: Error;
 }
 

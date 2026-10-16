@@ -5,6 +5,7 @@ import { deliveryDetail, deliveryId, deliveryPage } from "./fixtures";
 // Synthetic credentials and intercepted API responses only. The command registry
 // models a server accepting a command before its HTTP response is lost.
 test("recovers a lost response after navigation and a delivery transition to RECEIVED", async ({ page }) => {
+  await page.clock.install();
   await page.setViewportSize({ width: 320, height: 740 });
   let accepted = false;
   const posts: Request[] = [];
@@ -22,6 +23,10 @@ test("recovers a lost response after navigation and a delivery transition to REC
   await expect(page.getByRole("alert")).toContainText("Outcome unconfirmed");
   await expect(page.getByLabel("Reason")).toHaveAttribute("readonly", "");
   await page.keyboard.press("Escape");
+  // A lost POST response cannot invalidate the detail as a confirmed success.
+  // Expire its 15-second read cache before returning, so navigation fetches the
+  // server's actual RECEIVED state rather than reusing the EXHAUSTED snapshot.
+  await page.clock.fastForward(16_000);
   const navigation = page.getByRole("navigation", { name: "Primary navigation" });
   await navigation.getByRole("link", { name: "Simulator", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Simulator" })).toBeVisible();
@@ -30,7 +35,7 @@ test("recovers a lost response after navigation and a delivery transition to REC
   await page.getByRole("link", { name: "DELIVERY-E2E-001" }).click();
   await expect(page).toHaveURL(`/deliveries/${deliveryId}`);
   await expect(page.getByRole("heading", { name: "Delivery details" })).toBeVisible();
-  await expect(page.getByText("Received", { exact: true })).toBeVisible();
+  await expect(page.locator("dd").filter({ hasText: /^Received$/ })).toBeVisible();
   await page.getByRole("button", { name: "Resolve replay request" }).click();
   await expect(page.getByLabel("Reason")).toHaveValue("Synthetic recovery check");
   await expect(page.getByLabel("Reason")).toHaveAttribute("readonly", "");

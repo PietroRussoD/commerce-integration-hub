@@ -34,7 +34,10 @@ export function ReplayDeliveryAction({ accessToken, canReplay, canRecover = canR
     if (isOpen && (isPending || isSuccess)) closeButtonRef.current?.focus();
   }, [isOpen, isPending, isSuccess]);
 
-  if (!canReplay && !(canRecover && unresolved)) return null;
+  const showTrigger = canReplay || (canRecover && unresolved);
+  // A successful detail refresh may remove replay eligibility while the operator
+  // is still reading the response. Keep the dialog until they dismiss it.
+  if (!showTrigger && !(canRecover && isOpen && (isPending || isSuccess))) return null;
 
   function openDialog() {
     if (!isPending && !unresolved) {
@@ -69,14 +72,14 @@ export function ReplayDeliveryAction({ accessToken, canReplay, canRecover = canR
 
   return (
     <>
-      <button
+      {showTrigger ? <button
         type="button"
         onClick={openDialog}
         className="inline-flex h-9 items-center gap-2 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm font-semibold text-app-foreground hover:bg-app-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
       >
         <RotateCw aria-hidden="true" size={16} />
         {t(unresolved ? "deliveryDetail.replay.recover" : "deliveryDetail.replay.open")}
-      </button>
+      </button> : null}
 
       {isOpen ? (
         <ModalDialog labelledBy="delivery-replay-dialog-title" initialFocusRef={reasonRef} onClose={closeDialog}>
@@ -140,6 +143,9 @@ export function ReplayDeliveryAction({ accessToken, canReplay, canRecover = canR
                 {t(request.data.outcome === "REPLAYED" ? "deliveryDetail.replay.replayed" : "deliveryDetail.replay.inProgress", {
                   commandId: request.data.commandId,
                 })}
+              </p>
+              <p className="text-sm text-app-foreground-secondary">
+                {t(request.data.outcome === "REPLAYED" ? "deliveryDetail.replay.replayedExplanation" : "deliveryDetail.replay.inProgressExplanation")}
               </p>
               {request.data.outcome === "IN_PROGRESS" ? (
                 <button type="button" disabled={isPending} onClick={() => {
