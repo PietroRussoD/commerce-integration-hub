@@ -91,7 +91,7 @@ test("a new confirmation after a definitive rejection creates a separate command
   await expect(page.getByRole("alert")).toContainText("The Gateway rejected this request");
   await expect(page.getByLabel("Reason")).not.toHaveAttribute("readonly");
   // The operator confirms a separate intention with the same target and reason.
-  await page.getByRole("button", { name: "Confirm replay" }).click();
+  await page.getByRole("button", { name: "Confirm request" }).click();
   await expect(page.getByRole("dialog").getByRole("status")).toContainText("was accepted");
   expect(posts).toHaveLength(2);
   expect(posts[1].headers()["idempotency-key"]).not.toBe(posts[0].headers()["idempotency-key"]);
@@ -120,7 +120,7 @@ async function openDelivery(page: Page) {
 }
 
 async function submitNewReplay(page: Page) {
-  await page.getByRole("button", { name: "Replay delivery", exact: true }).click();
+  await page.getByRole("button", { name: "Request a new send attempt", exact: true }).click();
   await page.getByLabel("Reason").fill("Synthetic recovery check");
-  await page.getByRole("button", { name: "Confirm replay" }).click();
+  await page.getByRole("button", { name: "Confirm request" }).click();
 }

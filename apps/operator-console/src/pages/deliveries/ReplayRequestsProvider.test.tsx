@@ -178,6 +178,20 @@ test("opening a new draft preserves confirmation until a separate intention is s
   expect(result.current.requests.get(key)?.lastResponse).toEqual(nextResponse);
 });
 
+test("a recognized concurrent rejection refreshes only its originating session", async () => {
+  replay.mockRejectedValueOnce(new ConnectorGatewayApiError(409, {
+    type: "urn:problem:connector-not-active", title: "Delivery replay rejected", status: 409, detail: "Synthetic rejection",
+  }));
+  const { result, client } = renderRequests();
+  const own = ["operator-delivery", request.cacheScope, request.deliveryId];
+  const other = ["operator-delivery", "session-b", request.deliveryId];
+  client.setQueryData(own, {});
+  client.setQueryData(other, {});
+  await act(async () => { await expect(result.current.submit(request)).rejects.toThrow(); });
+  expect(client.getQueryState(own)?.isInvalidated).toBe(true);
+  expect(client.getQueryState(other)?.isInvalidated).toBe(false);
+});
+
 function renderRequests() {
   const client = new QueryClient();
   const wrapper = ({ children }: { children: ReactNode }) => (

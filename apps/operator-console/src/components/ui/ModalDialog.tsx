@@ -23,7 +23,7 @@ export function ModalDialog({ children, labelledBy, initialFocusRef, onClose }: 
       document.body.style.overflow = previousOverflow;
       // Wait for React to remove the dialog and any action that became unavailable.
       queueMicrotask(() => {
-        if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus();
+        if (trigger instanceof HTMLElement && trigger.isConnected && !trigger.matches(":disabled")) trigger.focus();
         else document.getElementById("main-content")?.focus();
       });
     };

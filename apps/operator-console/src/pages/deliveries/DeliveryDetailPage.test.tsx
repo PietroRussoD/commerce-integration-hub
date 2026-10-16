@@ -57,7 +57,7 @@ test("renders the payload retention metadata and safe attempt history", async ()
     lastHttpStatus: 503,
     mappingVersion: "erp-b-v2",
     nextAttemptAt: "2026-09-12T12:10:00Z",
-    payloadExpiresAt: "2026-09-13T12:00:00Z",
+    payloadExpiresAt: new Date(Date.now() + 86_400_000).toISOString(),
     payloadRetained: true,
     provider: "ERP_B",
     receivedAt: "2026-09-12T12:00:00Z",
@@ -76,7 +76,7 @@ test("renders the payload retention metadata and safe attempt history", async ()
     "href",
     "http://localhost:16686/trace/0123456789abcdef0123456789abcdef",
   );
-  expect(screen.getByRole("button", { name: "Replay delivery" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Request a new send attempt" })).toBeInTheDocument();
   expect(screen.getAllByText("The Core endpoint did not respond before the timeout")).toHaveLength(2);
   expect(mockedGetOperatorDelivery).toHaveBeenCalledWith({
     accessToken: "operator-token",

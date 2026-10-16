@@ -72,7 +72,9 @@
     },
     "retention": {
       "retained": "Retained until {{expiresAt}}",
-      "expired": "Expired at {{expiresAt}}"
+      "expired": "Expired at {{expiresAt}}",
+      "missing": "Original payload unavailable",
+      "unknown": "Retention deadline unavailable"
     },
     "attempts": {
       "title": "Delivery attempts",
@@ -90,12 +92,28 @@
       "outcome": { "retryableFailure": "Retryable failure" }
     },
     "replay": {
-      "open": "Replay delivery",
-      "title": "Replay delivery",
-      "close": "Close replay delivery dialog",
+      "open": "Request a new send attempt",
+      "title": "Request a new send attempt",
+      "close": "Close send attempt dialog",
+      "sectionTitle": "New send attempt",
+      "viewPending": "View pending request",
+      "guidance": "Requeues an eligible exhausted delivery. Previous attempts remain counted. The Gateway checks eligibility again; acceptance confirms requeueing, and subsequent sending has its own outcome.",
+      "recoveryGuidance": "This checks the previous request. Its outcome can be recovered even when a new send attempt is unavailable.",
+      "blocked": {
+        "permission": "Requesting a new send attempt requires the platform-admin role.",
+        "state": "Only exhausted deliveries can be queued for a new send attempt.",
+        "connector": "The connector must be active before a new send attempt can be requested.",
+        "payloadMissing": "The original payload is no longer available.",
+        "payloadExpired": "The original payload retention period has expired.",
+        "payloadUnknown": "The payload retention deadline cannot be verified.",
+        "updating": "Updating delivery eligibility. Wait for the current read to complete.",
+        "deliveryMissing": "The Gateway could not find this delivery.",
+        "payloadUnavailable": "The Gateway reports that the original payload is missing or its retention has expired.",
+        "readFailed": "Delivery eligibility could not be refreshed. Retry the detail read before requesting a new send attempt."
+      },
       "reason": "Reason",
       "reasonRequired": "A replay reason is required",
-      "submit": "Confirm replay",
+      "submit": "Confirm request",
       "replayed": "Replay command {{commandId}} was accepted.",
       "inProgress": "Replay command {{commandId}} is already in progress.",
       "feedbackLabel": "Last confirmed replay response",

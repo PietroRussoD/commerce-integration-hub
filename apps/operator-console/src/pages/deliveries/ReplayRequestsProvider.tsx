@@ -3,6 +3,7 @@ import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 
 import { ConnectorGatewayApiError, replayOperatorDelivery, type ReplayOperatorDeliveryResponse } from "../../api/connectorGatewayClient";
 import { isReplayUnresolved, replayRequestKey, type ReplayRequest, type ReplayRequestState, ReplayRequestsContext } from "./replayRequestsContext";
+import { getReplayRejectionReason } from "./deliveryReplayEligibility";
 
 export function ReplayRequestsProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
@@ -65,6 +66,11 @@ export function ReplayRequestsProvider({ children }: { children: ReactNode }) {
       updateRequest(key, { ...state, isPending: false, isUncertain: false, data: response, lastResponse: response });
       return response;
     } catch (error) {
+      if (getReplayRejectionReason(error) !== undefined) {
+        // A concurrent server-side change may have invalidated the displayed rules.
+        void queryClient.invalidateQueries({ queryKey: ["operator-deliveries", request.cacheScope] });
+        void queryClient.invalidateQueries({ queryKey: ["operator-delivery", request.cacheScope, request.deliveryId] });
+      }
       const isUncertain = isOutcomeUncertain(error, unresolved);
       updateRequest(key, {
         ...state,
@@ -93,13 +99,7 @@ function isOutcomeUncertain(error: unknown, previouslyUnresolved: boolean): bool
 
   // These 409 responses come from the audited replay result (including a repeated
   // rejection). Generic proxy failures and idempotency conflicts prove no outcome.
-  const rejectionTypes = [
-    "urn:problem:delivery-not-found",
-    "urn:problem:delivery-not-replayable",
-    "urn:problem:delivery-payload-expired",
-    "urn:problem:connector-not-active",
-  ];
-  if (error.status === 409 && rejectionTypes.includes(error.problem?.type ?? "")) return false;
+  if (getReplayRejectionReason(error) !== undefined) return false;
   // A failed authorization/validation on a recovery attempt cannot settle the
   // original command whose response was lost.
   if (previouslyUnresolved) return true;

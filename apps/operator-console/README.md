@@ -52,6 +52,35 @@ reasoned, idempotent replay command for an eligible exhausted delivery. The
 simulator requires a source API key provisioned by the Integration Core
 administrative CLI.
 
+### New send attempts
+
+The **Request a new send attempt** section explains the requirements to all
+read-authorized operators. A new request requires `platform-admin`, delivery
+status `EXHAUSTED`, connector status `ACTIVE`, a retained original payload, and a
+retention deadline later than the current time. Unmet requirements are listed
+beside the disabled action, including missing or unverifiable retention metadata.
+The payload summary distinguishes physical absence from retention expiry.
+
+Eligibility updates at the retention deadline and when returning to the page;
+confirmation checks the wall clock again in case background timers were delayed.
+An open form preserves its reason while conditions change and disables a new
+submission. These checks use the displayed Gateway snapshot and browser clock;
+the Gateway independently checks the real command and remains authoritative.
+An explicit recognized replay `409` shows a localized explanation and refreshes
+only the originating session's list/detail. New requests wait for that read to
+complete; if it fails, retrying the detail read is required before a new command.
+Previous attempts remain counted, and acceptance confirms requeueing
+rather than the outcome of the subsequent send.
+
+Recovering a previously sent command is a separate action: an authorized
+administrator can still resolve its outcome with the same key and reason when
+the delivery state, connector or payload no longer permits a new send attempt.
+The Gateway resolves the existing audited command before applying new-request
+guards. Browser tests use synthetic data to cover roles, delivery and connector
+states, missing/expired payloads, expiry during editing, concurrent rejections,
+and recovery after expiry. Unit tests also exercise delayed timers and the exact
+retention boundary; no real replay command is sent by the browser suite.
+
 ### Pending replay requests
 
 Replay requests are tracked above the routes for the lifetime of the loaded

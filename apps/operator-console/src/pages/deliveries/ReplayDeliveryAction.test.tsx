@@ -3,9 +3,15 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { ConnectorGatewayApiError, replayOperatorDelivery } from "../../api/connectorGatewayClient";
 import { AppProviders } from "../../app/AppProviders";
+import type { ReplayDeliveryTarget } from "./deliveryReplayEligibility";
 import { ReplayDeliveryAction } from "./ReplayDeliveryAction";
 
 vi.mock(import("../../api/connectorGatewayClient"), async (importOriginal) => ({ ...await importOriginal(), replayOperatorDelivery: vi.fn() }));
+
+const replayTarget: ReplayDeliveryTarget = {
+  deliveryId: "c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21", status: "EXHAUSTED", connectorStatus: "ACTIVE",
+  payloadRetained: true, payloadExpiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+};
 
 const mockedReplayOperatorDelivery = vi.mocked(replayOperatorDelivery);
 
@@ -13,14 +19,15 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 test("requires a reason before replaying a delivery", () => {
   renderAction();
 
-  fireEvent.click(screen.getByRole("button", { name: "Replay delivery" }));
+  fireEvent.click(screen.getByRole("button", { name: "Request a new send attempt" }));
   fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "   " } });
-  fireEvent.click(screen.getByRole("button", { name: "Confirm replay" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirm request" }));
 
   expect(screen.getByRole("alert")).toHaveTextContent("A replay reason is required");
   expect(screen.getByLabelText("Reason")).toHaveAttribute("aria-invalid", "true");
@@ -31,37 +38,38 @@ test("requires a reason before replaying a delivery", () => {
 
 test("focuses the reason and restores the trigger after closing", async () => {
   renderAction();
-  const trigger = screen.getByRole("button", { name: "Replay delivery" });
+  const trigger = screen.getByRole("button", { name: "Request a new send attempt" });
   trigger.focus();
   fireEvent.click(trigger);
   expect(screen.getByLabelText("Reason")).toHaveFocus();
 
-  fireEvent.click(screen.getByRole("button", { name: "Close replay delivery dialog" }));
+  fireEvent.click(screen.getByRole("button", { name: "Close send attempt dialog" }));
 
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   await waitFor(() => expect(trigger).toHaveFocus());
 });
 
-test("does not render a recovery control without platform-admin permission", () => {
+test("explains the platform-admin requirement and disables a new send request", () => {
   render(
     <AppProviders>
       <ReplayDeliveryAction
         accessToken="operator-token"
-        canReplay={false}
-        deliveryId="c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21"
+        hasReplayPermission={false}
+        delivery={replayTarget}
       />
     </AppProviders>,
   );
 
-  expect(screen.queryByRole("button", { name: "Replay delivery" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Request a new send attempt" })).toBeDisabled();
+  expect(screen.getByText(/requires the platform-admin role/)).toBeInTheDocument();
 });
 
 test("associates a request error with the reason without marking the reason invalid", async () => {
   mockedReplayOperatorDelivery.mockRejectedValueOnce(new Error("Synthetic replay request failed"));
   renderAction();
-  fireEvent.click(screen.getByRole("button", { name: "Replay delivery" }));
+  fireEvent.click(screen.getByRole("button", { name: "Request a new send attempt" }));
   fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "Synthetic recovery check" } });
-  fireEvent.click(screen.getByRole("button", { name: "Confirm replay" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirm request" }));
 
   expect(await screen.findByRole("alert")).toHaveTextContent("Synthetic replay request failed");
   expect(screen.getByLabelText("Reason")).toHaveAttribute("aria-describedby", "delivery-replay-request-error");
@@ -80,9 +88,9 @@ test("submits an idempotent replay command and reports an accepted replay", asyn
   renderAction();
   randomUUID.mockClear();
 
-  fireEvent.click(screen.getByRole("button", { name: "Replay delivery" }));
+  fireEvent.click(screen.getByRole("button", { name: "Request a new send attempt" }));
   fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "The Core endpoint is available again" } });
-  fireEvent.click(screen.getByRole("button", { name: "Confirm replay" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirm request" }));
 
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Replay command c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21 was accepted."));
   expect(randomUUID).toHaveBeenCalledOnce();
@@ -98,17 +106,17 @@ test("closing and reopening a pending replay preserves the request and blocks an
   let resolve!: (response: Awaited<ReturnType<typeof replayOperatorDelivery>>) => void;
   mockedReplayOperatorDelivery.mockReturnValueOnce(new Promise((done) => { resolve = done; }));
   renderAction();
-  fireEvent.click(screen.getByRole("button", { name: "Replay delivery" }));
+  fireEvent.click(screen.getByRole("button", { name: "Request a new send attempt" }));
   fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "Synthetic recovery check" } });
-  fireEvent.click(screen.getByRole("button", { name: "Confirm replay" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirm request" }));
   await waitFor(() => expect(mockedReplayOperatorDelivery).toHaveBeenCalledOnce());
-  fireEvent.click(screen.getByRole("button", { name: "Close replay delivery dialog" }));
-  fireEvent.click(screen.getByRole("button", { name: "Replay delivery" }));
+  fireEvent.click(screen.getByRole("button", { name: "Close send attempt dialog" }));
+  fireEvent.click(screen.getByRole("button", { name: "View pending request" }));
 
   expect(screen.getByLabelText("Reason")).toHaveValue("Synthetic recovery check");
   expect(screen.getByLabelText("Reason")).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Confirm replay" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Close replay delivery dialog" })).toHaveFocus();
+  expect(screen.getByRole("button", { name: "Confirm request" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Close send attempt dialog" })).toHaveFocus();
   fireEvent.submit(screen.getByLabelText("Reason").closest("form")!);
   expect(mockedReplayOperatorDelivery).toHaveBeenCalledOnce();
 
@@ -121,11 +129,11 @@ test("reopens an uncertain command with an immutable reason and retries the same
     commandId: "synthetic-command", idempotent: true, outcome: "REPLAYED",
   });
   renderAction();
-  fireEvent.click(screen.getByRole("button", { name: "Replay delivery" }));
+  fireEvent.click(screen.getByRole("button", { name: "Request a new send attempt" }));
   fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "Synthetic recovery check" } });
-  fireEvent.click(screen.getByRole("button", { name: "Confirm replay" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirm request" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("Outcome unconfirmed");
-  fireEvent.click(screen.getByRole("button", { name: "Close replay delivery dialog" }));
+  fireEvent.click(screen.getByRole("button", { name: "Close send attempt dialog" }));
   fireEvent.click(screen.getByRole("button", { name: "Resolve replay request" }));
   expect(screen.getByLabelText("Reason")).toHaveValue("Synthetic recovery check");
   expect(screen.getByLabelText("Reason")).toHaveAttribute("readonly");
@@ -140,12 +148,26 @@ test("a definitive rejection keeps the reason editable for a new confirmed inten
     type: "urn:problem:connector-not-active", title: "Delivery replay rejected", status: 409, detail: "Synthetic rejection",
   }));
   renderAction();
-  fireEvent.click(screen.getByRole("button", { name: "Replay delivery" }));
+  fireEvent.click(screen.getByRole("button", { name: "Request a new send attempt" }));
   fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "Synthetic recovery check" } });
-  fireEvent.click(screen.getByRole("button", { name: "Confirm replay" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirm request" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("The Gateway rejected this request");
   expect(screen.getByLabelText("Reason")).not.toHaveAttribute("readonly");
-  expect(screen.getByRole("button", { name: "Confirm replay" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Confirm request" })).toBeEnabled();
+});
+
+test("confirmation rechecks expiry even when the retention timer has not fired", () => {
+  vi.useFakeTimers();
+  const expiresAt = Date.parse(replayTarget.payloadExpiresAt);
+  vi.setSystemTime(expiresAt - 1_000);
+  renderAction();
+  fireEvent.click(screen.getByRole("button", { name: "Request a new send attempt" }));
+  fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "Synthetic recovery" } });
+  vi.setSystemTime(expiresAt);
+  fireEvent.submit(screen.getByLabelText("Reason").closest("form")!);
+  expect(screen.getByRole("alert")).toHaveTextContent("retention period has expired");
+  expect(screen.getByLabelText("Reason")).not.toHaveAttribute("aria-invalid", "true");
+  expect(mockedReplayOperatorDelivery).not.toHaveBeenCalled();
 });
 
 function renderAction() {
@@ -153,8 +175,8 @@ function renderAction() {
     <AppProviders>
       <ReplayDeliveryAction
         accessToken="admin-token"
-        canReplay
-        deliveryId="c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21"
+        hasReplayPermission
+        delivery={replayTarget}
       />
     </AppProviders>,
   );
