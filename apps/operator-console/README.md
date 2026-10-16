@@ -57,6 +57,20 @@ projected-order search only after the status endpoint reports the read alias as
 available. Operators can search item descriptions, an exact external order ID,
 or an exact SKU.
 
+## Dialog accessibility
+
+The access-token and delivery-replay dialogs use native modal dialogs with
+explicit initial focus, Tab/Shift+Tab wrapping, Escape dismissal, and focus
+restoration to the opening control. If that control has been removed, focus
+returns to the main content. Validation messages are associated with their
+fields; request failures are described without marking a valid reason invalid.
+The dialogs scroll within short viewports and prevent background interaction.
+The interaction follows the [WAI-ARIA modal dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
+
+`pnpm test:e2e` checks these interactions in Chromium at 320, 768, and 1440 pixels
+using synthetic API responses. The unit-test DOM only stubs the native dialog
+methods; it does not verify browser modality or keyboard containment.
+
 ## Flow Explorer
 
 Open [http://localhost:5173/flow-explorer](http://localhost:5173/flow-explorer)

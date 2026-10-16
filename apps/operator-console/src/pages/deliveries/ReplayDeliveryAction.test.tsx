@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { replayOperatorDelivery } from "../../api/connectorGatewayClient";
@@ -26,7 +26,23 @@ test("requires a reason before replaying a delivery", () => {
   fireEvent.click(screen.getByRole("button", { name: "Confirm replay" }));
 
   expect(screen.getByRole("alert")).toHaveTextContent("A replay reason is required");
+  expect(screen.getByLabelText("Reason")).toHaveAttribute("aria-invalid", "true");
+  expect(screen.getByLabelText("Reason")).toHaveAttribute("aria-describedby", "delivery-replay-reason-error");
+  expect(screen.getByLabelText("Reason")).toHaveFocus();
   expect(mockedReplayOperatorDelivery).not.toHaveBeenCalled();
+});
+
+test("focuses the reason and restores the trigger after closing", async () => {
+  renderAction();
+  const trigger = screen.getByRole("button", { name: "Replay delivery" });
+  trigger.focus();
+  fireEvent.click(trigger);
+  expect(screen.getByLabelText("Reason")).toHaveFocus();
+
+  fireEvent.click(screen.getByRole("button", { name: "Close replay delivery dialog" }));
+
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  await waitFor(() => expect(trigger).toHaveFocus());
 });
 
 test("does not render a recovery control without platform-admin permission", () => {
@@ -42,6 +58,18 @@ test("does not render a recovery control without platform-admin permission", () 
   );
 
   expect(screen.queryByRole("button", { name: "Replay delivery" })).not.toBeInTheDocument();
+});
+
+test("associates a request error with the reason without marking the reason invalid", async () => {
+  mockedReplayOperatorDelivery.mockRejectedValueOnce(new Error("Synthetic replay request failed"));
+  renderAction();
+  fireEvent.click(screen.getByRole("button", { name: "Replay delivery" }));
+  fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "Synthetic recovery check" } });
+  fireEvent.click(screen.getByRole("button", { name: "Confirm replay" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("Synthetic replay request failed");
+  expect(screen.getByLabelText("Reason")).toHaveAttribute("aria-describedby", "delivery-replay-request-error");
+  expect(screen.getByLabelText("Reason")).not.toHaveAttribute("aria-invalid", "true");
 });
 
 test("submits an idempotent replay command and reports an accepted replay", async () => {

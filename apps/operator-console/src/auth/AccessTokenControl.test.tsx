@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
 
 import { AppProviders } from "../app/AppProviders";
@@ -25,7 +25,25 @@ test("shows a validation message and does not retain an invalid token", () => {
   fireEvent.click(screen.getByRole("button", { name: "Use token" }));
 
   expect(screen.getByRole("alert")).toHaveTextContent("The access token format is invalid");
+  expect(screen.getByLabelText("Access token")).toHaveAttribute("aria-invalid", "true");
+  expect(screen.getByLabelText("Access token")).toHaveAttribute("aria-describedby", "operator-access-token-error");
+  expect(screen.getByLabelText("Access token")).toHaveFocus();
   expect(screen.getByRole("button", { name: "Set operator access token" })).toBeInTheDocument();
+});
+
+test("focuses the token field and restores the trigger after native cancellation", async () => {
+  renderControl();
+  const trigger = screen.getByRole("button", { name: "Set operator access token" });
+  trigger.focus();
+  fireEvent.click(trigger);
+  expect(screen.getByLabelText("Access token")).toHaveFocus();
+  expect(document.body.style.overflow).toBe("hidden");
+
+  fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
+
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  await waitFor(() => expect(trigger).toHaveFocus());
+  expect(document.body.style.overflow).toBe("");
 });
 
 test("removes a configured token when requested", () => {
