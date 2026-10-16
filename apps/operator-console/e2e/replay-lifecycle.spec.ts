@@ -124,7 +124,7 @@ async function mockGateway(page: Page, failure = false) {
     await gate;
     completed = true;
     await route.fulfill(failure
-      ? { status: 409, json: { detail: "Synthetic rejection", code: "DELIVERY_NOT_REPLAYABLE" } }
+      ? { status: 409, json: { type: "urn:problem:delivery-not-replayable", title: "Delivery replay rejected", status: 409, detail: "Synthetic rejection" } }
       : { status: 202, json: { commandId: "26998c94-b78f-4e33-8a24-47a8b353b9b8", idempotent: false, outcome: "REPLAYED" } });
   });
   return { posts, detailReads, release };

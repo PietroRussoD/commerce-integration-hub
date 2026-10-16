@@ -3,11 +3,11 @@ import { act, cleanup, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { replayOperatorDelivery, type ReplayOperatorDeliveryResponse } from "../../api/connectorGatewayClient";
+import { ConnectorGatewayApiError, replayOperatorDelivery, type ReplayOperatorDeliveryResponse } from "../../api/connectorGatewayClient";
 import { ReplayRequestsProvider } from "./ReplayRequestsProvider";
-import { useReplayRequests } from "./replayRequestsContext";
+import { replayRequestKey, useReplayRequests } from "./replayRequestsContext";
 
-vi.mock("../../api/connectorGatewayClient", () => ({ replayOperatorDelivery: vi.fn() }));
+vi.mock(import("../../api/connectorGatewayClient"), async (importOriginal) => ({ ...await importOriginal(), replayOperatorDelivery: vi.fn() }));
 const replay = vi.mocked(replayOperatorDelivery);
 const request = { accessToken: "synthetic-admin-token", cacheScope: "session-a", deliveryId: "delivery-42", reason: "Synthetic recovery" };
 const response: ReplayOperatorDeliveryResponse = { commandId: "command-42", idempotent: false, outcome: "REPLAYED" };
@@ -75,6 +75,88 @@ test("releases failed requests without automatically retrying or blocking anothe
   expect(replay).toHaveBeenCalledTimes(3);
   await act(async () => { succeeded.resolve(response); await second; });
   expect(result.current.pendingDeliveryIds.size).toBe(0);
+});
+
+test.each([new TypeError("Failed to fetch"), new ConnectorGatewayApiError(503), new ConnectorGatewayApiError(409)])(
+  "preserves an uncertain command through reset and a manual retry (%s)", async (error) => {
+    replay.mockRejectedValueOnce(error).mockResolvedValueOnce(response);
+    const { result } = renderRequests();
+    await act(async () => { await expect(result.current.submit(request)).rejects.toThrow(); });
+    const key = replayRequestKey(request.cacheScope, request.deliveryId);
+    const original = result.current.requests.get(key)!;
+    expect(original.isUncertain).toBe(true);
+    act(() => result.current.reset(request.deliveryId, request.cacheScope));
+    expect(result.current.requests.get(key)?.idempotencyKey).toBe(original.idempotencyKey);
+    await act(async () => { await result.current.submit({ ...request, reason: `  ${request.reason}  ` }); });
+    expect(replay.mock.calls[1][0]).toEqual(replay.mock.calls[0][0]);
+    expect(result.current.requests.get(key)?.isUncertain).toBe(false);
+  },
+);
+
+test("an authorization failure during recovery does not resolve the original command", async () => {
+  replay.mockRejectedValueOnce(new TypeError("Lost response"))
+    .mockRejectedValueOnce(new ConnectorGatewayApiError(401))
+    .mockResolvedValueOnce(response);
+  const { result } = renderRequests();
+  await act(async () => { await expect(result.current.submit(request)).rejects.toThrow(); });
+  await act(async () => { await expect(result.current.submit(request)).rejects.toThrow(); });
+  expect(result.current.requests.get(replayRequestKey(request.cacheScope, request.deliveryId))?.isUncertain).toBe(true);
+  await act(async () => { await result.current.submit(request); });
+  expect(new Set(replay.mock.calls.map(([call]) => call.idempotencyKey)).size).toBe(1);
+});
+
+test.each([
+  new ConnectorGatewayApiError(400), new ConnectorGatewayApiError(401), new ConnectorGatewayApiError(403),
+  new ConnectorGatewayApiError(409, {
+    type: "urn:problem:delivery-not-replayable", title: "Delivery replay rejected", status: 409, detail: "Synthetic rejection",
+  }),
+])("a new confirmation after a definitive rejection creates a new command (%s)", async (error) => {
+  replay.mockRejectedValueOnce(error).mockResolvedValueOnce(response);
+  const { result } = renderRequests();
+  await act(async () => { await expect(result.current.submit(request)).rejects.toThrow(); });
+  expect(result.current.requests.get(replayRequestKey(request.cacheScope, request.deliveryId))?.isUncertain).toBe(false);
+  await act(async () => { await result.current.submit(request); });
+  expect(replay.mock.calls[1][0].idempotencyKey).not.toBe(replay.mock.calls[0][0].idempotencyKey);
+});
+
+test("an audited rejection settles an uncertain command; a new intention receives a new key", async () => {
+  replay.mockRejectedValueOnce(new TypeError("Lost response"))
+    .mockRejectedValueOnce(new ConnectorGatewayApiError(409, {
+      type: "urn:problem:delivery-payload-expired", title: "Delivery replay rejected", status: 409, detail: "Synthetic rejection",
+    })).mockResolvedValueOnce(response);
+  const { result } = renderRequests();
+  for (let index = 0; index < 2; index++) {
+    await act(async () => { await expect(result.current.submit(request)).rejects.toThrow(); });
+  }
+  expect(replay.mock.calls[1][0].idempotencyKey).toBe(replay.mock.calls[0][0].idempotencyKey);
+  const key = replayRequestKey(request.cacheScope, request.deliveryId);
+  expect(result.current.requests.get(key)?.isUncertain).toBe(false);
+  act(() => result.current.reset(request.deliveryId, request.cacheScope));
+  expect(result.current.requests.has(key)).toBe(false);
+  await act(async () => { await result.current.submit({ ...request, reason: "A separate recovery intention" }); });
+  expect(replay.mock.calls[2][0].idempotencyKey).not.toBe(replay.mock.calls[0][0].idempotencyKey);
+});
+
+test("IN_PROGRESS can be checked manually using the same key and reason", async () => {
+  replay.mockResolvedValueOnce({ ...response, outcome: "IN_PROGRESS" }).mockResolvedValueOnce(response);
+  const { result } = renderRequests();
+  await act(async () => { await result.current.submit(request); });
+  act(() => result.current.reset(request.deliveryId, request.cacheScope));
+  await act(async () => { await result.current.submit(request); });
+  expect(replay.mock.calls[1][0]).toEqual(replay.mock.calls[0][0]);
+});
+
+test("an unresolved command cannot change reason and is not overwritten by another session", async () => {
+  replay.mockRejectedValueOnce(new TypeError("Lost response")).mockResolvedValueOnce(response).mockResolvedValueOnce(response);
+  const { result } = renderRequests();
+  await act(async () => { await expect(result.current.submit(request)).rejects.toThrow(); });
+  await act(async () => { await expect(result.current.submit({ ...request, reason: "Changed reason" })).rejects.toThrow("before changing its reason"); });
+  expect(replay).toHaveBeenCalledOnce();
+  await act(async () => { await result.current.submit({ ...request, accessToken: "other-token", cacheScope: "session-b" }); });
+  expect(replay.mock.calls[1][0].idempotencyKey).not.toBe(replay.mock.calls[0][0].idempotencyKey);
+  await act(async () => { await result.current.submit(request); });
+  expect(replay.mock.calls[2][0].idempotencyKey).toBe(replay.mock.calls[0][0].idempotencyKey);
+  expect(JSON.stringify(Array.from(result.current.requests.values()))).not.toContain("token");
 });
 
 function renderRequests() {

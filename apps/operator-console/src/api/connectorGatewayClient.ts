@@ -106,7 +106,18 @@ export async function replayOperatorDelivery({
 
   if (!response.ok) throw new ConnectorGatewayApiError(response.status, await readProblem(response));
 
-  return response.json() as Promise<ReplayOperatorDeliveryResponse>;
+  if (response.status !== 202) throw new Error("The Gateway returned an unexpected replay response status");
+  const body: unknown = await response.json();
+  if (!isReplayResponse(body)) throw new Error("The Gateway replay response could not be confirmed");
+  return body;
+}
+
+function isReplayResponse(value: unknown): value is ReplayOperatorDeliveryResponse {
+  if (typeof value !== "object" || value === null) return false;
+  return "commandId" in value && typeof value.commandId === "string"
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.commandId)
+    && "idempotent" in value && typeof value.idempotent === "boolean"
+    && "outcome" in value && (value.outcome === "REPLAYED" || value.outcome === "IN_PROGRESS");
 }
 
 function operatorHeaders(accessToken: string): HeadersInit {

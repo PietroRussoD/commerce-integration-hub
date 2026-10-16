@@ -158,7 +158,7 @@ test("inspects and replays an exhausted delivery with a platform-admin token", a
   await page.getByLabel("Reason").fill("The Core endpoint is available again");
   await page.getByRole("button", { name: "Confirm replay" }).click();
 
-  await expect(page.getByRole("status")).toContainText("Replay command");
+  await expect(page.getByRole("dialog", { name: "Replay delivery" }).getByRole("status")).toContainText("Replay command");
   expect(replayRequest?.headers()["authorization"]).toBe(`Bearer ${token}`);
   expect(replayRequest?.headers()["idempotency-key"]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
   expect(replayRequest?.postDataJSON()).toEqual({ reason: "The Core endpoint is available again" });
