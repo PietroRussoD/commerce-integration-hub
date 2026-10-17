@@ -9,6 +9,7 @@ import { useAccessToken } from "../../auth/accessTokenContext";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { OrderDetailContent } from "./OrderDetailContent";
 import { operatorOrderAccessFailure, retryOperatorOrderQuery } from "./operatorOrderQueries";
+import { formatLabel } from "./orderFormatters";
 
 export function OrderDetailPage() {
   const { t, i18n } = useTranslation();
@@ -22,6 +23,7 @@ export function OrderDetailPage() {
     retry: retryOperatorOrderQuery,
   });
   const hasVisibleData = query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined;
+  const heading = hasVisibleData ? query.data!.externalOrderId : t("orderDetail.title");
   const updatedAt = query.dataUpdatedAt > 0
     ? new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium", timeStyle: "short" }).format(query.dataUpdatedAt)
     : undefined;
@@ -30,8 +32,10 @@ export function OrderDetailPage() {
     <section aria-labelledby="order-detail-heading">
       <PageHeader
         titleId="order-detail-heading"
-        title={t("orderDetail.title")}
-        description={<span className="break-all font-mono text-xs">{orderId}</span>}
+        title={heading}
+        description={hasVisibleData
+          ? t("orderDetail.sourceDescription", { source: formatLabel(query.data!.sourceSystem) })
+          : <span className="break-all font-mono text-xs">{orderId}</span>}
         actions={hasVisibleData ? (
           <div className="flex flex-wrap items-center gap-3">
             {updatedAt !== undefined ? <p className="text-xs text-app-foreground-muted">{t("orderDetail.lastUpdated", { time: updatedAt })}</p> : null}

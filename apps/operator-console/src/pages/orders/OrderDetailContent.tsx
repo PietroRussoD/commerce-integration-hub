@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { OperatorOrderDetail } from "../../api/integrationCoreClient";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
-import { formatDateTime, formatDuration, formatLabel, formatMoney } from "./orderFormatters";
+import { formatDateTime, formatDuration, formatLabel, formatMoney, formatQuantity } from "./orderFormatters";
 
 const orderStatusLabelKeys = {
   RECEIVED: "orders.status.received",
@@ -42,6 +42,7 @@ export function OrderDetailContent({ order }: { order: OperatorOrderDetail }) {
       <OrderItems items={order.items} currency={order.currency} />
       <OrderTimeline entries={order.timeline} />
       <ProcessingAttempts attempts={order.processingAttempts} />
+      <TechnicalDetails order={order} />
     </div>
   );
 }
@@ -53,14 +54,18 @@ function OrderSummary({ order }: { order: OperatorOrderDetail }) {
 
   return (
     <dl className="grid gap-px overflow-hidden rounded-md border border-app-border bg-app-border sm:grid-cols-2 lg:grid-cols-3">
-      <SummaryField label={t("orderDetail.summary.externalOrder")} value={order.externalOrderId} />
       <SummaryField label={t("orderDetail.summary.source")} value={formatLabel(order.sourceSystem)} />
       <SummaryField
         label={t("orderDetail.summary.status")}
         value={
-          <StatusBadge status={order.status}>
-            {statusLabelKey === undefined ? formatLabel(order.status) : t(statusLabelKey)}
-          </StatusBadge>
+          <div className="space-y-1.5">
+            <StatusBadge status={order.status}>
+              {statusLabelKey === undefined ? formatLabel(order.status) : t(statusLabelKey)}
+            </StatusBadge>
+            <p className="text-xs font-normal text-app-foreground-secondary">
+              {t(`orderDetail.statusDescription.${order.status}`, { defaultValue: t("orderDetail.statusDescription.unknown") })}
+            </p>
+          </div>
         }
       />
       <SummaryField label={t("orderDetail.summary.total")} value={formatMoney(order.totalAmount, order.currency, locale)} />
@@ -110,7 +115,7 @@ function OrderItems({ items, currency }: { items: OperatorOrderDetail["items"]; 
                     <td className="max-w-72 truncate px-4 py-3.5 text-app-foreground-secondary" title={item.description ?? undefined}>
                       {item.description ?? "-"}
                     </td>
-                    <td className="px-4 py-3.5 text-right tabular-nums">{item.quantity}</td>
+                    <td className="px-4 py-3.5 text-right tabular-nums">{formatQuantity(item.quantity, locale)}</td>
                     <td className="px-4 py-3.5 text-right tabular-nums">{formatMoney(item.unitPrice, currency, locale)}</td>
                     <td className="px-4 py-3.5 text-right font-medium tabular-nums">{formatMoney(item.lineAmount, currency, locale)}</td>
                   </tr>
@@ -151,9 +156,6 @@ function OrderTimeline({ entries }: { entries: OperatorOrderDetail["timeline"] }
                   </div>
                   {transition !== undefined ? <p className="mt-2 text-sm font-medium text-app-foreground-strong">{transition}</p> : null}
                   {entry.message !== null ? <p className="mt-1 text-sm text-app-foreground-secondary">{entry.message}</p> : null}
-                  <p className="mt-2 break-all font-mono text-xs text-app-foreground-muted">
-                    {t("orderDetail.timeline.correlation")} {entry.correlationId}
-                  </p>
                 </li>
               );
             })}
@@ -171,6 +173,7 @@ function ProcessingAttempts({ attempts }: { attempts: OperatorOrderDetail["proce
   return (
     <section aria-labelledby="processing-attempts-heading">
       <SectionHeading id="processing-attempts-heading" title={t("orderDetail.attempts.title")} count={attempts.length} />
+      <p className="mb-3 text-sm text-app-foreground-secondary">{t("orderDetail.attempts.description")}</p>
       <div className="overflow-hidden rounded-md border border-app-border bg-app-surface">
         {attempts.length === 0 ? (
           <EmptySection>{t("orderDetail.attempts.empty")}</EmptySection>
@@ -227,6 +230,31 @@ function ProcessingAttempts({ attempts }: { attempts: OperatorOrderDetail["proce
         )}
       </div>
     </section>
+  );
+}
+
+function TechnicalDetails({ order }: { order: OperatorOrderDetail }) {
+  const { t } = useTranslation();
+  const correlations = [...new Set(order.timeline.map((entry) => entry.correlationId))];
+
+  return (
+    <details className="rounded-md border border-app-border bg-app-surface px-4 py-3">
+      <summary className="cursor-pointer text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">
+        {t("orderDetail.technical.title")}
+      </summary>
+      <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div>
+          <dt className="text-xs font-medium text-app-foreground-muted">{t("orderDetail.technical.orderId")}</dt>
+          <dd className="mt-1 break-all font-mono text-xs text-app-foreground-secondary">{order.id}</dd>
+        </div>
+        {correlations.map((correlationId) => (
+          <div key={correlationId}>
+            <dt className="text-xs font-medium text-app-foreground-muted">{t("orderDetail.technical.correlationId")}</dt>
+            <dd className="mt-1 break-all font-mono text-xs text-app-foreground-secondary">{correlationId}</dd>
+          </div>
+        ))}
+      </dl>
+    </details>
   );
 }
 

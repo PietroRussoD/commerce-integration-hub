@@ -167,7 +167,7 @@
       "status": "Status",
       "total": "Total",
       "received": "Received",
-      "attempts": "Attempts"
+      "attempts": "Core attempts"
     },
     "status": {
       "received": "Received",
@@ -258,9 +258,15 @@
     "refresh": "Refresh order",
     "refreshing": "Refreshing order details…",
     "lastUpdated": "Updated {{time}}",
+    "sourceDescription": "{{source}} order",
     "refreshError": "Could not refresh this order. The details below are from the last successful read.",
+    "statusDescription": {
+      "RECEIVED": "Received by the Integration Core; processing has not completed.",
+      "PROCESSING": "Currently being processed by the Integration Core.",
+      "READY": "Successfully processed by the Integration Core.",
+      "unknown": "Status reported by the Integration Core."
+    },
     "summary": {
-      "externalOrder": "External order",
       "source": "Source",
       "status": "Status",
       "total": "Total",
@@ -298,8 +304,9 @@
       }
     },
     "attempts": {
-      "title": "Processing attempts",
-      "empty": "No processing attempts",
+      "title": "Core processing attempts",
+      "description": "These are Integration Core processing records, separate from Connector Gateway delivery attempts.",
+      "empty": "No Integration Core processing records",
       "columns": {
         "attempt": "Attempt",
         "trigger": "Trigger",
@@ -319,6 +326,11 @@
         "manualRetry": "Manual retry"
       },
       "inProgress": "In progress"
+    },
+    "technical": {
+      "title": "Technical details",
+      "orderId": "Internal order ID",
+      "correlationId": "Correlation ID"
     }
   },
   "flowExplorer": {

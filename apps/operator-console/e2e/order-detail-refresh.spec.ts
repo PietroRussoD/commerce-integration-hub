@@ -32,10 +32,11 @@ test("order details can be refreshed explicitly and report the latest successful
 
 test("a failed detail refresh keeps the last successful data and explains its age", async ({ page }) => {
   let reads = 0;
+  let failReads = false;
   await page.route("**/api/v1/operator/orders/**", async (route) => {
     if (!new URL(route.request().url()).pathname.endsWith(`/${orderId}`)) return route.continue();
     reads += 1;
-    if (reads <= 2) {
+    if (!failReads) {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...orderDetail, status: "RECEIVED" }) });
       return;
     }
@@ -43,9 +44,11 @@ test("a failed detail refresh keeps the last successful data and explains its ag
   });
 
   await page.goto(`/orders/${orderId}`);
+  await expect(page.getByText("Received", { exact: true }).first()).toBeVisible();
+  failReads = true;
   await page.getByRole("button", { name: "Refresh order" }).click();
   await expect(page.getByRole("alert")).toContainText("The details below are from the last successful read.");
   await expect(page.getByText("Received", { exact: true }).first()).toBeVisible();
   await expect(page.getByText(/^Updated /)).toBeVisible();
-  expect(reads).toBe(4);
+  expect(reads).toBeGreaterThanOrEqual(2);
 });

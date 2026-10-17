@@ -24,7 +24,7 @@ test("opens an order from the operator list", async ({ page }) => {
   await page.getByRole("link", { name: "ORDER-E2E-001" }).click();
 
   await expect(page).toHaveURL(`/orders/${orderId}`);
-  await expect(page.getByRole("heading", { name: "Order details" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ORDER-E2E-001" })).toBeVisible();
   await expect(page.getByRole("row", { name: /LINE-1 SKU-E2E-001 Browser-tested item/i })).toBeVisible();
 });
 
@@ -40,8 +40,9 @@ for (const theme of [
     await expectReadableContrast(page, ".font-mono.text-xs.text-app-foreground-muted");
 
     await page.goto(`${origin}/orders/${orderId}`);
-    await expect(page.getByRole("heading", { name: "Order details" })).toBeVisible();
-    await expectReadableContrast(page, "ol[aria-label] p.font-mono.text-xs.text-app-foreground-muted");
+    await expect(page.getByRole("heading", { name: "ORDER-E2E-001" })).toBeVisible();
+    await page.getByText("Technical details").click();
+    await expectReadableContrast(page, "details dd.font-mono.text-xs.text-app-foreground-secondary");
   });
 }
 
@@ -59,6 +60,28 @@ test("searches projected orders after the projection becomes available", async (
 
   await expect(page.getByRole("row", { name: /ORDER-SEARCH-001.*Ready/i })).toBeVisible();
   expect(new URL(searchRequest?.url() ?? "").searchParams.get("q")).toBe("browser");
+});
+
+test("keeps a maximum-length external order ID readable on a narrow screen", async ({ page }) => {
+  const externalOrderId = "ORDER-" + "X".repeat(122);
+  await page.route("**/api/v1/operator/orders/*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ...orderDetail, externalOrderId }),
+    });
+  });
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.goto(`/orders/${orderId}`);
+
+  const heading = page.getByRole("heading", { name: externalOrderId });
+  await expect(heading).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  const technicalDetails = page.locator("details");
+  await expect(technicalDetails).not.toHaveAttribute("open");
+  await expect(technicalDetails.getByText(orderId)).not.toBeVisible();
+  await technicalDetails.locator("summary").click();
+  await expect(technicalDetails.getByText(orderId)).toBeVisible();
 });
 
 test("restores order filters, search and pagination from the URL when returning from a detail", async ({ page }) => {
@@ -95,7 +118,7 @@ test("restores order filters, search and pagination from the URL when returning 
 
   await page.goBack();
   await expect(page).toHaveURL(`/orders/${orderId}?status=READY&offset=25&q=browser&externalOrderId=ORDER-E2E-001&sku=SKU-E2E-001&searchOffset=25`);
-  await expect(page.getByRole("heading", { name: "Order details" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ORDER-E2E-001" })).toBeVisible();
   await page.goForward();
   await expect(page).toHaveURL(listUrl);
   await expect(page.getByRole("searchbox", { name: "Search projected orders" })).toHaveValue("browser");

@@ -265,12 +265,17 @@ becomes available. Counts and cached results are hidden while its availability
 is unconfirmed or unavailable. Chromium acceptance tests use synthetic API
 responses; they do not verify a live OpenSearch deployment.
 
-The order detail has an explicit refresh action and shows the time of its last
-successful read. During a refresh, the current details remain visible and the
-refresh control is disabled. If a read fails, the page explains that the
-displayed data is from the previous successful read. It does not poll
-automatically; the operator can refresh when needed. Browser tests use synthetic
-API responses and do not verify a live Integration Core.
+The order detail uses the external order ID and source as its page heading,
+explains the Core-reported order state, and keeps the internal UUID and timeline
+correlation IDs in a keyboard-operable technical-details disclosure. Quantities
+are locale-formatted without discarding meaningful decimal precision. The
+processing-attempt section describes Integration Core records and distinguishes
+them from Connector Gateway delivery attempts. The page has an explicit refresh
+action and shows the time of its last successful read. During a refresh, current
+details remain visible and the refresh control is disabled. If a read fails, the
+page explains that the displayed data is from the previous successful read. It
+does not poll automatically; the operator can refresh when needed. Browser tests
+use synthetic API responses and do not verify a live Integration Core.
 
 The delivery detail can also be refreshed explicitly and reports the last
 successful read. After a confirmed replay response, it polls the delivery every

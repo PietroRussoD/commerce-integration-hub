@@ -6,6 +6,7 @@ import {
   formatDurationMilliseconds,
   formatLabel,
   formatMoney,
+  formatQuantity,
   orderStatusLabelKeys,
 } from "./orderFormatters";
 
@@ -22,6 +23,14 @@ test("formats dates and money for the selected locale", () => {
   expect(formatDateTime("2026-08-21T12:00:00Z", "it-IT")).toContain("ago");
   expect(formatMoney("39.98", "EUR", "en-GB")).toContain("39.98");
   expect(formatMoney("39.98", "EUR", "it-IT")).toContain("39,98");
+});
+
+test("localizes quantities without rounding away meaningful precision", () => {
+  expect(formatQuantity("2.0000", "it-IT")).toBe("2");
+  expect(formatQuantity("1234.2500", "it-IT")).toBe("1.234,25");
+  expect(formatQuantity("1234.2500", "en-GB")).toBe("1,234.25");
+  expect(formatQuantity("12345678901234567890.0001", "en-GB")).toBe("12,345,678,901,234,567,890.0001");
+  expect(formatQuantity("not-a-number", "it-IT")).toBe("not-a-number");
 });
 
 test("formats completed and active attempt durations", () => {
