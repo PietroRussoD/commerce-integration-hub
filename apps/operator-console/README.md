@@ -52,6 +52,30 @@ reasoned, idempotent replay command for an eligible exhausted delivery. The
 simulator requires a source API key provisioned by the Integration Core
 administrative CLI.
 
+### Delivery list navigation
+
+The delivery list stores `provider`, `status`, and the current opaque `cursor`
+in the URL. Delivery links and the detail's return link carry that context,
+including through reload and browser Back/Forward. The API receives only the
+current cursor; the console neither decodes it nor calculates page numbers or a
+total count. Changing either filter resets the cursor.
+
+Previously visited cursors belong to the browser history entry, which is carried
+through the detail view and survives reload. A copied URL restores the current
+page, but has no adjacent-page history: Previous page stays disabled and First
+page remains available. First page also recovers an empty page after the dataset
+changes, keeping the current filters. Tokens remain memory-only and must be
+supplied again after a reload or when opening a copied URL.
+
+A Gateway `400` on a cursor-based list read offers First page and stops automatic
+retries. The Gateway's generic validation response does not identify an invalid
+cursor separately from other rejected parameters, so the UI describes a rejected
+page request without claiming expiry. Authentication failures retain their token
+recovery action; transient failures retain Retry. Paging waits for the current
+read to settle before reusing its next cursor. Chromium navigation checks use
+synthetic credentials and API responses, separately from the Gateway's cursor
+codec, route and database integration tests.
+
 ### Simulator submission lifecycle
 
 The simulator locks its fields and all scenario actions while an order submission

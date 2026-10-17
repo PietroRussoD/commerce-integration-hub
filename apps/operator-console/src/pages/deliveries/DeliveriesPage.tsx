@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, RefreshCw, TriangleAlert } from "lucide-react";
-import { useState } from "react";
+import { ChevronFirst, ChevronLeft, ChevronRight, RefreshCw, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 
 import {
   listOperatorDeliveries,
+  ConnectorGatewayApiError,
   type ListOperatorDeliveriesParameters,
   type OperatorDeliveryPage,
 } from "../../api/connectorGatewayClient";
@@ -17,6 +17,7 @@ import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatLabel } from "../orders/orderFormatters";
 import { operatorDeliveryAccessFailure, retryOperatorDeliveryQuery } from "./operatorDeliveryQueries";
+import { deliveryListNavigationState, previousDeliveryCursors } from "./deliveryListNavigation";
 
 const PAGE_SIZE = 25;
 const providerOptions = ["ALL", "ERP_B", "MARKETPLACE_A"] as const;
@@ -52,10 +53,14 @@ type StatusFilter = "ALL" | NonNullable<ListOperatorDeliveriesParameters["status
 export function DeliveriesPage() {
   const { t } = useTranslation();
   const { accessToken, identity, cacheScope } = useAccessToken();
-  const [provider, setProvider] = useState<ProviderFilter>("ALL");
-  const [status, setStatus] = useState<StatusFilter>("ALL");
-  const [cursors, setCursors] = useState<Array<string | undefined>>([undefined]);
-  const cursor = cursors.at(-1);
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const providerValue = searchParams.get("provider");
+  const statusValue = searchParams.get("status");
+  const provider = providerOptions.find((option) => option === providerValue) ?? "ALL";
+  const status = statusOptions.find((option) => option === statusValue) ?? "ALL";
+  const cursor = searchParams.get("cursor") ?? undefined;
+  const previousCursors = previousDeliveryCursors(location.state, searchParams.toString());
   const canReadDeliveries =
     accessToken !== undefined && (identity?.roles.has("operator") === true || identity?.roles.has("platform-admin") === true);
   const query = useQuery({
@@ -69,17 +74,30 @@ export function DeliveriesPage() {
         signal,
         status: status === "ALL" ? undefined : status,
       }),
-    retry: retryOperatorDeliveryQuery,
+    retry: (failureCount, error) => !(error instanceof ConnectorGatewayApiError && error.status === 400)
+      && retryOperatorDeliveryQuery(failureCount, error),
     enabled: canReadDeliveries,
     placeholderData: (previous, previousQuery) => previousQuery?.queryKey[1] === cacheScope ? previous : undefined,
   });
 
   const accessFailure = operatorDeliveryAccessFailure(query.error);
+  const pageRejected = cursor !== undefined && query.error instanceof ConnectorGatewayApiError && query.error.status === 400;
+
+  function changePage(nextCursor: string | undefined, previous: Array<string | null>) {
+    const next = new URLSearchParams(searchParams);
+    if (nextCursor === undefined) next.delete("cursor");
+    else next.set("cursor", nextCursor);
+    setSearchParams(next, { state: deliveryListNavigationState(next.toString(), previous) });
+  }
 
   function updateFilters(nextProvider: ProviderFilter, nextStatus: StatusFilter) {
-    setProvider(nextProvider);
-    setStatus(nextStatus);
-    setCursors([undefined]);
+    const next = new URLSearchParams(searchParams);
+    if (nextProvider === "ALL") next.delete("provider");
+    else next.set("provider", nextProvider);
+    if (nextStatus === "ALL") next.delete("status");
+    else next.set("status", nextStatus);
+    next.delete("cursor");
+    setSearchParams(next, { state: null });
   }
 
   return (
@@ -87,7 +105,7 @@ export function DeliveriesPage() {
       <PageHeader
         titleId="deliveries-heading"
         title={t("deliveries.title")}
-        description={query.data === undefined || accessFailure !== undefined ? "\u00a0" : t("deliveries.total", { count: query.data.items.length })}
+        description={query.data === undefined || accessFailure !== undefined || pageRejected ? "\u00a0" : t("deliveries.total", { count: query.data.items.length })}
         actions={
           <div className="flex flex-wrap items-end gap-2">
             <label className="grid gap-1 text-xs font-medium text-app-foreground-secondary">
@@ -124,16 +142,19 @@ export function DeliveriesPage() {
       <div className="mt-5 overflow-hidden rounded-md border border-app-border bg-app-surface">
         {!canReadDeliveries ? <DeliveryAccessNotice hasToken={accessToken !== undefined} /> : null}
         {canReadDeliveries && query.isPending ? <DeliveriesLoading /> : null}
-        {canReadDeliveries && query.isError ? <DeliveriesError error={query.error} onRetry={() => void query.refetch()} /> : null}
-        {canReadDeliveries && query.data !== undefined && accessFailure === undefined ? <DeliveriesTable page={query.data} /> : null}
+        {canReadDeliveries && query.isError ? <DeliveriesError error={query.error} onRetry={() => void query.refetch()} onFirstPage={pageRejected ? () => changePage(undefined, []) : undefined} /> : null}
+        {canReadDeliveries && query.data !== undefined && accessFailure === undefined && !pageRejected ? <DeliveriesTable page={query.data} /> : null}
       </div>
 
-      {canReadDeliveries && query.data !== undefined && accessFailure === undefined && (cursors.length > 1 || query.data.nextCursor !== null) ? (
+      {canReadDeliveries && query.data !== undefined && accessFailure === undefined && !pageRejected && (cursor !== undefined || query.data.nextCursor !== null) ? (
         <Pagination
+          disabled={query.isFetching}
+          hasFirst={cursor !== undefined}
           hasNext={query.data.nextCursor !== null}
-          hasPrevious={cursors.length > 1}
-          onNext={() => setCursors((current) => [...current, query.data!.nextCursor!])}
-          onPrevious={() => setCursors((current) => current.slice(0, -1))}
+          hasPrevious={previousCursors.length > 0}
+          onFirst={() => changePage(undefined, [])}
+          onNext={() => changePage(query.data!.nextCursor!, [...previousCursors, cursor ?? null])}
+          onPrevious={() => changePage(previousCursors.at(-1) ?? undefined, previousCursors.slice(0, -1))}
         />
       ) : null}
     </section>
@@ -152,6 +173,7 @@ function DeliveryAccessNotice({ hasToken }: { hasToken: boolean }) {
 
 function DeliveriesTable({ page }: { page: OperatorDeliveryPage }) {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
   const locale = resolveIntlLocale(i18n.resolvedLanguage);
 
   if (page.items.length === 0) return <p className="px-6 py-16 text-center text-sm text-app-foreground-muted">{t("deliveries.empty")}</p>;
@@ -173,7 +195,7 @@ function DeliveriesTable({ page }: { page: OperatorDeliveryPage }) {
           {page.items.map((delivery) => (
             <tr key={delivery.deliveryId} className="hover:bg-app-canvas">
               <td className="px-4 py-3.5">
-                <Link to={`/deliveries/${delivery.deliveryId}`} className="font-medium text-app-foreground underline-offset-4 hover:text-app-brand-primary hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">{delivery.externalEventId}</Link>
+                <Link to={{ pathname: `/deliveries/${delivery.deliveryId}`, search: location.search }} state={location.state} className="font-medium text-app-foreground underline-offset-4 hover:text-app-brand-primary hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">{delivery.externalEventId}</Link>
                 <p className="mt-0.5 font-mono text-xs text-app-foreground-faint">{shortenId(delivery.deliveryId)}</p>
               </td>
               <td className="px-4 py-3.5 text-app-foreground-secondary">{t(providerLabelKeys[delivery.provider])}</td>
@@ -196,29 +218,30 @@ function DeliveriesLoading() {
   return <div role="status" aria-label={t("deliveries.loading")} className="space-y-3 px-4 py-5">{Array.from({ length: 5 }, (_, index) => <div key={index} className="h-12 animate-pulse rounded bg-app-surface-muted" />)}</div>;
 }
 
-function DeliveriesError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+function DeliveriesError({ error, onRetry, onFirstPage }: { error: unknown; onRetry: () => void; onFirstPage?: () => void }) {
   const { t } = useTranslation();
   const accessFailure = operatorDeliveryAccessFailure(error);
   return (
     <div role="alert" className="flex flex-col items-center px-6 py-14 text-center">
       <TriangleAlert aria-hidden="true" size={24} className="text-red-700" />
-      <p className="mt-3 font-medium">{t(accessFailure === undefined ? "deliveries.error" : `deliveries.access.${accessFailure}`)}</p>
+      <p className="mt-3 font-medium">{t(onFirstPage !== undefined ? "deliveries.pageRejected" : accessFailure === undefined ? "deliveries.error" : `deliveries.access.${accessFailure}`)}</p>
       {accessFailure !== undefined ? <AccessTokenButton /> : (
-        <button type="button" onClick={onRetry} className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm font-medium hover:bg-app-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">
+        <button type="button" onClick={onFirstPage ?? onRetry} className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm font-medium hover:bg-app-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">
           <RefreshCw aria-hidden="true" size={16} />
-          {t("deliveries.actions.retry")}
+          {t(onFirstPage !== undefined ? "deliveries.actions.firstPage" : "deliveries.actions.retry")}
         </button>
       )}
     </div>
   );
 }
 
-function Pagination({ hasNext, hasPrevious, onNext, onPrevious }: { hasNext: boolean; hasPrevious: boolean; onNext: () => void; onPrevious: () => void }) {
+function Pagination({ disabled, hasFirst, hasNext, hasPrevious, onFirst, onNext, onPrevious }: { disabled: boolean; hasFirst: boolean; hasNext: boolean; hasPrevious: boolean; onFirst: () => void; onNext: () => void; onPrevious: () => void }) {
   const { t } = useTranslation();
   return (
     <div className="mt-4 flex justify-end gap-1">
-      <IconButton label={t("deliveries.actions.previousPage")} disabled={!hasPrevious} onClick={onPrevious}><ChevronLeft aria-hidden="true" size={18} /></IconButton>
-      <IconButton label={t("deliveries.actions.nextPage")} disabled={!hasNext} onClick={onNext}><ChevronRight aria-hidden="true" size={18} /></IconButton>
+      {hasFirst ? <IconButton label={t("deliveries.actions.firstPage")} disabled={disabled} onClick={onFirst}><ChevronFirst aria-hidden="true" size={18} /></IconButton> : null}
+      <IconButton label={t("deliveries.actions.previousPage")} disabled={disabled || !hasPrevious} onClick={onPrevious}><ChevronLeft aria-hidden="true" size={18} /></IconButton>
+      <IconButton label={t("deliveries.actions.nextPage")} disabled={disabled || !hasNext} onClick={onNext}><ChevronRight aria-hidden="true" size={18} /></IconButton>
     </div>
   );
 }
