@@ -53,7 +53,7 @@ test("shows the selected component's architecture details", () => {
       "Owns canonical order validation, idempotency, the workflow and the transactional outbox.",
     ),
   ).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Open technical reference" })).toHaveAttribute(
+  expect(within(screen.getByRole("complementary", { name: "Integration Core" })).getByRole("link", { name: "Open technical reference" })).toHaveAttribute(
     "href",
     "https://github.com/PietroRussoD/commerce-integration-hub/blob/main/services/integration-core/README.md#architecture",
   );
@@ -65,7 +65,7 @@ test("shows the selected component's architecture details", () => {
       "Protects the core from provider-specific protocols and preserves recoverable delivery state.",
     ),
   ).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Open technical reference" })).toHaveAttribute(
+  expect(within(screen.getByRole("complementary", { name: "Connector Gateway" })).getByRole("link", { name: "Open technical reference" })).toHaveAttribute(
     "href",
     "https://github.com/PietroRussoD/commerce-integration-hub/blob/main/services/connector-gateway/README.md",
   );

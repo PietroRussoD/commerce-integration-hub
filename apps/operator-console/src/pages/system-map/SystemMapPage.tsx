@@ -115,7 +115,6 @@ const systemNodeDetails = {
 export function SystemMapPage() {
   const { t } = useTranslation();
   const [selectedNodeId, setSelectedNodeId] = useState<SystemNodeId>("core");
-  const selectedNode = systemNodeDetails[selectedNodeId];
 
   return (
     <section aria-labelledby="system-map-heading">
@@ -132,34 +131,11 @@ export function SystemMapPage() {
       </div>
 
       <aside
-        id="system-map-details"
-        aria-live="polite"
         aria-labelledby="system-map-details-heading"
-        className="mt-6 border-y border-app-border bg-app-surface px-5 py-4 sm:px-6"
+        data-testid="system-map-desktop-details"
+        className="mt-6 hidden self-start xl:sticky xl:top-20 xl:block"
       >
-        <p className="text-xs font-semibold uppercase tracking-wide text-app-foreground-muted">{t("systemMap.details.title")}</p>
-        <h2 id="system-map-details-heading" className="mt-1 text-lg font-semibold text-app-foreground">
-          {t(selectedNode.titleKey)}
-        </h2>
-        <dl className="mt-4 grid gap-4 text-sm md:grid-cols-2">
-          <div>
-            <dt className="font-semibold text-app-foreground-secondary">{t("systemMap.details.role")}</dt>
-            <dd className="mt-1 leading-6 text-app-foreground-muted">{t(selectedNode.roleKey)}</dd>
-          </div>
-          <div>
-            <dt className="font-semibold text-app-foreground-secondary">{t("systemMap.details.interfaces")}</dt>
-            <dd className="mt-1 leading-6 text-app-foreground-muted">{t(selectedNode.interfacesKey)}</dd>
-          </div>
-        </dl>
-        <a
-          href={`${repositoryUrl}/${selectedNode.referencePath}`}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-5 inline-flex h-9 items-center gap-2 text-sm font-semibold text-app-brand-primary underline underline-offset-4 hover:text-app-brand-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
-        >
-          {t("systemMap.details.reference")}
-          <ExternalLink aria-hidden="true" size={16} />
-        </a>
+        <SystemNodeDetails nodeId={selectedNodeId} />
       </aside>
 
       <section aria-labelledby="ingestion-heading" className="mt-6">
@@ -422,26 +398,69 @@ function SystemNode({ nodeId, icon: Icon, title, description, optional = false, 
   const descriptionId = `system-map-${identifier}-description`;
 
   return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      aria-controls="system-map-details"
-      aria-labelledby={titleId}
-      aria-describedby={descriptionId}
-      onClick={() => onSelect(nodeId)}
-      className={[
-        "min-h-32 border bg-app-surface p-4 text-left transition-colors hover:bg-app-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus",
-        optional ? "border-dashed border-app-border-strong" : "border-app-border",
-        selected ? "border-app-brand-primary ring-1 ring-app-brand-primary" : "",
-      ].join(" ")}
+    <div className="min-w-0">
+      <button
+        type="button"
+        aria-pressed={selected}
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        onClick={() => onSelect(nodeId)}
+        className={[
+          "min-h-32 w-full border bg-app-surface p-4 text-left transition-colors hover:bg-app-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus",
+          optional ? "border-dashed border-app-border-strong" : "border-app-border",
+          selected ? "border-app-brand-primary ring-1 ring-app-brand-primary" : "",
+        ].join(" ")}
+      >
+        <Icon aria-hidden="true" className="text-app-brand-primary" size={20} strokeWidth={1.8} />
+        <h3 id={titleId} className="mt-3 text-sm font-semibold text-app-foreground">
+          {title}
+        </h3>
+        <p id={descriptionId} className="mt-1 text-xs leading-5 text-app-foreground-muted">
+          {description}
+        </p>
+      </button>
+      {selected && (
+        <div data-testid="system-map-inline-details" className="mt-3 xl:hidden">
+          <SystemNodeDetails nodeId={nodeId} idSuffix={identifier} compact />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SystemNodeDetails({ nodeId, idSuffix, compact = false }: { nodeId: SystemNodeId; idSuffix?: string; compact?: boolean }) {
+  const { t } = useTranslation();
+  const details = systemNodeDetails[nodeId];
+  const Heading = compact ? "h4" : "h2";
+  const headingId = compact ? `system-map-inline-${idSuffix}-heading` : "system-map-details-heading";
+
+  return (
+    <div
+      aria-live="polite"
+      aria-atomic="true"
+      className="border-y border-app-border bg-app-surface px-5 py-4 sm:px-6"
     >
-      <Icon aria-hidden="true" className="text-app-brand-primary" size={20} strokeWidth={1.8} />
-      <h3 id={titleId} className="mt-3 text-sm font-semibold text-app-foreground">
-        {title}
-      </h3>
-      <p id={descriptionId} className="mt-1 text-xs leading-5 text-app-foreground-muted">
-        {description}
-      </p>
-    </button>
+      <p className="text-xs font-semibold uppercase tracking-wide text-app-foreground-muted">{t("systemMap.details.title")}</p>
+      <Heading id={headingId} className="mt-1 text-lg font-semibold text-app-foreground">{t(details.titleKey)}</Heading>
+      <dl className="mt-4 grid gap-4 text-sm md:grid-cols-2">
+        <div>
+          <dt className="font-semibold text-app-foreground-secondary">{t("systemMap.details.role")}</dt>
+          <dd className="mt-1 leading-6 text-app-foreground-muted">{t(details.roleKey)}</dd>
+        </div>
+        <div>
+          <dt className="font-semibold text-app-foreground-secondary">{t("systemMap.details.interfaces")}</dt>
+          <dd className="mt-1 leading-6 text-app-foreground-muted">{t(details.interfacesKey)}</dd>
+        </div>
+      </dl>
+      <a
+        href={`${repositoryUrl}/${details.referencePath}`}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-5 inline-flex min-h-9 items-center gap-2 text-sm font-semibold text-app-brand-primary underline underline-offset-4 hover:text-app-brand-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+      >
+        {t("systemMap.details.reference")}
+        <ExternalLink aria-hidden="true" size={16} />
+      </a>
+    </div>
   );
 }
