@@ -1,11 +1,12 @@
 import { Ban, Check, Circle, CircleAlert, type LucideIcon } from "lucide-react";
-import { type KeyboardEvent, useRef } from "react";
+import { type KeyboardEvent, type ReactNode, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { FlowStep } from "./flowTrace";
 
 export interface FlowTimelineProps {
   readonly activeStepIndex: number;
+  readonly activeStepDetails?: ReactNode;
   readonly onSelectStep: (stepIndex: number) => void;
   readonly steps: readonly FlowStep[];
 }
@@ -24,9 +25,10 @@ const statusClassNames: Record<FlowStep["status"], string> = {
   SUCCEEDED: "border-emerald-500 bg-emerald-50 text-emerald-800",
 };
 
-export function FlowTimeline({ activeStepIndex, onSelectStep, steps }: FlowTimelineProps) {
+export function FlowTimeline({ activeStepIndex, activeStepDetails, onSelectStep, steps }: FlowTimelineProps) {
   const { t } = useTranslation();
   const buttonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   function selectAndFocus(stepIndex: number): void {
     onSelectStep(stepIndex);
@@ -55,7 +57,20 @@ export function FlowTimeline({ activeStepIndex, onSelectStep, steps }: FlowTimel
         </span>
       </div>
 
-      <ol className="mt-3 space-y-1.5">
+      <button
+        type="button"
+        aria-expanded={isExpanded}
+        aria-controls="flow-timeline-steps"
+        onClick={() => setIsExpanded((expanded) => !expanded)}
+        className="mt-3 inline-flex min-h-10 items-center rounded-md border border-app-border px-3 text-sm font-medium text-app-foreground-secondary hover:bg-app-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus xl:hidden"
+      >
+        {t(isExpanded ? "flowExplorer.timeline.hideAllSteps" : "flowExplorer.timeline.showAllSteps", { total: steps.length })}
+      </button>
+
+      <ol
+        id="flow-timeline-steps"
+        className={`mt-3 space-y-1.5 ${isExpanded ? "" : "hidden xl:block"}`}
+      >
         {steps.map((step, stepIndex) => {
           const Icon = statusIcons[step.status];
           const isActive = stepIndex === activeStepIndex;
@@ -106,6 +121,11 @@ export function FlowTimeline({ activeStepIndex, onSelectStep, steps }: FlowTimel
                   {step.eventType}
                 </span>
               </button>
+              {isActive && activeStepDetails !== undefined ? (
+                <div data-testid="flow-timeline-active-details" className="mt-3 xl:hidden">
+                  {activeStepDetails}
+                </div>
+              ) : null}
             </li>
           );
         })}

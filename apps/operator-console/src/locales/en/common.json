@@ -357,7 +357,7 @@
   "flowExplorer": {
     "page": {
       "title": "Flow Explorer",
-      "description": "Replay deterministic integration traces and inspect each operational transition.",
+      "description": "Explore recorded integration evidence from completed scenarios. Playback does not show live activity.",
       "loading": "Loading recorded flow",
       "error": "Unable to load the recorded flow",
       "retry": "Retry"
@@ -382,6 +382,9 @@
       "ariaLabel": "Event sequence",
       "title": "Timeline",
       "progress": "Step {{current}} of {{total}}",
+      "showAllSteps": "Show full sequence ({{total}} steps)",
+      "hideAllSteps": "Hide full sequence",
+      "selectedDetails": "Details for selected step",
       "stepLabel": "Step {{sequence}}, {{eventType}}, {{status}}",
       "phases": {
         "POLLING": "Polling",
@@ -398,6 +401,7 @@
       }
     },
     "stepDetails": {
+      "activeRegion": "Current active step details",
       "step": "Step {{sequence}}",
       "phase": "Phase",
       "kind": "Operation",
@@ -434,7 +438,7 @@
     },
     "scenarios": {
       "title": "Recorded scenario",
-      "description": "Choose a deterministic trace captured from the running integration stack.",
+      "description": "These traces are recorded evidence captured from the integration stack; playback is not live activity.",
       "items": {
         "erp-b-success": {
           "title": "Successful delivery",
