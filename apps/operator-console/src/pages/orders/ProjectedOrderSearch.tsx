@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, RefreshCw, Search, SlidersHorizontal, TriangleAlert, X } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 
 import { searchOperatorOrders, type OperatorOrderSearchPage } from "../../api/integrationCoreClient";
 import { AccessTokenButton } from "../../auth/AccessTokenButton";
@@ -12,6 +12,7 @@ import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatLabel, formatMoney, orderStatusLabelKeys } from "./orderFormatters";
 import { operatorOrderAccessFailure, retryOperatorOrderQuery } from "./operatorOrderQueries";
+import { parsePageOffset, withPageOffset } from "./orderSearchParams";
 
 const SEARCH_PAGE_SIZE = 25;
 
@@ -30,15 +31,34 @@ export function ProjectedOrderSearch({
 }) {
   const { t } = useTranslation();
   const { accessToken, cacheScope } = useAccessToken();
-  const [searchText, setSearchText] = useState("");
-  const [externalOrderId, setExternalOrderId] = useState("");
-  const [sku, setSku] = useState("");
-  const [filtersVisible, setFiltersVisible] = useState(false);
-  const [submittedCriteria, setSubmittedCriteria] = useState<SearchCriteria>();
-  const [offset, setOffset] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlSearchText = searchParams.get("q") ?? "";
+  const urlExternalOrderId = searchParams.get("externalOrderId") ?? "";
+  const urlSku = searchParams.get("sku") ?? "";
+  const urlCriteriaKey = JSON.stringify([urlSearchText, urlExternalOrderId, urlSku]);
+  const [draft, setDraft] = useState(() => ({
+    criteriaKey: urlCriteriaKey,
+    searchText: urlSearchText,
+    externalOrderId: urlExternalOrderId,
+    sku: urlSku,
+    filtersVisible: urlExternalOrderId !== "" || urlSku !== "",
+  }));
+  if (draft.criteriaKey !== urlCriteriaKey) {
+    setDraft({
+      criteriaKey: urlCriteriaKey,
+      searchText: urlSearchText,
+      externalOrderId: urlExternalOrderId,
+      sku: urlSku,
+      filtersVisible: urlExternalOrderId !== "" || urlSku !== "",
+    });
+  }
+  const { searchText, externalOrderId, sku, filtersVisible } = draft;
+  const submittedCriteria = toSearchCriteria({ q: urlSearchText, externalOrderId: urlExternalOrderId, sku: urlSku });
+  const offset = parsePageOffset(searchParams.get("searchOffset"), SEARCH_PAGE_SIZE);
+
   const query = useQuery({
     queryKey: ["operator-projected-order-search", cacheScope, { ...submittedCriteria, limit: SEARCH_PAGE_SIZE, offset }],
-    queryFn: ({ signal }) => searchOperatorOrders({ accessToken, ...submittedCriteria, limit: SEARCH_PAGE_SIZE, offset, signal }),
+    queryFn: ({ signal }) => searchOperatorOrders({ accessToken, ...submittedCriteria!, limit: SEARCH_PAGE_SIZE, offset, signal }),
     enabled: isAvailable && submittedCriteria !== undefined,
     placeholderData: (previousData, previousQuery) =>
       previousQuery?.queryKey[1] === cacheScope ? previousData : undefined,
@@ -52,23 +72,31 @@ export function ProjectedOrderSearch({
 
     if (isSameSearchCriteria(criteria, submittedCriteria)) {
       if (offset !== 0) {
-        setOffset(0);
+        setSearchParams((current) => withPageOffset(current, "searchOffset", 0));
         return;
       }
       void query.refetch();
       return;
     }
 
-    setOffset(0);
-    setSubmittedCriteria(criteria);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      for (const name of ["q", "externalOrderId", "sku"]) next.delete(name);
+      for (const [name, value] of Object.entries(criteria)) {
+        if (value !== undefined) next.set(name, value);
+      }
+      next.delete("searchOffset");
+      return next;
+    });
   }
 
   function clear() {
-    setSearchText("");
-    setExternalOrderId("");
-    setSku("");
-    setSubmittedCriteria(undefined);
-    setOffset(0);
+    setDraft((current) => ({ ...current, searchText: "", externalOrderId: "", sku: "" }));
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      for (const name of ["q", "externalOrderId", "sku", "searchOffset"]) next.delete(name);
+      return next;
+    });
   }
 
   const hasCriteria = toSearchCriteria({ q: searchText, externalOrderId, sku }) !== undefined;
@@ -82,7 +110,7 @@ export function ProjectedOrderSearch({
             <input
               type="search"
               value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
+              onChange={(event) => setDraft((current) => ({ ...current, searchText: event.target.value }))}
               placeholder={t("orders.search.placeholder")}
               disabled={!isAvailable}
               className="h-9 w-full rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none placeholder:text-app-foreground-faint focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring"
@@ -90,7 +118,7 @@ export function ProjectedOrderSearch({
           </label>
           <IconButton
             label={t("orders.search.filters.toggle")}
-            onClick={() => setFiltersVisible((visible) => !visible)}
+            onClick={() => setDraft((current) => ({ ...current, filtersVisible: !current.filtersVisible }))}
             aria-pressed={filtersVisible}
             disabled={!isAvailable}
           >
@@ -112,7 +140,7 @@ export function ProjectedOrderSearch({
               <input
                 type="text"
                 value={externalOrderId}
-                onChange={(event) => setExternalOrderId(event.target.value)}
+                onChange={(event) => setDraft((current) => ({ ...current, externalOrderId: event.target.value }))}
                 disabled={!isAvailable}
                 className="h-9 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring"
               />
@@ -122,7 +150,7 @@ export function ProjectedOrderSearch({
               <input
                 type="text"
                 value={sku}
-                onChange={(event) => setSku(event.target.value)}
+                onChange={(event) => setDraft((current) => ({ ...current, sku: event.target.value }))}
                 disabled={!isAvailable}
                 className="h-9 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring"
               />
@@ -145,8 +173,8 @@ export function ProjectedOrderSearch({
               {query.data.total > 0 ? (
                 <SearchPagination
                   page={query.data}
-                  onPrevious={() => setOffset((current) => Math.max(0, current - SEARCH_PAGE_SIZE))}
-                  onNext={() => setOffset((current) => current + SEARCH_PAGE_SIZE)}
+                  onPrevious={() => setSearchParams((current) => withPageOffset(current, "searchOffset", Math.max(0, offset - SEARCH_PAGE_SIZE)))}
+                  onNext={() => setSearchParams((current) => withPageOffset(current, "searchOffset", offset + SEARCH_PAGE_SIZE))}
                 />
               ) : null}
             </>
@@ -244,6 +272,7 @@ function SearchResults({ page }: { page: OperatorOrderSearchPage }) {
 
 function SearchResultRow({ order }: { order: OperatorOrderSearchPage["items"][number] }) {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
   const locale = resolveIntlLocale(i18n.resolvedLanguage);
   const statusLabelKey = orderStatusLabelKeys[order.status as keyof typeof orderStatusLabelKeys];
 
@@ -251,7 +280,7 @@ function SearchResultRow({ order }: { order: OperatorOrderSearchPage["items"][nu
     <tr className="group hover:bg-app-canvas">
       <td className="px-4 py-3.5">
         <Link
-          to={`/orders/${order.id}`}
+          to={{ pathname: `/orders/${order.id}`, search: location.search }}
           className="font-medium text-app-foreground underline-offset-4 group-hover:text-app-brand-primary group-hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
         >
           {order.externalOrderId}

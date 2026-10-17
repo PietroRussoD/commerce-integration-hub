@@ -60,6 +60,82 @@ test("searches projected orders after the projection becomes available", async (
   expect(new URL(searchRequest?.url() ?? "").searchParams.get("q")).toBe("browser");
 });
 
+test("restores order filters, search and pagination from the URL when returning from a detail", async ({ page }) => {
+  const requestedUrls: URL[] = [];
+  await page.route("**/api/v1/operator/orders**", async (route) => {
+    const url = new URL(route.request().url());
+    requestedUrls.push(url);
+    const path = url.pathname;
+    const body = path.endsWith("/search/status") ? searchProjectionStatus
+      : path.endsWith("/search") ? { ...projectedOrderPage, offset: Number(url.searchParams.get("offset")), total: 26 }
+      : path.endsWith(`/${orderId}`) ? orderDetail
+      : { ...orderPage, offset: Number(url.searchParams.get("offset")), total: 26 };
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+  });
+
+  const listUrl = `/orders?status=READY&offset=25&q=browser&externalOrderId=ORDER-E2E-001&sku=SKU-E2E-001&searchOffset=25`;
+  await page.goto(listUrl);
+  await expect(page.getByLabel("Status")).toHaveValue("READY");
+  await expect(page.getByRole("searchbox", { name: "Search projected orders" })).toHaveValue("browser");
+  await expect(page.getByRole("textbox", { name: "External order ID" })).toHaveValue("ORDER-E2E-001");
+  await expect(page.getByRole("textbox", { name: "SKU" })).toHaveValue("SKU-E2E-001");
+  await expect(page.getByText("26-26 of 26").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "ORDER-SEARCH-001" })).toHaveAttribute("href", `/orders/${orderId}?status=READY&offset=25&q=browser&externalOrderId=ORDER-E2E-001&sku=SKU-E2E-001&searchOffset=25`);
+
+  await page.getByRole("link", { name: "ORDER-SEARCH-001" }).click();
+  await expect(page).toHaveURL(`/orders/${orderId}?status=READY&offset=25&q=browser&externalOrderId=ORDER-E2E-001&sku=SKU-E2E-001&searchOffset=25`);
+  const returnLink = page.locator('section[aria-labelledby="order-detail-heading"]').getByRole("link", { name: "Orders" });
+  await expect(returnLink).toHaveAttribute("href", listUrl);
+  await returnLink.click();
+  await expect(page).toHaveURL(listUrl);
+  await expect(page.getByLabel("Status")).toHaveValue("READY");
+  await expect(page.getByRole("searchbox", { name: "Search projected orders" })).toHaveValue("browser");
+  await expect(page.getByText("26-26 of 26").first()).toBeVisible();
+
+  await page.goBack();
+  await expect(page).toHaveURL(`/orders/${orderId}?status=READY&offset=25&q=browser&externalOrderId=ORDER-E2E-001&sku=SKU-E2E-001&searchOffset=25`);
+  await expect(page.getByRole("heading", { name: "Order details" })).toBeVisible();
+  await page.goForward();
+  await expect(page).toHaveURL(listUrl);
+  await expect(page.getByRole("searchbox", { name: "Search projected orders" })).toHaveValue("browser");
+
+  await page.reload();
+  await expect(page.getByRole("link", { name: "ORDER-SEARCH-001" })).toBeVisible();
+  expect(requestedUrls.some((url) => url.pathname.endsWith("/search")
+    && url.searchParams.get("q") === "browser"
+    && url.searchParams.get("externalOrderId") === "ORDER-E2E-001"
+    && url.searchParams.get("sku") === "SKU-E2E-001"
+    && url.searchParams.get("offset") === "25")).toBe(true);
+});
+
+test("writes order filters, list paging and search criteria to the URL", async ({ page }) => {
+  await page.route("**/api/v1/operator/orders**", async (route) => {
+    const url = new URL(route.request().url());
+    const body = url.pathname.endsWith("/search/status") ? searchProjectionStatus
+      : url.pathname.endsWith("/search") ? { ...projectedOrderPage, offset: Number(url.searchParams.get("offset")), total: 26 }
+      : { ...orderPage, offset: Number(url.searchParams.get("offset")), total: 26 };
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+  });
+
+  await page.goto("/orders");
+  await expect(page.getByRole("link", { name: "ORDER-E2E-001" })).toBeVisible();
+  await page.getByLabel("Status").selectOption("READY");
+  await expect(page).toHaveURL("/orders?status=READY");
+  await page.getByRole("button", { name: "Next page" }).first().click();
+  await expect(page).toHaveURL("/orders?status=READY&offset=25");
+
+  await page.getByRole("button", { name: "Toggle search filters" }).click();
+  await page.getByRole("searchbox", { name: "Search projected orders" }).fill("browser");
+  await page.getByRole("textbox", { name: "External order ID" }).fill("ORDER-E2E-001");
+  await page.getByRole("textbox", { name: "SKU" }).fill("SKU-E2E-001");
+  await page.getByRole("button", { name: "Search projected orders" }).click();
+  await expect(page).toHaveURL("/orders?status=READY&offset=25&q=browser&externalOrderId=ORDER-E2E-001&sku=SKU-E2E-001");
+
+  const search = page.locator('section[aria-labelledby="projected-order-search-heading"]');
+  await search.getByRole("button", { name: "Next page" }).click();
+  await expect(page).toHaveURL("/orders?status=READY&offset=25&q=browser&externalOrderId=ORDER-E2E-001&sku=SKU-E2E-001&searchOffset=25");
+});
+
 test("isolates all Core reads when applying, renewing and removing a token", async ({ page }) => {
   // Synthetic claims and signatures test the console, not backend JWT validation.
   const firstToken = createOperatorToken(["operator"], "first");

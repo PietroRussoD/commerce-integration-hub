@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, RefreshCw, TriangleAlert } from "lucide-react";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 
 import {
   getOperatorOrderSearchProjectionStatus,
@@ -21,6 +20,7 @@ import { SearchProjectionStatus } from "./SearchProjectionStatus";
 import { ProjectedOrderSearch } from "./ProjectedOrderSearch";
 import { getSearchProjectionStatusRefetchInterval } from "./searchProjectionPolling";
 import { operatorOrderAccessFailure, retryOperatorOrderQuery } from "./operatorOrderQueries";
+import { parsePageOffset, withPageOffset } from "./orderSearchParams";
 
 const PAGE_SIZE = 25;
 const statusOptions = ["ALL", "RECEIVED", "PROCESSING", "READY"] as const;
@@ -34,8 +34,9 @@ type StatusFilter = "ALL" | NonNullable<ListOperatorOrdersParameters["status"]>;
 export function OrdersPage() {
   const { t } = useTranslation();
   const { accessToken, cacheScope } = useAccessToken();
-  const [status, setStatus] = useState<StatusFilter>("ALL");
-  const [offset, setOffset] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const status = parseStatus(searchParams.get("status"));
+  const offset = parsePageOffset(searchParams.get("offset"), PAGE_SIZE);
   const query = useQuery({
     queryKey: ["operator-orders", cacheScope, { status, offset, limit: PAGE_SIZE }],
     queryFn: ({ signal }) =>
@@ -76,8 +77,14 @@ export function OrdersPage() {
               <select
                 value={status}
                 onChange={(event) => {
-                  setStatus(event.target.value as StatusFilter);
-                  setOffset(0);
+                  const nextStatus = event.target.value as StatusFilter;
+                  setSearchParams((current) => {
+                    const next = new URLSearchParams(current);
+                    if (nextStatus === "ALL") next.delete("status");
+                    else next.set("status", nextStatus);
+                    next.delete("offset");
+                    return next;
+                  });
                 }}
                 className="h-9 min-w-36 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring"
               >
@@ -125,8 +132,8 @@ export function OrdersPage() {
       {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined && query.data.total > 0 ? (
         <Pagination
           page={query.data}
-          onPrevious={() => setOffset((current) => Math.max(0, current - PAGE_SIZE))}
-          onNext={() => setOffset((current) => current + PAGE_SIZE)}
+          onPrevious={() => setSearchParams((current) => withPageOffset(current, "offset", Math.max(0, offset - PAGE_SIZE)))}
+          onNext={() => setSearchParams((current) => withPageOffset(current, "offset", offset + PAGE_SIZE))}
         />
       ) : null}
     </section>
@@ -135,6 +142,7 @@ export function OrdersPage() {
 
 function OrdersTable({ page }: { page: OperatorOrderPage }) {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
   const locale = resolveIntlLocale(i18n.resolvedLanguage);
 
   if (page.items.length === 0) {
@@ -171,7 +179,7 @@ function OrdersTable({ page }: { page: OperatorOrderPage }) {
             <tr key={order.id} className="group hover:bg-app-canvas">
               <td className="px-4 py-3.5">
                 <Link
-                  to={`/orders/${order.id}`}
+                  to={{ pathname: `/orders/${order.id}`, search: location.search }}
                   className="font-medium text-app-foreground underline-offset-4 group-hover:text-app-brand-primary group-hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
                 >
                   {order.externalOrderId}
@@ -276,4 +284,8 @@ function Pagination({
 
 function shortenId(id: string): string {
   return `${id.slice(0, 8)}...${id.slice(-4)}`;
+}
+
+function parseStatus(value: string | null): StatusFilter {
+  return value !== null && statusOptions.includes(value as StatusFilter) ? value as StatusFilter : "ALL";
 }

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, RefreshCw, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 
 import { getOperatorOrder } from "../../api/integrationCoreClient";
 import { AccessTokenButton } from "../../auth/AccessTokenButton";
@@ -13,6 +13,7 @@ import { operatorOrderAccessFailure, retryOperatorOrderQuery } from "./operatorO
 export function OrderDetailPage() {
   const { t } = useTranslation();
   const { accessToken, cacheScope } = useAccessToken();
+  const location = useLocation();
   const orderId = useParams<{ orderId: string }>().orderId ?? "";
   const query = useQuery({
     queryKey: ["operator-order", cacheScope, orderId],
@@ -29,7 +30,7 @@ export function OrderDetailPage() {
         description={<span className="break-all font-mono text-xs">{orderId}</span>}
         navigation={
           <Link
-            to="/orders"
+            to={{ pathname: "/orders", search: location.search }}
             className="inline-flex items-center gap-2 text-sm font-medium text-app-foreground-secondary hover:text-app-foreground focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
           >
             <ArrowLeft aria-hidden="true" size={16} />
