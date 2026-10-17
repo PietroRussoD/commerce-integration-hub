@@ -80,12 +80,12 @@ test("renders operator order summaries returned by the API", async () => {
 
   renderOrdersPage();
 
-  expect(await screen.findByText("ORDER-42")).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "ORDER-42" })).toHaveAttribute(
-    "href",
-    "/orders/018f38c2-1b95-7cc4-bb89-72d26a6f9f88",
-  );
-  expect(screen.getByText("Marketplace A")).toBeInTheDocument();
+  expect(await screen.findAllByText("ORDER-42")).toHaveLength(2);
+  expect(screen.getAllByRole("link", { name: "ORDER-42" })).toHaveLength(2);
+  for (const orderLink of screen.getAllByRole("link", { name: "ORDER-42" })) {
+    expect(orderLink).toHaveAttribute("href", "/orders/018f38c2-1b95-7cc4-bb89-72d26a6f9f88");
+  }
+  expect(screen.getAllByText("Marketplace A")).toHaveLength(2);
   const diagnostics = screen.getByText("Show technical details");
   const diagnosticDetails = diagnostics.closest("details");
   expect(diagnosticDetails).not.toHaveAttribute("open");
@@ -148,8 +148,8 @@ test("searches projected orders only after an explicit submission", async () => 
   fireEvent.change(screen.getByRole("searchbox", { name: "Search projected orders" }), { target: { value: "blue" } });
   fireEvent.click(screen.getByRole("button", { name: "Search projected orders" }));
 
-  expect(await screen.findByText("SEARCH-42")).toBeInTheDocument();
-  expect(screen.getByText("Blue shirt")).toBeInTheDocument();
+  expect(await screen.findAllByText("SEARCH-42")).toHaveLength(2);
+  expect(screen.getAllByText("Blue shirt")).toHaveLength(2);
   expect(searchOperatorOrdersMock).toHaveBeenCalledWith(expect.objectContaining({ q: "blue", limit: 25 }));
 });
 
@@ -268,11 +268,11 @@ test("paginates the active projected search without paging the complete list", a
   await waitFor(() => expect(screen.getByRole("searchbox", { name: "Search projected orders" })).toBeEnabled());
   fireEvent.change(screen.getByRole("searchbox", { name: "Search projected orders" }), { target: { value: "blue" } });
   fireEvent.click(screen.getByRole("button", { name: "Search projected orders" }));
-  expect(await screen.findByText("SEARCH-PAGE-1")).toBeInTheDocument();
+  expect(await screen.findAllByText("SEARCH-PAGE-1")).toHaveLength(2);
 
   fireEvent.click(screen.getByRole("button", { name: "Next page" }));
 
-  expect(await screen.findByText("SEARCH-PAGE-2")).toBeInTheDocument();
+  expect(await screen.findAllByText("SEARCH-PAGE-2")).toHaveLength(2);
   expect(searchOperatorOrdersMock).toHaveBeenLastCalledWith(expect.objectContaining({ q: "blue", limit: 25, offset: 25 }));
   expect(listOperatorOrdersMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 0 }));
 });
@@ -377,19 +377,19 @@ test("renders translated labels and locale-aware values in Italian", async () =>
   renderOrdersPage("it");
 
   expect(screen.getByRole("heading", { name: "Ordini" })).toBeInTheDocument();
-  expect(await screen.findByText("ORDER-42")).toBeInTheDocument();
+  expect(await screen.findAllByText("ORDER-42")).toHaveLength(2);
   expect(await screen.findByRole("heading", { name: "Proiezione di ricerca" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Reindicizzazione" })).toBeInTheDocument();
   expect(screen.getByLabelText("Stato")).toBeInTheDocument();
   expect(screen.getByRole("row", { name: /ORDER-42.*Pronto/i })).toBeInTheDocument();
   expect(screen.getByText("1-1 di 1")).toBeInTheDocument();
-  expect(screen.getByText(/39,98/)).toBeInTheDocument();
+  expect(screen.getAllByText(/39,98/)).toHaveLength(2);
 
   await waitFor(() => expect(screen.getByRole("searchbox", { name: "Cerca negli ordini indicizzati" })).toBeEnabled());
   fireEvent.change(screen.getByRole("searchbox", { name: "Cerca negli ordini indicizzati" }), { target: { value: "blu" } });
   fireEvent.click(screen.getByRole("button", { name: "Cerca negli ordini indicizzati" }));
 
-  expect(await screen.findByText("RICERCA-42")).toBeInTheDocument();
+  expect(await screen.findAllByText("RICERCA-42")).toHaveLength(2);
   expect(screen.getByRole("row", { name: /RICERCA-42.*Pronto/i })).toBeInTheDocument();
 });
 
@@ -414,7 +414,7 @@ test("has no automatically detectable accessibility violations in the loaded ord
   });
 
   const { container } = renderOrdersPage();
-  expect(await screen.findByText("ORDER-42")).toBeInTheDocument();
+  expect(await screen.findAllByText("ORDER-42")).toHaveLength(2);
 
   await expectNoAccessibilityViolations(container);
 });

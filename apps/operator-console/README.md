@@ -242,6 +242,13 @@ and only contains projected orders; it is not an authoritative list of every
 received order. The search summary shows applied criteria, and editing fields
 marks an unapplied draft without changing results or Refresh behavior.
 
+Below the large-screen breakpoint, both complete-list and indexed-search
+results use compact order cards so the external order ID, source, status and
+amount remain together without horizontal scrolling. Cards retain the same
+detail links and scope in the URL as the desktop table; the table remains the
+wide-screen presentation. Browser acceptance tests use synthetic Core
+responses at 320px and 390px and do not verify a live Core.
+
 The URL stores `status`, complete-list `offset`, search criteria (`q`,
 `externalOrderId`, `sku`) and search `searchOffset`. A nonblank search criterion
 selects indexed search. Detail links and the return link carry this context;
