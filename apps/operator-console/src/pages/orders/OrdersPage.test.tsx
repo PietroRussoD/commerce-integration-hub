@@ -159,7 +159,7 @@ test("clears the active projected order search without another request", async (
   fireEvent.click(screen.getByRole("button", { name: "Search projected orders" }));
   expect(await screen.findByText("No projected orders found")).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Clear projected order search" }));
+  fireEvent.click(screen.getByRole("button", { name: "Complete order list" }));
 
   expect(searchbox).toHaveValue("");
   expect(screen.queryByText("No projected orders found")).not.toBeInTheDocument();
@@ -215,7 +215,7 @@ test("does not submit projected order searches while the projection is unavailab
   expect(searchOperatorOrdersMock).not.toHaveBeenCalled();
 });
 
-test("paginates projected order search results independently from the order list", async () => {
+test("paginates the active projected search without paging the complete list", async () => {
   listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
   searchOperatorOrdersMock
     .mockResolvedValueOnce({
@@ -270,6 +270,48 @@ test("paginates projected order search results independently from the order list
   expect(await screen.findByText("SEARCH-PAGE-2")).toBeInTheDocument();
   expect(searchOperatorOrdersMock).toHaveBeenLastCalledWith(expect.objectContaining({ q: "blue", limit: 25, offset: 25 }));
   expect(listOperatorOrdersMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 0 }));
+});
+
+test("uses the search scope for status, count and refresh while keeping draft edits unapplied", async () => {
+  listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 300 });
+  searchOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 25, total: 27 });
+  renderOrdersPage("en", "/orders?status=RECEIVED&q=blue&searchOffset=25");
+
+  expect(await screen.findByText("Indexed search · Total: 27")).toBeInTheDocument();
+  expect(listOperatorOrdersMock).not.toHaveBeenCalled();
+  expect(searchOperatorOrdersMock).toHaveBeenLastCalledWith(expect.objectContaining({ q: "blue", status: "RECEIVED", offset: 25 }));
+  const searchbox = screen.getByRole("searchbox", { name: "Search projected orders" });
+  fireEvent.change(searchbox, { target: { value: "red" } });
+  expect(screen.getByText("Applied criteria: Description: blue")).toBeInTheDocument();
+  expect(screen.getByText(/The fields have changed/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Refresh orders" }));
+  await waitFor(() => expect(searchOperatorOrdersMock).toHaveBeenCalledTimes(2));
+  expect(searchOperatorOrdersMock).toHaveBeenLastCalledWith(expect.objectContaining({ q: "blue", status: "RECEIVED", offset: 25 }));
+  expect(getOperatorOrderSearchProjectionStatusMock).toHaveBeenCalledTimes(2);
+  expect(listOperatorOrdersMock).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText("Status"), { target: { value: "READY" } });
+  await waitFor(() => expect(searchOperatorOrdersMock).toHaveBeenLastCalledWith(expect.objectContaining({ q: "blue", status: "READY", offset: 0 })));
+  expect(searchbox).toHaveValue("red");
+});
+
+test.each(["unavailable", "error"])("keeps an unavailable search distinct and permits returning to the complete list: %s", async (failure) => {
+  if (failure === "error") getOperatorOrderSearchProjectionStatusMock.mockRejectedValue(new Error("unavailable"));
+  else {
+    const status = await getOperatorOrderSearchProjectionStatusMock();
+    getOperatorOrderSearchProjectionStatusMock.mockResolvedValue({ ...status, availability: "UNAVAILABLE" });
+    getOperatorOrderSearchProjectionStatusMock.mockClear();
+  }
+  listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
+  renderOrdersPage("en", "/orders?status=READY&q=blue&offset=25&searchOffset=25");
+  expect(await screen.findByText("Projected order search is unavailable")).toBeInTheDocument();
+  expect(screen.getByText("Indexed search")).toBeInTheDocument();
+  expect(screen.queryByText("No orders found")).not.toBeInTheDocument();
+  expect(searchOperatorOrdersMock).not.toHaveBeenCalled();
+  expect(listOperatorOrdersMock).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Complete order list" }));
+  expect(await screen.findByText("No orders found")).toBeInTheDocument();
+  expect(screen.getByText("Complete order list · Total: 0")).toBeInTheDocument();
+  expect(listOperatorOrdersMock).toHaveBeenLastCalledWith(expect.objectContaining({ status: "READY", offset: 0 }));
 });
 
 test("renders the empty state", async () => {
@@ -405,7 +447,7 @@ test.each([401, 403])("explains projected search %i without a retry action", asy
   expect(searchOperatorOrdersMock).toHaveBeenCalledTimes(1);
 });
 
-function renderOrdersPage(locale: SupportedLocale = "en") {
+function renderOrdersPage(locale: SupportedLocale = "en", initialUrl = "/orders") {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false, retryDelay: 0 },
@@ -414,7 +456,7 @@ function renderOrdersPage(locale: SupportedLocale = "en") {
 
   return render(
     <I18nextProvider i18n={createAppI18n(locale)} defaultNS="common">
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initialUrl]}>
         <TestProviders queryClient={queryClient}>
           <OrdersPage />
         </TestProviders>

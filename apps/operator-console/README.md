@@ -226,6 +226,31 @@ projected-order search only after the status endpoint reports the read alias as
 available. Operators can search item descriptions, an exact external order ID,
 or an exact SKU.
 
+### Order list and search scope
+
+Orders shows one active scope: the complete Core order list, or indexed search
+after search criteria are submitted. The status filter, header count, pagination
+and Refresh action apply to that scope. Indexed search can lag behind the Core
+and only contains projected orders; it is not an authoritative list of every
+received order. The search summary shows applied criteria, and editing fields
+marks an unapplied draft without changing results or Refresh behavior.
+
+The URL stores `status`, complete-list `offset`, search criteria (`q`,
+`externalOrderId`, `sku`) and search `searchOffset`. A nonblank search criterion
+selects indexed search. Detail links and the return link carry this context;
+reload, copied URLs and browser Back/Forward restore it. Changing status resets
+both offsets. Submitting new criteria or returning to the complete list resets
+paging, while keeping the status filter. Older URLs containing both offsets
+remain readable; only the active scope's offset is used.
+
+An unavailable index or failed projection-status read disables search without
+blocking the complete list. An active search keeps its criteria and offers an
+explicit Complete order list action rather than silently replacing results.
+Refresh rechecks projection availability and resumes an active search when it
+becomes available. Counts and cached results are hidden while its availability
+is unconfirmed or unavailable. Chromium acceptance tests use synthetic API
+responses; they do not verify a live OpenSearch deployment.
+
 ## Dialog accessibility
 
 The access-token and delivery-replay dialogs use native modal dialogs with

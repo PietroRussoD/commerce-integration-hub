@@ -1,36 +1,31 @@
-import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, RefreshCw, Search, SlidersHorizontal, TriangleAlert, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw, Search, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 
-import { searchOperatorOrders, type OperatorOrderSearchPage } from "../../api/integrationCoreClient";
+import type { OperatorOrderSearchPage } from "../../api/integrationCoreClient";
 import { AccessTokenButton } from "../../auth/AccessTokenButton";
-import { useAccessToken } from "../../auth/accessTokenContext";
 import { IconButton } from "../../components/ui/IconButton";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatLabel, formatMoney, orderStatusLabelKeys } from "./orderFormatters";
-import { operatorOrderAccessFailure, retryOperatorOrderQuery } from "./operatorOrderQueries";
-import { parsePageOffset, withPageOffset } from "./orderSearchParams";
+import { operatorOrderAccessFailure } from "./operatorOrderQueries";
+import { normalizeOrderSearchCriteria, readOrderSearchCriteria, parsePageOffset, withPageOffset, type OrderSearchCriteria } from "./orderSearchParams";
 
 const SEARCH_PAGE_SIZE = 25;
-
-interface SearchCriteria {
-  q?: string;
-  externalOrderId?: string;
-  sku?: string;
-}
 
 export function ProjectedOrderSearch({
   isAvailable,
   isAvailabilityKnown,
+  isFetching,
+  onRepeatSearch,
 }: {
   isAvailable: boolean;
   isAvailabilityKnown: boolean;
+  isFetching: boolean;
+  onRepeatSearch: () => void;
 }) {
   const { t } = useTranslation();
-  const { accessToken, cacheScope } = useAccessToken();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlSearchText = searchParams.get("q") ?? "";
   const urlExternalOrderId = searchParams.get("externalOrderId") ?? "";
@@ -53,29 +48,20 @@ export function ProjectedOrderSearch({
     });
   }
   const { searchText, externalOrderId, sku, filtersVisible } = draft;
-  const submittedCriteria = toSearchCriteria({ q: urlSearchText, externalOrderId: urlExternalOrderId, sku: urlSku });
+  const submittedCriteria = readOrderSearchCriteria(searchParams);
   const offset = parsePageOffset(searchParams.get("searchOffset"), SEARCH_PAGE_SIZE);
-
-  const query = useQuery({
-    queryKey: ["operator-projected-order-search", cacheScope, { ...submittedCriteria, limit: SEARCH_PAGE_SIZE, offset }],
-    queryFn: ({ signal }) => searchOperatorOrders({ accessToken, ...submittedCriteria!, limit: SEARCH_PAGE_SIZE, offset, signal }),
-    enabled: isAvailable && submittedCriteria !== undefined,
-    placeholderData: (previousData, previousQuery) =>
-      previousQuery?.queryKey[1] === cacheScope ? previousData : undefined,
-    retry: retryOperatorOrderQuery,
-  });
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const criteria = toSearchCriteria({ q: searchText, externalOrderId, sku });
-    if (criteria === undefined) return;
+    const criteria = normalizeOrderSearchCriteria({ q: searchText, externalOrderId, sku });
+    if (!isAvailable || isFetching || criteria === undefined) return;
 
     if (isSameSearchCriteria(criteria, submittedCriteria)) {
       if (offset !== 0) {
         setSearchParams((current) => withPageOffset(current, "searchOffset", 0));
         return;
       }
-      void query.refetch();
+      onRepeatSearch();
       return;
     }
 
@@ -86,6 +72,7 @@ export function ProjectedOrderSearch({
         if (value !== undefined) next.set(name, value);
       }
       next.delete("searchOffset");
+      next.delete("offset");
       return next;
     });
   }
@@ -94,12 +81,12 @@ export function ProjectedOrderSearch({
     setDraft((current) => ({ ...current, searchText: "", externalOrderId: "", sku: "" }));
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
-      for (const name of ["q", "externalOrderId", "sku", "searchOffset"]) next.delete(name);
+      for (const name of ["q", "externalOrderId", "sku", "searchOffset", "offset"]) next.delete(name);
       return next;
     });
   }
 
-  const hasCriteria = toSearchCriteria({ q: searchText, externalOrderId, sku }) !== undefined;
+  const hasCriteria = normalizeOrderSearchCriteria({ q: searchText, externalOrderId, sku }) !== undefined;
 
   return (
     <section aria-labelledby="projected-order-search-heading" className="mt-5">
@@ -124,14 +111,9 @@ export function ProjectedOrderSearch({
           >
             <SlidersHorizontal aria-hidden="true" size={17} />
           </IconButton>
-          <IconButton label={t("orders.search.submit")} type="submit" disabled={!isAvailable || !hasCriteria || query.isFetching}>
+          <IconButton label={t("orders.search.submit")} type="submit" disabled={!isAvailable || !hasCriteria || isFetching}>
             <Search aria-hidden="true" size={17} />
           </IconButton>
-          {submittedCriteria !== undefined ? (
-            <IconButton label={t("orders.search.clear")} onClick={clear} variant="ghost">
-              <X aria-hidden="true" size={17} />
-            </IconButton>
-          ) : null}
         </div>
         {filtersVisible ? (
           <div className="grid gap-3 sm:grid-cols-2">
@@ -159,58 +141,50 @@ export function ProjectedOrderSearch({
         ) : null}
       </form>
 
+      {submittedCriteria !== undefined ? (
+        <button
+          type="button"
+          onClick={clear}
+          className="mt-3 rounded-sm text-sm font-medium text-app-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+        >
+          {t("orders.scope.list")}
+        </button>
+      ) : null}
+
       {isAvailabilityKnown && !isAvailable ? (
         <p className="mt-2 text-sm text-app-foreground-secondary">{t("orders.search.unavailable")}</p>
       ) : null}
 
-      {isAvailable && submittedCriteria !== undefined ? (
-        <div className="mt-3 overflow-hidden rounded-md border border-app-border bg-app-surface">
-          {query.isPending ? <SearchLoading /> : null}
-          {query.isError ? <SearchError error={query.error} onRetry={() => void query.refetch()} /> : null}
-          {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined ? (
-            <>
-              <SearchResults page={query.data} />
-              {query.data.total > 0 ? (
-                <SearchPagination
-                  page={query.data}
-                  onPrevious={() => setSearchParams((current) => withPageOffset(current, "searchOffset", Math.max(0, offset - SEARCH_PAGE_SIZE)))}
-                  onNext={() => setSearchParams((current) => withPageOffset(current, "searchOffset", offset + SEARCH_PAGE_SIZE))}
-                />
-              ) : null}
-            </>
-          ) : null}
+      {submittedCriteria !== undefined ? (
+        <div className="mt-3 space-y-1 text-sm text-app-foreground-secondary">
+          <p>{t("orders.search.applied", { criteria: [
+            submittedCriteria.q && `${t("orders.search.textCriterion")}: ${submittedCriteria.q}`,
+            submittedCriteria.externalOrderId && `${t("orders.search.filters.externalOrderId")}: ${submittedCriteria.externalOrderId}`,
+            submittedCriteria.sku && `${t("orders.search.filters.sku")}: ${submittedCriteria.sku}`,
+          ].filter(Boolean).join(" · ") })}</p>
+          {!isSameSearchCriteria(normalizeOrderSearchCriteria({ q: searchText, externalOrderId, sku }), submittedCriteria)
+            ? <p>{t("orders.search.draftChanged")}</p> : null}
         </div>
       ) : null}
     </section>
   );
 }
 
-function toSearchCriteria(criteria: SearchCriteria): SearchCriteria | undefined {
-  const normalizedCriteria = Object.fromEntries(
-    Object.entries(criteria).flatMap(([name, value]) => {
-      const normalizedValue = value?.trim();
-      return normalizedValue === undefined || normalizedValue.length === 0 ? [] : [[name, normalizedValue]];
-    }),
-  );
-
-  return Object.keys(normalizedCriteria).length === 0 ? undefined : normalizedCriteria;
+function isSameSearchCriteria(left: OrderSearchCriteria | undefined, right: OrderSearchCriteria | undefined): boolean {
+  return left?.q === right?.q && left?.externalOrderId === right?.externalOrderId && left?.sku === right?.sku;
 }
 
-function isSameSearchCriteria(left: SearchCriteria, right: SearchCriteria | undefined): boolean {
-  return left.q === right?.q && left.externalOrderId === right?.externalOrderId && left.sku === right?.sku;
-}
-
-function SearchLoading() {
+export function SearchLoading() {
   const { t } = useTranslation();
 
   return (
-    <p role="status" className="px-4 py-5 text-sm text-app-foreground-secondary">
+    <p role="status" aria-label={t("orders.search.loading")} className="px-4 py-5 text-sm text-app-foreground-secondary">
       {t("orders.search.loading")}
     </p>
   );
 }
 
-function SearchError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+export function SearchError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation();
   const accessFailure = operatorOrderAccessFailure(error);
 
@@ -228,7 +202,7 @@ function SearchError({ error, onRetry }: { error: unknown; onRetry: () => void }
   );
 }
 
-function SearchResults({ page }: { page: OperatorOrderSearchPage }) {
+export function SearchResults({ page }: { page: OperatorOrderSearchPage }) {
   const { t } = useTranslation();
 
   if (page.items.length === 0) {
@@ -301,7 +275,7 @@ function SearchResultRow({ order }: { order: OperatorOrderSearchPage["items"][nu
   );
 }
 
-function SearchPagination({
+export function SearchPagination({
   page,
   onPrevious,
   onNext,
