@@ -167,7 +167,7 @@
       "status": "Stato",
       "total": "Totale",
       "received": "Ricevuto",
-      "attempts": "Tentativi"
+      "attempts": "Elaborazioni Core"
     },
     "status": {
       "received": "Ricevuto",
@@ -258,9 +258,15 @@
     "refresh": "Aggiorna ordine",
     "refreshing": "Aggiornamento dettagli ordine…",
     "lastUpdated": "Aggiornato {{time}}",
+    "sourceDescription": "Ordine da {{source}}",
     "refreshError": "Impossibile aggiornare l'ordine. I dettagli mostrati provengono dall'ultima lettura riuscita.",
+    "statusDescription": {
+      "RECEIVED": "Ricevuto da Integration Core; elaborazione non ancora completata.",
+      "PROCESSING": "In fase di elaborazione da parte di Integration Core.",
+      "READY": "Elaborato correttamente da Integration Core.",
+      "unknown": "Stato comunicato da Integration Core."
+    },
     "summary": {
-      "externalOrder": "Ordine esterno",
       "source": "Origine",
       "status": "Stato",
       "total": "Totale",
@@ -298,8 +304,9 @@
       }
     },
     "attempts": {
-      "title": "Tentativi di elaborazione",
-      "empty": "Nessun tentativo di elaborazione",
+      "title": "Elaborazioni Core",
+      "description": "Sono registrazioni delle elaborazioni eseguite da Integration Core, distinte dai tentativi di invio di Connector Gateway.",
+      "empty": "Nessuna registrazione di elaborazione Core",
       "columns": {
         "attempt": "Tentativo",
         "trigger": "Origine",
@@ -319,6 +326,11 @@
         "manualRetry": "Nuovo tentativo manuale"
       },
       "inProgress": "In corso"
+    },
+    "technical": {
+      "title": "Dettagli tecnici",
+      "orderId": "ID ordine interno",
+      "correlationId": "ID di correlazione"
     }
   },
   "flowExplorer": {

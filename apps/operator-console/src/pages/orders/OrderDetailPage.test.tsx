@@ -49,8 +49,8 @@ test("renders the operator order summary returned by the API", async () => {
 
   renderOrderDetailPage();
 
-  expect(await screen.findByText("ORDER-42")).toBeInTheDocument();
-  expect(screen.getByText("Marketplace A")).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "ORDER-42" })).toBeInTheDocument();
+  expect(screen.getByText("Marketplace A order")).toBeInTheDocument();
   expect(screen.getByText("Ready")).toBeInTheDocument();
   expect(screen.getByRole("row", { name: /LINE-1 SKU-1 Example item 2/i })).toBeInTheDocument();
   expect(getOperatorOrderMock).toHaveBeenCalledWith(
@@ -69,6 +69,7 @@ test("renders the empty item state", async () => {
 test("renders timeline events in API order", async () => {
   getOperatorOrderMock.mockResolvedValue({
     ...orderDetail,
+    items: [{ ...orderDetail.items[0]!, quantity: "2.0000" }],
     timeline: [
       {
         id: "018f38c2-1b95-7cc4-bb89-72d26a6f9001",
@@ -147,7 +148,7 @@ test("renders the empty processing-attempt state", async () => {
 
   renderOrderDetailPage();
 
-  expect(await screen.findByText("No processing attempts")).toBeInTheDocument();
+  expect(await screen.findByText("No Integration Core processing records")).toBeInTheDocument();
 });
 
 test("renders an actionable error state", async () => {
@@ -189,23 +190,29 @@ test("renders order details using the Italian locale", async () => {
 
   renderOrderDetailPage("it");
 
-  expect(screen.getByRole("heading", { name: "Dettagli ordine" })).toBeInTheDocument();
-  expect(await screen.findByText("ORDER-42")).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "ORDER-42" })).toBeInTheDocument();
+  expect(screen.getByText("Ordine da Marketplace A")).toBeInTheDocument();
   expect(screen.getByText("Pronto")).toBeInTheDocument();
+  expect(screen.getByText("Elaborato correttamente da Integration Core.")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Articoli dell'ordine" })).toBeInTheDocument();
   expect(screen.getByRole("columnheader", { name: "Prezzo unitario" })).toBeInTheDocument();
   expect(screen.getAllByText(/19,99|39,98/)).not.toHaveLength(0);
+  expect(screen.getByRole("row", { name: /LINE-1 SKU-1 Example item 2/i })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Cronologia" })).toBeInTheDocument();
   expect(screen.getByRole("listitem")).toHaveTextContent("Elaborazione completata");
   expect(screen.getByRole("listitem")).toHaveTextContent("Da In elaborazione a Pronto");
   expect(screen.getByRole("row", { name: /1 Nuovo tentativo manuale Non riuscito.*1,3 s PROVIDER_TIMEOUT/i })).toBeInTheDocument();
+  expect(screen.getByText("Sono registrazioni delle elaborazioni eseguite da Integration Core, distinte dai tentativi di invio di Connector Gateway.")).toBeInTheDocument();
+  const technicalDetails = screen.getByText("Dettagli tecnici").closest("details");
+  expect(technicalDetails).not.toHaveAttribute("open");
+  expect(screen.getByText(orderDetail.id)).not.toBeVisible();
 });
 
 test("has no automatically detectable accessibility violations in loaded order details", async () => {
   getOperatorOrderMock.mockResolvedValue(orderDetail);
 
   const { container } = renderOrderDetailPage();
-  expect(await screen.findByText("ORDER-42")).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "ORDER-42" })).toBeInTheDocument();
 
   await expectNoAccessibilityViolations(container);
 });

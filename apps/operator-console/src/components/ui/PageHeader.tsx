@@ -14,7 +14,7 @@ export function PageHeader({ titleId, title, description, actions, navigation }:
       {navigation !== undefined ? <div className="mb-4">{navigation}</div> : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 id={titleId} className="text-2xl font-semibold leading-tight text-app-foreground">
+          <h1 id={titleId} className="break-words text-2xl font-semibold leading-tight text-app-foreground">
             {title}
           </h1>
           {description !== undefined ? (
