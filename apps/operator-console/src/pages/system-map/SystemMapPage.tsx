@@ -345,19 +345,30 @@ export function SystemMapPage() {
           <div className="mt-3 grid gap-3 lg:grid-cols-3">
             <SystemConnection
               from={t("systemMap.operations.console.title")}
-              label={t("systemMap.links.queries")}
+              label={t("systemMap.links.queriesCore")}
               to={t("systemMap.ingestion.core.title")}
             />
             <SystemConnection
-              from={t("systemMap.operations.simulator.title")}
-              label={t("systemMap.links.polls")}
+              from={t("systemMap.operations.console.title")}
+              label={t("systemMap.links.queriesGateway")}
               to={t("systemMap.ingestion.gateway.title")}
+            />
+            <SystemConnection
+              from={t("systemMap.ingestion.gateway.title")}
+              label={t("systemMap.links.polls")}
+              to={t("systemMap.operations.simulator.title")}
               optional
             />
             <SystemConnection
-              from={t("systemMap.operations.connections.coreAndGateway")}
+              from={t("systemMap.operations.observability.prometheus")}
               label={t("systemMap.links.scrapes")}
-              to={t("systemMap.operations.observability.title")}
+              to={t("systemMap.operations.connections.coreAndGateway")}
+              optional
+            />
+            <SystemConnection
+              from={t("systemMap.operations.observability.grafana")}
+              label={t("systemMap.links.queriesPrometheus")}
+              to={t("systemMap.operations.observability.prometheus")}
               optional
             />
           </div>
@@ -390,7 +401,11 @@ function MapArrow({ label }: { label: string }) {
 
 function SystemConnection({ from, label, to, optional = false }: { from: string; label: string; to: string; optional?: boolean }) {
   return (
-    <div className={optional ? "border border-dashed border-app-border-strong px-4 py-3" : "border border-app-border px-4 py-3"}>
+    <div
+      role="group"
+      aria-label={`${from} — ${label} — ${to}`}
+      className={optional ? "border border-dashed border-app-border-strong px-4 py-3" : "border border-app-border px-4 py-3"}
+    >
       <p className="text-sm font-semibold text-app-foreground-secondary">{from}</p>
       <div className="my-2 flex items-center gap-2 text-xs text-app-foreground-muted">
         <ArrowRight aria-hidden="true" className="shrink-0 text-app-foreground-faint" size={16} />
