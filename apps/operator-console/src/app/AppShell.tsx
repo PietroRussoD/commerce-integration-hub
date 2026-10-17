@@ -49,7 +49,7 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
       </a>
       <header className="sticky top-0 z-30 border-b border-app-border bg-app-surface">
         <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between gap-4 px-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-3 md:w-[232px] md:border-r md:border-app-border md:pr-5">
+          <div className="flex min-w-0 items-center gap-3 lg:w-[232px] lg:border-r lg:border-app-border lg:pr-5">
             <img src={brandTheme.logoPath} alt="" className="size-8 shrink-0" />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-app-foreground">{brandTheme.productName}</p>
@@ -63,21 +63,21 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-screen-2xl md:grid-cols-[232px_minmax(0,1fr)]">
+      <div className="mx-auto grid max-w-screen-2xl lg:grid-cols-[232px_minmax(0,1fr)]">
         <nav
           aria-label={t("shell.navigation.label")}
-          className="sticky top-16 z-20 min-w-0 border-b border-app-border bg-app-surface px-3 py-2 md:h-[calc(100vh-4rem)] md:border-r md:border-b-0 md:px-4 md:py-6"
+          className="relative min-w-0 border-b border-app-border bg-app-surface px-3 py-2 lg:sticky lg:top-16 lg:z-20 lg:h-[calc(100vh-4rem)] lg:border-r lg:border-b-0 lg:px-4 lg:py-6"
         >
-          <ul className="flex gap-1 md:flex-col">
+          <ul className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:flex lg:flex-col">
             {navigation.filter((item) => item.requiresOperatorRole !== true || hasOperatorAccess(identity?.roles)).map(({ to, labelKey, icon: Icon }) => (
-              <li key={to} className="min-w-0 flex-1 md:flex-none">
+              <li key={to} className="min-w-0">
                 <NavLink
                   to={to}
                   aria-label={t(labelKey)}
                   title={t(labelKey)}
                   className={({ isActive }) =>
                     [
-                      "flex h-10 items-center justify-center gap-2.5 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus md:justify-start",
+                      "flex min-h-11 h-full min-w-0 items-center justify-start gap-2 rounded-md px-2 py-1.5 text-left text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus lg:h-10 lg:min-h-10 lg:px-3",
                       isActive
                         ? "bg-app-navigation-active text-app-navigation-foreground shadow-sm"
                         : "text-app-foreground-secondary hover:bg-app-surface-muted hover:text-app-foreground",
@@ -85,7 +85,7 @@ export function AppShell({ brandTheme }: { brandTheme: BrandTheme }) {
                   }
                 >
                   <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
-                  <span className="truncate max-[359px]:sr-only">{t(labelKey)}</span>
+                  <span className="min-w-0 whitespace-normal break-words leading-tight">{t(labelKey)}</span>
                 </NavLink>
               </li>
             ))}
