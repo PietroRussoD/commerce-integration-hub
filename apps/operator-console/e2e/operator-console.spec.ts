@@ -27,6 +27,23 @@ test("opens an order from the operator list", async ({ page }) => {
   await expect(page.getByRole("row", { name: /LINE-1 SKU-E2E-001 Browser-tested item/i })).toBeVisible();
 });
 
+for (const theme of [
+  { id: "integration-hub", host: "127.0.0.1" },
+  { id: "client-blue", host: "client-blue.localhost" },
+]) {
+  test(`keeps order identifiers and correlation IDs readable in ${theme.id}`, async ({ page }) => {
+    await mockOperatorApi(page);
+    const origin = `http://${theme.host}:4173`;
+    await page.goto(`${origin}/orders`);
+    await expect(page.locator("html")).toHaveAttribute("data-brand", theme.id);
+    await expectReadableContrast(page, ".font-mono.text-xs.text-app-foreground-muted");
+
+    await page.goto(`${origin}/orders/${orderId}`);
+    await expect(page.getByRole("heading", { name: "Order details" })).toBeVisible();
+    await expectReadableContrast(page, "ol[aria-label] p.font-mono.text-xs.text-app-foreground-muted");
+  });
+}
+
 test("searches projected orders after the projection becomes available", async ({ page }) => {
   let searchRequest: Request | undefined;
   await mockOperatorApi(page, (request) => {
@@ -311,6 +328,36 @@ async function submitSearch(page: Page) {
   await expect(search).toBeEnabled();
   await search.fill("browser");
   await page.getByRole("button", { name: "Search projected orders" }).click();
+}
+
+async function expectReadableContrast(page: Page, selector: string) {
+  const ratio = await page.evaluate((targetSelector) => {
+    const target = document.querySelector(targetSelector);
+    if (target === null) throw new Error(`No element matched ${targetSelector}`);
+    const parse = (value: string) => value.match(/[\d.]+/g)?.map(Number) ?? [];
+    const luminance = (color: number[]) => {
+      const linear = color.slice(0, 3).map((channel) => {
+        const normalized = channel / 255;
+        return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * linear[0]! + 0.7152 * linear[1]! + 0.0722 * linear[2]!;
+    };
+    const foreground = parse(getComputedStyle(target).color);
+    let ancestor: Element | null = target;
+    let background = [255, 255, 255];
+    while (ancestor !== null) {
+      const value = getComputedStyle(ancestor).backgroundColor;
+      const channels = parse(value);
+      if (channels.length >= 3 && channels[3] !== 0) {
+        background = channels;
+        break;
+      }
+      ancestor = ancestor.parentElement;
+    }
+    const [light, dark] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+    return (light + 0.05) / (dark + 0.05);
+  }, selector);
+  expect(ratio, `${selector} contrast ratio`).toBeGreaterThanOrEqual(4.5);
 }
 
 function createOperatorToken(groups: string[], jti = "default"): string {

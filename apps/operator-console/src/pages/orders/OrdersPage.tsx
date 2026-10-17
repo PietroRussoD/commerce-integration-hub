@@ -176,7 +176,7 @@ function OrdersTable({ page }: { page: OperatorOrderPage }) {
                 >
                   {order.externalOrderId}
                 </Link>
-                <p className="mt-0.5 font-mono text-xs text-app-foreground-faint">{shortenId(order.id)}</p>
+                <p className="mt-0.5 font-mono text-xs text-app-foreground-muted">{shortenId(order.id)}</p>
               </td>
               <td className="px-4 py-3.5 text-app-foreground-secondary">{formatLabel(order.sourceSystem)}</td>
               <td className="px-4 py-3.5">
