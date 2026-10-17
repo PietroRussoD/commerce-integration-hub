@@ -49,8 +49,9 @@ test("lists deliveries for an operator token", async () => {
 
   renderPage(operatorAccessTokenContext);
 
-  expect(await screen.findByText("event-42")).toBeInTheDocument();
-  expect(screen.getByText("Exhausted", { selector: "span" })).toBeInTheDocument();
+  expect(await screen.findAllByText("event-42")).toHaveLength(2);
+  expect(screen.getAllByText("Exhausted", { selector: "span" })).toHaveLength(2);
+  expect(screen.getAllByText("CORE_UNAVAILABLE", { selector: "code" })).toHaveLength(2);
   expect(mockedListOperatorDeliveries).toHaveBeenCalledWith({
     accessToken: "operator-token",
     cursor: undefined,

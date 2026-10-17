@@ -20,7 +20,10 @@ for (const view of ["list", "detail"] as const) {
       });
       await page.goto(view === "list" ? "/deliveries" : `/deliveries/${deliveryId}`);
       await applyToken(page, firstToken);
-      await expect(page.getByText("DELIVERY-E2E-001", { exact: true })).toBeVisible();
+      const event = view === "list"
+        ? page.getByRole("link", { name: "DELIVERY-E2E-001", exact: true })
+        : page.getByRole("heading", { name: "DELIVERY-E2E-001", exact: true });
+      await expect(event).toBeVisible();
       denied = true;
       const before = reads;
       if (view === "list") await page.getByRole("button", { name: "Refresh deliveries" }).click();
@@ -31,7 +34,7 @@ for (const view of ["list", "detail"] as const) {
         await page.evaluate(() => window.dispatchEvent(new Event("visibilitychange")));
       }
       await expect(page.getByRole("alert")).toContainText(`(${status})`);
-      await expect(page.getByText("DELIVERY-E2E-001", { exact: true })).toHaveCount(0);
+      await expect(event).toHaveCount(0);
       await expect(page.getByRole("button", { name: "Retry", exact: true })).toHaveCount(0);
       await page.waitForTimeout(1_200);
       expect(reads - before).toBe(1);
@@ -39,7 +42,7 @@ for (const view of ["list", "detail"] as const) {
       await expect(page.getByLabel("Access token", { exact: true })).toBeFocused();
       await page.getByLabel("Access token", { exact: true }).fill(token("replacement"));
       await page.getByRole("button", { name: "Use token" }).click();
-      await expect(page.getByText("DELIVERY-E2E-001", { exact: true })).toBeVisible();
+      await expect(event).toBeVisible();
       await expect(page.getByRole("alert")).toHaveCount(0);
     });
   }

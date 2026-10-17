@@ -352,6 +352,9 @@ test("makes delivery errors and attempt details readable and copyable on mobile"
   await page.goto("/orders");
   await applyToken(page, createOperatorToken(["platform-admin"]));
   await page.getByRole("link", { name: "Deliveries" }).click();
+  const deliveryCards = page.getByRole("list", { name: "Deliveries" });
+  await expect(deliveryCards).toContainText("CORE_UNAVAILABLE");
+  await expect(page.getByRole("table")).toBeHidden();
   await page.getByRole("link", { name: "DELIVERY-E2E-001" }).click();
 
   await expect(page.getByRole("heading", { name: "Latest delivery error" })).toBeVisible();

@@ -15,7 +15,7 @@ import { IconButton } from "../../components/ui/IconButton";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
-import { formatDateTime, formatLabel } from "../orders/orderFormatters";
+import { formatDateTime } from "../orders/orderFormatters";
 import { operatorDeliveryAccessFailure, retryOperatorDeliveryQuery } from "./operatorDeliveryQueries";
 import { deliveryListNavigationState, previousDeliveryCursors } from "./deliveryListNavigation";
 
@@ -179,37 +179,92 @@ function DeliveriesTable({ page }: { page: OperatorDeliveryPage }) {
   if (page.items.length === 0) return <p className="px-6 py-16 text-center text-sm text-app-foreground-muted">{t("deliveries.empty")}</p>;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[980px] border-collapse text-left text-sm">
-        <thead className="border-b border-app-border bg-app-canvas text-xs font-semibold text-app-foreground-secondary">
-          <tr>
-            <th scope="col" className="px-4 py-3">{t("deliveries.table.event")}</th>
-            <th scope="col" className="px-4 py-3">{t("deliveries.table.provider")}</th>
-            <th scope="col" className="px-4 py-3">{t("deliveries.table.status")}</th>
-            <th scope="col" className="px-4 py-3 text-right">{t("deliveries.table.attempts")}</th>
-            <th scope="col" className="px-4 py-3">{t("deliveries.table.received")}</th>
-            <th scope="col" className="px-4 py-3">{t("deliveries.table.error")}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-app-surface-muted">
-          {page.items.map((delivery) => (
-            <tr key={delivery.deliveryId} className="hover:bg-app-canvas">
-              <td className="px-4 py-3.5">
-                <Link to={{ pathname: `/deliveries/${delivery.deliveryId}`, search: location.search }} state={location.state} className="font-medium text-app-foreground underline-offset-4 hover:text-app-brand-primary hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">{delivery.externalEventId}</Link>
-                <p className="mt-0.5 font-mono text-xs text-app-foreground-faint">{shortenId(delivery.deliveryId)}</p>
-              </td>
-              <td className="px-4 py-3.5 text-app-foreground-secondary">{t(providerLabelKeys[delivery.provider])}</td>
-              <td className="px-4 py-3.5"><StatusBadge status={delivery.status}>{t(statusLabelKeys[delivery.status])}</StatusBadge></td>
-              <td className="px-4 py-3.5 text-right tabular-nums text-app-foreground-secondary">{delivery.attemptCount}</td>
-              <td className="px-4 py-3.5 whitespace-nowrap text-app-foreground-secondary">{formatDateTime(delivery.receivedAt, locale)}</td>
-              <td className="max-w-80 px-4 py-3.5">
-                {delivery.errorCode === null ? <span className="text-app-foreground-faint">-</span> : <p className="truncate font-mono text-xs text-red-800" title={delivery.errorCode}>{formatLabel(delivery.errorCode)}</p>}
-              </td>
+    <>
+      <ul aria-label={t("deliveries.title")} className="divide-y divide-app-border lg:hidden">
+        {page.items.map((delivery) => (
+          <li key={delivery.deliveryId} className="p-4">
+            <article className="space-y-3">
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <Link
+                    to={{ pathname: `/deliveries/${delivery.deliveryId}`, search: location.search }}
+                    state={location.state}
+                    className="block break-all font-semibold text-app-foreground underline-offset-4 hover:text-app-brand-primary hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+                  >
+                    {delivery.externalEventId}
+                  </Link>
+                  <p className="mt-1 text-sm text-app-foreground-secondary">{t(providerLabelKeys[delivery.provider])}</p>
+                </div>
+                <StatusBadge status={delivery.status}>{t(statusLabelKeys[delivery.status])}</StatusBadge>
+              </div>
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-app-border pt-3 text-sm">
+                <div>
+                  <dt className="text-xs text-app-foreground-muted">{t("deliveries.table.attempts")}</dt>
+                  <dd className="mt-0.5 tabular-nums text-app-foreground-secondary">{delivery.attemptCount}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-app-foreground-muted">{t("deliveries.table.received")}</dt>
+                  <dd className="mt-0.5 text-app-foreground-secondary">{formatDateTime(delivery.receivedAt, locale)}</dd>
+                </div>
+                <div className="col-span-2 min-w-0">
+                  <dt className="text-xs text-app-foreground-muted">{t("deliveries.table.error")}</dt>
+                  <dd className="mt-0.5 break-words text-app-foreground-secondary">
+                    {delivery.errorCode === null
+                      ? t("deliveries.noError")
+                      : <code className="break-all font-mono text-xs text-red-800">{delivery.errorCode}</code>}
+                  </dd>
+                </div>
+              </dl>
+            </article>
+          </li>
+        ))}
+      </ul>
+      <div className="hidden overflow-x-auto lg:block">
+        <table className="w-full min-w-[980px] border-collapse text-left text-sm">
+          <thead className="border-b border-app-border bg-app-canvas text-xs font-semibold text-app-foreground-secondary">
+            <tr>
+              <th scope="col" className="px-4 py-3">{t("deliveries.table.event")}</th>
+              <th scope="col" className="px-4 py-3">{t("deliveries.table.provider")}</th>
+              <th scope="col" className="px-4 py-3">{t("deliveries.table.status")}</th>
+              <th scope="col" className="px-4 py-3 text-right">{t("deliveries.table.attempts")}</th>
+              <th scope="col" className="px-4 py-3">{t("deliveries.table.received")}</th>
+              <th scope="col" className="px-4 py-3">{t("deliveries.table.error")}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-app-surface-muted">
+            {page.items.map((delivery) => (
+              <tr key={delivery.deliveryId} className="hover:bg-app-canvas">
+                <td className="px-4 py-3.5">
+                  <Link
+                    to={{ pathname: `/deliveries/${delivery.deliveryId}`, search: location.search }}
+                    state={location.state}
+                    className="font-medium text-app-foreground underline-offset-4 hover:text-app-brand-primary hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+                  >
+                    {delivery.externalEventId}
+                  </Link>
+                  <p className="mt-0.5 font-mono text-xs text-app-foreground-faint">{shortenId(delivery.deliveryId)}</p>
+                </td>
+                <td className="px-4 py-3.5 text-app-foreground-secondary">{t(providerLabelKeys[delivery.provider])}</td>
+                <td className="px-4 py-3.5">
+                  <StatusBadge status={delivery.status}>{t(statusLabelKeys[delivery.status])}</StatusBadge>
+                </td>
+                <td className="px-4 py-3.5 text-right tabular-nums text-app-foreground-secondary">
+                  {delivery.attemptCount}
+                </td>
+                <td className="px-4 py-3.5 whitespace-nowrap text-app-foreground-secondary">
+                  {formatDateTime(delivery.receivedAt, locale)}
+                </td>
+                <td className="max-w-80 px-4 py-3.5">
+                  {delivery.errorCode === null
+                    ? <span className="text-app-foreground-faint">{t("deliveries.noError")}</span>
+                    : <code className="break-all font-mono text-xs text-red-800">{delivery.errorCode}</code>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 

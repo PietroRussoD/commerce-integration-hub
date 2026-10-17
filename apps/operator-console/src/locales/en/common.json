@@ -50,6 +50,7 @@
       "received": "Received", "forwarding": "Forwarding", "retryWait": "Retry wait", "exhausted": "Exhausted", "delivered": "Delivered", "permanentFailure": "Permanent failure", "blockedConfiguration": "Blocked configuration"
     },
     "table": { "event": "Event", "provider": "Provider", "status": "Status", "attempts": "Attempts", "received": "Received", "error": "Error" },
+    "noError": "No error recorded",
     "actions": { "refresh": "Refresh deliveries", "retry": "Retry", "firstPage": "First page", "previousPage": "Previous page", "nextPage": "Next page" },
     "access": { "required": "An operator access token is required to inspect deliveries.", "forbidden": "The configured access token does not grant an operational role.", "unauthorized": "The Gateway did not accept this token (401). Set or replace it.", "denied": "The Gateway denied this operation (403). A valid token with the required permissions is needed." },
     "loading": "Loading deliveries",
