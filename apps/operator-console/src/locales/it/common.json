@@ -137,6 +137,10 @@
     }
   },
   "orders": {
+    "scope": {
+      "list": "Elenco completo",
+      "search": "Ricerca indicizzata"
+    },
     "access": {
       "unauthorized": "Per accedere agli ordini serve un token operatore accettato dal Core. Impostalo o sostituiscilo dal controllo del token in alto.",
       "forbidden": "Il Core ha negato l’accesso agli ordini. Usa un token con permessi operator o platform-admin."
@@ -211,6 +215,10 @@
       }
     },
     "search": {
+      "scopeGuidance": "I risultati provengono dall’indice di ricerca, che può essere in ritardo rispetto all’elenco completo. Scegli Elenco completo per uscire dalla ricerca indicizzata.",
+      "draftChanged": "I campi sono cambiati. Avvia la ricerca per applicarli; i risultati usano ancora i criteri applicati.",
+      "textCriterion": "Descrizione",
+      "applied": "Criteri applicati: {{criteria}}",
       "label": "Cerca negli ordini indicizzati",
       "placeholder": "Descrizione, SKU esatto o ID ordine esterno",
       "submit": "Cerca negli ordini indicizzati",

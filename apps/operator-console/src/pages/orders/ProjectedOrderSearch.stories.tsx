@@ -15,6 +15,8 @@ const meta = {
   args: {
     isAvailable: true,
     isAvailabilityKnown: true,
+    isFetching: false,
+    onRepeatSearch: () => {},
   },
   decorators: [
     (Story) => (

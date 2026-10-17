@@ -129,11 +129,10 @@ test("writes order filters, list paging and search criteria to the URL", async (
   await page.getByRole("textbox", { name: "External order ID" }).fill("ORDER-E2E-001");
   await page.getByRole("textbox", { name: "SKU" }).fill("SKU-E2E-001");
   await page.getByRole("button", { name: "Search projected orders" }).click();
-  await expect(page).toHaveURL("/orders?status=READY&offset=25&q=browser&externalOrderId=ORDER-E2E-001&sku=SKU-E2E-001");
+  await expect(page).toHaveURL("/orders?status=READY&q=browser&externalOrderId=ORDER-E2E-001&sku=SKU-E2E-001");
 
-  const search = page.locator('section[aria-labelledby="projected-order-search-heading"]');
-  await search.getByRole("button", { name: "Next page" }).click();
-  await expect(page).toHaveURL("/orders?status=READY&offset=25&q=browser&externalOrderId=ORDER-E2E-001&sku=SKU-E2E-001&searchOffset=25");
+  await page.getByRole("button", { name: "Next page" }).click();
+  await expect(page).toHaveURL("/orders?status=READY&q=browser&externalOrderId=ORDER-E2E-001&sku=SKU-E2E-001&searchOffset=25");
 });
 
 test("isolates all Core reads when applying, renewing and removing a token", async ({ page }) => {
@@ -167,10 +166,11 @@ test("isolates all Core reads when applying, renewing and removing a token", asy
 
   await applyToken(page, firstToken);
   await expect(page.getByRole("link", { name: /^ANONYMOUS-INITIAL/ })).toHaveCount(0);
-  await expect(page.getByRole("status", { name: "Loading orders" })).toBeVisible();
+  await expect(page.getByRole("status", { name: "Searching projected orders" })).toBeVisible();
   releaseFirst();
-  await expect(page.getByRole("link", { name: "TOKEN-FIRST", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "TOKEN-FIRST-SEARCH", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Complete order list" }).click();
+  await expect(page.getByRole("link", { name: "TOKEN-FIRST", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "TOKEN-FIRST", exact: true }).click();
   await expect(page.getByText("TOKEN-FIRST", { exact: true })).toBeVisible();
 
@@ -188,8 +188,9 @@ test("isolates all Core reads when applying, renewing and removing a token", asy
   await page.getByRole("button", { name: "Manage operator access token" }).click();
   await page.getByRole("button", { name: "Remove token" }).click();
   await page.getByRole("button", { name: "Close access token dialog" }).click();
-  await expect(page.getByRole("link", { name: "ANONYMOUS-RETURN", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "ANONYMOUS-RETURN-SEARCH", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Complete order list" }).click();
+  await expect(page.getByRole("link", { name: "ANONYMOUS-RETURN", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /^TOKEN-/ })).toHaveCount(0);
   await page.getByRole("link", { name: "ANONYMOUS-RETURN", exact: true }).click();
   await expect(page.getByText("ANONYMOUS-RETURN", { exact: true })).toBeVisible();
