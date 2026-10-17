@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, test, vi } from "vitest";
@@ -78,7 +78,7 @@ test("renders timeline events in API order", async () => {
         toStatus: "RECEIVED",
         message: "Canonical order accepted",
         correlationId: "018f38c2-1b95-7cc4-bb89-72d26a6f9101",
-        occurredAt: "2026-08-21T08:00:00Z",
+        occurredAt: "2026-08-21T08:00:00.006Z",
       },
       {
         id: "018f38c2-1b95-7cc4-bb89-72d26a6f9002",
@@ -98,6 +98,12 @@ test("renders timeline events in API order", async () => {
   expect(events).toHaveLength(2);
   expect(events[0]).toHaveTextContent("Order received");
   expect(events[0]).toHaveTextContent("Entered Received");
+  expect(events[0]!.querySelector("time")).toHaveTextContent(/00[.,]006/);
+  const timestampSummary = within(events[0]!).getByText("Exact timestamp (ISO 8601)");
+  const timestampDetails = timestampSummary.closest("details");
+  fireEvent.click(timestampSummary);
+  expect(timestampDetails).toHaveAttribute("open");
+  expect(timestampDetails).toHaveTextContent("2026-08-21T08:00:00.006Z");
   expect(events[1]).toHaveTextContent("Processing started");
   expect(events[1]).toHaveTextContent("Received to Processing");
 });

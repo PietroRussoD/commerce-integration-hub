@@ -289,6 +289,10 @@
       "title": "Timeline",
       "empty": "No timeline events",
       "ariaLabel": "Order timeline events",
+      "timestampDetails": "Exact timestamp (ISO 8601)",
+      "copyTimestamp": "Copy ISO timestamp",
+      "timestampCopied": "Exact timestamp copied.",
+      "timestampCopyFailed": "Could not copy. Select the timestamp above and copy it manually.",
       "correlation": "Correlation",
       "events": {
         "orderReceived": "Order received",

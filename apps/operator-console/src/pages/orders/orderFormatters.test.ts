@@ -6,6 +6,7 @@ import {
   formatDurationMilliseconds,
   formatLabel,
   formatMoney,
+  formatPreciseDateTime,
   formatQuantity,
   orderStatusLabelKeys,
 } from "./orderFormatters";
@@ -23,6 +24,15 @@ test("formats dates and money for the selected locale", () => {
   expect(formatDateTime("2026-08-21T12:00:00Z", "it-IT")).toContain("ago");
   expect(formatMoney("39.98", "EUR", "en-GB")).toContain("39.98");
   expect(formatMoney("39.98", "EUR", "it-IT")).toContain("39,98");
+});
+
+test("shows seconds, meaningful milliseconds and an explicit timezone for timeline timestamps", () => {
+  expect(formatPreciseDateTime("2026-10-14T08:38:00.006Z", "en-GB", "UTC"))
+    .toBe("14 Oct 2026, 08:38:00.006 UTC");
+  expect(formatPreciseDateTime("2026-10-14T08:38:00Z", "it-IT", "UTC"))
+    .toBe("14 ott 2026, 08:38:00 UTC");
+  expect(formatPreciseDateTime("2026-10-14T08:38:00.006Z", "it-IT", "Europe/Rome"))
+    .toContain("10:38:00,006");
 });
 
 test("localizes quantities without rounding away meaningful precision", () => {

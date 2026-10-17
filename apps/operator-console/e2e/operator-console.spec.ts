@@ -28,6 +28,37 @@ test("opens an order from the operator list", async ({ page }) => {
   await expect(page.getByRole("row", { name: /LINE-1 SKU-E2E-001 Browser-tested item/i })).toBeVisible();
 });
 
+test("shows precise timeline timestamps and copies their original ISO value", async ({ page }) => {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.route("**/api/v1/operator/orders/*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...orderDetail,
+        timeline: [{
+          ...orderDetail.timeline[0],
+          occurredAt: "2026-08-21T08:00:00.006Z",
+        }],
+      }),
+    });
+  });
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.goto(`/orders/${orderId}`);
+
+  const timestamp = page.locator('time[datetime="2026-08-21T08:00:00.006Z"]');
+  await expect(timestamp).toContainText("00.006");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  const timestampDetails = page.locator("details").filter({ has: page.getByText("Exact timestamp (ISO 8601)") });
+  await timestampDetails.locator("summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("2026-08-21T08:00:00.006Z")).toBeVisible();
+  await page.getByRole("button", { name: "Copy ISO timestamp" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("status")).toContainText("Exact timestamp copied.");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("2026-08-21T08:00:00.006Z");
+});
+
 for (const theme of [
   { id: "integration-hub", host: "127.0.0.1" },
   { id: "client-blue", host: "client-blue.localhost" },
@@ -77,7 +108,7 @@ test("keeps a maximum-length external order ID readable on a narrow screen", asy
   const heading = page.getByRole("heading", { name: externalOrderId });
   await expect(heading).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-  const technicalDetails = page.locator("details");
+  const technicalDetails = page.locator("details").filter({ has: page.getByText("Technical details") });
   await expect(technicalDetails).not.toHaveAttribute("open");
   await expect(technicalDetails.getByText(orderId)).not.toBeVisible();
   await technicalDetails.locator("summary").click();
