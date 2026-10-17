@@ -12,6 +12,38 @@ import {
   searchProjectionStatus,
 } from "./fixtures";
 
+for (const width of [320, 390, 768, 1440]) {
+  test(`keeps navigation readable, role-aware, and keyboard-accessible at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/simulator");
+
+    const navigation = page.getByRole("navigation", { name: "Primary navigation" });
+    const links = navigation.getByRole("link");
+    await expect(links).toHaveCount(4);
+    await expect(navigation.getByRole("link", { name: "Simulator" })).toHaveAttribute("aria-current", "page");
+    await expect(navigation.getByRole("link", { name: "Deliveries" })).toHaveCount(0);
+
+    for (const link of await links.all()) {
+      await expect(link).toBeVisible();
+      const box = await link.boundingBox();
+      expect(box?.height).toBeGreaterThanOrEqual(40);
+      expect(await link.locator("span").evaluate((label) => label.scrollWidth <= label.clientWidth)).toBe(true);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    expect(await navigation.evaluate((element) => getComputedStyle(element).position)).toBe(width >= 1024 ? "sticky" : "relative");
+
+    await applyToken(page, createOperatorToken(["operator"], `navigation-${width}`));
+    await expect(navigation.getByRole("link", { name: "Deliveries" })).toBeVisible();
+
+    const systemMapLink = navigation.getByRole("link", { name: "System Map" });
+    await systemMapLink.focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL("/system-map");
+    await expect(systemMapLink).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("main")).toBeFocused();
+  });
+}
+
 test("opens an order from the operator list", async ({ page }) => {
   await mockOperatorApi(page);
   await page.goto("/orders");
