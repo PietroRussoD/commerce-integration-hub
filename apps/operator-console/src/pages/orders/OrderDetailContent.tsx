@@ -151,7 +151,7 @@ function OrderTimeline({ entries }: { entries: OperatorOrderDetail["timeline"] }
                   </div>
                   {transition !== undefined ? <p className="mt-2 text-sm font-medium text-app-foreground-strong">{transition}</p> : null}
                   {entry.message !== null ? <p className="mt-1 text-sm text-app-foreground-secondary">{entry.message}</p> : null}
-                  <p className="mt-2 break-all font-mono text-xs text-app-foreground-faint">
+                  <p className="mt-2 break-all font-mono text-xs text-app-foreground-muted">
                     {t("orderDetail.timeline.correlation")} {entry.correlationId}
                   </p>
                 </li>
