@@ -44,6 +44,39 @@ for (const width of [320, 390, 768, 1440]) {
   });
 }
 
+for (const width of [390, 768, 1440]) {
+  test(`keeps selected system-map details in view at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/system-map");
+
+    const target = page.getByRole("button", { name: "Prometheus and Grafana" });
+    await target.focus();
+    await page.keyboard.press("Enter");
+    await expect(target).toHaveAttribute("aria-pressed", "true");
+
+    if (width < 1280) {
+      const inlineDetails = page.getByTestId("system-map-inline-details");
+      await expect(inlineDetails).toBeVisible();
+      await inlineDetails.scrollIntoViewIfNeeded();
+      const targetBox = await target.boundingBox();
+      const detailsBox = await inlineDetails.boundingBox();
+      expect(detailsBox?.y).toBeGreaterThanOrEqual((targetBox?.y ?? 0) + (targetBox?.height ?? 0));
+      await expect(inlineDetails.getByRole("heading", { name: "Prometheus and Grafana" })).toBeVisible();
+    } else {
+      const desktopDetails = page.getByTestId("system-map-desktop-details");
+      await expect(desktopDetails).toBeVisible();
+      const detailsBox = await desktopDetails.boundingBox();
+      expect(detailsBox?.y).toBeGreaterThanOrEqual(60);
+      expect(detailsBox?.y).toBeLessThan(844);
+      await expect(desktopDetails.getByRole("heading", { name: "Prometheus and Grafana" })).toBeVisible();
+    }
+    await expect(page.getByRole("link", { name: "Open technical reference" }).last()).toHaveAttribute(
+      "href",
+      "https://github.com/PietroRussoD/commerce-integration-hub/blob/main/services/integration-core/README.md#observability",
+    );
+  });
+}
+
 test("opens an order from the operator list", async ({ page }) => {
   await mockOperatorApi(page);
   await page.goto("/orders");
