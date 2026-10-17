@@ -144,7 +144,25 @@ class ProcessOrderReceivedUseCaseTest {
             correlationId = correlationId,
         )
 
-    private fun useCase(fixture: RecordingCollaborators): ProcessOrderReceivedUseCase {
+    @Test
+    fun `keeps ready payload and outbox timestamps at PostgreSQL microsecond precision`() {
+        val fixture = RecordingCollaborators(receivedOrder())
+        val clock = Clock.fixed(Instant.parse("2026-08-21T08:00:02.123456789Z"), ZoneOffset.UTC)
+
+        useCase(fixture, clock).process(command())
+
+        val persistedTime = Instant.parse("2026-08-21T08:00:02.123456Z")
+        assertEquals(persistedTime, fixture.createdAttempts.single().startedAt)
+        assertEquals(persistedTime, fixture.completedAttempts.single().completedAt)
+        assertEquals(persistedTime, fixture.timelineEntries.last().occurredAt)
+        assertEquals(persistedTime, fixture.serializedEvents.single().occurredAt)
+        assertEquals(persistedTime, fixture.pendingEvents.single().createdAt)
+    }
+
+    private fun useCase(
+        fixture: RecordingCollaborators,
+        clock: Clock = Clock.fixed(processedAt, ZoneOffset.UTC),
+    ): ProcessOrderReceivedUseCase {
         val ids = generatedIds.iterator()
         return ProcessOrderReceivedUseCase(
             processedMessageRepository = fixture,
@@ -153,7 +171,7 @@ class ProcessOrderReceivedUseCaseTest {
             orderTimelineRepository = fixture,
             orderReadyPayloadSerializer = fixture,
             pendingOutboxEventRepository = fixture,
-            clock = Clock.fixed(processedAt, ZoneOffset.UTC),
+            clock = clock,
             generateId = { ids.next() },
         )
     }
@@ -194,6 +212,7 @@ class ProcessOrderReceivedUseCaseTest {
         val createdAttempts = mutableListOf<ProcessingAttempt>()
         val completedAttempts = mutableListOf<ProcessingAttempt>()
         val pendingEvents = mutableListOf<PendingOutboxEvent>()
+        val serializedEvents = mutableListOf<OrderReadyEvent>()
         var processedMessageOutcome = ProcessedMessageRecordOutcome.RECORDED
         var recordedConsumerName: String? = null
         var recordedEventId: UUID? = null
@@ -245,7 +264,10 @@ class ProcessOrderReceivedUseCaseTest {
             pendingEvents += event
         }
 
-        override fun serialize(event: OrderReadyEvent): String = "{\"status\":\"READY\"}"
+        override fun serialize(event: OrderReadyEvent): String {
+            serializedEvents += event
+            return "{\"status\":\"READY\"}"
+        }
 
         override fun insertIfAbsent(
             event: OrderReceivedEvent,

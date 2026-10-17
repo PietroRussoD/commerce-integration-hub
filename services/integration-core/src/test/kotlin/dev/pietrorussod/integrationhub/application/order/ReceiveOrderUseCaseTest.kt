@@ -197,11 +197,35 @@ class ReceiveOrderUseCaseTest {
             unitPrice = BigDecimal("19.99"),
         )
 
-    private fun useCase(repository: OrderRepository): ReceiveOrderUseCase =
+    @Test
+    fun `keeps order and event timestamps at PostgreSQL microsecond precision`() {
+        val repository = InMemoryOrderRepository()
+        val clock = Clock.fixed(Instant.parse("2026-08-01T07:30:00.123456789Z"), ZoneOffset.UTC)
+        val command =
+            ReceiveOrderCommand(
+                sourceSystem = "marketplace-a",
+                correlationId = fixedCorrelationId,
+                externalOrderId = "order-1001",
+                currency = "EUR",
+                declaredTotalAmount = BigDecimal("39.98"),
+                items = listOf(itemCommand()),
+            )
+
+        val result = useCase(repository, clock).receive(command)
+
+        val persistedTime = Instant.parse("2026-08-01T07:30:00.123456Z")
+        assertEquals(persistedTime, result.order.receivedAt)
+        assertEquals(persistedTime, repository.savedEvents.single().occurredAt)
+    }
+
+    private fun useCase(
+        repository: OrderRepository,
+        clock: Clock = fixedClock,
+    ): ReceiveOrderUseCase =
         ReceiveOrderUseCase(
             orderRepository = repository,
             payloadFingerprinter = fingerprinter,
-            clock = fixedClock,
+            clock = clock,
             generateOrderId = { fixedOrderId },
             generateOrderItemId = { fixedItemId },
             generateEventId = { fixedEventId },
