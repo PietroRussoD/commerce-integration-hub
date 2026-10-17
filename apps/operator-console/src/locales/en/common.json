@@ -61,6 +61,7 @@
     "loading": "Loading deliveries",
     "empty": "No deliveries are currently available in the complete list.",
     "emptyFiltered": "No deliveries match the selected provider and status filters.",
+    "emptyCursor": "No deliveries on this page. Use First page below or change the filters.",
     "error": "Unable to load deliveries",
     "invalidRequest": "The Gateway rejected this request. Check the filters or page address, then correct them before trying again.",
     "notFound": "This delivery was not found. Return to the delivery list and choose an available delivery.",

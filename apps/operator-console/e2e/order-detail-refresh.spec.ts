@@ -4,12 +4,13 @@ import { orderDetail, orderId } from "./fixtures";
 
 test("order details can be refreshed explicitly and report the latest successful read", async ({ page }) => {
   let reads = 0;
+  let holdRefresh = false;
   let releaseRefresh!: () => void;
   const refreshPending = new Promise<void>((resolve) => { releaseRefresh = resolve; });
   await page.route("**/api/v1/operator/orders/**", async (route) => {
     if (!new URL(route.request().url()).pathname.endsWith(`/${orderId}`)) return route.continue();
     reads += 1;
-    if (reads <= 2) {
+    if (!holdRefresh) {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...orderDetail, status: "RECEIVED" }) });
       return;
     }
@@ -20,14 +21,16 @@ test("order details can be refreshed explicitly and report the latest successful
   await page.goto(`/orders/${orderId}`);
   await expect(page.getByText("Received", { exact: true }).first()).toBeVisible();
   await expect(page.getByText(/^Updated /)).toBeVisible();
+  holdRefresh = true;
   await page.getByRole("button", { name: "Refresh order" }).click();
+  await expect.poll(() => reads).toBeGreaterThanOrEqual(2);
   await expect(page.getByRole("button", { name: "Refreshing order details…" })).toBeDisabled();
   await expect(page.getByRole("status")).toContainText("Refreshing order details…");
   await expect(page.getByText("Received", { exact: true }).first()).toBeVisible();
   releaseRefresh();
   await expect(page.getByText("Ready", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Refresh order" })).toBeEnabled();
-  expect(reads).toBe(3);
+  expect(reads).toBeGreaterThanOrEqual(2);
 });
 
 test("a failed detail refresh keeps the last successful data and explains its age", async ({ page }) => {

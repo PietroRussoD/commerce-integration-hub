@@ -119,7 +119,7 @@ test("an empty cursor page still offers first-page recovery", async ({ page }) =
   await mockGateway(page);
   await page.goto(`/deliveries?${filters}&cursor=${cursors[2]}`);
   await applyToken(page);
-  await expect(page.getByText("No deliveries found", { exact: true })).toBeVisible();
+  await expect(page.getByText("No deliveries on this page. Use First page below or change the filters.", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "First page", exact: true }).click();
   await expect(page).toHaveURL(`/deliveries?${filters}`);
   await expect(page.getByRole("link", { name: "DELIVERY-PAGE-1" })).toBeVisible();
