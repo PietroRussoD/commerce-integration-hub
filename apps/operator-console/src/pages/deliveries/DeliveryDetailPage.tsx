@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, RefreshCw, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 
 import { getOperatorDelivery } from "../../api/connectorGatewayClient";
 import { AccessTokenButton } from "../../auth/AccessTokenButton";
@@ -15,6 +15,7 @@ import { operatorDeliveryAccessFailure, retryOperatorDeliveryQuery } from "./ope
 export function DeliveryDetailPage() {
   const { t } = useTranslation();
   const { accessToken, identity, cacheScope } = useAccessToken();
+  const location = useLocation();
   const deliveryId = useParams<{ deliveryId: string }>().deliveryId ?? "";
   const canReadDelivery =
     accessToken !== undefined && (identity?.roles.has("operator") === true || identity?.roles.has("platform-admin") === true);
@@ -35,7 +36,8 @@ export function DeliveryDetailPage() {
         description={<span className="break-all font-mono text-xs">{deliveryId}</span>}
         navigation={
           <Link
-            to="/deliveries"
+            to={{ pathname: "/deliveries", search: location.search }}
+            state={location.state}
             className="inline-flex items-center gap-2 text-sm font-medium text-app-foreground-secondary hover:text-app-foreground focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
           >
             <ArrowLeft aria-hidden="true" size={16} />

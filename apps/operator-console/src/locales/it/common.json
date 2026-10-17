@@ -48,11 +48,12 @@
       "received": "Ricevuto", "forwarding": "In inoltro", "retryWait": "In attesa di nuovo tentativo", "exhausted": "Esaurito", "delivered": "Consegnato", "permanentFailure": "Errore permanente", "blockedConfiguration": "Configurazione bloccata"
     },
     "table": { "event": "Evento", "provider": "Provider", "status": "Stato", "attempts": "Tentativi", "received": "Ricevuto", "error": "Errore" },
-    "actions": { "refresh": "Aggiorna consegne", "retry": "Riprova", "previousPage": "Pagina precedente", "nextPage": "Pagina successiva" },
+    "actions": { "refresh": "Aggiorna consegne", "retry": "Riprova", "firstPage": "Prima pagina", "previousPage": "Pagina precedente", "nextPage": "Pagina successiva" },
     "access": { "required": "Per analizzare le consegne è necessario un token di accesso operatore.", "forbidden": "Il token di accesso configurato non concede un ruolo operativo.", "unauthorized": "Il Gateway non ha accettato questo token (401). Impostalo o sostituiscilo.", "denied": "Il Gateway ha negato questa operazione (403). Serve un token valido con i permessi richiesti." },
     "loading": "Caricamento consegne",
     "empty": "Nessuna consegna trovata",
-    "error": "Impossibile caricare le consegne"
+    "error": "Impossibile caricare le consegne",
+    "pageRejected": "Il Gateway ha rifiutato la richiesta di questa pagina. Torna alla prima pagina mantenendo i filtri attuali."
   },
   "deliveryDetail": {
     "title": "Dettagli consegna",
