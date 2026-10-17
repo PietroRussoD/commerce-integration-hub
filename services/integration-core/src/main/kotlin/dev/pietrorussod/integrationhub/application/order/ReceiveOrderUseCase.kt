@@ -8,6 +8,7 @@ import dev.pietrorussod.integrationhub.domain.order.OrderId
 import dev.pietrorussod.integrationhub.domain.order.OrderItem
 import dev.pietrorussod.integrationhub.domain.order.SourceSystem
 import java.time.Clock
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class ReceiveOrderUseCase(
@@ -72,7 +73,8 @@ class ReceiveOrderUseCase(
             currency = currency,
             items = items,
             declaredTotalAmount = Money.of(command.declaredTotalAmount, currency),
-            receivedAt = clock.instant(),
+            // Match PostgreSQL precision before serializing the order and its event payload.
+            receivedAt = clock.instant().truncatedTo(ChronoUnit.MICROS),
         )
     }
 }

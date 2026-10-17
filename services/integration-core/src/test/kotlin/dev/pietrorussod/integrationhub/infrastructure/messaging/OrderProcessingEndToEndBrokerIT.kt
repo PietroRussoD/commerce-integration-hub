@@ -44,6 +44,9 @@ class OrderProcessingEndToEndBrokerIT {
     lateinit var objectMapper: ObjectMapper
 
     @Inject
+    lateinit var orderReadyMessageMapper: OrderReadyMessageMapper
+
+    @Inject
     lateinit var pepperProvider: SourceCredentialPepperProvider
 
     @Inject
@@ -102,6 +105,9 @@ class OrderProcessingEndToEndBrokerIT {
                         event?.get("aggregateId")?.textValue() == orderId.toString()
                     }
                 assertEquals("OrderReady", objectMapper.readTree(readyEvent.value())["eventType"].textValue())
+                val readyDocument =
+                    orderReadyMessageMapper.map(objectMapper.readValue(readyEvent.value(), StructuredEvent::class.java))
+                assertEquals(orderId, readyDocument.orderId)
                 val readyTraceParent = readyEvent.headerValue("traceparent").split('-')
                 assertEquals(traceId, readyTraceParent[1])
                 assertEquals("vendor=value", readyEvent.headerValue("tracestate"))

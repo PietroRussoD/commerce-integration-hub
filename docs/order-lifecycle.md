@@ -27,6 +27,17 @@ ready payload includes the persisted aggregate version so downstream read
 models can reject an older order snapshot. A
 duplicate event is a successful no-op.
 
+Ingestion and processing timestamps are truncated to microseconds before creating
+event payloads or persistence records. PostgreSQL stores timestamps at that
+precision, and the outbox publisher reconstructs the event occurrence time from
+its persisted creation time. Normalizing before serialization keeps the
+`OrderReady.v2` envelope occurrence time equal to the payload's `readyAt`; the
+search consumer rejects events where those timestamps differ.
+
+Already rejected records remain in the search DLQ. Enabling the existing
+[PostgreSQL-backed reconciliation job](local-demo.md) repairs missing READY
+order projections without replaying those records.
+
 ## Kafka processing
 
 ```mermaid

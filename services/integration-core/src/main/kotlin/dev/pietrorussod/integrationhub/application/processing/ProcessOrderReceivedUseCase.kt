@@ -6,6 +6,7 @@ import dev.pietrorussod.integrationhub.application.outbox.PendingOutboxEventRepo
 import dev.pietrorussod.integrationhub.domain.order.Order
 import dev.pietrorussod.integrationhub.domain.order.OrderStatus
 import java.time.Clock
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class ProcessOrderReceivedUseCase(
@@ -19,7 +20,7 @@ class ProcessOrderReceivedUseCase(
     private val generateId: () -> UUID,
 ) {
     fun process(command: ProcessOrderReceivedCommand): ProcessOrderReceivedResult {
-        val startedAt = clock.instant()
+        val startedAt = clock.instant().truncatedTo(ChronoUnit.MICROS)
         val inboxOutcome =
             processedMessageRepository.recordIfAbsent(
                 consumerName = CONSUMER_NAME,
@@ -65,7 +66,8 @@ class ProcessOrderReceivedUseCase(
             ),
         )
 
-        val completedAt = clock.instant()
+        // The outbox reconstructs occurredAt from PostgreSQL; readyAt must use the same precision.
+        val completedAt = clock.instant().truncatedTo(ChronoUnit.MICROS)
         val readyOrder = processingOrder.markReady()
         if (
             !orderRepository.updateStatus(
