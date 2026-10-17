@@ -536,7 +536,7 @@ test("replays a recorded rejection through the Flow Explorer", async ({ page }) 
   });
   await rejectedStep.click();
   await expect(page.getByRole("heading", { name: "ERP_ITEM_REJECTED" })).toBeVisible();
-  await expect(page.getByText("ERP_B_UNSUPPORTED_CURRENCY")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Current active step details" }).getByText("ERP_B_UNSUPPORTED_CURRENCY")).toBeVisible();
   await expect(page.getByRole("listitem", { name: "Gateway PostgreSQL, Destination" })).toBeVisible();
 
   await rejectedStep.focus();
@@ -550,6 +550,34 @@ test("replays a recorded rejection through the Flow Explorer", async ({ page }) 
   await page.setViewportSize({ width: 320, height: 800 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
+
+for (const width of [390, 768]) {
+  test(`shows the active recorded result before the collapsible sequence at ${width}px`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/flow-explorer");
+
+    await expect(page.getByText("Playback does not show live activity.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "ERP_PAGE_REQUESTED" }).first()).toBeVisible();
+    const expandSequence = page.getByRole("button", { name: "Show full sequence (10 steps)" });
+    await expect(expandSequence).toHaveAttribute("aria-expanded", "false");
+    await expect(page.getByRole("button", { name: /Step 3, ERP_PAGE_COMMITTED/ })).toBeHidden();
+
+    await expandSequence.click();
+    await expect(page.getByRole("button", { name: /Step 3, ERP_PAGE_COMMITTED/ })).toBeVisible();
+    const committedStep = page.getByRole("button", { name: /Step 3, ERP_PAGE_COMMITTED/ });
+    await committedStep.focus();
+    await page.keyboard.press("ArrowDown");
+    const activeDetails = page.getByTestId("flow-timeline-active-details");
+    await expect(page.getByRole("button", { name: /Step 4, CANONICAL_ORDER_FORWARDED/ })).toBeFocused();
+    await expect(activeDetails).toContainText("HTTP_METHOD");
+
+    await page.keyboard.press("End");
+    await expect(page.getByRole("button", { name: /Step 10, SCENARIO_COMPLETED/ })).toBeFocused();
+    await expect(activeDetails).toContainText("ORDER_STATUS");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+}
 
 test("explores the System Map without mobile page overflow", async ({ page }) => {
   await page.goto("/system-map");

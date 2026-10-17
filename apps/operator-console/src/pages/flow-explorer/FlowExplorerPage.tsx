@@ -39,6 +39,7 @@ export function FlowExplorerPage() {
 }
 
 function FlowExplorerContent({ trace }: { trace: FlowTrace }) {
+  const { t } = useTranslation();
   const playback = useFlowPlayback(trace);
 
   return (
@@ -54,16 +55,28 @@ function FlowExplorerContent({ trace }: { trace: FlowTrace }) {
         stepCount={trace.steps.length}
       />
 
-      <div className="mt-6 grid min-w-0 gap-6 xl:grid-cols-[19rem_minmax(0,1fr)]">
+      <div className="mt-6 grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_19rem]">
+        <div className="min-w-0 space-y-6">
+          <FlowStage activeStep={playback.activeStep} participants={trace.participants} />
+          <FlowStepDetails
+            step={playback.activeStep}
+            participants={trace.participants}
+            regionLabel={t("flowExplorer.stepDetails.activeRegion")}
+          />
+        </div>
         <FlowTimeline
           steps={trace.steps}
           activeStepIndex={playback.state.activeStepIndex}
           onSelectStep={playback.selectStep}
+          activeStepDetails={
+            <FlowStepDetails
+              step={playback.activeStep}
+              participants={trace.participants}
+              idPrefix="flow-step-details-inline"
+              regionLabel={t("flowExplorer.timeline.selectedDetails")}
+            />
+          }
         />
-        <div className="min-w-0 space-y-6">
-          <FlowStage activeStep={playback.activeStep} participants={trace.participants} />
-          <FlowStepDetails step={playback.activeStep} participants={trace.participants} />
-        </div>
       </div>
     </div>
   );

@@ -357,7 +357,7 @@
   "flowExplorer": {
     "page": {
       "title": "Esplorazione flussi",
-      "description": "Riproduci tracce di integrazione deterministiche e analizza ogni transizione operativa.",
+      "description": "Esplora le evidenze registrate di scenari completati. La riproduzione non mostra attività in tempo reale.",
       "loading": "Caricamento del flusso registrato",
       "error": "Impossibile caricare il flusso registrato",
       "retry": "Riprova"
@@ -382,6 +382,9 @@
       "ariaLabel": "Sequenza degli eventi",
       "title": "Sequenza",
       "progress": "Passaggio {{current}} di {{total}}",
+      "showAllSteps": "Mostra la sequenza completa ({{total}} passaggi)",
+      "hideAllSteps": "Nascondi la sequenza completa",
+      "selectedDetails": "Dettagli del passaggio selezionato",
       "stepLabel": "Passaggio {{sequence}}, {{eventType}}, {{status}}",
       "phases": {
         "POLLING": "Interrogazione",
@@ -398,6 +401,7 @@
       }
     },
     "stepDetails": {
+      "activeRegion": "Dettagli del passaggio attivo",
       "step": "Passaggio {{sequence}}",
       "phase": "Fase",
       "kind": "Operazione",
@@ -434,7 +438,7 @@
     },
     "scenarios": {
       "title": "Scenario registrato",
-      "description": "Scegli una traccia deterministica acquisita dallo stack di integrazione in esecuzione.",
+      "description": "Le tracce sono evidenze registrate dallo stack di integrazione; la riproduzione non mostra attività in tempo reale.",
       "items": {
         "erp-b-success": {
           "title": "Consegna completata",

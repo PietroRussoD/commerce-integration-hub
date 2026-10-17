@@ -59,7 +59,7 @@ test("loads and explores a different recorded scenario", async () => {
   });
   fireEvent.click(rejectedStep);
 
-  expect(await screen.findByRole("heading", { name: "ERP_ITEM_REJECTED" })).toBeInTheDocument();
+  expect(await screen.findAllByRole("heading", { name: "ERP_ITEM_REJECTED" })).toHaveLength(2);
   expect(loadFlowTraceMock).toHaveBeenCalledWith(
     expect.objectContaining({ url: "/flow-traces/v1/erp-b-poison-item.json" }),
   );
