@@ -3,11 +3,6 @@ import { Navigate, type RouteObject } from "react-router-dom";
 import { AppShell } from "./AppShell";
 import { RouteLoading } from "./RouteLoading";
 import { NotFoundPage } from "../pages/NotFoundPage";
-import { DeliveriesPage } from "../pages/deliveries/DeliveriesPage";
-import { DeliveryDetailPage } from "../pages/deliveries/DeliveryDetailPage";
-import { OrderDetailPage } from "../pages/orders/OrderDetailPage";
-import { OrdersPage } from "../pages/orders/OrdersPage";
-import { SimulatorPage } from "../pages/simulator/SimulatorPage";
 import { defaultBrandTheme, type BrandTheme } from "../theme/brandThemes";
 
 export function createAppRoutes(brandTheme: BrandTheme = defaultBrandTheme): RouteObject[] {
@@ -16,11 +11,46 @@ export function createAppRoutes(brandTheme: BrandTheme = defaultBrandTheme): Rou
       element: <AppShell brandTheme={brandTheme} />,
       children: [
         { index: true, element: <Navigate to="/orders" replace /> },
-        { path: "/orders", element: <OrdersPage /> },
-        { path: "/orders/:orderId", element: <OrderDetailPage /> },
-        { path: "/deliveries", element: <DeliveriesPage /> },
-        { path: "/deliveries/:deliveryId", element: <DeliveryDetailPage /> },
-        { path: "/simulator", element: <SimulatorPage /> },
+        {
+          path: "/orders",
+          hydrateFallbackElement: <RouteLoading />,
+          lazy: async () => {
+            const { OrdersPage } = await import("../pages/orders/OrdersPage");
+            return { Component: OrdersPage };
+          },
+        },
+        {
+          path: "/orders/:orderId",
+          hydrateFallbackElement: <RouteLoading />,
+          lazy: async () => {
+            const { OrderDetailPage } = await import("../pages/orders/OrderDetailPage");
+            return { Component: OrderDetailPage };
+          },
+        },
+        {
+          path: "/deliveries",
+          hydrateFallbackElement: <RouteLoading />,
+          lazy: async () => {
+            const { DeliveriesPage } = await import("../pages/deliveries/DeliveriesPage");
+            return { Component: DeliveriesPage };
+          },
+        },
+        {
+          path: "/deliveries/:deliveryId",
+          hydrateFallbackElement: <RouteLoading />,
+          lazy: async () => {
+            const { DeliveryDetailPage } = await import("../pages/deliveries/DeliveryDetailPage");
+            return { Component: DeliveryDetailPage };
+          },
+        },
+        {
+          path: "/simulator",
+          hydrateFallbackElement: <RouteLoading />,
+          lazy: async () => {
+            const { SimulatorPage } = await import("../pages/simulator/SimulatorPage");
+            return { Component: SimulatorPage };
+          },
+        },
         {
           path: "/flow-explorer",
           hydrateFallbackElement: <RouteLoading />,
