@@ -251,6 +251,10 @@
     "loading": "Loading order details",
     "error": "Unable to load order details",
     "retry": "Retry",
+    "refresh": "Refresh order",
+    "refreshing": "Refreshing order details…",
+    "lastUpdated": "Updated {{time}}",
+    "refreshError": "Could not refresh this order. The details below are from the last successful read.",
     "summary": {
       "externalOrder": "External order",
       "source": "Source",

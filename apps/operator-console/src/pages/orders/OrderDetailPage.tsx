@@ -11,7 +11,7 @@ import { OrderDetailContent } from "./OrderDetailContent";
 import { operatorOrderAccessFailure, retryOperatorOrderQuery } from "./operatorOrderQueries";
 
 export function OrderDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { accessToken, cacheScope } = useAccessToken();
   const location = useLocation();
   const orderId = useParams<{ orderId: string }>().orderId ?? "";
@@ -21,6 +21,10 @@ export function OrderDetailPage() {
     enabled: orderId.length > 0,
     retry: retryOperatorOrderQuery,
   });
+  const hasVisibleData = query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined;
+  const updatedAt = query.dataUpdatedAt > 0
+    ? new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium", timeStyle: "short" }).format(query.dataUpdatedAt)
+    : undefined;
 
   return (
     <section aria-labelledby="order-detail-heading">
@@ -28,6 +32,21 @@ export function OrderDetailPage() {
         titleId="order-detail-heading"
         title={t("orderDetail.title")}
         description={<span className="break-all font-mono text-xs">{orderId}</span>}
+        actions={hasVisibleData ? (
+          <div className="flex flex-wrap items-center gap-3">
+            {updatedAt !== undefined ? <p className="text-xs text-app-foreground-muted">{t("orderDetail.lastUpdated", { time: updatedAt })}</p> : null}
+            <button
+              type="button"
+              onClick={() => void query.refetch()}
+              disabled={query.isFetching}
+              aria-busy={query.isFetching}
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm font-medium hover:bg-app-canvas disabled:cursor-wait disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+            >
+              <RefreshCw aria-hidden="true" size={16} className={query.isFetching ? "animate-spin" : undefined} />
+              {t(query.isFetching ? "orderDetail.refreshing" : "orderDetail.refresh")}
+            </button>
+          </div>
+        ) : undefined}
         navigation={
           <Link
             to={{ pathname: "/orders", search: location.search }}
@@ -41,8 +60,16 @@ export function OrderDetailPage() {
 
       <div className="mt-5">
         {query.isPending ? <OrderDetailLoading /> : null}
-        {query.isError ? <OrderDetailError error={query.error} onRetry={() => void query.refetch()} /> : null}
-        {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined ? <OrderDetailContent order={query.data} /> : null}
+        {query.isError && !hasVisibleData ? <OrderDetailError error={query.error} onRetry={() => void query.refetch()} /> : null}
+        {query.isError && hasVisibleData ? (
+          <p role="alert" className="mb-4 rounded-md border border-app-border bg-app-surface px-4 py-3 text-sm text-app-foreground-secondary">
+            {t("orderDetail.refreshError")}
+          </p>
+        ) : null}
+        {hasVisibleData ? <div aria-busy={query.isFetching}>
+          {query.isFetching ? <p role="status" className="mb-3 text-sm text-app-foreground-secondary">{t("orderDetail.refreshing")}</p> : null}
+          <OrderDetailContent order={query.data!} />
+        </div> : null}
       </div>
     </section>
   );

@@ -251,6 +251,10 @@
     "loading": "Caricamento dettagli ordine",
     "error": "Impossibile caricare i dettagli dell'ordine",
     "retry": "Riprova",
+    "refresh": "Aggiorna ordine",
+    "refreshing": "Aggiornamento dettagli ordine…",
+    "lastUpdated": "Aggiornato {{time}}",
+    "refreshError": "Impossibile aggiornare l'ordine. I dettagli mostrati provengono dall'ultima lettura riuscita.",
     "summary": {
       "externalOrder": "Ordine esterno",
       "source": "Origine",
