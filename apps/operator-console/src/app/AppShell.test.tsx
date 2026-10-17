@@ -35,6 +35,20 @@ test("renders navigation inside the operator shell", async () => {
   expect(screen.getByRole("link", { name: "Simulator" })).toHaveAttribute("aria-current", "page");
 });
 
+test("renders a localized not found page inside the operator shell", async () => {
+  const router = createMemoryRouter(createAppRoutes(), { initialEntries: ["/unknown-route"] });
+
+  render(
+    <AppProviders i18nInstance={createAppI18n("it")}>
+      <RouterProvider router={router} />
+    </AppProviders>,
+  );
+
+  expect(await screen.findByRole("heading", { name: "Pagina non trovata" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Vai agli ordini" })).toHaveAttribute("href", "/orders");
+  expect(screen.queryByText(/Unexpected Application Error/)).not.toBeInTheDocument();
+});
+
 test("reveals delivery inspection to an operator token", async () => {
   const router = createMemoryRouter(createAppRoutes(), { initialEntries: ["/simulator"] });
 

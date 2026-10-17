@@ -39,6 +39,11 @@
       "sessionExpired": "Il token di accesso è scaduto ed è stato rimosso. Imposta un nuovo token per ripristinare l’accesso autenticato. Le richieste già inviate non vengono annullate."
     }
   },
+  "notFound": {
+    "title": "Pagina non trovata",
+    "description": "Questo indirizzo non corrisponde a una pagina della console operativa.",
+    "orders": "Vai agli ordini"
+  },
   "deliveries": {
     "title": "Consegne",
     "total": "{{count}} in questa pagina",
@@ -56,6 +61,8 @@
     "loading": "Caricamento consegne",
     "empty": "Nessuna consegna trovata",
     "error": "Impossibile caricare le consegne",
+    "invalidRequest": "Il Gateway ha rifiutato la richiesta. Controlla i filtri o l’indirizzo della pagina e correggili prima di riprovare.",
+    "notFound": "Questa consegna non è stata trovata. Torna all’elenco e scegli una consegna disponibile.",
     "pageRejected": "Il Gateway ha rifiutato la richiesta di questa pagina. Torna alla prima pagina mantenendo i filtri attuali."
   },
   "deliveryDetail": {
@@ -196,6 +203,8 @@
     "loading": "Caricamento ordini",
     "updating": "Aggiornamento dei risultati degli ordini…",
     "error": "Impossibile caricare gli ordini",
+    "invalidRequest": "Il Core ha rifiutato la richiesta degli ordini. Controlla la ricerca o l’indirizzo della pagina prima di riprovare.",
+    "notFound": "Questo ordine non è stato trovato. Torna all’elenco e scegli un ordine disponibile.",
     "pagination": "{{first}}-{{last}} di {{total}}",
     "searchProjection": {
       "summary": "Ricerca indicizzata degli ordini",

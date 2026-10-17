@@ -9,7 +9,7 @@ import { IconButton } from "../../components/ui/IconButton";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatLabel, formatMoney, orderStatusLabelKeys } from "./orderFormatters";
-import { operatorOrderAccessFailure } from "./operatorOrderQueries";
+import { operatorOrderAccessFailure, operatorOrderRequestFailure } from "./operatorOrderQueries";
 import { normalizeOrderSearchCriteria, readOrderSearchCriteria, parsePageOffset, withPageOffset, type OrderSearchCriteria } from "./orderSearchParams";
 
 const SEARCH_PAGE_SIZE = 25;
@@ -187,13 +187,15 @@ export function SearchLoading() {
 export function SearchError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation();
   const accessFailure = operatorOrderAccessFailure(error);
+  const requestFailure = operatorOrderRequestFailure(error);
+  const failureKey = accessFailure ?? requestFailure;
 
   return (
     <div role="alert" className="flex flex-wrap items-center gap-3 px-4 py-5 text-sm text-app-foreground-secondary">
       <TriangleAlert aria-hidden="true" size={18} className="shrink-0 text-red-700" />
-      <p className="flex-1">{t(accessFailure === undefined ? "orders.search.error" : `orders.access.${accessFailure}`)}</p>
+      <p className="flex-1">{t(failureKey === undefined ? "orders.search.error" : failureKey === "unauthorized" || failureKey === "forbidden" ? `orders.access.${failureKey}` : `orders.${failureKey}`)}</p>
       {accessFailure !== undefined ? <AccessTokenButton /> : null}
-      {accessFailure === undefined ? (
+      {failureKey === undefined ? (
         <IconButton label={t("orders.actions.retry")} onClick={onRetry}>
         <RefreshCw aria-hidden="true" size={17} />
       </IconButton>

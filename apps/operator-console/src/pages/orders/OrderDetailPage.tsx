@@ -8,7 +8,7 @@ import { AccessTokenButton } from "../../auth/AccessTokenButton";
 import { useAccessToken } from "../../auth/accessTokenContext";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { OrderDetailContent } from "./OrderDetailContent";
-import { operatorOrderAccessFailure, retryOperatorOrderQuery } from "./operatorOrderQueries";
+import { operatorOrderAccessFailure, operatorOrderRequestFailure, retryOperatorOrderQuery } from "./operatorOrderQueries";
 import { formatLabel } from "./orderFormatters";
 
 export function OrderDetailPage() {
@@ -23,7 +23,7 @@ export function OrderDetailPage() {
     enabled: orderId.length > 0,
     retry: retryOperatorOrderQuery,
   });
-  const hasVisibleData = query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined;
+  const hasVisibleData = query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined && operatorOrderRequestFailure(query.error) === undefined;
   const heading = hasVisibleData ? query.data!.externalOrderId : t("orderDetail.title");
   const updatedAt = query.dataUpdatedAt > 0
     ? new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium", timeStyle: "short" }).format(query.dataUpdatedAt)
@@ -103,13 +103,15 @@ function OrderDetailLoading() {
 function OrderDetailError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation();
   const accessFailure = operatorOrderAccessFailure(error);
+  const requestFailure = operatorOrderRequestFailure(error);
+  const failureKey = accessFailure ?? requestFailure;
 
   return (
     <div role="alert" className="flex flex-col items-center rounded-md border border-app-border bg-app-surface px-6 py-14 text-center">
       <TriangleAlert aria-hidden="true" size={24} className="text-red-700" />
-      <p className="mt-3 font-medium">{t(accessFailure === undefined ? "orderDetail.error" : `orders.access.${accessFailure}`)}</p>
+      <p className="mt-3 font-medium">{t(failureKey === undefined ? "orderDetail.error" : failureKey === "unauthorized" || failureKey === "forbidden" ? `orders.access.${failureKey}` : `orders.${failureKey}`)}</p>
       {accessFailure !== undefined ? <AccessTokenButton /> : null}
-      {accessFailure === undefined ? (
+      {failureKey === undefined ? (
         <button
         type="button"
         onClick={onRetry}

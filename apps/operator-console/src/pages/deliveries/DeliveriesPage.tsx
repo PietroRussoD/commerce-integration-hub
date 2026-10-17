@@ -16,7 +16,7 @@ import { PageHeader } from "../../components/ui/PageHeader";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime } from "../orders/orderFormatters";
-import { operatorDeliveryAccessFailure, retryOperatorDeliveryQuery } from "./operatorDeliveryQueries";
+import { operatorDeliveryAccessFailure, operatorDeliveryRequestFailure, retryOperatorDeliveryQuery } from "./operatorDeliveryQueries";
 import { deliveryListNavigationState, previousDeliveryCursors } from "./deliveryListNavigation";
 
 const PAGE_SIZE = 25;
@@ -81,6 +81,7 @@ export function DeliveriesPage() {
   });
 
   const accessFailure = operatorDeliveryAccessFailure(query.error);
+  const requestFailure = operatorDeliveryRequestFailure(query.error);
   const pageRejected = cursor !== undefined && query.error instanceof ConnectorGatewayApiError && query.error.status === 400;
 
   function changePage(nextCursor: string | undefined, previous: Array<string | null>) {
@@ -105,7 +106,7 @@ export function DeliveriesPage() {
       <PageHeader
         titleId="deliveries-heading"
         title={t("deliveries.title")}
-        description={query.data === undefined || accessFailure !== undefined || pageRejected ? "\u00a0" : t("deliveries.total", { count: query.data.items.length })}
+        description={query.data === undefined || accessFailure !== undefined || requestFailure !== undefined || pageRejected ? "\u00a0" : t("deliveries.total", { count: query.data.items.length })}
         actions={
           <div className="flex flex-wrap items-end gap-2">
             <label className="grid gap-1 text-xs font-medium text-app-foreground-secondary">
@@ -143,10 +144,10 @@ export function DeliveriesPage() {
         {!canReadDeliveries ? <DeliveryAccessNotice hasToken={accessToken !== undefined} /> : null}
         {canReadDeliveries && query.isPending ? <DeliveriesLoading /> : null}
         {canReadDeliveries && query.isError ? <DeliveriesError error={query.error} onRetry={() => void query.refetch()} onFirstPage={pageRejected ? () => changePage(undefined, []) : undefined} /> : null}
-        {canReadDeliveries && query.data !== undefined && accessFailure === undefined && !pageRejected ? <DeliveriesTable page={query.data} /> : null}
+        {canReadDeliveries && query.data !== undefined && accessFailure === undefined && requestFailure === undefined && !pageRejected ? <DeliveriesTable page={query.data} /> : null}
       </div>
 
-      {canReadDeliveries && query.data !== undefined && accessFailure === undefined && !pageRejected && (cursor !== undefined || query.data.nextCursor !== null) ? (
+      {canReadDeliveries && query.data !== undefined && accessFailure === undefined && requestFailure === undefined && !pageRejected && (cursor !== undefined || query.data.nextCursor !== null) ? (
         <Pagination
           disabled={query.isFetching}
           hasFirst={cursor !== undefined}
@@ -276,16 +277,19 @@ function DeliveriesLoading() {
 function DeliveriesError({ error, onRetry, onFirstPage }: { error: unknown; onRetry: () => void; onFirstPage?: () => void }) {
   const { t } = useTranslation();
   const accessFailure = operatorDeliveryAccessFailure(error);
+  const requestFailure = operatorDeliveryRequestFailure(error);
+  const failureKey = accessFailure ?? requestFailure;
   return (
     <div role="alert" className="flex flex-col items-center px-6 py-14 text-center">
       <TriangleAlert aria-hidden="true" size={24} className="text-red-700" />
-      <p className="mt-3 font-medium">{t(onFirstPage !== undefined ? "deliveries.pageRejected" : accessFailure === undefined ? "deliveries.error" : `deliveries.access.${accessFailure}`)}</p>
-      {accessFailure !== undefined ? <AccessTokenButton /> : (
+      <p className="mt-3 font-medium">{t(onFirstPage !== undefined ? "deliveries.pageRejected" : failureKey === undefined ? "deliveries.error" : failureKey === "unauthorized" || failureKey === "denied" ? `deliveries.access.${failureKey}` : `deliveries.${failureKey}`)}</p>
+      {accessFailure !== undefined ? <AccessTokenButton /> : null}
+      {onFirstPage !== undefined || failureKey === undefined ? (
         <button type="button" onClick={onFirstPage ?? onRetry} className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm font-medium hover:bg-app-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">
           <RefreshCw aria-hidden="true" size={16} />
           {t(onFirstPage !== undefined ? "deliveries.actions.firstPage" : "deliveries.actions.retry")}
         </button>
-      )}
+      ) : null}
     </div>
   );
 }
