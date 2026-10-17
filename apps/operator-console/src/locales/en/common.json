@@ -61,6 +61,10 @@
     "loading": "Loading delivery details",
     "error": "Unable to load delivery details",
     "retry": "Retry",
+    "refresh": "Refresh delivery",
+    "refreshing": "Refreshing delivery details…",
+    "lastUpdated": "Updated {{time}}",
+    "refreshError": "Could not refresh this delivery. The details below are from the last successful read.",
     "summary": {
       "event": "Event",
       "provider": "Provider",

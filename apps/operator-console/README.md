@@ -272,6 +272,15 @@ displayed data is from the previous successful read. It does not poll
 automatically; the operator can refresh when needed. Browser tests use synthetic
 API responses and do not verify a live Integration Core.
 
+The delivery detail can also be refreshed explicitly and reports the last
+successful read. After a confirmed replay response, it polls the delivery every
+three seconds while its status is `RECEIVED`, `RETRY_WAIT` or `FORWARDING`, and
+stops when the Gateway reports a terminal status. Background polling pauses
+when the page is hidden. The replay confirmation remains available separately
+from the refreshed delivery state. A failed read keeps prior details visible
+with an explanation unless the Gateway rejects access. Browser tests use
+synthetic Gateway responses and do not verify a live Gateway.
+
 ## Dialog accessibility
 
 The access-token and delivery-replay dialogs use native modal dialogs with

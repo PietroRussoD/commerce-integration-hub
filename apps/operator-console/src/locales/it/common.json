@@ -61,6 +61,10 @@
     "loading": "Caricamento dettagli consegna",
     "error": "Impossibile caricare i dettagli della consegna",
     "retry": "Riprova",
+    "refresh": "Aggiorna consegna",
+    "refreshing": "Aggiornamento dettagli consegna…",
+    "lastUpdated": "Aggiornato {{time}}",
+    "refreshError": "Impossibile aggiornare la consegna. I dettagli mostrati provengono dall'ultima lettura riuscita.",
     "summary": {
       "event": "Evento",
       "provider": "Provider",
