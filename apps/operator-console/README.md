@@ -288,6 +288,16 @@ from the refreshed delivery state. A failed read keeps prior details visible
 with an explanation unless the Gateway rejects access. Browser tests use
 synthetic Gateway responses and do not verify a live Gateway.
 
+The delivery detail presents its event, status and latest Gateway error first.
+Error codes retain their exact value and can be copied; complete returned error
+messages remain readable on narrow screens. Attempt records expand individually
+to show timing and diagnostics. Connector metadata is available in a separate
+disclosure, including a clear no-scheduled-attempt state for terminal deliveries.
+When the Gateway provides a Core order ID, the detail links to that order and
+offers a return link to the originating delivery. Missing trace IDs and an
+unconfigured trace viewer are explained separately. Browser tests use synthetic
+Gateway and Core responses and do not verify live services.
+
 ## Dialog accessibility
 
 The access-token and delivery-replay dialogs use native modal dialogs with

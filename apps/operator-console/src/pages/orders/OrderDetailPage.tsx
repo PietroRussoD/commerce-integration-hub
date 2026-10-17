@@ -15,6 +15,7 @@ export function OrderDetailPage() {
   const { t, i18n } = useTranslation();
   const { accessToken, cacheScope } = useAccessToken();
   const location = useLocation();
+  const returnToDelivery = getReturnToDeliveryPath(location.state);
   const orderId = useParams<{ orderId: string }>().orderId ?? "";
   const query = useQuery({
     queryKey: ["operator-order", cacheScope, orderId],
@@ -53,11 +54,11 @@ export function OrderDetailPage() {
         ) : undefined}
         navigation={
           <Link
-            to={{ pathname: "/orders", search: location.search }}
+            to={returnToDelivery ?? { pathname: "/orders", search: location.search }}
             className="inline-flex items-center gap-2 text-sm font-medium text-app-foreground-secondary hover:text-app-foreground focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
           >
             <ArrowLeft aria-hidden="true" size={16} />
-            {t("orderDetail.backToOrders")}
+            {t(returnToDelivery === undefined ? "orderDetail.backToOrders" : "orderDetail.backToDelivery")}
           </Link>
         }
       />
@@ -77,6 +78,14 @@ export function OrderDetailPage() {
       </div>
     </section>
   );
+}
+
+function getReturnToDeliveryPath(state: unknown): string | undefined {
+  if (typeof state !== "object" || state === null || !("returnToDelivery" in state)) return undefined;
+  const path = state.returnToDelivery;
+  return typeof path === "string" && path.startsWith("/deliveries/") && !path.startsWith("//") && !path.includes("\\")
+    ? path
+    : undefined;
 }
 
 function OrderDetailLoading() {

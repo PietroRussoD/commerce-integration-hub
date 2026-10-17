@@ -35,7 +35,7 @@ test("recovers a lost response after navigation and a delivery transition to REC
   await page.getByRole("link", { name: "DELIVERY-E2E-001" }).click();
   await expect(page).toHaveURL(`/deliveries/${deliveryId}`);
   await expect(page.getByRole("heading", { name: "Delivery details" })).toBeVisible();
-  await expect(page.locator("dd").filter({ hasText: /^Received$/ })).toBeVisible();
+  await expect(page.locator("section[aria-labelledby='delivery-outcome-heading']").getByText("Received", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Resolve replay request" }).click();
   await expect(page.getByLabel("Reason")).toHaveValue("Synthetic recovery check");
   await expect(page.getByLabel("Reason")).toHaveAttribute("readonly", "");

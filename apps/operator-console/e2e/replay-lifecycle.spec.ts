@@ -56,7 +56,7 @@ for (const failure of [false, true]) {
         await expect(page.getByRole("button", { name: "Confirm request" })).toBeDisabled();
       } else {
         // Completion invalidates the detail even though its original page unmounted.
-        await expect(page.locator("dd").filter({ hasText: /^Received$/ })).toBeVisible();
+        await expect(page.locator("section[aria-labelledby='delivery-outcome-heading']").getByText("Received", { exact: true })).toBeVisible();
         await expect(page.getByRole("button", { name: "Request a new send attempt", exact: true, includeHidden: true })).toBeDisabled();
       }
       expect(mock.posts).toHaveLength(1);

@@ -12,7 +12,7 @@ export function ReplayDeliveryFeedback({ deliveryId }: { deliveryId: string }) {
   return (
     <div
       role={response === undefined ? undefined : "status"}
-      aria-label={t("deliveryDetail.replay.feedbackLabel")}
+      aria-label={response === undefined ? undefined : t("deliveryDetail.replay.feedbackLabel")}
       aria-live="polite"
       aria-atomic="true"
     >

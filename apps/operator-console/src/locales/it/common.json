@@ -44,6 +44,8 @@
     "total": "{{count}} in questa pagina",
     "filter": { "provider": "Provider", "status": "Stato", "all": "Tutti" },
     "provider": { "erpB": "ERP B", "marketplaceA": "Marketplace A" },
+    "connectorMode": { "POLLING": "Polling", "WEBHOOK": "Webhook" },
+    "connectorStatus": { "ACTIVE": "Attivo", "BLOCKED_CONFIGURATION": "Configurazione bloccata", "DISABLED": "Disattivato" },
     "status": {
       "received": "Ricevuto", "forwarding": "In inoltro", "retryWait": "In attesa di nuovo tentativo", "exhausted": "Esaurito", "delivered": "Consegnato", "permanentFailure": "Errore permanente", "blockedConfiguration": "Configurazione bloccata"
     },
@@ -81,8 +83,17 @@
       "httpStatus": "Ultimo stato HTTP",
       "correlation": "Correlazione",
       "errorCode": "Codice errore",
-      "safeError": "Errore sicuro"
+      "safeError": "Errore sicuro",
+      "latestError": "Ultimo errore di consegna",
+      "gatewayMessage": "Messaggio del Gateway (originale)",
+      "moreDetails": "Dettagli consegna",
+      "noAttemptScheduled": "Nessun tentativo pianificato",
+      "attemptsCountSingular": "tentativo",
+      "attemptsCountPlural": "tentativi"
     },
+    "copyErrorCode": "Copia codice errore {{code}}",
+    "valueCopied": "Copiato.",
+    "valueCopyFailed": "Copia non riuscita. Seleziona il valore e copialo manualmente.",
     "retention": {
       "retained": "Conservato fino a {{expiresAt}}",
       "expired": "Scaduto alle {{expiresAt}}",
@@ -94,14 +105,18 @@
       "empty": "Nessun tentativo di consegna",
       "columns": {
         "attempt": "Tentativo",
+        "attemptNumber": "Tentativo {{number}}",
         "outcome": "Esito",
         "started": "Avviato",
+        "completed": "Completato",
         "duration": "Durata",
         "httpStatus": "Stato HTTP",
         "trace": "Traccia",
         "error": "Errore"
       },
       "openTrace": "Apri la traccia {{traceId}} in Jaeger",
+      "traceIdUnavailable": "Il Gateway non ha restituito un ID traccia.",
+      "traceViewerUnavailable": "Il visualizzatore di tracce non è configurato o l’URL non è valido.",
       "outcome": { "retryableFailure": "Errore riprovabile" }
     },
     "replay": {
@@ -252,6 +267,7 @@
   "orderDetail": {
     "title": "Dettagli ordine",
     "backToOrders": "Ordini",
+    "backToDelivery": "Torna alla consegna",
     "loading": "Caricamento dettagli ordine",
     "error": "Impossibile caricare i dettagli dell'ordine",
     "retry": "Riprova",
