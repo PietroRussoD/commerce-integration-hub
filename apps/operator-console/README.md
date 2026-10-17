@@ -250,6 +250,13 @@ both offsets. Submitting new criteria or returning to the complete list resets
 paging, while keeping the status filter. Older URLs containing both offsets
 remain readable; only the active scope's offset is used.
 
+Changing pages clears rows from the previous offset until the requested page
+arrives. A delayed read shows a loading status; when cached rows for the same
+scope and page are being refreshed, the results region is marked busy and page
+controls are disabled. A live announcement reports the new range or empty state
+after the request finishes. Changing the status filter remains possible during
+a pending page request and discards its old offset.
+
 An unavailable index or failed projection-status read disables search without
 blocking the complete list. An active search keeps its criteria and offers an
 explicit Complete order list action rather than silently replacing results.

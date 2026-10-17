@@ -171,7 +171,10 @@
       "ready": "Pronto"
     },
     "empty": "Nessun ordine trovato",
+    "resultsAnnouncement": "Risultati aggiornati: {{range}}",
+    "resultsAnnouncementEmpty": "Risultati aggiornati: {{message}}",
     "loading": "Caricamento ordini",
+    "updating": "Aggiornamento dei risultati degli ordini…",
     "error": "Impossibile caricare gli ordini",
     "pagination": "{{first}}-{{last}} di {{total}}",
     "searchProjection": {
@@ -232,8 +235,10 @@
       },
       "unavailable": "La ricerca negli ordini indicizzati non è disponibile",
       "loading": "Ricerca negli ordini indicizzati",
+      "updating": "Aggiornamento dei risultati della ricerca…",
       "error": "Impossibile cercare negli ordini indicizzati",
       "empty": "Nessun ordine indicizzato trovato",
+      "emptyAnnouncement": "Nessun ordine indicizzato corrispondente",
       "table": {
         "matches": "Corrispondenze",
         "ready": "Pronto"
