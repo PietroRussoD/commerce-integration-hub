@@ -265,6 +265,13 @@ becomes available. Counts and cached results are hidden while its availability
 is unconfirmed or unavailable. Chromium acceptance tests use synthetic API
 responses; they do not verify a live OpenSearch deployment.
 
+The order detail has an explicit refresh action and shows the time of its last
+successful read. During a refresh, the current details remain visible and the
+refresh control is disabled. If a read fails, the page explains that the
+displayed data is from the previous successful read. It does not poll
+automatically; the operator can refresh when needed. Browser tests use synthetic
+API responses and do not verify a live Integration Core.
+
 ## Dialog accessibility
 
 The access-token and delivery-replay dialogs use native modal dialogs with
