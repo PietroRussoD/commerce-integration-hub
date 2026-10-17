@@ -171,7 +171,10 @@
       "ready": "Ready"
     },
     "empty": "No orders found",
+    "resultsAnnouncement": "Updated results: {{range}}",
+    "resultsAnnouncementEmpty": "Updated results: {{message}}",
     "loading": "Loading orders",
+    "updating": "Updating order results…",
     "error": "Unable to load orders",
     "pagination": "{{first}}-{{last}} of {{total}}",
     "searchProjection": {
@@ -232,8 +235,10 @@
       },
       "unavailable": "Projected order search is unavailable",
       "loading": "Searching projected orders",
+      "updating": "Updating search results…",
       "error": "Unable to search projected orders",
       "empty": "No projected orders found",
+      "emptyAnnouncement": "No matching indexed orders",
       "table": {
         "matches": "Matches",
         "ready": "Ready"

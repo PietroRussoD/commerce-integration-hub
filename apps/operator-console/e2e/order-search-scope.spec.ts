@@ -25,7 +25,7 @@ test("keeps one active scope across filtering, editing, refresh and browser hist
   await searchbox.fill("browser");
   await page.getByRole("button", { name: "Search projected orders" }).click();
   await expect(page.getByText("Indexed search · Total: 0")).toBeVisible();
-  await expect(page.getByText("No projected orders found")).toBeVisible();
+  await expect(page.getByText("No projected orders found", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "ORDER-E2E-001" })).toHaveCount(0);
   expect(requests.filter((url) => url.pathname.endsWith("/search")).slice(-1)[0]?.searchParams.get("status")).toBe("RECEIVED");
 

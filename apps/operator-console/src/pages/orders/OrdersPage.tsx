@@ -51,8 +51,6 @@ export function OrdersPage() {
         offset,
         signal,
       }),
-    placeholderData: (previousData, previousQuery) =>
-      previousQuery?.queryKey[1] === cacheScope ? previousData : undefined,
     enabled: !isSearch,
     retry: retryOperatorOrderQuery,
   });
@@ -78,8 +76,19 @@ export function OrdersPage() {
     retry: retryOperatorOrderQuery,
   });
   const activeQuery = isSearch ? searchQuery : query;
-  const activePage = isSearch && !isSearchAvailable ? undefined : activeQuery.data;
+  const activePage = isSearch && !isSearchAvailable || operatorOrderAccessFailure(activeQuery.error) !== undefined
+    ? undefined
+    : activeQuery.data;
   const isRefreshing = activeQuery.isFetching || searchProjectionQuery.isFetching;
+  const pageAnnouncement = activeQuery.isFetching || activePage === undefined
+    ? ""
+    : activePage.items.length === 0
+      ? t("orders.resultsAnnouncementEmpty", { message: t(isSearch ? "orders.search.empty" : "orders.empty") })
+      : t("orders.resultsAnnouncement", { range: t("orders.pagination", {
+          first: activePage.offset + 1,
+          last: Math.min(activePage.offset + activePage.items.length, activePage.total),
+          total: activePage.total,
+        }) });
 
   async function refresh() {
     await Promise.all([
@@ -135,6 +144,7 @@ export function OrdersPage() {
           </div>
         }
       />
+      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">{pageAnnouncement}</p>
 
       <SearchProjectionStatus
         status={searchProjectionQuery.data}
@@ -155,14 +165,18 @@ export function OrdersPage() {
           <p className="mt-3 text-sm text-app-foreground-secondary">{t("orders.search.scopeGuidance")}</p>
           {searchProjectionQuery.isPending ? <SearchLoading /> : null}
           {isSearchAvailable ? (
-            <div className="mt-5 overflow-hidden rounded-md border border-app-border bg-app-surface">
+            <div aria-busy={searchQuery.isFetching} className="mt-5 overflow-hidden rounded-md border border-app-border bg-app-surface">
               {searchQuery.isPending ? <SearchLoading /> : null}
+              {searchQuery.isFetching && searchQuery.data !== undefined
+                ? <p role="status" className="px-4 py-2 text-sm text-app-foreground-secondary">{t("orders.search.updating")}</p>
+                : null}
               {searchQuery.isError ? <SearchError error={searchQuery.error} onRetry={() => void searchQuery.refetch()} /> : null}
               {searchQuery.data !== undefined && operatorOrderAccessFailure(searchQuery.error) === undefined ? (
                 <>
                   <SearchResults page={searchQuery.data} />
                   {searchQuery.data.total > 0 ? <SearchPagination
                     page={searchQuery.data}
+                    isBusy={searchQuery.isFetching}
                     onPrevious={() => setSearchParams((current) => withPageOffset(current, "searchOffset", Math.max(0, searchOffset - PAGE_SIZE)))}
                     onNext={() => setSearchParams((current) => withPageOffset(current, "searchOffset", searchOffset + PAGE_SIZE))}
                   /> : null}
@@ -173,8 +187,9 @@ export function OrdersPage() {
         </>
       ) : (
         <>
-          <div className="mt-5 overflow-hidden rounded-md border border-app-border bg-app-surface">
+          <div aria-busy={query.isFetching} className="mt-5 overflow-hidden rounded-md border border-app-border bg-app-surface">
             {query.isPending ? <OrdersLoading /> : null}
+            {query.isFetching && query.data !== undefined ? <OrdersUpdating /> : null}
             {query.isError ? <OrdersError error={query.error} onRetry={() => void query.refetch()} /> : null}
             {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined ? <OrdersTable page={query.data} /> : null}
           </div>
@@ -182,6 +197,7 @@ export function OrdersPage() {
           {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined && query.data.total > 0 ? (
             <Pagination
               page={query.data}
+              isBusy={query.isFetching}
               onPrevious={() => setSearchParams((current) => withPageOffset(current, "offset", Math.max(0, offset - PAGE_SIZE)))}
               onNext={() => setSearchParams((current) => withPageOffset(current, "offset", offset + PAGE_SIZE))}
             />
@@ -273,6 +289,12 @@ function OrdersLoading() {
   );
 }
 
+function OrdersUpdating() {
+  const { t } = useTranslation();
+
+  return <p role="status" className="px-4 py-2 text-sm text-app-foreground-secondary">{t("orders.updating")}</p>;
+}
+
 function OrdersError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation();
   const accessFailure = operatorOrderAccessFailure(error);
@@ -298,10 +320,12 @@ function OrdersError({ error, onRetry }: { error: unknown; onRetry: () => void }
 
 function Pagination({
   page,
+  isBusy,
   onPrevious,
   onNext,
 }: {
   page: OperatorOrderPage;
+  isBusy: boolean;
   onPrevious: () => void;
   onNext: () => void;
 }) {
@@ -318,14 +342,14 @@ function Pagination({
         <IconButton
           label={t("orders.actions.previousPage")}
           onClick={onPrevious}
-          disabled={page.offset === 0}
+          disabled={isBusy || page.offset === 0}
         >
           <ChevronLeft aria-hidden="true" size={18} />
         </IconButton>
         <IconButton
           label={t("orders.actions.nextPage")}
           onClick={onNext}
-          disabled={page.offset + page.items.length >= page.total}
+          disabled={isBusy || page.offset + page.items.length >= page.total}
         >
           <ChevronRight aria-hidden="true" size={18} />
         </IconButton>

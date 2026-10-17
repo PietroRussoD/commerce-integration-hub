@@ -277,10 +277,12 @@ function SearchResultRow({ order }: { order: OperatorOrderSearchPage["items"][nu
 
 export function SearchPagination({
   page,
+  isBusy,
   onPrevious,
   onNext,
 }: {
   page: OperatorOrderSearchPage;
+  isBusy: boolean;
   onPrevious: () => void;
   onNext: () => void;
 }) {
@@ -292,13 +294,13 @@ export function SearchPagination({
     <div className="flex items-center justify-end gap-3 border-t border-app-border px-4 py-3 text-sm text-app-foreground-secondary">
       <span className="tabular-nums">{t("orders.pagination", { first, last, total: page.total })}</span>
       <div className="flex gap-1">
-        <IconButton label={t("orders.actions.previousPage")} onClick={onPrevious} disabled={page.offset === 0}>
+        <IconButton label={t("orders.actions.previousPage")} onClick={onPrevious} disabled={isBusy || page.offset === 0}>
           <ChevronLeft aria-hidden="true" size={18} />
         </IconButton>
         <IconButton
           label={t("orders.actions.nextPage")}
           onClick={onNext}
-          disabled={page.offset + page.items.length >= page.total}
+          disabled={isBusy || page.offset + page.items.length >= page.total}
         >
           <ChevronRight aria-hidden="true" size={18} />
         </IconButton>
