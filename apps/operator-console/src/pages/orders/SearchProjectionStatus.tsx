@@ -35,17 +35,21 @@ export function SearchProjectionStatus({ status, isPending, isError, error }: Se
 
   if (isPending) {
     return (
-      <section aria-label={t("orders.searchProjection.title")} className="mt-5 rounded-md border border-app-border bg-app-surface px-4 py-3">
-        <p role="status" className="text-sm text-app-foreground-secondary">
-          {t("orders.searchProjection.loading")}
+      <section aria-label={t("orders.searchProjection.title")} className="mt-3 flex flex-wrap items-center gap-2">
+        <p role="status" className="text-sm font-medium text-app-foreground">
+          {t("orders.searchProjection.summary")}
         </p>
+        <span className="text-sm text-app-foreground-secondary">
+          {t("orders.searchProjection.loading")}
+        </span>
       </section>
     );
   }
 
   if (isError || status === undefined) {
     return (
-      <section aria-label={t("orders.searchProjection.title")} className="mt-5 rounded-md border border-app-border bg-app-surface px-4 py-3">
+      <section aria-label={t("orders.searchProjection.title")} className="mt-3 flex flex-wrap items-center gap-2">
+        <p className="text-sm font-medium text-app-foreground">{t("orders.searchProjection.summary")}</p>
         <p role={accessFailure === undefined ? undefined : "alert"} className="text-sm text-app-foreground-secondary">
           {t(accessFailure === undefined ? "orders.searchProjection.unavailable" : `orders.access.${accessFailure}`)}
         </p>
@@ -60,41 +64,40 @@ export function SearchProjectionStatus({ status, isPending, isError, error }: Se
   const reindexPresentation = reindexPhase ?? reindexPhasePresentation.IDLE;
 
   return (
-    <section aria-labelledby="search-projection-heading" className="mt-5 rounded-md border border-app-border bg-app-surface px-4 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
-        <div>
+    <section aria-label={t("orders.searchProjection.summary")} className="mt-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-medium text-app-foreground">{t("orders.searchProjection.summary")}</p>
+        <StatusBadge status={presentation.badgeStatus}>{t(presentation.labelKey)}</StatusBadge>
+      </div>
+      <details className="mt-1 rounded-sm text-sm">
+        <summary className="w-fit cursor-pointer rounded-sm text-app-foreground-secondary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">
+          {t("orders.searchProjection.details")}
+        </summary>
+        <div className="mt-3 rounded-md border border-app-border bg-app-surface px-4 py-3">
           <h2 id="search-projection-heading" className="text-sm font-semibold text-app-foreground">
             {t("orders.searchProjection.title")}
           </h2>
           <p className="mt-0.5 text-xs text-app-foreground-secondary">{t("orders.searchProjection.description")}</p>
-        </div>
-        <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-          <div className="flex items-center gap-2">
-            <dt className="text-app-foreground-secondary">{t("orders.searchProjection.availability.label")}</dt>
-            <dd>
-              <StatusBadge status={presentation.badgeStatus}>{t(presentation.labelKey)}</StatusBadge>
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-app-foreground-secondary">{t("orders.searchProjection.alias")}</dt>
-            <dd className="font-mono text-sm text-app-foreground">{status.readAlias}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-app-foreground-secondary">{t("orders.searchProjection.reconciliation")}</dt>
-            <dd className="text-sm text-app-foreground">
-              {status.reconciliationInProgress
-                ? t("orders.searchProjection.inProgress")
-                : status.lastReconciliationCompletedAt === null
-                  ? t("orders.searchProjection.notRun")
-                  : t("orders.searchProjection.lastCompleted", {
-                      completedAt: formatDateTime(status.lastReconciliationCompletedAt, locale),
-                      scanned: status.lastReconciliationScannedCount ?? 0,
-                      applied: status.lastReconciliationAppliedCount ?? 0,
-                    })}
-            </dd>
-          </div>
-        </dl>
-      </div>
+          <dl className="mt-3 flex flex-wrap items-start gap-x-6 gap-y-2 text-sm">
+            <div>
+              <dt className="text-xs text-app-foreground-secondary">{t("orders.searchProjection.alias")}</dt>
+              <dd className="font-mono text-sm text-app-foreground">{status.readAlias}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-app-foreground-secondary">{t("orders.searchProjection.reconciliation")}</dt>
+              <dd className="text-sm text-app-foreground">
+                {status.reconciliationInProgress
+                  ? t("orders.searchProjection.inProgress")
+                  : status.lastReconciliationCompletedAt === null
+                    ? t("orders.searchProjection.notRun")
+                    : t("orders.searchProjection.lastCompleted", {
+                        completedAt: formatDateTime(status.lastReconciliationCompletedAt, locale),
+                        scanned: status.lastReconciliationScannedCount ?? 0,
+                        applied: status.lastReconciliationAppliedCount ?? 0,
+                      })}
+              </dd>
+            </div>
+          </dl>
       <div className="mt-3 border-t border-app-border pt-3">
         <h3 className="text-xs font-semibold text-app-foreground">{t("orders.searchProjection.progress.title")}</h3>
         <dl className="mt-2 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
@@ -160,6 +163,8 @@ export function SearchProjectionStatus({ status, isPending, isError, error }: Se
           </div>
         </dl>
       </div>
+        </div>
+      </details>
     </section>
   );
 }

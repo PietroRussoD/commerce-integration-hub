@@ -17,6 +17,7 @@ test("opens an order from the operator list", async ({ page }) => {
   await page.goto("/orders");
 
   await expect(page.getByRole("heading", { name: "Orders" })).toBeVisible();
+  await page.getByText("Show technical details").click();
   await expect(page.getByText("250 ms")).toBeVisible();
   await expect(page.getByRole("row", { name: /ORDER-E2E-001.*Ready/i })).toBeVisible();
 
