@@ -11,6 +11,22 @@ export function formatDateTime(value: string, locale = "en-GB"): string {
   }).format(new Date(value));
 }
 
+export function formatPreciseDateTime(value: string, locale = "en-GB", timeZone?: string): string {
+  const date = new Date(value);
+  const options: Intl.DateTimeFormatOptions = {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short",
+  };
+  if (date.getUTCMilliseconds() !== 0) options.fractionalSecondDigits = 3;
+  if (timeZone !== undefined) options.timeZone = timeZone;
+  return new Intl.DateTimeFormat(locale, options).format(date);
+}
+
 export function formatLabel(value: string): string {
   return value
     .toLowerCase()

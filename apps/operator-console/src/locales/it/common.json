@@ -289,6 +289,10 @@
       "title": "Cronologia",
       "empty": "Nessun evento nella cronologia",
       "ariaLabel": "Eventi della cronologia dell'ordine",
+      "timestampDetails": "Timestamp esatto (ISO 8601)",
+      "copyTimestamp": "Copia timestamp ISO",
+      "timestampCopied": "Timestamp esatto copiato.",
+      "timestampCopyFailed": "Impossibile copiare. Seleziona il timestamp sopra e copialo manualmente.",
       "correlation": "Correlazione",
       "events": {
         "orderReceived": "Ordine ricevuto",

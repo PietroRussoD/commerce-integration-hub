@@ -1,11 +1,11 @@
 import { type TFunction } from "i18next";
-import { type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { OperatorOrderDetail } from "../../api/integrationCoreClient";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
-import { formatDateTime, formatDuration, formatLabel, formatMoney, formatQuantity } from "./orderFormatters";
+import { formatDateTime, formatDuration, formatLabel, formatMoney, formatPreciseDateTime, formatQuantity } from "./orderFormatters";
 
 const orderStatusLabelKeys = {
   RECEIVED: "orders.status.received",
@@ -150,9 +150,7 @@ function OrderTimeline({ entries }: { entries: OperatorOrderDetail["timeline"] }
                     <h3 className="text-sm font-semibold text-app-foreground">
                       {translateKnownLabel(entry.eventType, timelineEventLabelKeys, t)}
                     </h3>
-                    <time dateTime={entry.occurredAt} className="whitespace-nowrap text-xs text-app-foreground-muted">
-                      {formatDateTime(entry.occurredAt, locale)}
-                    </time>
+                    <TimelineTimestamp value={entry.occurredAt} locale={locale} />
                   </div>
                   {transition !== undefined ? <p className="mt-2 text-sm font-medium text-app-foreground-strong">{transition}</p> : null}
                   {entry.message !== null ? <p className="mt-1 text-sm text-app-foreground-secondary">{entry.message}</p> : null}
@@ -163,6 +161,48 @@ function OrderTimeline({ entries }: { entries: OperatorOrderDetail["timeline"] }
         )}
       </div>
     </section>
+  );
+}
+
+function TimelineTimestamp({ value, locale }: { value: string; locale: string }) {
+  const { t } = useTranslation();
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+
+  async function copyTimestamp() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyState("copied");
+    } catch {
+      setCopyState("failed");
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-1 sm:items-end">
+      <time dateTime={value} className="text-xs tabular-nums text-app-foreground-muted">
+        {formatPreciseDateTime(value, locale)}
+      </time>
+      <details className="text-xs text-app-foreground-secondary">
+        <summary className="cursor-pointer focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">
+          {t("orderDetail.timeline.timestampDetails")}
+        </summary>
+        <div className="mt-1 flex flex-wrap items-center gap-2 sm:justify-end">
+          <code className="select-all break-all font-mono">{value}</code>
+          <button
+            type="button"
+            onClick={() => void copyTimestamp()}
+            className="underline underline-offset-2 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+          >
+            {t("orderDetail.timeline.copyTimestamp")}
+          </button>
+        </div>
+        {copyState !== "idle" ? (
+          <p role="status" className="mt-1">
+            {t(copyState === "copied" ? "orderDetail.timeline.timestampCopied" : "orderDetail.timeline.timestampCopyFailed")}
+          </p>
+        ) : null}
+      </details>
+    </div>
   );
 }
 

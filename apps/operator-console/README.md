@@ -274,8 +274,10 @@ them from Connector Gateway delivery attempts. The page has an explicit refresh
 action and shows the time of its last successful read. During a refresh, current
 details remain visible and the refresh control is disabled. If a read fails, the
 page explains that the displayed data is from the previous successful read. It
-does not poll automatically; the operator can refresh when needed. Browser tests
-use synthetic API responses and do not verify a live Integration Core.
+does not poll automatically; the operator can refresh when needed. Timeline
+times include seconds, meaningful milliseconds and the browser's local timezone;
+each event can expose and copy its exact ISO-8601 timestamp. Browser tests use
+synthetic API responses and do not verify a live Integration Core.
 
 The delivery detail can also be refreshed explicitly and reports the last
 successful read. After a confirmed replay response, it polls the delivery every
