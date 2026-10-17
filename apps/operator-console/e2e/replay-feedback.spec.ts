@@ -64,6 +64,45 @@ for (const width of [320, 1440]) {
   }
 }
 
+test("keeps replay confirmation while polling delivery progress and stops at a terminal state", async ({ page }) => {
+  await page.clock.install();
+  let status = "EXHAUSTED";
+  let accepted = false;
+  let postReplayReads = 0;
+  let detailReads = 0;
+  await page.route(`**/gateway-api/api/v1/operator/deliveries/${deliveryId}`, async (route) => {
+    detailReads += 1;
+    if (accepted) postReplayReads += 1;
+    if (accepted && postReplayReads === 2) status = "FORWARDING";
+    else if (accepted && postReplayReads === 3) status = "DELIVERED";
+    await route.fulfill({ status: 200, json: { ...deliveryDetail, status } });
+  });
+  await page.route(`**/gateway-api/api/v1/operator/deliveries/${deliveryId}/replay`, async (route) => {
+    accepted = true;
+    status = "RECEIVED";
+    await route.fulfill({ status: 202, json: { commandId, idempotent: false, outcome: "REPLAYED" } });
+  });
+
+  await page.goto(`/deliveries/${deliveryId}`);
+  await applyToken(page, "polling");
+  await page.getByRole("button", { name: "Request a new send attempt", exact: true }).click();
+  await page.getByLabel("Reason").fill("Synthetic polling check");
+  await page.getByRole("button", { name: "Confirm request" }).click();
+  const feedback = page.getByRole("status", { name: "Last confirmed replay response" });
+  await expect(feedback).toContainText(commandId);
+  await expect(page.locator("dd").filter({ hasText: /^Received$/ })).toBeVisible();
+
+  await page.clock.fastForward(3_000);
+  await expect(page.locator("dd").filter({ hasText: /^Forwarding$/ })).toBeVisible();
+  await expect(feedback).toContainText(commandId);
+  await page.clock.fastForward(3_000);
+  await expect(page.locator("dd").filter({ hasText: /^Delivered$/ })).toBeVisible();
+  const readsAtTerminal = detailReads;
+  await page.clock.fastForward(9_000);
+  expect(detailReads).toBe(readsAtTerminal);
+  await expect(feedback).toContainText(commandId);
+});
+
 async function applyToken(page: Page, jti: string) {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
   await page.getByRole("button", { name: /^(Set|Manage) operator access token$/ }).click();
