@@ -210,37 +210,80 @@ export function SearchResults({ page }: { page: OperatorOrderSearchPage }) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[800px] border-collapse text-left text-sm">
-        <thead className="border-b border-app-border bg-app-canvas text-xs font-semibold text-app-foreground-secondary">
-          <tr>
-            <th scope="col" className="px-4 py-3">
-              {t("orders.table.order")}
-            </th>
-            <th scope="col" className="px-4 py-3">
-              {t("orders.table.source")}
-            </th>
-            <th scope="col" className="px-4 py-3">
-              {t("orders.table.status")}
-            </th>
-            <th scope="col" className="px-4 py-3">
-              {t("orders.search.table.matches")}
-            </th>
-            <th scope="col" className="px-4 py-3 text-right">
-              {t("orders.table.total")}
-            </th>
-            <th scope="col" className="px-4 py-3">
-              {t("orders.search.table.ready")}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-app-surface-muted">
-          {page.items.map((order) => (
-            <SearchResultRow key={order.id} order={order} />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <ul aria-label={t("orders.search.label")} className="divide-y divide-app-border lg:hidden">
+        {page.items.map((order) => <SearchResultCard key={order.id} order={order} />)}
+      </ul>
+      <div className="hidden overflow-x-auto lg:block">
+        <table className="w-full min-w-[800px] border-collapse text-left text-sm">
+          <thead className="border-b border-app-border bg-app-canvas text-xs font-semibold text-app-foreground-secondary">
+            <tr>
+              <th scope="col" className="px-4 py-3">
+                {t("orders.table.order")}
+              </th>
+              <th scope="col" className="px-4 py-3">
+                {t("orders.table.source")}
+              </th>
+              <th scope="col" className="px-4 py-3">
+                {t("orders.table.status")}
+              </th>
+              <th scope="col" className="px-4 py-3">
+                {t("orders.search.table.matches")}
+              </th>
+              <th scope="col" className="px-4 py-3 text-right">
+                {t("orders.table.total")}
+              </th>
+              <th scope="col" className="px-4 py-3">
+                {t("orders.search.table.ready")}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-app-surface-muted">
+            {page.items.map((order) => (
+              <SearchResultRow key={order.id} order={order} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+function SearchResultCard({ order }: { order: OperatorOrderSearchPage["items"][number] }) {
+  const { t, i18n } = useTranslation();
+  const location = useLocation();
+  const locale = resolveIntlLocale(i18n.resolvedLanguage);
+  const statusLabelKey = orderStatusLabelKeys[order.status as keyof typeof orderStatusLabelKeys];
+
+  return (
+    <li className="p-4">
+      <article className="space-y-3">
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="min-w-0">
+            <Link
+              to={{ pathname: `/orders/${order.id}`, search: location.search }}
+              className="block break-all font-semibold text-app-foreground underline-offset-4 hover:text-app-brand-primary hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+            >
+              {order.externalOrderId}
+            </Link>
+            <p className="mt-1 text-sm text-app-foreground-secondary">{formatLabel(order.sourceSystem)}</p>
+          </div>
+          <StatusBadge status={order.status}>
+            {statusLabelKey === undefined ? formatLabel(order.status) : t(statusLabelKey)}
+          </StatusBadge>
+        </div>
+        <p className="break-words text-sm text-app-foreground-secondary">
+          {order.itemDescriptions.join(", ")}
+        </p>
+        <p className="text-lg font-semibold tabular-nums text-app-foreground">
+          {formatMoney(order.totalAmount, order.currency, locale)}
+        </p>
+        <dl className="border-t border-app-border pt-3 text-sm">
+          <dt className="text-xs text-app-foreground-muted">{t("orders.search.table.ready")}</dt>
+          <dd className="mt-0.5 text-app-foreground-secondary">{formatDateTime(order.readyAt, locale)}</dd>
+        </dl>
+      </article>
+    </li>
   );
 }
 

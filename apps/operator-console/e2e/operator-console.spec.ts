@@ -28,6 +28,38 @@ test("opens an order from the operator list", async ({ page }) => {
   await expect(page.getByRole("row", { name: /LINE-1 SKU-E2E-001 Browser-tested item/i })).toBeVisible();
 });
 
+for (const width of [320, 390]) {
+  test(`keeps complete and indexed order results readable on a ${width}px smartphone`, async ({ page }) => {
+    await mockOperatorApi(page);
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/orders");
+
+    const completeOrders = page.getByRole("list", { name: "Orders" });
+    await expect(completeOrders.getByRole("link", { name: "ORDER-E2E-001" })).toBeVisible();
+    await expect(completeOrders).toContainText("Marketplace A");
+    await expect(completeOrders).toContainText("Ready");
+    await expect(completeOrders).toContainText("€39.98");
+    await expect(page.getByRole("table")).toBeHidden();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+
+    await submitSearch(page);
+    const indexedOrders = page.getByRole("list", { name: "Search projected orders" });
+    await expect(indexedOrders.getByRole("link", { name: "ORDER-SEARCH-001" })).toBeVisible();
+    await expect(indexedOrders).toContainText("Browser-tested item");
+    await expect(indexedOrders).toContainText("Ready");
+    await expect(indexedOrders).toContainText("€39.98");
+    await expect(page.getByRole("table")).toBeHidden();
+
+    await indexedOrders.getByRole("link", { name: "ORDER-SEARCH-001" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(`/orders/${orderId}?q=browser`);
+    await page.getByRole("main").getByRole("link", { name: "Orders", exact: true }).click();
+    await expect(page).toHaveURL("/orders?q=browser");
+    await expect(page.getByRole("list", { name: "Search projected orders" })).toContainText("ORDER-SEARCH-001");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+}
+
 test("shows precise timeline timestamps and copies their original ISO value", async ({ page }) => {
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.route("**/api/v1/operator/orders/*", async (route) => {
@@ -227,13 +259,13 @@ test("isolates all Core reads when applying, renewing and removing a token", asy
   await page.getByRole("button", { name: "Complete order list" }).click();
   await expect(page.getByRole("link", { name: "TOKEN-FIRST", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "TOKEN-FIRST", exact: true }).click();
-  await expect(page.getByText("TOKEN-FIRST", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "TOKEN-FIRST", exact: true })).toBeVisible();
 
   await applyToken(page, renewedToken);
-  await expect(page.getByText("TOKEN-FIRST", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "TOKEN-FIRST", exact: true })).toHaveCount(0);
   await expect(page.getByRole("status", { name: "Loading order details" })).toBeVisible();
   releaseRenewed();
-  await expect(page.getByText("TOKEN-RENEWED", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "TOKEN-RENEWED", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Orders", exact: true }).last().click();
   await expect(page.getByRole("link", { name: "TOKEN-RENEWED", exact: true })).toBeVisible();
   await submitSearch(page);
@@ -248,7 +280,7 @@ test("isolates all Core reads when applying, renewing and removing a token", asy
   await expect(page.getByRole("link", { name: "ANONYMOUS-RETURN", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /^TOKEN-/ })).toHaveCount(0);
   await page.getByRole("link", { name: "ANONYMOUS-RETURN", exact: true }).click();
-  await expect(page.getByText("ANONYMOUS-RETURN", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ANONYMOUS-RETURN", exact: true })).toBeVisible();
 
   for (const token of [firstToken, renewedToken]) {
     for (const path of ["/api/v1/operator/orders", "/api/v1/operator/orders/search/status", "/api/v1/operator/orders/search", `/api/v1/operator/orders/${orderId}`]) {
@@ -280,7 +312,7 @@ test("submits an order and opens the accepted result", async ({ page }) => {
 
   await page.getByRole("link", { name: "View order" }).click();
   await expect(page).toHaveURL(`/orders/${orderId}`);
-  await expect(page.getByText("ORDER-E2E-001")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ORDER-E2E-001" })).toBeVisible();
 });
 
 test("inspects and replays an exhausted delivery with a platform-admin token", async ({ page }) => {
@@ -409,7 +441,7 @@ test("supports keyboard skip navigation without mobile page overflow", async ({ 
   await page.setViewportSize({ width: 320, height: 800 });
   await mockOperatorApi(page);
   await page.goto("/orders");
-  await expect(page.getByText("ORDER-E2E-001")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Orders" }).getByRole("link", { name: "ORDER-E2E-001" })).toBeVisible();
 
   await page.keyboard.press("Tab");
   const skipLink = page.getByRole("link", { name: "Skip to main content" });

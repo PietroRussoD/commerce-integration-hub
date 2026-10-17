@@ -218,62 +218,105 @@ function OrdersTable({ page }: { page: OperatorOrderPage }) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[850px] border-collapse text-left text-sm">
-        <thead className="border-b border-app-border bg-app-canvas text-xs font-semibold text-app-foreground-secondary">
-          <tr>
-            <th scope="col" className="px-4 py-3">
-              {t("orders.table.order")}
-            </th>
-            <th scope="col" className="px-4 py-3">
-              {t("orders.table.source")}
-            </th>
-            <th scope="col" className="px-4 py-3">
-              {t("orders.table.status")}
-            </th>
-            <th scope="col" className="px-4 py-3 text-right">
-              {t("orders.table.total")}
-            </th>
-            <th scope="col" className="px-4 py-3">
-              {t("orders.table.received")}
-            </th>
-            <th scope="col" className="px-4 py-3 text-right">
-              {t("orders.table.attempts")}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-app-surface-muted">
-          {page.items.map((order) => (
-            <tr key={order.id} className="group hover:bg-app-canvas">
-              <td className="px-4 py-3.5">
-                <Link
-                  to={{ pathname: `/orders/${order.id}`, search: location.search }}
-                  className="font-medium text-app-foreground underline-offset-4 group-hover:text-app-brand-primary group-hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
-                >
-                  {order.externalOrderId}
-                </Link>
-                <p className="mt-0.5 font-mono text-xs text-app-foreground-muted">{shortenId(order.id)}</p>
-              </td>
-              <td className="px-4 py-3.5 text-app-foreground-secondary">{formatLabel(order.sourceSystem)}</td>
-              <td className="px-4 py-3.5">
-                <StatusBadge status={order.status}>
-                  {orderStatusLabelKeys[order.status as keyof typeof orderStatusLabelKeys] === undefined
-                    ? formatLabel(order.status)
-                    : t(orderStatusLabelKeys[order.status as keyof typeof orderStatusLabelKeys])}
-                </StatusBadge>
-              </td>
-              <td className="px-4 py-3.5 text-right font-medium tabular-nums">
-                {formatMoney(order.totalAmount, order.currency, locale)}
-              </td>
-              <td className="px-4 py-3.5 whitespace-nowrap text-app-foreground-secondary">
-                {formatDateTime(order.receivedAt, locale)}
-              </td>
-              <td className="px-4 py-3.5 text-right tabular-nums text-app-foreground-secondary">{order.processingAttempts}</td>
+    <>
+      <ul aria-label={t("orders.title")} className="divide-y divide-app-border lg:hidden">
+        {page.items.map((order) => {
+          const statusLabelKey = orderStatusLabelKeys[order.status as keyof typeof orderStatusLabelKeys];
+
+          return (
+            <li key={order.id} className="p-4">
+              <article className="space-y-3">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Link
+                      to={{ pathname: `/orders/${order.id}`, search: location.search }}
+                      className="block break-all font-semibold text-app-foreground underline-offset-4 hover:text-app-brand-primary hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+                    >
+                      {order.externalOrderId}
+                    </Link>
+                    <p className="mt-1 text-sm text-app-foreground-secondary">{formatLabel(order.sourceSystem)}</p>
+                  </div>
+                  <StatusBadge status={order.status}>
+                    {statusLabelKey === undefined ? formatLabel(order.status) : t(statusLabelKey)}
+                  </StatusBadge>
+                </div>
+                <p className="text-lg font-semibold tabular-nums text-app-foreground">
+                  {formatMoney(order.totalAmount, order.currency, locale)}
+                </p>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-app-border pt-3 text-sm">
+                  <div>
+                    <dt className="text-xs text-app-foreground-muted">{t("orders.table.received")}</dt>
+                    <dd className="mt-0.5 text-app-foreground-secondary">{formatDateTime(order.receivedAt, locale)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-app-foreground-muted">{t("orders.table.attempts")}</dt>
+                    <dd className="mt-0.5 tabular-nums text-app-foreground-secondary">{order.processingAttempts}</dd>
+                  </div>
+                </dl>
+              </article>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="hidden overflow-x-auto lg:block">
+        <table className="w-full min-w-[850px] border-collapse text-left text-sm">
+          <thead className="border-b border-app-border bg-app-canvas text-xs font-semibold text-app-foreground-secondary">
+            <tr>
+              <th scope="col" className="px-4 py-3">
+                {t("orders.table.order")}
+              </th>
+              <th scope="col" className="px-4 py-3">
+                {t("orders.table.source")}
+              </th>
+              <th scope="col" className="px-4 py-3">
+                {t("orders.table.status")}
+              </th>
+              <th scope="col" className="px-4 py-3 text-right">
+                {t("orders.table.total")}
+              </th>
+              <th scope="col" className="px-4 py-3">
+                {t("orders.table.received")}
+              </th>
+              <th scope="col" className="px-4 py-3 text-right">
+                {t("orders.table.attempts")}
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-app-surface-muted">
+            {page.items.map((order) => (
+              <tr key={order.id} className="group hover:bg-app-canvas">
+                <td className="px-4 py-3.5">
+                  <Link
+                    to={{ pathname: `/orders/${order.id}`, search: location.search }}
+                    className="font-medium text-app-foreground underline-offset-4 group-hover:text-app-brand-primary group-hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+                  >
+                    {order.externalOrderId}
+                  </Link>
+                  <p className="mt-0.5 font-mono text-xs text-app-foreground-muted">{shortenId(order.id)}</p>
+                </td>
+                <td className="px-4 py-3.5 text-app-foreground-secondary">{formatLabel(order.sourceSystem)}</td>
+                <td className="px-4 py-3.5">
+                  <StatusBadge status={order.status}>
+                    {orderStatusLabelKeys[order.status as keyof typeof orderStatusLabelKeys] === undefined
+                      ? formatLabel(order.status)
+                      : t(orderStatusLabelKeys[order.status as keyof typeof orderStatusLabelKeys])}
+                  </StatusBadge>
+                </td>
+                <td className="px-4 py-3.5 text-right font-medium tabular-nums">
+                  {formatMoney(order.totalAmount, order.currency, locale)}
+                </td>
+                <td className="px-4 py-3.5 whitespace-nowrap text-app-foreground-secondary">
+                  {formatDateTime(order.receivedAt, locale)}
+                </td>
+                <td className="px-4 py-3.5 text-right tabular-nums text-app-foreground-secondary">
+                  {order.processingAttempts}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
