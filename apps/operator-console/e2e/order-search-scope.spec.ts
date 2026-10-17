@@ -25,7 +25,7 @@ test("keeps one active scope across filtering, editing, refresh and browser hist
   await searchbox.fill("browser");
   await page.getByRole("button", { name: "Search projected orders" }).click();
   await expect(page.getByText("Indexed search · Total: 0")).toBeVisible();
-  await expect(page.getByText("No projected orders found", { exact: true })).toBeVisible();
+  await expect(page.locator("p").filter({ hasText: /No indexed orders match the applied criteria/ }).last()).toBeVisible();
   await expect(page.getByRole("link", { name: "ORDER-E2E-001" })).toHaveCount(0);
   expect(requests.filter((url) => url.pathname.endsWith("/search")).slice(-1)[0]?.searchParams.get("status")).toBe("RECEIVED");
 
@@ -51,7 +51,7 @@ test("keeps one active scope across filtering, editing, refresh and browser hist
   await page.reload();
   await expect(searchbox).toHaveValue("browser");
   await expect(page.getByRole("table")).toHaveCount(1);
-  await page.getByRole("button", { name: "Complete order list" }).click();
+  await page.getByRole("button", { name: "Clear projected order search" }).click();
   await expect(page).toHaveURL("/orders?status=READY");
   await expect(page.getByText("Complete order list · Total: 100")).toBeVisible();
   await expect(page.getByRole("link", { name: "ORDER-SEARCH-001" })).toHaveCount(0);
@@ -93,7 +93,7 @@ test("keeps the complete list usable and search recovery explicit during an inde
   available = false;
   await page.reload();
   await expect(page.getByText("Projected order search is unavailable")).toBeVisible();
-  await page.getByRole("button", { name: "Complete order list" }).click();
+  await page.getByRole("button", { name: "Clear projected order search" }).click();
   await expect(page.getByText("Complete order list · Total: 1")).toBeVisible();
   await expect(page.getByRole("link", { name: "ORDER-E2E-001" })).toBeVisible();
   await expect(page.getByRole("searchbox", { name: "Search projected orders" })).toBeDisabled();

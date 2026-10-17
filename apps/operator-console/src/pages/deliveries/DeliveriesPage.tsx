@@ -148,6 +148,7 @@ export function DeliveriesPage() {
           <DeliveriesTable
             page={query.data}
             hasFilters={provider !== "ALL" || status !== "ALL"}
+            isCursorPage={cursor !== undefined}
             onClearFilters={() => updateFilters("ALL", "ALL")}
           />
         ) : null}
@@ -178,7 +179,7 @@ function DeliveryAccessNotice({ hasToken }: { hasToken: boolean }) {
   );
 }
 
-function DeliveriesTable({ page, hasFilters, onClearFilters }: { page: OperatorDeliveryPage; hasFilters: boolean; onClearFilters: () => void }) {
+function DeliveriesTable({ page, hasFilters, isCursorPage, onClearFilters }: { page: OperatorDeliveryPage; hasFilters: boolean; isCursorPage: boolean; onClearFilters: () => void }) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const locale = resolveIntlLocale(i18n.resolvedLanguage);
@@ -186,8 +187,8 @@ function DeliveriesTable({ page, hasFilters, onClearFilters }: { page: OperatorD
   if (page.items.length === 0) {
     return (
       <div className="px-6 py-16 text-center">
-        <p className="text-sm text-app-foreground-muted">{t(hasFilters ? "deliveries.emptyFiltered" : "deliveries.empty")}</p>
-        {hasFilters ? <button type="button" onClick={onClearFilters} className="mt-3 rounded-sm text-sm font-medium text-app-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">{t("deliveries.actions.clearFilters")}</button> : null}
+        <p className="text-sm text-app-foreground-muted">{t(isCursorPage ? "deliveries.emptyCursor" : hasFilters ? "deliveries.emptyFiltered" : "deliveries.empty")}</p>
+        {!isCursorPage && hasFilters ? <button type="button" onClick={onClearFilters} className="mt-3 rounded-sm text-sm font-medium text-app-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">{t("deliveries.actions.clearFilters")}</button> : null}
       </div>
     );
   }

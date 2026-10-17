@@ -61,6 +61,7 @@
     "loading": "Caricamento consegne",
     "empty": "Al momento non ci sono consegne disponibili nell’elenco completo.",
     "emptyFiltered": "Nessuna consegna corrisponde ai filtri provider e stato selezionati.",
+    "emptyCursor": "Nessuna consegna in questa pagina. Usa Prima pagina qui sotto o modifica i filtri.",
     "error": "Impossibile caricare le consegne",
     "invalidRequest": "Il Gateway ha rifiutato la richiesta. Controlla i filtri o l’indirizzo della pagina e correggili prima di riprovare.",
     "notFound": "Questa consegna non è stata trovata. Torna all’elenco e scegli una consegna disponibile.",

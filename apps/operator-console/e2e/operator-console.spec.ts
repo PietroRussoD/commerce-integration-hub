@@ -321,7 +321,7 @@ test("isolates all Core reads when applying, renewing and removing a token", asy
   await expect(page.getByRole("status", { name: "Searching projected orders" })).toBeVisible();
   releaseFirst();
   await expect(page.getByRole("link", { name: "TOKEN-FIRST-SEARCH", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Complete order list" }).click();
+  await page.getByRole("button", { name: "Clear projected order search" }).click();
   await expect(page.getByRole("link", { name: "TOKEN-FIRST", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "TOKEN-FIRST", exact: true }).click();
   await expect(page.getByRole("heading", { name: "TOKEN-FIRST", exact: true })).toBeVisible();
@@ -341,7 +341,7 @@ test("isolates all Core reads when applying, renewing and removing a token", asy
   await page.getByRole("button", { name: "Remove token" }).click();
   await page.getByRole("button", { name: "Close access token dialog" }).click();
   await expect(page.getByRole("link", { name: "ANONYMOUS-RETURN-SEARCH", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Complete order list" }).click();
+  await page.getByRole("button", { name: "Clear projected order search" }).click();
   await expect(page.getByRole("link", { name: "ANONYMOUS-RETURN", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /^TOKEN-/ })).toHaveCount(0);
   await page.getByRole("link", { name: "ANONYMOUS-RETURN", exact: true }).click();
