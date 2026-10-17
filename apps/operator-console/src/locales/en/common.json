@@ -39,6 +39,11 @@
       "sessionExpired": "The access token has expired and was removed. Set a new token to restore authenticated access. Requests already sent are not cancelled."
     }
   },
+  "notFound": {
+    "title": "Page not found",
+    "description": "This address does not match a page in the operator console.",
+    "orders": "Go to orders"
+  },
   "deliveries": {
     "title": "Deliveries",
     "total": "{{count}} on this page",
@@ -56,6 +61,8 @@
     "loading": "Loading deliveries",
     "empty": "No deliveries found",
     "error": "Unable to load deliveries",
+    "invalidRequest": "The Gateway rejected this request. Check the filters or page address, then correct them before trying again.",
+    "notFound": "This delivery was not found. Return to the delivery list and choose an available delivery.",
     "pageRejected": "The Gateway rejected this page request. Return to the first page with the current filters."
   },
   "deliveryDetail": {
@@ -196,6 +203,8 @@
     "loading": "Loading orders",
     "updating": "Updating order results…",
     "error": "Unable to load orders",
+    "invalidRequest": "The Core rejected this order request. Review the search or page address before trying again.",
+    "notFound": "This order was not found. Return to the orders list and choose an available order.",
     "pagination": "{{first}}-{{last}} of {{total}}",
     "searchProjection": {
       "summary": "Indexed order search",

@@ -234,6 +234,16 @@ test.each([401, 403])("explains order detail %i without retrying", async (status
   expect(getOperatorOrderMock).toHaveBeenCalledTimes(1);
 });
 
+test("explains a missing order without offering a retry", async () => {
+  getOperatorOrderMock.mockRejectedValue(new IntegrationCoreApiError(404));
+  renderOrderDetailPage();
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("This order was not found");
+  expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Orders" })).toHaveAttribute("href", "/orders");
+  expect(getOperatorOrderMock).toHaveBeenCalledTimes(1);
+});
+
 function renderOrderDetailPage(locale: SupportedLocale = "en") {
   const queryClient = new QueryClient({
     defaultOptions: {

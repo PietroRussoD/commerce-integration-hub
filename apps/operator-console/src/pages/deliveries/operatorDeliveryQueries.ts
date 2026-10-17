@@ -7,6 +7,13 @@ export function operatorDeliveryAccessFailure(error: unknown): "unauthorized" | 
   return undefined;
 }
 
+export function operatorDeliveryRequestFailure(error: unknown): "invalidRequest" | "notFound" | undefined {
+  if (!(error instanceof ConnectorGatewayApiError)) return undefined;
+  if (error.status === 400) return "invalidRequest";
+  if (error.status === 404) return "notFound";
+  return undefined;
+}
+
 export function retryOperatorDeliveryQuery(failureCount: number, error: unknown): boolean {
-  return operatorDeliveryAccessFailure(error) === undefined && failureCount < 1;
+  return operatorDeliveryAccessFailure(error) === undefined && operatorDeliveryRequestFailure(error) === undefined && failureCount < 1;
 }

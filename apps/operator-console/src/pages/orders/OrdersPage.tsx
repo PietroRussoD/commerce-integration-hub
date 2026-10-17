@@ -20,7 +20,7 @@ import { formatDateTime, formatLabel, formatMoney, orderStatusLabelKeys } from "
 import { SearchProjectionStatus } from "./SearchProjectionStatus";
 import { ProjectedOrderSearch, SearchError, SearchLoading, SearchPagination, SearchResults } from "./ProjectedOrderSearch";
 import { getSearchProjectionStatusRefetchInterval } from "./searchProjectionPolling";
-import { operatorOrderAccessFailure, retryOperatorOrderQuery } from "./operatorOrderQueries";
+import { operatorOrderAccessFailure, operatorOrderRequestFailure, retryOperatorOrderQuery } from "./operatorOrderQueries";
 import { parsePageOffset, withPageOffset, readOrderSearchCriteria } from "./orderSearchParams";
 
 const PAGE_SIZE = 25;
@@ -76,7 +76,7 @@ export function OrdersPage() {
     retry: retryOperatorOrderQuery,
   });
   const activeQuery = isSearch ? searchQuery : query;
-  const activePage = isSearch && !isSearchAvailable || operatorOrderAccessFailure(activeQuery.error) !== undefined
+  const activePage = isSearch && !isSearchAvailable || operatorOrderAccessFailure(activeQuery.error) !== undefined || operatorOrderRequestFailure(activeQuery.error) !== undefined
     ? undefined
     : activeQuery.data;
   const isRefreshing = activeQuery.isFetching || searchProjectionQuery.isFetching;
@@ -171,7 +171,7 @@ export function OrdersPage() {
                 ? <p role="status" className="px-4 py-2 text-sm text-app-foreground-secondary">{t("orders.search.updating")}</p>
                 : null}
               {searchQuery.isError ? <SearchError error={searchQuery.error} onRetry={() => void searchQuery.refetch()} /> : null}
-              {searchQuery.data !== undefined && operatorOrderAccessFailure(searchQuery.error) === undefined ? (
+              {searchQuery.data !== undefined && operatorOrderAccessFailure(searchQuery.error) === undefined && operatorOrderRequestFailure(searchQuery.error) === undefined ? (
                 <>
                   <SearchResults page={searchQuery.data} />
                   {searchQuery.data.total > 0 ? <SearchPagination
@@ -191,10 +191,10 @@ export function OrdersPage() {
             {query.isPending ? <OrdersLoading /> : null}
             {query.isFetching && query.data !== undefined ? <OrdersUpdating /> : null}
             {query.isError ? <OrdersError error={query.error} onRetry={() => void query.refetch()} /> : null}
-            {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined ? <OrdersTable page={query.data} /> : null}
+            {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined && operatorOrderRequestFailure(query.error) === undefined ? <OrdersTable page={query.data} /> : null}
           </div>
 
-          {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined && query.data.total > 0 ? (
+          {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined && operatorOrderRequestFailure(query.error) === undefined && query.data.total > 0 ? (
             <Pagination
               page={query.data}
               isBusy={query.isFetching}
@@ -341,13 +341,15 @@ function OrdersUpdating() {
 function OrdersError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation();
   const accessFailure = operatorOrderAccessFailure(error);
+  const requestFailure = operatorOrderRequestFailure(error);
+  const failureKey = accessFailure ?? requestFailure;
 
   return (
     <div role="alert" className="flex flex-col items-center px-6 py-14 text-center">
       <TriangleAlert aria-hidden="true" size={24} className="text-red-700" />
-      <p className="mt-3 font-medium">{t(accessFailure === undefined ? "orders.error" : `orders.access.${accessFailure}`)}</p>
+      <p className="mt-3 font-medium">{t(failureKey === undefined ? "orders.error" : failureKey === "unauthorized" || failureKey === "forbidden" ? `orders.access.${failureKey}` : `orders.${failureKey}`)}</p>
       {accessFailure !== undefined ? <AccessTokenButton /> : null}
-      {accessFailure === undefined ? (
+      {failureKey === undefined ? (
         <button
         type="button"
         onClick={onRetry}

@@ -11,7 +11,7 @@ import { DeliveryDetailContent } from "./DeliveryDetailContent";
 import { ReplayDeliveryAction } from "./ReplayDeliveryAction";
 import { ReplayDeliveryFeedback } from "./ReplayDeliveryFeedback";
 import { replayRequestKey, useReplayRequests } from "./replayRequestsContext";
-import { operatorDeliveryAccessFailure, retryOperatorDeliveryQuery } from "./operatorDeliveryQueries";
+import { operatorDeliveryAccessFailure, operatorDeliveryRequestFailure, retryOperatorDeliveryQuery } from "./operatorDeliveryQueries";
 import { isTerminalDeliveryStatus } from "./deliveryStatus";
 
 export function DeliveryDetailPage() {
@@ -36,7 +36,7 @@ export function DeliveryDetailPage() {
   });
 
   const accessFailure = operatorDeliveryAccessFailure(query.error);
-  const hasVisibleData = query.data !== undefined && accessFailure === undefined;
+  const hasVisibleData = query.data !== undefined && accessFailure === undefined && operatorDeliveryRequestFailure(query.error) === undefined;
   const updatedAt = query.dataUpdatedAt > 0
     ? new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium", timeStyle: "short" }).format(query.dataUpdatedAt)
     : undefined;
@@ -130,16 +130,19 @@ function DeliveryDetailLoading() {
 function DeliveryDetailError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation();
   const accessFailure = operatorDeliveryAccessFailure(error);
+  const requestFailure = operatorDeliveryRequestFailure(error);
+  const failureKey = accessFailure ?? requestFailure;
   return (
     <div role="alert" className="flex flex-col items-center rounded-md border border-app-border bg-app-surface px-6 py-14 text-center">
       <TriangleAlert aria-hidden="true" size={24} className="text-red-700" />
-      <p className="mt-3 font-medium">{t(accessFailure === undefined ? "deliveryDetail.error" : `deliveries.access.${accessFailure}`)}</p>
-      {accessFailure !== undefined ? <AccessTokenButton /> : (
+      <p className="mt-3 font-medium">{t(failureKey === undefined ? "deliveryDetail.error" : failureKey === "unauthorized" || failureKey === "denied" ? `deliveries.access.${failureKey}` : `deliveries.${failureKey}`)}</p>
+      {accessFailure !== undefined ? <AccessTokenButton /> : null}
+      {failureKey === undefined ? (
         <button type="button" onClick={onRetry} className="mt-4 inline-flex h-9 items-center gap-2 rounded-md border border-app-border-strong bg-app-surface px-3 text-sm font-medium hover:bg-app-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">
           <RefreshCw aria-hidden="true" size={16} />
           {t("deliveryDetail.retry")}
         </button>
-      )}
+      ) : null}
     </div>
   );
 }

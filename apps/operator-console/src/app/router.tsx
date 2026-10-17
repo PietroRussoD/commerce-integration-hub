@@ -2,6 +2,7 @@ import { Navigate, type RouteObject } from "react-router-dom";
 
 import { AppShell } from "./AppShell";
 import { RouteLoading } from "./RouteLoading";
+import { NotFoundPage } from "../pages/NotFoundPage";
 import { DeliveriesPage } from "../pages/deliveries/DeliveriesPage";
 import { DeliveryDetailPage } from "../pages/deliveries/DeliveryDetailPage";
 import { OrderDetailPage } from "../pages/orders/OrderDetailPage";
@@ -36,6 +37,7 @@ export function createAppRoutes(brandTheme: BrandTheme = defaultBrandTheme): Rou
             return { Component: SystemMapPage };
           },
         },
+        { path: "*", element: <NotFoundPage /> },
       ],
     },
   ];
