@@ -83,7 +83,7 @@ export function OrdersPage() {
   const pageAnnouncement = activeQuery.isFetching || activePage === undefined
     ? ""
     : activePage.items.length === 0
-      ? t("orders.resultsAnnouncementEmpty", { message: t(isSearch ? "orders.search.empty" : "orders.empty") })
+      ? t("orders.resultsAnnouncementEmpty", { message: t(isSearch ? "orders.search.empty" : status === "ALL" ? "orders.empty" : "orders.emptyFiltered") })
       : t("orders.resultsAnnouncement", { range: t("orders.pagination", {
           first: activePage.offset + 1,
           last: Math.min(activePage.offset + activePage.items.length, activePage.total),
@@ -191,7 +191,18 @@ export function OrdersPage() {
             {query.isPending ? <OrdersLoading /> : null}
             {query.isFetching && query.data !== undefined ? <OrdersUpdating /> : null}
             {query.isError ? <OrdersError error={query.error} onRetry={() => void query.refetch()} /> : null}
-            {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined && operatorOrderRequestFailure(query.error) === undefined ? <OrdersTable page={query.data} /> : null}
+            {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined && operatorOrderRequestFailure(query.error) === undefined ? (
+              <OrdersTable
+                page={query.data}
+                isStatusFiltered={status !== "ALL"}
+                onClearStatus={() => setSearchParams((current) => {
+                  const next = new URLSearchParams(current);
+                  next.delete("status");
+                  next.delete("offset");
+                  return next;
+                })}
+              />
+            ) : null}
           </div>
 
           {query.data !== undefined && operatorOrderAccessFailure(query.error) === undefined && operatorOrderRequestFailure(query.error) === undefined && query.data.total > 0 ? (
@@ -208,13 +219,18 @@ export function OrdersPage() {
   );
 }
 
-function OrdersTable({ page }: { page: OperatorOrderPage }) {
+function OrdersTable({ page, isStatusFiltered, onClearStatus }: { page: OperatorOrderPage; isStatusFiltered: boolean; onClearStatus: () => void }) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const locale = resolveIntlLocale(i18n.resolvedLanguage);
 
   if (page.items.length === 0) {
-    return <p className="px-6 py-16 text-center text-sm text-app-foreground-muted">{t("orders.empty")}</p>;
+    return (
+      <div className="px-6 py-16 text-center">
+        <p className="text-sm text-app-foreground-muted">{t(isStatusFiltered ? "orders.emptyFiltered" : "orders.empty")}</p>
+        {isStatusFiltered ? <button type="button" onClick={onClearStatus} className="mt-3 rounded-sm text-sm font-medium text-app-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">{t("orders.actions.clearStatus")}</button> : null}
+      </div>
+    );
   }
 
   return (

@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, test, vi } from "vitest";
 
@@ -68,11 +68,22 @@ test("has no automatically detectable accessibility violations without Gateway a
   await expectNoAccessibilityViolations(container);
 });
 
-function renderPage(contextValue: AccessTokenContextValue = noAccessTokenContext) {
+test("distinguishes an empty delivery list from filters with no matches and can clear them", async () => {
+  mockedListOperatorDeliveries.mockResolvedValue({ items: [], nextCursor: null });
+  renderPage({ ...operatorAccessTokenContext, cacheScope: "empty-deliveries-test" }, "/deliveries?provider=ERP_B&status=EXHAUSTED");
+
+  expect(await screen.findByText("No deliveries match the selected provider and status filters.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Clear provider and status filters" }));
+
+  await waitFor(() => expect(mockedListOperatorDeliveries).toHaveBeenLastCalledWith(expect.objectContaining({ provider: undefined, status: undefined, cursor: undefined })));
+  expect(await screen.findByText("No deliveries are currently available in the complete list.")).toBeInTheDocument();
+});
+
+function renderPage(contextValue: AccessTokenContextValue = noAccessTokenContext, initialUrl = "/deliveries") {
   return render(
     <AppProviders>
       <AccessTokenContext.Provider value={contextValue}>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={[initialUrl]}>
           <DeliveriesPage />
         </MemoryRouter>
       </AccessTokenContext.Provider>

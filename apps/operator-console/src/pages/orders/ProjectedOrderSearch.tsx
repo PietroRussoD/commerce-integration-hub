@@ -147,7 +147,7 @@ export function ProjectedOrderSearch({
           onClick={clear}
           className="mt-3 rounded-sm text-sm font-medium text-app-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
         >
-          {t("orders.scope.list")}
+          {t("orders.search.clear")}
         </button>
       ) : null}
 
