@@ -9,12 +9,21 @@ const cursors = ["12:00:00", "11:00:00", "10:00:00"].map((time) =>
 );
 const filters = "provider=ERP_B&status=EXHAUSTED";
 
-for (const width of [320, 1440]) {
+for (const width of [320, 390, 1440]) {
   test(`delivery navigation preserves filters and visited cursors at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await mockGateway(page);
     await page.goto("/deliveries");
     await applyToken(page);
+    if (width < 1024) {
+      const deliveryCards = page.getByRole("list", { name: "Deliveries" });
+      await expect(deliveryCards).toContainText("CORE_UNAVAILABLE");
+      await expect(deliveryCards.getByRole("link", { name: "DELIVERY-PAGE-1" })).toBeVisible();
+      await expect(page.getByRole("table")).toBeHidden();
+    } else {
+      await expect(page.getByRole("table")).toBeVisible();
+      await expect(page.getByRole("list", { name: "Deliveries" })).toBeHidden();
+    }
     await expect(page.getByRole("link", { name: "DELIVERY-PAGE-1" })).toBeVisible();
     await page.getByRole("combobox", { name: "Provider", exact: true }).selectOption("ERP_B");
     await page.getByRole("combobox", { name: "Status", exact: true }).selectOption("EXHAUSTED");

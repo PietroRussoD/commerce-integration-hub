@@ -305,6 +305,13 @@ offers a return link to the originating delivery. Missing trace IDs and an
 unconfigured trace viewer are explained separately. Browser tests use synthetic
 Gateway and Core responses and do not verify live services.
 
+Below the large-screen breakpoint, the Gateway delivery list uses cards that
+keep the event, provider, status, attempt count, received time and exact error
+code together. The desktop table remains available at large widths. Provider
+and status filters continue to reset and serialize the opaque cursor as before;
+browser tests exercise filtering and cursor navigation at 320px with synthetic
+Gateway pages and do not query a live Gateway.
+
 ## Dialog accessibility
 
 The access-token and delivery-replay dialogs use native modal dialogs with
