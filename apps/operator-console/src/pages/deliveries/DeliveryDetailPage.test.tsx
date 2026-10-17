@@ -6,6 +6,7 @@ import { getOperatorDelivery } from "../../api/connectorGatewayClient";
 import { AppProviders } from "../../app/AppProviders";
 import { createAppRoutes } from "../../app/router";
 import { AccessTokenContext, type AccessTokenContextValue } from "../../auth/accessTokenContext";
+import { expectNoAccessibilityViolations } from "../../test/accessibility";
 
 vi.mock(import("../../api/connectorGatewayClient"), async (importOriginal) => ({
   ...await importOriginal(),
@@ -68,11 +69,16 @@ test("renders the payload retention metadata and safe attempt history", async ()
     updatedAt: "2026-09-12T12:05:01Z",
   });
 
-  renderDeliveryDetail(operatorAccessTokenContext);
+  const { container } = renderDeliveryDetail(operatorAccessTokenContext);
 
   expect(await screen.findByText("event-42")).toBeInTheDocument();
   expect(screen.getByText(/Retained until/)).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Latest delivery error" })).toBeInTheDocument();
+  expect(screen.getAllByText("CORE_UNAVAILABLE", { exact: true })).toHaveLength(3);
+  expect(screen.getAllByRole("button", { name: "Copy error code CORE_UNAVAILABLE" })).toHaveLength(2);
+  expect(screen.getByText("No attempt is scheduled")).toBeInTheDocument();
   expect(screen.getByText("Retryable failure")).toBeInTheDocument();
+  screen.getByText("Attempt 2").click();
   expect(screen.getByRole("link", { name: "Open trace 0123456789abcdef0123456789abcdef in Jaeger" })).toHaveAttribute(
     "href",
     "http://localhost:16686/trace/0123456789abcdef0123456789abcdef",
@@ -84,6 +90,7 @@ test("renders the payload retention metadata and safe attempt history", async ()
     deliveryId: "c3d6bc5d-03ee-4c68-a322-f2f67b6e4f21",
     signal: expect.any(AbortSignal),
   });
+  await expectNoAccessibilityViolations(container);
 });
 
 function renderDeliveryDetail(contextValue: AccessTokenContextValue) {

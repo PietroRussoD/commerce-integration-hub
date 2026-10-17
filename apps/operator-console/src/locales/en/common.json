@@ -44,6 +44,8 @@
     "total": "{{count}} on this page",
     "filter": { "provider": "Provider", "status": "Status", "all": "All" },
     "provider": { "erpB": "ERP B", "marketplaceA": "Marketplace A" },
+    "connectorMode": { "POLLING": "Polling", "WEBHOOK": "Webhook" },
+    "connectorStatus": { "ACTIVE": "Active", "BLOCKED_CONFIGURATION": "Blocked by configuration", "DISABLED": "Disabled" },
     "status": {
       "received": "Received", "forwarding": "Forwarding", "retryWait": "Retry wait", "exhausted": "Exhausted", "delivered": "Delivered", "permanentFailure": "Permanent failure", "blockedConfiguration": "Blocked configuration"
     },
@@ -81,8 +83,17 @@
       "httpStatus": "Last HTTP status",
       "correlation": "Correlation",
       "errorCode": "Error code",
-      "safeError": "Safe error"
+      "safeError": "Safe error",
+      "latestError": "Latest delivery error",
+      "gatewayMessage": "Gateway message (as returned)",
+      "moreDetails": "Delivery details",
+      "noAttemptScheduled": "No attempt is scheduled",
+      "attemptsCountSingular": "attempt",
+      "attemptsCountPlural": "attempts"
     },
+    "copyErrorCode": "Copy error code {{code}}",
+    "valueCopied": "Copied.",
+    "valueCopyFailed": "Copy failed. Select the value and copy it manually.",
     "retention": {
       "retained": "Retained until {{expiresAt}}",
       "expired": "Expired at {{expiresAt}}",
@@ -94,14 +105,18 @@
       "empty": "No delivery attempts",
       "columns": {
         "attempt": "Attempt",
+        "attemptNumber": "Attempt {{number}}",
         "outcome": "Outcome",
         "started": "Started",
+        "completed": "Completed",
         "duration": "Duration",
         "httpStatus": "HTTP status",
         "trace": "Trace",
         "error": "Error"
       },
       "openTrace": "Open trace {{traceId}} in Jaeger",
+      "traceIdUnavailable": "No trace ID was returned by the Gateway.",
+      "traceViewerUnavailable": "Trace viewer is not configured or its URL is invalid.",
       "outcome": { "retryableFailure": "Retryable failure" }
     },
     "replay": {
@@ -252,6 +267,7 @@
   "orderDetail": {
     "title": "Order details",
     "backToOrders": "Orders",
+    "backToDelivery": "Back to delivery",
     "loading": "Loading order details",
     "error": "Unable to load order details",
     "retry": "Retry",

@@ -31,7 +31,7 @@ for (const width of [320, 1440]) {
       await expect(dialog.getByRole("status")).toContainText(commandId);
       await expect(dialog.getByRole("status")).toContainText(outcome === "REPLAYED" ? "was accepted" : "already in progress");
       if (outcome === "REPLAYED") {
-        await expect(page.locator("dd").filter({ hasText: /^Received$/ })).toBeVisible();
+        await expect(page.locator("section[aria-labelledby='delivery-outcome-heading']").getByText("Received", { exact: true })).toBeVisible();
         await expect(page.getByRole("button", { name: "Request a new send attempt", exact: true, includeHidden: true })).toBeDisabled();
       }
       const close = dialog.getByRole("button", { name: "Close send attempt dialog" });
@@ -90,13 +90,13 @@ test("keeps replay confirmation while polling delivery progress and stops at a t
   await page.getByRole("button", { name: "Confirm request" }).click();
   const feedback = page.getByRole("status", { name: "Last confirmed replay response" });
   await expect(feedback).toContainText(commandId);
-  await expect(page.locator("dd").filter({ hasText: /^Received$/ })).toBeVisible();
+  await expect(page.locator("section[aria-labelledby='delivery-outcome-heading']").getByText("Received", { exact: true })).toBeVisible();
 
   await page.clock.fastForward(3_000);
-  await expect(page.locator("dd").filter({ hasText: /^Forwarding$/ })).toBeVisible();
+  await expect(page.locator("section[aria-labelledby='delivery-outcome-heading']").getByText("Forwarding", { exact: true })).toBeVisible();
   await expect(feedback).toContainText(commandId);
   await page.clock.fastForward(3_000);
-  await expect(page.locator("dd").filter({ hasText: /^Delivered$/ })).toBeVisible();
+  await expect(page.locator("section[aria-labelledby='delivery-outcome-heading']").getByText("Delivered", { exact: true })).toBeVisible();
   const readsAtTerminal = detailReads;
   await page.clock.fastForward(9_000);
   expect(detailReads).toBe(readsAtTerminal);

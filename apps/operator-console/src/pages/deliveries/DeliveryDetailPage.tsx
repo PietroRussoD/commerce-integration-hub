@@ -12,6 +12,7 @@ import { ReplayDeliveryAction } from "./ReplayDeliveryAction";
 import { ReplayDeliveryFeedback } from "./ReplayDeliveryFeedback";
 import { replayRequestKey, useReplayRequests } from "./replayRequestsContext";
 import { operatorDeliveryAccessFailure, retryOperatorDeliveryQuery } from "./operatorDeliveryQueries";
+import { isTerminalDeliveryStatus } from "./deliveryStatus";
 
 export function DeliveryDetailPage() {
   const { t, i18n } = useTranslation();
@@ -109,10 +110,6 @@ export function DeliveryDetailPage() {
       </div>
     </section>
   );
-}
-
-function isTerminalDeliveryStatus(status: string): boolean {
-  return ["BLOCKED_CONFIGURATION", "DELIVERED", "EXHAUSTED", "PERMANENT_FAILURE"].includes(status);
 }
 
 function AccessNotice({ hasToken }: { hasToken: boolean }) {

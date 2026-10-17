@@ -36,6 +36,7 @@ for (const scenario of cases) {
       await expect(trigger).toBeDisabled();
       await expect(section).toContainText(scenario.reason);
       await expect(page.getByRole("dialog")).toHaveCount(0);
+      await page.locator("summary").filter({ hasText: "Delivery details" }).click();
       if (scenario.patch.payloadRetained === false) await expect(page.getByText("Original payload unavailable", { exact: true })).toBeVisible();
       if (scenario.patch.payloadExpiresAt !== undefined && scenario.patch.payloadExpiresAt !== "invalid") {
         await expect(page.locator("dd").filter({ hasText: /^Expired at / })).toBeVisible();

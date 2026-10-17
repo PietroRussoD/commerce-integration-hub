@@ -313,6 +313,66 @@ test("inspects and replays an exhausted delivery with a platform-admin token", a
   expect(replayRequest?.postDataJSON()).toEqual({ reason: "The Core endpoint is available again" });
 });
 
+test("makes delivery errors and attempt details readable and copyable on mobile", async ({ page }) => {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.setViewportSize({ width: 320, height: 800 });
+  await mockGatewayApi(page);
+  await page.goto("/orders");
+  await applyToken(page, createOperatorToken(["platform-admin"]));
+  await page.getByRole("link", { name: "Deliveries" }).click();
+  await page.getByRole("link", { name: "DELIVERY-E2E-001" }).click();
+
+  await expect(page.getByRole("heading", { name: "Latest delivery error" })).toBeVisible();
+  await expect(page.getByText("CORE_UNAVAILABLE", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("The Core endpoint did not respond before the timeout").first()).toBeVisible();
+  await page.getByRole("button", { name: "Copy error code CORE_UNAVAILABLE" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("Copied.")).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("CORE_UNAVAILABLE");
+
+  const attemptDetails = page.locator("details").filter({ has: page.getByText("Attempt 2") });
+  await attemptDetails.locator("summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("The Core endpoint did not respond before the timeout").last()).toBeVisible();
+  const deliveryDetails = page.locator("details").filter({ hasText: "No attempt is scheduled" });
+  await deliveryDetails.locator("summary").click();
+  await expect(page.getByText("No attempt is scheduled")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+});
+
+test("links a known Core order from a delivered delivery and returns to it", async ({ page }) => {
+  await mockOperatorApi(page);
+  await mockGatewayApi(page);
+  await page.route(`**/gateway-api/api/v1/operator/deliveries/${deliveryId}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...deliveryDetail,
+        completedAt: "2026-09-12T12:05:01Z",
+        lastCoreOrderId: orderId,
+        nextAttemptAt: "2026-09-12T12:10:00Z",
+        status: "DELIVERED",
+      }),
+    });
+  });
+  await page.goto("/orders");
+  await applyToken(page, createOperatorToken(["platform-admin"]));
+  await page.getByRole("link", { name: "Deliveries" }).click();
+  await page.getByRole("link", { name: "DELIVERY-E2E-001" }).click();
+
+  await expect(page.getByText("Delivered", { exact: true })).toBeVisible();
+  const deliveryMetadata = page.locator("details").filter({ hasText: "No attempt is scheduled" });
+  await deliveryMetadata.locator("summary").click();
+  await expect(page.getByText("No attempt is scheduled")).toBeVisible();
+  await page.getByRole("link", { name: orderId, exact: true }).click();
+  await expect(page).toHaveURL(`/orders/${orderId}`);
+  await expect(page.getByRole("link", { name: "Back to delivery" })).toHaveAttribute("href", `/deliveries/${deliveryId}`);
+  await page.getByRole("link", { name: "Back to delivery" }).click();
+  await expect(page).toHaveURL(`/deliveries/${deliveryId}`);
+  await expect(page.getByText("Delivered", { exact: true })).toBeVisible();
+});
+
 test("associates API validation errors and focuses the first invalid field", async ({ page }) => {
   await page.route("**/api/v1/orders", async (route) => {
     await route.fulfill({

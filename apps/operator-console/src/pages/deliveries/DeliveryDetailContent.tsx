@@ -1,12 +1,14 @@
 import { ExternalLink } from "lucide-react";
-import { type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link, useLocation } from "react-router-dom";
 
 import type { OperatorDeliveryDetail } from "../../api/connectorGatewayClient";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { resolveIntlLocale } from "../../i18n/i18n";
 import { formatDateTime, formatDurationMilliseconds, formatLabel } from "../orders/orderFormatters";
 import { jaegerTraceUrl } from "./jaegerTraceUrl";
+import { isTerminalDeliveryStatus } from "./deliveryStatus";
 import { useDeliveryPayloadState } from "./useDeliveryPayloadState";
 
 const statusLabelKeys = {
@@ -31,6 +33,7 @@ export function DeliveryDetailContent({ delivery }: { delivery: OperatorDelivery
 
 function DeliverySummary({ delivery }: { delivery: OperatorDeliveryDetail }) {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
   const locale = resolveIntlLocale(i18n.resolvedLanguage);
   const providerLabel = delivery.provider === "ERP_B" ? "deliveries.provider.erpB" : "deliveries.provider.marketplaceA";
   const payload = useDeliveryPayloadState(delivery);
@@ -41,31 +44,73 @@ function DeliverySummary({ delivery }: { delivery: OperatorDeliveryDetail }) {
     unknown: "deliveryDetail.retention.unknown",
   } as const;
 
+  const coreOrderLink = delivery.lastCoreOrderId === null ? null : (
+    <Link
+      to={`/orders/${encodeURIComponent(delivery.lastCoreOrderId)}`}
+      state={{ returnToDelivery: `${location.pathname}${location.search}` }}
+      className="break-all font-mono text-sm text-app-brand-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+    >
+      {delivery.lastCoreOrderId}
+    </Link>
+  );
+
   return (
-    <dl className="grid gap-px overflow-hidden rounded-md border border-app-border bg-app-border sm:grid-cols-2 lg:grid-cols-3">
-      <SummaryField label={t("deliveryDetail.summary.event")} value={delivery.externalEventId} />
-      <SummaryField label={t("deliveryDetail.summary.provider")} value={t(providerLabel)} />
-      <SummaryField
-        label={t("deliveryDetail.summary.status")}
-        value={<StatusBadge status={delivery.status}>{t(statusLabelKeys[delivery.status])}</StatusBadge>}
-      />
-      <SummaryField label={t("deliveryDetail.summary.received")} value={formatDateTime(delivery.receivedAt, locale)} />
-      <SummaryField label={t("deliveryDetail.summary.updated")} value={formatDateTime(delivery.updatedAt, locale)} />
-      <SummaryField label={t("deliveryDetail.summary.attempts")} value={delivery.attemptCount.toString()} />
-      <SummaryField label={t("deliveryDetail.summary.connectorMode")} value={formatLabel(delivery.connectorMode)} />
-      <SummaryField label={t("deliveryDetail.summary.connectorStatus")} value={formatLabel(delivery.connectorStatus)} />
-      <SummaryField label={t("deliveryDetail.summary.mappingVersion")} value={delivery.mappingVersion} />
-      <SummaryField label={t("deliveryDetail.summary.nextAttempt")} value={formatDateTime(delivery.nextAttemptAt, locale)} />
-      <SummaryField
-        label={t("deliveryDetail.summary.payloadRetention")}
-        value={t(retentionLabels[payload], { expiresAt: payload === "available" || payload === "expired" ? formatDateTime(delivery.payloadExpiresAt, locale) : "" })}
-      />
-      <SummaryField label={t("deliveryDetail.summary.coreOrder")} value={delivery.lastCoreOrderId ?? "-"} />
-      <SummaryField label={t("deliveryDetail.summary.httpStatus")} value={delivery.lastHttpStatus?.toString() ?? "-"} />
-      <SummaryField label={t("deliveryDetail.summary.correlation")} value={delivery.correlationId ?? "-"} />
-      <SummaryField label={t("deliveryDetail.summary.errorCode")} value={delivery.errorCode === null ? "-" : formatLabel(delivery.errorCode)} />
-      <SummaryField label={t("deliveryDetail.summary.safeError")} value={delivery.safeErrorMessage ?? "-"} />
-    </dl>
+    <div className="space-y-4">
+      <section aria-labelledby="delivery-outcome-heading" className="rounded-md border border-app-border bg-app-surface p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-app-foreground-muted">{t("deliveryDetail.summary.event")}</p>
+            <h2 id="delivery-outcome-heading" className="mt-1 break-all text-lg font-semibold text-app-foreground">{delivery.externalEventId}</h2>
+            <p className="mt-1 text-sm text-app-foreground-secondary">{t(providerLabel)} · {delivery.attemptCount} {t(delivery.attemptCount === 1 ? "deliveryDetail.summary.attemptsCountSingular" : "deliveryDetail.summary.attemptsCountPlural")}</p>
+            {coreOrderLink !== null ? <p className="mt-2 text-sm text-app-foreground-secondary">{t("deliveryDetail.summary.coreOrder")}: {coreOrderLink}</p> : null}
+          </div>
+          <StatusBadge status={delivery.status}>{t(statusLabelKeys[delivery.status])}</StatusBadge>
+        </div>
+      </section>
+
+      {delivery.errorCode !== null || delivery.safeErrorMessage !== null ? (
+        <section aria-labelledby="delivery-error-heading" className="rounded-md border border-red-300 bg-red-50 p-4 sm:p-5">
+          <h2 id="delivery-error-heading" className="text-sm font-semibold text-red-950">{t("deliveryDetail.summary.latestError")}</h2>
+          {delivery.errorCode !== null ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <code className="break-all font-mono text-sm font-semibold text-red-900">{delivery.errorCode}</code>
+              <CopyValueButton value={delivery.errorCode} label={t("deliveryDetail.copyErrorCode", { code: delivery.errorCode })} />
+            </div>
+          ) : null}
+          {delivery.safeErrorMessage !== null ? (
+            <div className="mt-3">
+              <p className="text-xs font-medium text-red-950">{t("deliveryDetail.summary.gatewayMessage")}</p>
+              <p className="mt-1 whitespace-pre-wrap break-words text-sm text-red-950">{delivery.safeErrorMessage}</p>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      <details className="rounded-md border border-app-border bg-app-surface px-4 py-3">
+        <summary className="cursor-pointer text-sm font-medium focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">
+          {t("deliveryDetail.summary.moreDetails")}
+        </summary>
+        <dl className="mt-4 grid gap-px overflow-hidden rounded-md border border-app-border bg-app-border sm:grid-cols-2 lg:grid-cols-3">
+          <SummaryField label={t("deliveryDetail.summary.received")} value={formatDateTime(delivery.receivedAt, locale)} />
+          <SummaryField label={t("deliveryDetail.summary.updated")} value={formatDateTime(delivery.updatedAt, locale)} />
+          <SummaryField label={t("deliveryDetail.summary.connectorMode")} value={t(`deliveries.connectorMode.${delivery.connectorMode}`)} />
+          <SummaryField label={t("deliveryDetail.summary.connectorStatus")} value={t(`deliveries.connectorStatus.${delivery.connectorStatus}`)} />
+          <SummaryField label={t("deliveryDetail.summary.mappingVersion")} value={delivery.mappingVersion} />
+          <SummaryField
+            label={t("deliveryDetail.summary.nextAttempt")}
+            value={isTerminalDeliveryStatus(delivery.status)
+              ? t("deliveryDetail.summary.noAttemptScheduled")
+              : formatDateTime(delivery.nextAttemptAt, locale)}
+          />
+          <SummaryField
+            label={t("deliveryDetail.summary.payloadRetention")}
+            value={t(retentionLabels[payload], { expiresAt: payload === "available" || payload === "expired" ? formatDateTime(delivery.payloadExpiresAt, locale) : "" })}
+          />
+          <SummaryField label={t("deliveryDetail.summary.httpStatus")} value={delivery.lastHttpStatus?.toString() ?? "-"} />
+          <SummaryField label={t("deliveryDetail.summary.correlation")} value={delivery.correlationId ?? "-"} />
+        </dl>
+      </details>
+    </div>
   );
 }
 
@@ -85,44 +130,32 @@ function DeliveryAttempts({ attempts }: { attempts: OperatorDeliveryDetail["atte
         {attempts.length === 0 ? (
           <p className="px-6 py-10 text-center text-sm text-app-foreground-muted">{t("deliveryDetail.attempts.empty")}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1120px] border-collapse text-left text-sm">
-              <thead className="border-b border-app-border bg-app-canvas text-xs font-semibold text-app-foreground-secondary">
-                <tr>
-                  <th scope="col" className="px-4 py-3 text-right">{t("deliveryDetail.attempts.columns.attempt")}</th>
-                  <th scope="col" className="px-4 py-3">{t("deliveryDetail.attempts.columns.outcome")}</th>
-                  <th scope="col" className="px-4 py-3">{t("deliveryDetail.attempts.columns.started")}</th>
-                  <th scope="col" className="px-4 py-3 text-right">{t("deliveryDetail.attempts.columns.duration")}</th>
-                  <th scope="col" className="px-4 py-3 text-right">{t("deliveryDetail.attempts.columns.httpStatus")}</th>
-                  <th scope="col" className="px-4 py-3">{t("deliveryDetail.attempts.columns.trace")}</th>
-                  <th scope="col" className="px-4 py-3">{t("deliveryDetail.attempts.columns.error")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-app-surface-muted">
-                {attempts.map((attempt) => (
-                  <tr key={attempt.attemptId}>
-                    <td className="px-4 py-3.5 text-right font-medium tabular-nums">{attempt.attemptNumber}</td>
-                    <td className="px-4 py-3.5">
+          <ol className="divide-y divide-app-border">
+            {attempts.map((attempt) => (
+              <li key={attempt.attemptId}>
+                <details className="group px-4 py-3">
+                  <summary className="flex cursor-pointer flex-col gap-2 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus sm:flex-row sm:items-center sm:justify-between">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{t("deliveryDetail.attempts.columns.attemptNumber", { number: attempt.attemptNumber })}</span>
                       <AttemptOutcome outcome={attempt.outcome} />
-                    </td>
-                    <td className="px-4 py-3.5 whitespace-nowrap text-app-foreground-secondary">
-                      {formatDateTime(attempt.startedAt, locale)}
-                    </td>
-                    <td className="px-4 py-3.5 text-right tabular-nums text-app-foreground-secondary">
-                      {attempt.durationMilliseconds === null ? "-" : formatDurationMilliseconds(attempt.durationMilliseconds, locale)}
-                    </td>
-                    <td className="px-4 py-3.5 text-right tabular-nums text-app-foreground-secondary">{attempt.httpStatus ?? "-"}</td>
-                    <td className="px-4 py-3.5 font-mono text-xs">
-                      <AttemptTrace traceId={attempt.traceId} />
-                    </td>
-                    <td className="max-w-80 px-4 py-3.5">
-                      <AttemptError code={attempt.errorCode} message={attempt.safeErrorMessage} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      {attempt.errorCode !== null ? <code className="break-all font-mono text-xs text-red-800">{attempt.errorCode}</code> : null}
+                    </span>
+                    <time dateTime={attempt.startedAt} className="text-xs text-app-foreground-muted">{formatDateTime(attempt.startedAt, locale)}</time>
+                  </summary>
+                  <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <SummaryField label={t("deliveryDetail.attempts.columns.duration")} value={attempt.durationMilliseconds === null ? "-" : formatDurationMilliseconds(attempt.durationMilliseconds, locale)} />
+                    <SummaryField label={t("deliveryDetail.attempts.columns.httpStatus")} value={attempt.httpStatus?.toString() ?? "-"} />
+                    {attempt.completedAt !== null ? <SummaryField label={t("deliveryDetail.attempts.columns.completed")} value={formatDateTime(attempt.completedAt, locale)} /> : null}
+                    {attempt.errorCode !== null ? (
+                      <SummaryField label={t("deliveryDetail.summary.errorCode")} value={<div className="flex flex-wrap items-center gap-2"><code className="break-all font-mono text-xs">{attempt.errorCode}</code><CopyValueButton value={attempt.errorCode} label={t("deliveryDetail.copyErrorCode", { code: attempt.errorCode })} /></div>} />
+                    ) : null}
+                    {attempt.safeErrorMessage !== null ? <SummaryField label={t("deliveryDetail.summary.gatewayMessage")} value={<p className="whitespace-pre-wrap break-words font-normal">{attempt.safeErrorMessage}</p>} /> : null}
+                    <SummaryField label={t("deliveryDetail.attempts.columns.trace")} value={<AttemptTrace traceId={attempt.traceId} />} />
+                  </dl>
+                </details>
+              </li>
+            ))}
+          </ol>
         )}
       </div>
     </section>
@@ -132,7 +165,8 @@ function DeliveryAttempts({ attempts }: { attempts: OperatorDeliveryDetail["atte
 function AttemptTrace({ traceId }: { traceId: string | null }) {
   const { t } = useTranslation();
   const url = jaegerTraceUrl(traceId);
-  if (url === null || traceId === null) return <span className="text-app-foreground-faint">-</span>;
+  if (traceId === null) return <span className="text-app-foreground-secondary">{t("deliveryDetail.attempts.traceIdUnavailable")}</span>;
+  if (url === null) return <span className="text-app-foreground-secondary">{t("deliveryDetail.attempts.traceViewerUnavailable")}</span>;
 
   return (
     <a
@@ -156,14 +190,30 @@ function AttemptOutcome({ outcome }: { outcome: OperatorDeliveryDetail["attempts
   return <StatusBadge status={outcome}>{labelKey === undefined ? formatLabel(outcome) : t(labelKey)}</StatusBadge>;
 }
 
-function AttemptError({ code, message }: { code: string | null; message: string | null }) {
-  if (code === null) return <span className="text-app-foreground-faint">-</span>;
+function CopyValueButton({ value, label }: { value: string; label: string }) {
+  const { t } = useTranslation();
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+
+  async function copyValue() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyState("copied");
+    } catch {
+      setCopyState("failed");
+    }
+  }
 
   return (
-    <>
-      <p className="font-mono text-xs font-medium text-red-800">{formatLabel(code)}</p>
-      {message === null ? null : <p className="mt-1 truncate text-xs text-app-foreground-secondary" title={message}>{message}</p>}
-    </>
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={() => void copyValue()}
+        className="rounded-sm text-xs font-medium text-app-brand-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+      >
+        {label}
+      </button>
+      {copyState !== "idle" ? <span role="status" className="text-xs text-app-foreground-secondary">{t(copyState === "copied" ? "deliveryDetail.valueCopied" : "deliveryDetail.valueCopyFailed")}</span> : null}
+    </span>
   );
 }
 
