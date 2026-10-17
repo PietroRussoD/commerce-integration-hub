@@ -175,6 +175,8 @@
     "error": "Impossibile caricare gli ordini",
     "pagination": "{{first}}-{{last}} di {{total}}",
     "searchProjection": {
+      "summary": "Ricerca indicizzata degli ordini",
+      "details": "Mostra dettagli tecnici",
       "title": "Proiezione di ricerca",
       "description": "Stato operativo del read model degli ordini ricostruibile.",
       "loading": "Caricamento stato della proiezione di ricerca",

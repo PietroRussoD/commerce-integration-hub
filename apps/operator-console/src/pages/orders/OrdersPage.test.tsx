@@ -86,8 +86,13 @@ test("renders operator order summaries returned by the API", async () => {
     "/orders/018f38c2-1b95-7cc4-bb89-72d26a6f9f88",
   );
   expect(screen.getByText("Marketplace A")).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Search projection" })).toBeInTheDocument();
+  const diagnostics = screen.getByText("Show technical details");
+  const diagnosticDetails = diagnostics.closest("details");
+  expect(diagnosticDetails).not.toHaveAttribute("open");
   expect(screen.getByText("Available")).toBeInTheDocument();
+  fireEvent.click(diagnostics);
+  expect(diagnosticDetails).toHaveAttribute("open", "");
+  expect(screen.getByRole("heading", { name: "Search projection" })).toBeInTheDocument();
   expect(screen.getByText("orders-read")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Projection progress" })).toBeInTheDocument();
   expect(screen.getByText("250 ms")).toBeInTheDocument();

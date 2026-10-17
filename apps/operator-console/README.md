@@ -226,6 +226,13 @@ projected-order search only after the status endpoint reports the read alias as
 available. Operators can search item descriptions, an exact external order ID,
 or an exact SKU.
 
+The search projection's availability is summarized above the search controls.
+Its polling, reconciliation and reindex diagnostics are available in a closed
+by-default disclosure, keeping the order list near the start of the page. The
+native disclosure remains keyboard operable and exposes all diagnostic values
+when opened. If status is unavailable, the concise message and complete order
+list remain visible; the search controls report their own unavailable state.
+
 ### Order list and search scope
 
 Orders shows one active scope: the complete Core order list, or indexed search

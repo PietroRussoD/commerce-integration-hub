@@ -175,6 +175,8 @@
     "error": "Unable to load orders",
     "pagination": "{{first}}-{{last}} of {{total}}",
     "searchProjection": {
+      "summary": "Indexed order search",
+      "details": "Show technical details",
       "title": "Search projection",
       "description": "Operational state of the rebuildable order search read model.",
       "loading": "Loading search projection status",
