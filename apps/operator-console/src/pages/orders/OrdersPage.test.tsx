@@ -109,7 +109,7 @@ test("requests a new first page when the status filter changes", async () => {
   listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
   renderOrdersPage();
 
-  await screen.findByText("No orders found");
+  await screen.findByText("No orders are currently available in the complete list.");
   fireEvent.change(screen.getByLabelText("Status"), { target: { value: "READY" } });
 
   await waitFor(() => {
@@ -162,12 +162,12 @@ test("clears the active projected order search without another request", async (
   await waitFor(() => expect(searchbox).toBeEnabled());
   fireEvent.change(searchbox, { target: { value: "blue" } });
   fireEvent.click(screen.getByRole("button", { name: "Search projected orders" }));
-  expect(await screen.findByText("No projected orders found")).toBeInTheDocument();
+  expect(await screen.findByText(/No indexed orders match the applied criteria/, { selector: "div > p" })).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Complete order list" }));
+  fireEvent.click(screen.getByRole("button", { name: "Clear projected order search" }));
 
   expect(searchbox).toHaveValue("");
-  expect(screen.queryByText("No projected orders found")).not.toBeInTheDocument();
+  expect(screen.queryByText(/No indexed orders match the applied criteria/)).not.toBeInTheDocument();
   expect(searchOperatorOrdersMock).toHaveBeenCalledTimes(1);
 });
 
@@ -214,7 +214,7 @@ test("does not submit projected order searches while the projection is unavailab
   listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
   renderOrdersPage();
 
-  expect(await screen.findByText("Projected order search is unavailable")).toBeInTheDocument();
+  expect(await screen.findByText(/Projected order search is unavailable/)).toBeInTheDocument();
   expect(screen.getByRole("searchbox", { name: "Search projected orders" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Search projected orders" })).toBeDisabled();
   expect(searchOperatorOrdersMock).not.toHaveBeenCalled();
@@ -308,13 +308,13 @@ test.each(["unavailable", "error"])("keeps an unavailable search distinct and pe
   }
   listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
   renderOrdersPage("en", "/orders?status=READY&q=blue&offset=25&searchOffset=25");
-  expect(await screen.findByText("Projected order search is unavailable")).toBeInTheDocument();
+  expect(await screen.findByText(/Projected order search is unavailable/)).toBeInTheDocument();
   expect(screen.getByText("Indexed search")).toBeInTheDocument();
   expect(screen.queryByText("No orders found")).not.toBeInTheDocument();
   expect(searchOperatorOrdersMock).not.toHaveBeenCalled();
   expect(listOperatorOrdersMock).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "Complete order list" }));
-  expect(await screen.findByText("No orders found")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Clear projected order search" }));
+  expect(await screen.findByText("No orders match the selected status filter.")).toBeInTheDocument();
   expect(screen.getByText("Complete order list · Total: 0")).toBeInTheDocument();
   expect(listOperatorOrdersMock).toHaveBeenLastCalledWith(expect.objectContaining({ status: "READY", offset: 0 }));
 });
@@ -323,7 +323,18 @@ test("renders the empty state", async () => {
   listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
   renderOrdersPage();
 
-  expect(await screen.findByText("No orders found")).toBeInTheDocument();
+  expect(await screen.findByText("No orders are currently available in the complete list.")).toBeInTheDocument();
+});
+
+test("offers to clear a status filter when it has no matching orders", async () => {
+  listOperatorOrdersMock.mockResolvedValue({ items: [], limit: 25, offset: 0, total: 0 });
+  renderOrdersPage("en", "/orders?status=READY");
+
+  expect(await screen.findByText("No orders match the selected status filter.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Clear status filter" }));
+
+  await waitFor(() => expect(listOperatorOrdersMock).toHaveBeenLastCalledWith(expect.objectContaining({ status: undefined, offset: 0 })));
+  expect(await screen.findByText("No orders are currently available in the complete list.")).toBeInTheDocument();
 });
 
 test("renders an actionable error state", async () => {

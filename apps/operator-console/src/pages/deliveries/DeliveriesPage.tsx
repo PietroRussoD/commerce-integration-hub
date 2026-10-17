@@ -144,7 +144,13 @@ export function DeliveriesPage() {
         {!canReadDeliveries ? <DeliveryAccessNotice hasToken={accessToken !== undefined} /> : null}
         {canReadDeliveries && query.isPending ? <DeliveriesLoading /> : null}
         {canReadDeliveries && query.isError ? <DeliveriesError error={query.error} onRetry={() => void query.refetch()} onFirstPage={pageRejected ? () => changePage(undefined, []) : undefined} /> : null}
-        {canReadDeliveries && query.data !== undefined && accessFailure === undefined && requestFailure === undefined && !pageRejected ? <DeliveriesTable page={query.data} /> : null}
+        {canReadDeliveries && query.data !== undefined && accessFailure === undefined && requestFailure === undefined && !pageRejected ? (
+          <DeliveriesTable
+            page={query.data}
+            hasFilters={provider !== "ALL" || status !== "ALL"}
+            onClearFilters={() => updateFilters("ALL", "ALL")}
+          />
+        ) : null}
       </div>
 
       {canReadDeliveries && query.data !== undefined && accessFailure === undefined && requestFailure === undefined && !pageRejected && (cursor !== undefined || query.data.nextCursor !== null) ? (
@@ -172,12 +178,19 @@ function DeliveryAccessNotice({ hasToken }: { hasToken: boolean }) {
   );
 }
 
-function DeliveriesTable({ page }: { page: OperatorDeliveryPage }) {
+function DeliveriesTable({ page, hasFilters, onClearFilters }: { page: OperatorDeliveryPage; hasFilters: boolean; onClearFilters: () => void }) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const locale = resolveIntlLocale(i18n.resolvedLanguage);
 
-  if (page.items.length === 0) return <p className="px-6 py-16 text-center text-sm text-app-foreground-muted">{t("deliveries.empty")}</p>;
+  if (page.items.length === 0) {
+    return (
+      <div className="px-6 py-16 text-center">
+        <p className="text-sm text-app-foreground-muted">{t(hasFilters ? "deliveries.emptyFiltered" : "deliveries.empty")}</p>
+        {hasFilters ? <button type="button" onClick={onClearFilters} className="mt-3 rounded-sm text-sm font-medium text-app-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus">{t("deliveries.actions.clearFilters")}</button> : null}
+      </div>
+    );
+  }
 
   return (
     <>

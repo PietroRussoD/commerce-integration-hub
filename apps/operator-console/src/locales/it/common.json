@@ -56,10 +56,11 @@
     },
     "table": { "event": "Evento", "provider": "Provider", "status": "Stato", "attempts": "Tentativi", "received": "Ricevuto", "error": "Errore" },
     "noError": "Nessun errore registrato",
-    "actions": { "refresh": "Aggiorna consegne", "retry": "Riprova", "firstPage": "Prima pagina", "previousPage": "Pagina precedente", "nextPage": "Pagina successiva" },
+    "actions": { "refresh": "Aggiorna consegne", "retry": "Riprova", "firstPage": "Prima pagina", "previousPage": "Pagina precedente", "nextPage": "Pagina successiva", "clearFilters": "Rimuovi filtri provider e stato" },
     "access": { "required": "Per analizzare le consegne è necessario un token di accesso operatore.", "forbidden": "Il token di accesso configurato non concede un ruolo operativo.", "unauthorized": "Il Gateway non ha accettato questo token (401). Impostalo o sostituiscilo.", "denied": "Il Gateway ha negato questa operazione (403). Serve un token valido con i permessi richiesti." },
     "loading": "Caricamento consegne",
-    "empty": "Nessuna consegna trovata",
+    "empty": "Al momento non ci sono consegne disponibili nell’elenco completo.",
+    "emptyFiltered": "Nessuna consegna corrisponde ai filtri provider e stato selezionati.",
     "error": "Impossibile caricare le consegne",
     "invalidRequest": "Il Gateway ha rifiutato la richiesta. Controlla i filtri o l’indirizzo della pagina e correggili prima di riprovare.",
     "notFound": "Questa consegna non è stata trovata. Torna all’elenco e scegli una consegna disponibile.",
@@ -181,6 +182,7 @@
     "actions": {
       "refresh": "Aggiorna ordini",
       "retry": "Riprova",
+      "clearStatus": "Rimuovi filtro stato",
       "previousPage": "Pagina precedente",
       "nextPage": "Pagina successiva"
     },
@@ -197,7 +199,8 @@
       "processing": "In elaborazione",
       "ready": "Pronto"
     },
-    "empty": "Nessun ordine trovato",
+    "empty": "Al momento non ci sono ordini disponibili nell’elenco completo.",
+    "emptyFiltered": "Nessun ordine corrisponde al filtro di stato selezionato.",
     "resultsAnnouncement": "Risultati aggiornati: {{range}}",
     "resultsAnnouncementEmpty": "Risultati aggiornati: {{message}}",
     "loading": "Caricamento ordini",
@@ -249,7 +252,7 @@
       }
     },
     "search": {
-      "scopeGuidance": "I risultati provengono dall’indice di ricerca, che può essere in ritardo rispetto all’elenco completo. Scegli Elenco completo per uscire dalla ricerca indicizzata.",
+      "scopeGuidance": "I risultati provengono dall’indice di ricerca, che può essere in ritardo rispetto all’elenco completo. Usa Cancella ricerca per tornare all’elenco ordini.",
       "draftChanged": "I campi sono cambiati. Avvia la ricerca per applicarli; i risultati usano ancora i criteri applicati.",
       "textCriterion": "Descrizione",
       "applied": "Criteri applicati: {{criteria}}",
@@ -262,11 +265,11 @@
         "externalOrderId": "ID ordine esterno",
         "sku": "SKU"
       },
-      "unavailable": "La ricerca negli ordini indicizzati non è disponibile",
+      "unavailable": "La ricerca negli ordini indicizzati non è disponibile. Cancella la ricerca per tornare all’elenco completo.",
       "loading": "Ricerca negli ordini indicizzati",
       "updating": "Aggiornamento dei risultati della ricerca…",
       "error": "Impossibile cercare negli ordini indicizzati",
-      "empty": "Nessun ordine indicizzato trovato",
+      "empty": "Nessun ordine indicizzato corrisponde ai criteri applicati. Modifica i criteri o cancella la ricerca per tornare all’elenco completo.",
       "emptyAnnouncement": "Nessun ordine indicizzato corrispondente",
       "table": {
         "matches": "Corrispondenze",

@@ -56,10 +56,11 @@
     },
     "table": { "event": "Event", "provider": "Provider", "status": "Status", "attempts": "Attempts", "received": "Received", "error": "Error" },
     "noError": "No error recorded",
-    "actions": { "refresh": "Refresh deliveries", "retry": "Retry", "firstPage": "First page", "previousPage": "Previous page", "nextPage": "Next page" },
+    "actions": { "refresh": "Refresh deliveries", "retry": "Retry", "firstPage": "First page", "previousPage": "Previous page", "nextPage": "Next page", "clearFilters": "Clear provider and status filters" },
     "access": { "required": "An operator access token is required to inspect deliveries.", "forbidden": "The configured access token does not grant an operational role.", "unauthorized": "The Gateway did not accept this token (401). Set or replace it.", "denied": "The Gateway denied this operation (403). A valid token with the required permissions is needed." },
     "loading": "Loading deliveries",
-    "empty": "No deliveries found",
+    "empty": "No deliveries are currently available in the complete list.",
+    "emptyFiltered": "No deliveries match the selected provider and status filters.",
     "error": "Unable to load deliveries",
     "invalidRequest": "The Gateway rejected this request. Check the filters or page address, then correct them before trying again.",
     "notFound": "This delivery was not found. Return to the delivery list and choose an available delivery.",
@@ -181,6 +182,7 @@
     "actions": {
       "refresh": "Refresh orders",
       "retry": "Retry",
+      "clearStatus": "Clear status filter",
       "previousPage": "Previous page",
       "nextPage": "Next page"
     },
@@ -197,7 +199,8 @@
       "processing": "Processing",
       "ready": "Ready"
     },
-    "empty": "No orders found",
+    "empty": "No orders are currently available in the complete list.",
+    "emptyFiltered": "No orders match the selected status filter.",
     "resultsAnnouncement": "Updated results: {{range}}",
     "resultsAnnouncementEmpty": "Updated results: {{message}}",
     "loading": "Loading orders",
@@ -249,7 +252,7 @@
       }
     },
     "search": {
-      "scopeGuidance": "Results come from the search index, which may lag behind the complete order list. Choose Complete order list to leave indexed search.",
+      "scopeGuidance": "Results come from the search index, which may lag behind the complete order list. Use Clear search to return to the order list.",
       "draftChanged": "The fields have changed. Submit the search to apply them; the results still use the applied criteria.",
       "textCriterion": "Description",
       "applied": "Applied criteria: {{criteria}}",
@@ -262,11 +265,11 @@
         "externalOrderId": "External order ID",
         "sku": "SKU"
       },
-      "unavailable": "Projected order search is unavailable",
+      "unavailable": "Projected order search is unavailable. Clear search to return to the complete order list.",
       "loading": "Searching projected orders",
       "updating": "Updating search results…",
       "error": "Unable to search projected orders",
-      "empty": "No projected orders found",
+      "empty": "No indexed orders match the applied criteria. Change the criteria or clear search to return to the complete list.",
       "emptyAnnouncement": "No matching indexed orders",
       "table": {
         "matches": "Matches",
