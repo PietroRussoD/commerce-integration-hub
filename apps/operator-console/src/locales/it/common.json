@@ -601,15 +601,17 @@
       },
       "console": {
         "title": "Console operativa",
-        "description": "Console React che invoca l'API HTTP dell'Integration Core."
+        "description": "Console React che invoca le API HTTP dell'Integration Core e del Connector Gateway."
       },
       "simulator": {
         "title": "Simulatore del provider",
-        "description": "Fixture locale che fornisce pagine ERP_B deterministiche."
+        "description": "Fixture locale che serve pagine ERP_B deterministiche richieste dal polling del Gateway."
       },
       "observability": {
         "title": "Prometheus e Grafana",
-        "description": "Raccolta metriche e dashboard operative locali opzionali."
+        "description": "Prometheus interroga le metriche di Core e Gateway; Grafana legge Prometheus per le dashboard operative.",
+        "prometheus": "Prometheus",
+        "grafana": "Grafana"
       }
     },
     "links": {
@@ -621,9 +623,11 @@
       "deliveryState": "Stato di consegna",
       "workflowState": "Stato workflow e outbox",
       "projects": "Proietta ordini",
-      "queries": "Interroga tramite API del core",
-      "polls": "Esegue polling delle pagine",
-      "scrapes": "Raccoglie metriche"
+      "queriesCore": "Chiama l'API del Core",
+      "queriesGateway": "Chiama l'API del Gateway",
+      "polls": "Richiede le pagine al provider",
+      "scrapes": "Esegue lo scrape degli endpoint /metrics",
+      "queriesPrometheus": "Interroga Prometheus per le dashboard"
     }
   }
 }

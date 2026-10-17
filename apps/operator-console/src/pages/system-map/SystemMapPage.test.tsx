@@ -18,7 +18,21 @@ test("renders the implemented integration topology", () => {
   expect(screen.getByRole("heading", { name: "Operator and observability surfaces" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Runtime touchpoints" })).toBeInTheDocument();
   expect(screen.getByText("Canonical HTTP command")).toBeInTheDocument();
-  expect(screen.getByText("Queries through core API")).toBeInTheDocument();
+  expect(screen.getByText("Calls the Core API")).toBeInTheDocument();
+});
+
+test("describes runtime connections in the direction of the caller", () => {
+  renderPage();
+
+  const runtimeTouchpoints = screen.getByRole("heading", { name: "Runtime touchpoints" }).parentElement;
+  expect(runtimeTouchpoints).not.toBeNull();
+  const withinTouchpoints = within(runtimeTouchpoints!);
+
+  expect(withinTouchpoints.getByRole("group", { name: "Operator Console — Calls the Core API — Integration Core" })).toBeInTheDocument();
+  expect(withinTouchpoints.getByRole("group", { name: "Operator Console — Calls the Gateway API — Connector Gateway" })).toBeInTheDocument();
+  expect(withinTouchpoints.getByRole("group", { name: "Connector Gateway — Requests provider pages — Provider Simulator" })).toBeInTheDocument();
+  expect(withinTouchpoints.getByRole("group", { name: "Prometheus — Scrapes /metrics endpoints — Integration Core and Connector Gateway" })).toBeInTheDocument();
+  expect(withinTouchpoints.getByRole("group", { name: "Grafana — Queries Prometheus for dashboards — Prometheus" })).toBeInTheDocument();
 });
 
 test("renders translated system map content", () => {
@@ -27,6 +41,8 @@ test("renders translated system map content", () => {
   expect(screen.getByRole("heading", { name: "Mappa del sistema" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Acquisizione ed elaborazione ordini" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Connector Gateway" })).toBeInTheDocument();
+  expect(screen.getByRole("group", { name: "Connector Gateway — Richiede le pagine al provider — Simulatore del provider" })).toBeInTheDocument();
+  expect(screen.getByRole("group", { name: "Prometheus — Esegue lo scrape degli endpoint /metrics — Integration Core e Connector Gateway" })).toBeInTheDocument();
 });
 
 test("shows the selected component's architecture details", () => {
