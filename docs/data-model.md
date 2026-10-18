@@ -226,6 +226,7 @@ erDiagram
         timestamptz updated_at
         timestamptz completed_at
         timestamptz payload_expires_at
+        timestamptz payload_cleared_at
     }
 
     delivery_attempts {
@@ -282,11 +283,16 @@ and HTTP status values. Active states are `RECEIVED`, `FORWARDING`, and
 ownership only while forwarding and `completed_at` only for terminal rows. A
 partial index orders dispatchable rows by their next attempt and receipt times.
 
-`canonical_payload` is nullable only for an `ERP_B` poison item stored directly
-as `PERMANENT_FAILURE` with one of the bounded mapping error codes. All
-forwardable states still require a canonical payload, and the claim query also
-excludes null payloads explicitly. This allows the polling cursor to advance
-past a permanently unmappable item without making it eligible for forwarding.
+Migration `010` adds nullable `payload_cleared_at`. Without a marker, raw content
+must be a JSON object and canonical content must also be an object, except for
+an `ERP_B` poison item stored directly as `PERMANENT_FAILURE` with one of the
+bounded mapping error codes. A marker requires both columns to be SQL NULL,
+a terminal state and a clearance time at or after expiry and completion. JSON
+null does not satisfy the retained-object or SQL-null branches. All forwardable
+states still require both payloads; the claim query also excludes absent
+canonical content explicitly. Identity, fingerprint, attempts and audit remain
+independent of clearing. See [ADR 0024](decisions/0024-terminal-gateway-payload-retention.md).
+The schema permits terminal clearing, but no cleanup process is implemented.
 
 `polling_checkpoints` has one row per configured polling connector. A null
 cursor represents the initial request. Version supports compare-and-swap

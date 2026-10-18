@@ -101,6 +101,11 @@ mistaken for available behavior.
   with a default 30-day expiry timestamp so accepted work can be forwarded and
   investigated. Automated payload clearing is not implemented yet, so the
   timestamp is not currently an enforced retention policy.
+  [ADR 0024](decisions/0024-terminal-gateway-payload-retention.md) and migration
+  010 define terminal-only clearing with a clearance marker; active deliveries
+  retain raw and canonical payloads even after expiry. This is not a universal
+  30-day maximum. The migration deletes no content; batch cleanup, scheduling,
+  and cleanup/claim/replay concurrency acceptance remain unimplemented.
 
 ## Deployment and Scale
 

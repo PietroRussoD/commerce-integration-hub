@@ -51,6 +51,9 @@ implementation chronology.
 - [ADR 0023](0023-ambient-mesh-and-application-retries.md): Istio
   ambient mesh, strict mutual TLS, authorization by workload identity, a Gateway
   API ingress, and retries kept in the applications.
+- [ADR 0024](0024-terminal-gateway-payload-retention.md): clear expired terminal
+  Gateway payloads while retaining active work, deduplication and audit; schema
+  representation implemented, automated enforcement pending.
 
 Accepted records are not edited to hide a later change of direction. Later
 extensions or replacements are recorded in a new ADR and linked to the earlier
