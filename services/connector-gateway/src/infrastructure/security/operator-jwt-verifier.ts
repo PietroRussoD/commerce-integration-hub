@@ -58,9 +58,9 @@ export function createOperatorJwtVerifier(
     };
 }
 
-function readSubject(subject: string | undefined): string {
+function readSubject(subject: unknown): string {
     if (
-        subject === undefined ||
+        typeof subject !== "string" ||
         subject.length === 0 ||
         subject.length > MAX_SUBJECT_LENGTH ||
         subject !== subject.trim()

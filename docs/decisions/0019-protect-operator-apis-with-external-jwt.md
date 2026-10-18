@@ -56,6 +56,15 @@ and the warning level are preserved. The configured output is the console;
 additional logging handlers must apply the same filter before exporting these
 records.
 
+Both services require a nonempty string `sub` of at most 200 UTF-16 code
+units, without leading or trailing ECMAScript whitespace. When present,
+`groups` must be an array of at most 50 nonempty strings, each at most 100
+UTF-16 code units. Missing or empty groups represent a valid identity without
+roles and therefore return `403` on operator endpoints. Invalid claim shapes,
+including explicit null values, return `401`. Core applies these checks through
+a Jose4j `Validator` registered with Quarkus OIDC before role extraction; the
+framework still verifies signatures, issuer, audience, and token lifetime.
+
 The existing source API-key and webhook HMAC boundaries remain unchanged.
 Operator authorization is applied only to `/api/v1/operator/**` in the Core and
 Gateway. Health, readiness, metrics, OpenAPI, and provider routes retain their

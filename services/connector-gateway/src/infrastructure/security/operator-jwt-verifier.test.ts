@@ -63,6 +63,8 @@ describe("createOperatorJwtVerifier", () => {
         { expirationTime: NOW_SECONDS - 1, sub: "operator-123" },
         { expirationTime: null, sub: "operator-123" },
         { sub: undefined },
+        { sub: null },
+        { sub: 123 },
         { groups: "operator", sub: "operator-123" },
         { groups: ["operator", 42], sub: "operator-123" },
         { groups: Array.from({ length: 51 }, () => "operator"), sub: "operator-123" },
@@ -98,22 +100,25 @@ describe("createOperatorJwtVerifier", () => {
             expirationTime?: number | null;
             groups?: unknown;
             issuer?: string;
-            sub?: string | undefined;
+            sub?: unknown;
         },
         signingKey = privateKey
     ): Promise<string> {
-        const token = new SignJWT(
-            overrides.groups === undefined ? {} : { groups: overrides.groups }
-        )
+        // Preserve malformed claim types to exercise the authentication boundary.
+        const claims: Record<string, unknown> = {};
+        if (overrides.groups !== undefined) {
+            claims.groups = overrides.groups;
+        }
+        if (overrides.sub !== undefined) {
+            claims.sub = overrides.sub;
+        }
+        const token = new SignJWT(claims)
             .setProtectedHeader({ alg: "RS256", kid: KEY_ID })
             .setAudience(overrides.audience ?? AUDIENCE)
             .setIssuer(overrides.issuer ?? ISSUER)
             .setIssuedAt(NOW_SECONDS);
         if (overrides.expirationTime !== null) {
             token.setExpirationTime(overrides.expirationTime ?? NOW_SECONDS + 300);
-        }
-        if (overrides.sub !== undefined) {
-            token.setSubject(overrides.sub);
         }
         return token.sign(signingKey);
     }
