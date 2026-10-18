@@ -250,7 +250,7 @@ function ProcessingAttempts({ attempts }: { attempts: OperatorOrderDetail["proce
                     </td>
                     <td className="max-w-80 px-4 py-3.5">
                       {attempt.errorCode === null ? (
-                        <span className="text-app-foreground-faint">-</span>
+                        <span className="text-app-foreground-muted">-</span>
                       ) : (
                         <>
                           <p className="font-mono text-xs font-medium text-red-800">{attempt.errorCode}</p>
