@@ -41,7 +41,13 @@ decision and its alternatives are recorded in
 5. **Tag.** Create the annotated `vX.Y.Z` tag on the verified commit and push it.
    The release workflow verifies that the promoted image was built from an
    ancestor of the tagged commit before publishing it under the release tag.
-6. **Publish.** Create the non-draft, non-prerelease GitHub Release.
+6. **Scan the release images.** After promotion completes, run the `Container
+   security` workflow for the release tag and both images. Confirm that each
+   retained report names the resolved digest and platform of the promoted image,
+   then link the run/artifacts from the release evidence. A scan of `latest`, a
+   historical finding, or a scanner failure is not evidence that the release
+   images passed.
+7. **Publish.** Create the non-draft, non-prerelease GitHub Release.
 
 ## Enforcement
 

@@ -479,10 +479,12 @@ docker build \
   .
 ```
 
-The `Container security` workflow scans the published `latest` image every
-Monday and on demand. It fails on any `HIGH` or `CRITICAL` operating-system or
-application-library vulnerability. Run the equivalent check locally with
-Docker:
+The `Container security` workflow scans the published `latest` images every
+Monday and supports manual scans of a release tag or exact image digest. It
+stores a JSON report and image/database metadata for 90 days before failing on
+any `HIGH` or `CRITICAL` operating-system or application-library vulnerability.
+Release verification must use the report for the promoted digest; a scheduled
+`latest` scan is not a substitute. Run the equivalent local check with Docker:
 
 ```bash
 docker run --rm \
