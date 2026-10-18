@@ -58,7 +58,10 @@ mistaken for available behavior.
   role enforcement for operator paths. The Console can retain a manually
   supplied valid JWT in page memory for Gateway delivery inspection; it does
   not issue, persist, refresh, or verify tokens. User login, identity-provider
-  deployment, and role management are not implemented.
+  deployment, and role management are not implemented. The optional
+  [protected Helm profile](../deploy/README.md#operator-api-profiles) is verified
+  locally through the mesh ingress using a temporary public discovery/JWKS
+  fixture; integration with an external identity provider has not been verified.
 - Source order access is restricted to the authenticated source. The operator
   API exposes read-only summaries and details across sources. Its opt-in access
   policy admits `operator` and `platform-admin` roles from the JWT `groups`

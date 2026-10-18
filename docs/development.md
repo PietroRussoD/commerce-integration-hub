@@ -115,5 +115,8 @@ docker run --rm --entrypoint promtool -v "$PWD/observability/prometheus:/rules:r
 ```
 
 The [local Kubernetes guide](../deploy/README.md) describes the cluster and
-failure checks, which require a running local cluster. The
-[release process](releases/README.md) records the complete release workflow.
+failure checks, which require a running local cluster. Its
+[protected operator acceptance check](../deploy/README.md#verify-the-protected-profile-locally)
+verifies real HTTP authorization and replay against that environment and
+restores its demo profile afterward. It is separate from the module checks.
+The [release process](releases/README.md) records the complete release workflow.

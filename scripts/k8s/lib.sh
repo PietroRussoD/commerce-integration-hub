@@ -139,7 +139,8 @@ observability_installed() {
 
 # Installs or upgrades the chart. The delivery worker runs exactly when the source
 # credential exists, and tracing exactly when the observability stack is
-# installed, so running this again never turns either off.
+# installed. Other saved values, including the protected operator profile, are
+# preserved while new chart defaults are incorporated.
 install_chart() {
     local worker=false tracing=false
     if source_key_exists; then
@@ -150,6 +151,7 @@ install_chart() {
     fi
     helm_cmd upgrade --install hub "$DEPLOY_DIR/charts/commerce-integration-hub" \
         --namespace "$APP_NAMESPACE" --create-namespace --wait --timeout 10m \
+        --reset-then-reuse-values \
         --set "connectorGateway.deliveryWorker.enabled=$worker" \
         --set "tracing.enabled=$tracing" "$@"
 }
