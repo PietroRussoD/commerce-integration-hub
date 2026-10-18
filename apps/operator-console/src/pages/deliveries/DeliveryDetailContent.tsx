@@ -184,7 +184,7 @@ function AttemptTrace({ traceId }: { traceId: string | null }) {
 
 function AttemptOutcome({ outcome }: { outcome: OperatorDeliveryDetail["attempts"][number]["outcome"] }) {
   const { t } = useTranslation();
-  if (outcome === null) return <span className="text-app-foreground-faint">-</span>;
+  if (outcome === null) return <span className="text-app-foreground-muted">-</span>;
 
   const labelKey = statusLabelKeys[outcome];
   return <StatusBadge status={outcome}>{labelKey === undefined ? formatLabel(outcome) : t(labelKey)}</StatusBadge>;

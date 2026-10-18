@@ -257,7 +257,7 @@ function DeliveriesTable({ page, hasFilters, isCursorPage, onClearFilters }: { p
                   >
                     {delivery.externalEventId}
                   </Link>
-                  <p className="mt-0.5 font-mono text-xs text-app-foreground-faint">{shortenId(delivery.deliveryId)}</p>
+                  <p className="mt-0.5 font-mono text-xs text-app-foreground-muted">{shortenId(delivery.deliveryId)}</p>
                 </td>
                 <td className="px-4 py-3.5 text-app-foreground-secondary">{t(providerLabelKeys[delivery.provider])}</td>
                 <td className="px-4 py-3.5">
@@ -271,7 +271,7 @@ function DeliveriesTable({ page, hasFilters, isCursorPage, onClearFilters }: { p
                 </td>
                 <td className="max-w-80 px-4 py-3.5">
                   {delivery.errorCode === null
-                    ? <span className="text-app-foreground-faint">{t("deliveries.noError")}</span>
+                    ? <span className="text-app-foreground-muted">{t("deliveries.noError")}</span>
                     : <code className="break-all font-mono text-xs text-red-800">{delivery.errorCode}</code>}
                 </td>
               </tr>

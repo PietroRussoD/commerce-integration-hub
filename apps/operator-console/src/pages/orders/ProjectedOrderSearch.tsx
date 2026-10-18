@@ -100,7 +100,7 @@ export function ProjectedOrderSearch({
               onChange={(event) => setDraft((current) => ({ ...current, searchText: event.target.value }))}
               placeholder={t("orders.search.placeholder")}
               disabled={!isAvailable}
-              className="h-9 w-full rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none placeholder:text-app-foreground-faint focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring"
+              className="h-9 w-full rounded-md border border-app-border-strong bg-app-surface px-3 text-sm text-app-foreground outline-none placeholder:text-app-foreground-muted focus:border-app-brand-focus focus:ring-2 focus:ring-app-brand-focus-ring"
             />
           </label>
           <IconButton
