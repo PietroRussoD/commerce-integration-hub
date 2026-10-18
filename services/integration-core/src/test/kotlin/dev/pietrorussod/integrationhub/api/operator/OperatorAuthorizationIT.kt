@@ -6,11 +6,15 @@ import io.quarkus.test.junit.TestProfile
 import io.quarkus.test.oidc.server.OidcWiremockTestResource
 import io.restassured.RestAssured.given
 import io.smallrye.jwt.build.Jwt
+import io.vertx.core.json.JsonObject
 import org.hamcrest.Matchers.equalTo
 import org.jboss.logmanager.formatters.PatternFormatter
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import java.security.KeyPairGenerator
 import java.time.Instant
 import java.util.concurrent.CopyOnWriteArrayList
@@ -165,6 +169,34 @@ class OperatorAuthorizationIT {
         }
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("claimCases")
+    fun `enforces operator claim contract before authorization`(
+        description: String,
+        identityClaims: Map<String, Any?>,
+        expectedStatus: Int,
+    ) {
+        val signedToken =
+            Jwt
+                .claimsJson(JsonObject(identityClaims).encode())
+                .issuer(OperatorOidcTestProfile.ISSUER)
+                .audience(OperatorOidcTestProfile.AUDIENCE)
+                .sign()
+        for (path in listOf(OPERATOR_ORDERS_PATH, OPERATOR_SEARCH_STATUS_PATH)) {
+            val response =
+                given()
+                    .auth()
+                    .oauth2(signedToken)
+                    .`when`()
+                    .get(path)
+                    .then()
+                    .statusCode(expectedStatus)
+            if (expectedStatus == 401) {
+                response.header("WWW-Authenticate", equalTo("Bearer"))
+            }
+        }
+    }
+
     private fun token(
         groups: Set<String>,
         audience: String = OperatorOidcTestProfile.AUDIENCE,
@@ -183,6 +215,50 @@ class OperatorAuthorizationIT {
     }
 
     private companion object {
+        @JvmStatic
+        fun claimCases(): List<Arguments> {
+            fun subjectCase(
+                label: String,
+                subject: Any?,
+                status: Int = 401,
+            ) = Arguments.of(label, mapOf("sub" to subject, "groups" to listOf("operator")), status)
+
+            fun groupsCase(
+                label: String,
+                groups: Any?,
+                status: Int = 401,
+            ) = Arguments.of(label, mapOf("sub" to "operator-123", "groups" to groups), status)
+            return listOf(
+                Arguments.of("missing subject", mapOf("groups" to listOf("operator")), 401),
+                subjectCase("null subject", null),
+                subjectCase("numeric subject", 123),
+                subjectCase("empty subject", ""),
+                subjectCase("blank subject", " "),
+                subjectCase("leading whitespace", " operator-123"),
+                subjectCase("trailing whitespace", "operator-123\t"),
+                subjectCase("NBSP edge", "\u00A0operator-123"),
+                subjectCase("BOM edge", "operator-123\uFEFF"),
+                subjectCase("oversized subject", "s".repeat(201)),
+                subjectCase("maximum subject", "s".repeat(200), 200),
+                subjectCase("internal space", "operator 123", 200),
+                Arguments.of("missing groups", mapOf("sub" to "operator-123"), 403),
+                groupsCase("null groups", null),
+                groupsCase("string groups", "operator"),
+                groupsCase("object groups", mapOf("role" to "operator")),
+                groupsCase("numeric group", listOf("operator", 123)),
+                groupsCase("null group", listOf("operator", null)),
+                groupsCase("empty group", listOf("operator", "")),
+                groupsCase("oversized group", listOf("operator", "g".repeat(101))),
+                groupsCase("too many groups", List(51) { "operator" }),
+                groupsCase("maximum group count", List(50) { "operator" }, 200),
+                groupsCase("maximum group length", listOf("operator", "g".repeat(100)), 200),
+                groupsCase("empty groups", emptyList<String>(), 403),
+                groupsCase("unknown role", listOf("viewer"), 403),
+                groupsCase("role with whitespace", listOf(" operator "), 403),
+                groupsCase("platform administrator", listOf("platform-admin"), 200),
+            )
+        }
+
         const val OPERATOR_ORDERS_PATH = "/api/v1/operator/orders"
         const val OPERATOR_SEARCH_STATUS_PATH = "/api/v1/operator/orders/search/status"
     }
