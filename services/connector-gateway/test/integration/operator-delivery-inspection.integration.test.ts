@@ -1,6 +1,5 @@
 import { createServer, type Server } from "node:http";
 
-import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from "@testcontainers/postgresql";
 import type { FastifyInstance } from "fastify";
 import { sql, type Kysely } from "kysely";
@@ -15,6 +14,7 @@ import { KyselyInboundDeliveryInspectionRepository } from "../../src/infrastruct
 import { KyselyInboundDeliveryReplayRepository } from "../../src/infrastructure/database/kysely-inbound-delivery-replay-repository.js";
 import { migrateToLatest } from "../../src/infrastructure/database/migrator.js";
 import { createOperatorJwtVerifier } from "../../src/infrastructure/security/operator-jwt-verifier.js";
+import { createOperatorJwtFixture, type OperatorJwtFixture } from "../support/operator-jwt-fixture.js";
 
 const AUDIENCE = "commerce-integration-hub-operators";
 const CONNECTOR_ID = "0199037b-6400-7000-8000-000000000901";
@@ -28,12 +28,16 @@ describe("operator delivery inspection API", () => {
     let database: Kysely<GatewayDatabase>;
     let jwksServer: Server;
     let jwksUrl: URL;
-    let privateKey: CryptoKey;
+    let identity: OperatorJwtFixture;
 
     beforeAll(async () => {
-        const keyPair = await generateKeyPair("RS256");
-        privateKey = keyPair.privateKey;
-        jwksUrl = await startJwksServer(keyPair.publicKey);
+        identity = await createOperatorJwtFixture({
+            audience: AUDIENCE,
+            issuer: ISSUER,
+            keyId: KEY_ID,
+            subject: "operator-integration-test"
+        });
+        jwksUrl = await startJwksServer(identity.jwks);
 
         container = await new PostgreSqlContainer("postgres:18.3").start();
         database = createDatabase({
@@ -158,14 +162,7 @@ describe("operator delivery inspection API", () => {
         groups: readonly string[],
         audience: string = AUDIENCE
     ): Promise<string> {
-        return new SignJWT({ groups })
-            .setProtectedHeader({ alg: "RS256", kid: KEY_ID })
-            .setAudience(audience)
-            .setExpirationTime("5m")
-            .setIssuedAt()
-            .setIssuer(ISSUER)
-            .setSubject("operator-integration-test")
-            .sign(privateKey);
+        return identity.issueToken({ groups, audience });
     }
 
     async function seedDelivery(): Promise<void> {
@@ -221,15 +218,10 @@ describe("operator delivery inspection API", () => {
             .execute();
     }
 
-    async function startJwksServer(publicKey: CryptoKey): Promise<URL> {
-        const publicJwk = await exportJWK(publicKey);
+    async function startJwksServer(jwks: OperatorJwtFixture["jwks"]): Promise<URL> {
         jwksServer = createServer((_request, response) => {
             response.writeHead(200, { "content-type": "application/json" });
-            response.end(
-                JSON.stringify({
-                    keys: [{ ...publicJwk, alg: "RS256", kid: KEY_ID, use: "sig" }]
-                })
-            );
+            response.end(JSON.stringify(jwks));
         });
         await new Promise<void>((resolve, reject) => {
             jwksServer.once("error", reject);

@@ -34,6 +34,7 @@ OpenSearch and the operator console are not part of this environment.
 scripts/k8s/up.sh              # create the cluster and install everything
 scripts/k8s/provision-source.sh  # create the MARKETPLACE_A credential, turn on the Gateway worker
 scripts/k8s/smoke.sh           # one signed webhook, followed until the order is READY
+scripts/k8s/verify-operator-security.sh # protected operator HTTP matrix, replay audit, then restore demo
 scripts/k8s/verify-failures.sh pods            # 60 webhooks while a Core pod and a Gateway pod are killed
 scripts/k8s/verify-failures.sh core-primary    # ... while the Core's PostgreSQL primary is killed
 scripts/k8s/verify-failures.sh gateway-primary # ... while the Gateway's PostgreSQL primary is killed
@@ -242,3 +243,50 @@ provider and enter them in the Console's in-memory token control. The chart
 creates no issuer, client secret, signing key, users, roles, or login flow. It
 does not change the separate controls on health, readiness, metrics, provider
 routes, or source API keys.
+
+### Verify the protected profile locally
+
+With images built from the current checkout (`up.sh`) and a provisioned source
+credential (`provision-source.sh`), run:
+
+```bash
+scripts/k8s/verify-operator-security.sh
+```
+
+This additional acceptance check needs Node.js 24 or newer and the Gateway's
+pnpm dependencies installed. It starts from the unprotected local demo profile,
+deploys a temporary discovery/JWKS fixture containing public keys only, and
+configures the chart's protected profile. The fixture has no login or token
+endpoint; fresh signing keys and short-lived test tokens stay in host memory.
+The check uses the mesh ingress when installed and local service port-forwards
+otherwise. It verifies:
+
+- anonymous, malformed, invalid-signature, expired, wrong-audience and
+  wrong-issuer requests return `401` with a bearer challenge;
+- an insufficient role returns `403`, an `operator` can read both APIs but
+  cannot replay, and a `platform-admin` can read and replay;
+- denied replay requests leave delivery state and audit unchanged; an accepted
+  replay transitions its synthetic exhausted delivery once, preserves its prior
+  attempt and records the exact actor/outcome; repeating the command is idempotent;
+- signed webhook receipt and source API-key access still work independently,
+  deployment health/metrics boundaries are preserved, and application logs omit
+  the test tokens;
+- subsequent local chart updates preserve the protected settings.
+
+Forwarding is temporarily paused to make replay state assertions deterministic.
+The script creates one signed synthetic receipt, prepares only that delivery as
+exhausted with one synthetic failed attempt, and leaves its immutable audit and
+delivery in PostgreSQL. It restores the original Helm release and removes the
+public fixture on success or failure; after successful verification it checks
+the restored demo reads again. Signal interruption also attempts restoration.
+If the release changed concurrently, it refuses to overwrite that change and
+retains the public fixture for inspection. No tokens, private keys or payloads
+are printed. These local-cluster checks are separate from the standard module
+checks and do not verify an external identity provider or a login flow.
+
+The check passed on 2026-10-18 on the three-node local cluster, through the
+ambient-mesh ingress, with two Core and two Gateway replicas and freshly built
+application images. The protected matrix, PostgreSQL replay/audit assertions,
+token-log checks and restored demo reads passed. That run did not exercise the
+non-mesh port-forward path, forced interruption, or concurrent-release cleanup
+guards.
