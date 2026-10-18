@@ -292,7 +292,11 @@ null does not satisfy the retained-object or SQL-null branches. All forwardable
 states still require both payloads; the claim query also excludes absent
 canonical content explicitly. Identity, fingerprint, attempts and audit remain
 independent of clearing. See [ADR 0024](decisions/0024-terminal-gateway-payload-retention.md).
-The schema permits terminal clearing, but no cleanup process is implemented.
+Migration `011` adds an expiry/ID partial index for uncleared terminal rows.
+The bounded cleanup adapter locks at most the requested number of eligible rows
+with `SKIP LOCKED` and clears both payload columns with one database cutoff in
+one atomic statement. The application accepts batches of 1–100; the runtime
+does not invoke this batch yet and no scheduler is implemented.
 
 `polling_checkpoints` has one row per configured polling connector. A null
 cursor represents the initial request. Version supports compare-and-swap

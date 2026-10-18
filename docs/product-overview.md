@@ -206,7 +206,7 @@ read model; external subscribers remain planned.
 | Gateway and event API contracts | Generated Gateway OpenAPI with a drift check and a committed, manually maintained canonical-event AsyncAPI implemented |
 | Operator authentication and authorization | Opt-in external JWT validation and operator/platform-admin roles implemented for current Core and Gateway operator APIs; an optional protected Helm profile is verified through real HTTP on the local cluster; the Console keeps a manually supplied JWT in page memory only |
 | Failure inspection and controlled recovery | Gateway inspection, immutable command audit, and authenticated platform-admin replay implemented, including the Console recovery control for eligible exhausted deliveries |
-| Gateway payload retention enforcement | Expiry and terminal-clearance schema implemented; retention policy recorded; batch cleanup, scheduling and concurrency acceptance planned |
+| Gateway payload retention enforcement | Terminal-clearance schema and bounded cleanup batch implemented and PostgreSQL-tested; runtime scheduling and concurrency acceptance planned |
 | Distributed tracing and alerting | OpenTelemetry propagation/export with local Collector redaction and Jaeger viewing implemented; tested alert rules, outbox backlog gauges, and a local Alertmanager without receivers implemented |
 | Local Kubernetes environment | Implemented with replicas, synchronous PostgreSQL replication, an optional ambient service mesh and failure checks; runs on one machine |
 

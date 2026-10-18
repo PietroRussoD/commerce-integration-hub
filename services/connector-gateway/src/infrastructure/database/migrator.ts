@@ -12,6 +12,7 @@ import * as createOperatorCommandAudit from "./migrations/007_create_operator_co
 import * as addDeliveryTraceContext from "./migrations/008_add_delivery_trace_context.js";
 import * as addReplayTraceLinks from "./migrations/009_add_replay_trace_links.js";
 import * as allowTerminalPayloadClearance from "./migrations/010_allow_terminal_payload_clearance.js";
+import * as indexTerminalPayloadRetention from "./migrations/011_index_terminal_payload_retention.js";
 
 const migrations: Record<string, Migration> = {
     "001_create_delivery_ledger": createDeliveryLedger,
@@ -23,7 +24,8 @@ const migrations: Record<string, Migration> = {
     "007_create_operator_command_audit": createOperatorCommandAudit,
     "008_add_delivery_trace_context": addDeliveryTraceContext,
     "009_add_replay_trace_links": addReplayTraceLinks,
-    "010_allow_terminal_payload_clearance": allowTerminalPayloadClearance
+    "010_allow_terminal_payload_clearance": allowTerminalPayloadClearance,
+    "011_index_terminal_payload_retention": indexTerminalPayloadRetention
 };
 
 const migrationProvider: MigrationProvider = {

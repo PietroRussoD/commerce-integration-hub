@@ -78,6 +78,10 @@ describe("connector gateway database migration", () => {
             expect.objectContaining({
                 migrationName: "010_allow_terminal_payload_clearance",
                 status: "Success"
+            }),
+            expect.objectContaining({
+                migrationName: "011_index_terminal_payload_retention",
+                status: "Success"
             })
         ]);
         expect(secondRun).toEqual([]);

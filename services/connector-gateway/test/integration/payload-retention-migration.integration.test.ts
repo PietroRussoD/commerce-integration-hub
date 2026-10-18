@@ -99,7 +99,8 @@ describe("Gateway payload retention schema", () => {
         const beforeConnectors = await database.selectFrom("connector_configurations").selectAll().orderBy("id").execute();
 
         expect(await migrateToLatest(database)).toEqual([
-            { migrationName: "010_allow_terminal_payload_clearance", direction: "Up", status: "Success" }
+            { migrationName: "010_allow_terminal_payload_clearance", direction: "Up", status: "Success" },
+            { migrationName: "011_index_terminal_payload_retention", direction: "Up", status: "Success" }
         ]);
         expect(await migrateToLatest(database)).toEqual([]);
         const after = await database.selectFrom("inbound_deliveries").selectAll().orderBy("id").execute();

@@ -2,8 +2,8 @@
 
 - Status: Accepted
 - Date: 2026-10-18
-- Implementation: schema and migration checks implemented; cleanup, scheduling,
-  and concurrency acceptance remain later v1.4.0 increments.
+- Implementation: schema and bounded cleanup batch implemented and tested;
+  runtime scheduling and concurrency acceptance remain later v1.4.0 increments.
 
 ## Context
 
@@ -88,7 +88,8 @@ clearance metadata, if needed, belongs to the later observable-behavior incremen
 
 ### Replay, locking, clocks, and process failure
 
-These are requirements for the subsequent adapter/concurrency increments:
+The bounded cleanup adapter implements the batch requirements below. Replay
+clock changes and concurrent-operation acceptance remain subsequent work:
 
 - A new replay after expiry is rejected even if cleanup has not yet run.
   Resolve the delivery row lock before taking its database decision time
@@ -112,8 +113,18 @@ These are requirements for the subsequent adapter/concurrency increments:
   retained; a committed batch is safe to repeat after restart.
 - The later scheduler is opt-in, non-overlapping per process and bounded per
   cycle. Shutdown stops new batches and settles/rolls back current work before
-  pool teardown. A partial expiry/ID index and bounded operational metrics will
-  be added with the real cleanup query, not ahead of it.
+  pool teardown. Migration 011 adds the partial expiry/ID index for uncleared
+  terminal rows. Bounded operational metrics remain scheduler work.
+
+`createClearExpiredInboundDeliveryPayloadsUseCase` accepts an integer batch
+size from 1 through 100 and invokes one batch, without draining a backlog.
+`KyselyInboundDeliveryPayloadRetentionRepository` uses one atomic SQL statement:
+a materialized database cutoff, ordered locked candidates, and a guarded update
+that changes only the two payload columns and `payload_cleared_at`. The cutoff
+never passes through JavaScript's lower-precision Date representation. The
+statement participates in a caller transaction when supplied one; otherwise
+PostgreSQL commits it as a single implicit transaction. Errors propagate to the
+caller. There is no runtime wiring, scheduler, or operator cleanup command yet.
 
 ### Migration and rollback boundary
 
@@ -123,7 +134,13 @@ table lock needed by PostgreSQL ALTER TABLE and validates the CHECK, so it is
 not claimed to be an online migration tested under load. Use the existing
 serialized migration hook before Gateway rollout.
 
-The inverse migration is one atomic ALTER that restores the previous raw
+Migration 011 builds a regular partial index in the serialized migration hook;
+it is not an online/concurrent index build. Its inverse only drops the index
+and does not restore cleared content. An isolated PostgreSQL test with 10,000
+synthetic mixed-state rows confirms index selection for the candidate query
+without forcing planner settings; this is not a load-test claim.
+
+The inverse of migration 010 is one atomic ALTER that restores the previous raw
 NOT NULL and canonical-rejection constraints. It succeeds before any clearing
 and fails after a payload has been cleared, leaving the new schema and marker
 intact. It never fills an empty JSON object or fabricates original content.
@@ -145,11 +162,18 @@ data recovery. There is no new rollback or cleanup administration command.
 
 ## Consequences
 
-This increment establishes the decision and schema representation only.
-Automated cleanup is still unimplemented, no scheduler is enabled, and the
-expiry timestamp is still not an enforced retention policy. PostgreSQL tests
+The schema and one bounded cleanup batch are implemented. PostgreSQL tests
 cover upgrade from migration 009, rerun, active/terminal and mapping invariants,
-JSON/SQL null distinctions, preserved ledger/history and rollback boundaries.
-Batch behavior, concurrency, expiry-wait replay behavior, process shutdown, and
-observable API/Console updates need their own acceptance evidence before being
-claimed.
+JSON/SQL null distinctions, preserved ledger/history, inclusive database-time
+boundaries, batch ordering/limits, rollback, idempotency, and both receipt paths
+after clearing, including conflicting polling-page rollback. The database clock
+is fixed through transaction-local function resolution only in the boundary
+test, including a one-microsecond difference; no caller clock exists in the
+application boundary.
+
+No scheduler is enabled and the batch is not wired into the running Gateway,
+so expiry is still not an automatically enforced retention policy. Concurrent
+cleanup/claim/replay, expiry-wait replay behavior, process interruption/shutdown,
+and observable API/Console updates need their own acceptance evidence before
+being claimed. No migration or clearing has been applied to a running cluster
+as evidence for this increment.

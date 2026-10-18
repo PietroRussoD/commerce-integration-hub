@@ -148,13 +148,18 @@ and unexpired canonical payload. The response is `202` when accepted and `409`
 for an idempotency conflict or a state/payload/configuration rejection. The
 command does not expose payload contents and preserves prior attempt evidence.
 
-Payload retention currently has an expiry timestamp and a schema for atomic
-terminal clearing with `payload_cleared_at`; no cleanup batch or scheduler is
-implemented. [ADR 0024](../../docs/decisions/0024-terminal-gateway-payload-retention.md)
+Payload retention has an expiry timestamp, a schema for atomic terminal
+clearing with `payload_cleared_at`, and a PostgreSQL-tested application batch
+bounded to 1–100 deliveries. It uses one database cutoff and `SKIP LOCKED`,
+preserves ledger/history and receipt deduplication, and is safe to repeat.
+The batch is not wired into the running Gateway; no scheduler is implemented.
+[ADR 0024](../../docs/decisions/0024-terminal-gateway-payload-retention.md)
 keeps raw and canonical payloads for active deliveries beyond expiry and permits
 clearing only after a terminal outcome. This is not a universal 30-day maximum.
-Migration 010 clears no existing content; schema rollback fails after clearance
-because the original payloads cannot be reconstructed.
+Migrations 010/011 clear no existing content. Migration 011 adds the partial
+expiry/ID index with a regular index build; schema rollback of 010 fails after
+clearance because the original payloads cannot be reconstructed. Concurrent
+cleanup/claim/replay and runtime shutdown acceptance remain subsequent work.
 
 The local demo keeps authorization disabled because the repository does not
 include an identity provider or token issuer. Enable the Gateway resource-server

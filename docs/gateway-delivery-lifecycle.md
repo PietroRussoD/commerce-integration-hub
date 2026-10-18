@@ -310,9 +310,15 @@ content have no clearance marker until their raw content is actually cleared.
 New replay remains prohibited after expiry; duplicate receipt must not restore
 cleared payloads or extend expiry.
 
-The schema now supports this representation and rejects partial or active
-clearance. No batch cleanup or scheduler is implemented yet. The replay adapter's
-request-time cutoff also still needs its locked-row database-clock adjustment
-and concurrency tests. Migration 010 clears no existing data; schema rollback
-is possible only before payload clearance. Erased payloads cannot be recreated
-by rolling back a migration or application.
+The schema supports this representation and rejects partial or active
+clearance. One PostgreSQL-tested batch clears 1–100 eligible deliveries ordered
+by expiry and ID, using `FOR UPDATE SKIP LOCKED`, one database cutoff and an
+atomic guarded update. Repetition is safe; failed transactions retain content.
+Migration 011 adds a partial index for this selection. Duplicate webhook and
+polling receipt still recognize equivalence/conflicts without rehydration.
+
+The batch is not invoked by the running Gateway and no scheduler is implemented
+yet. The replay adapter's request-time cutoff still needs its locked-row
+database-clock adjustment and concurrency tests. Migrations 010/011 clear no
+existing data; schema rollback of 010 is possible only before payload clearance.
+Erased payloads cannot be recreated by rolling back a migration or application.
