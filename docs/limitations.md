@@ -99,15 +99,18 @@ mistaken for available behavior.
 - Raw provider payloads are not retained by the canonical API.
 - The Connector Gateway does retain synthetic provider and canonical payloads
   with a default 30-day expiry timestamp so accepted work can be forwarded and
-  investigated. A bounded cleanup batch is implemented and tested in isolation,
-  but is not wired into the running Gateway, so the timestamp is not currently
-  an automatically enforced retention policy.
+  investigated. Bounded terminal-only cleanup is implemented with opt-in runtime
+  scheduling; it is disabled by default. Enabling it can immediately clear an
+  existing expired terminal backlog, at most one configured batch per cycle.
   [ADR 0024](decisions/0024-terminal-gateway-payload-retention.md) and migration
   010 define terminal-only clearing with a clearance marker; active deliveries
   retain raw and canonical payloads even after expiry. This is not a universal
-  30-day maximum. Migrations 010/011 delete no content; runtime scheduling and
-  shutdown integration remain unimplemented. PostgreSQL concurrency acceptance
-  covers cleanup/claim/replay ordering and concurrent cleanup batches.
+  30-day maximum. Migrations 010/011 delete no content. The configured interval
+  does not guarantee an erasure deadline during outages or a large backlog.
+  PostgreSQL concurrency/process acceptance covers cleanup/claim/replay, restart
+  and graceful shutdown. Graceful shutdown waits for the active database batch;
+  a deployment can force termination when its grace period expires. Clearing
+  covers the ledger payload columns, not Core orders, WAL, replicas, or backups.
 
 ## Deployment and Scale
 

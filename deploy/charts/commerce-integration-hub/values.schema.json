@@ -2,6 +2,22 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
+    "connectorGateway": {
+      "type": "object",
+      "required": ["payloadRetention"],
+      "properties": {
+        "payloadRetention": {
+          "type": "object",
+          "required": ["enabled", "batchSize", "intervalMilliseconds"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "batchSize": { "type": "integer", "minimum": 1, "maximum": 100 },
+            "intervalMilliseconds": { "type": "integer", "minimum": 100, "maximum": 86400000 }
+          }
+        }
+      }
+    },
     "operatorSecurity": {
       "type": "object",
       "required": [

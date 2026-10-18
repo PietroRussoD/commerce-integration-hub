@@ -1,4 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { createClearExpiredInboundDeliveryPayloadsUseCase } from "./application/deliveries/clear-expired-inbound-delivery-payloads.js";
+import { KyselyInboundDeliveryPayloadRetentionRepository } from "./infrastructure/database/kysely-inbound-delivery-payload-retention-repository.js";
+import { readPayloadRetentionConfiguration } from "./infrastructure/scheduling/payload-retention-configuration.js";
+import { createPayloadRetentionScheduler, type PayloadRetentionScheduler } from "./infrastructure/scheduling/payload-retention-scheduler.js";
 
 import { buildApplication } from "./app.js";
 import { createClaimInboundDeliveriesUseCase } from "./application/deliveries/claim-inbound-deliveries.js";
@@ -79,6 +83,7 @@ function readPort(rawPort: string | undefined): number {
 const databaseConfiguration = loadDatabaseConfiguration();
 const webhookSecurityConfiguration = readMarketplaceAWebhookSecurityConfiguration(process.env);
 const deliveryWorkerConfiguration = readDeliveryWorkerConfiguration(process.env);
+const payloadRetentionConfiguration = readPayloadRetentionConfiguration(process.env);
 const erpBPollingConfiguration = readErpBPollingConfiguration(process.env);
 const operatorSecurityConfiguration = readOperatorSecurityConfiguration(process.env);
 const telemetry = startConnectorGatewayTelemetry();
@@ -132,6 +137,19 @@ const application = buildApplication({
 });
 let deliveryWorker: DeliveryWorkerScheduler | undefined;
 let erpBPolling: ErpBPollingScheduler | undefined;
+let payloadRetention: PayloadRetentionScheduler | undefined;
+
+if (payloadRetentionConfiguration.enabled) {
+    payloadRetention = createPayloadRetentionScheduler({
+        clearBatch: createClearExpiredInboundDeliveryPayloadsUseCase({
+            batchSize: payloadRetentionConfiguration.batchSize,
+            repository: new KyselyInboundDeliveryPayloadRetentionRepository(database)
+        }),
+        intervalMilliseconds: payloadRetentionConfiguration.intervalMilliseconds,
+        logger: application.log,
+        metrics: metrics.payloadRetention
+    });
+}
 
 if (deliveryWorkerConfiguration.enabled) {
     const coreClientConfiguration = readIntegrationCoreClientConfiguration(process.env);
@@ -224,7 +242,7 @@ if (erpBPollingConfiguration.enabled) {
 }
 
 application.addHook("onClose", async () => {
-    await Promise.all([deliveryWorker?.stop(), erpBPolling?.stop()]);
+    await Promise.all([deliveryWorker?.stop(), erpBPolling?.stop(), payloadRetention?.stop()]);
     await database.destroy();
     await telemetry.shutdown();
 });
@@ -250,6 +268,7 @@ try {
     });
     deliveryWorker?.start();
     erpBPolling?.start();
+    payloadRetention?.start();
 } catch (error) {
     application.log.error(error);
     process.exitCode = 1;

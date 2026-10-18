@@ -107,6 +107,23 @@ editing them in the UI. Prometheus retains local samples for 24 hours.
 Services that are not running appear as `DOWN` targets. This does not prevent
 Prometheus or Grafana from starting.
 
+## Gateway payload retention metrics
+
+The Gateway exports these process counters at `/metrics`:
+
+| Metric | Meaning |
+| --- | --- |
+| `connector_gateway_payload_retention_batches_total{outcome="completed"}` | Atomic batches committed, including empty batches |
+| `connector_gateway_payload_retention_batches_total{outcome="failed"}` | Failed batch attempts; the scheduler retries at the next interval |
+| `connector_gateway_payload_retention_cleared_deliveries_total` | Terminal deliveries whose raw/canonical payload columns were cleared |
+
+Labels are limited to the two fixed batch outcomes. No payloads, delivery IDs,
+connector IDs, or exception details are exported. Values start at zero when
+disabled and reset on process restart; they are not a durable erasure audit.
+For multiple Gateway replicas, sum counters across instances. The existing
+dashboard and alerts do not add retention panels or thresholds in this
+increment. Restrict the metrics endpoint to trusted monitoring infrastructure.
+
 ## Alerts
 
 [`prometheus/alerts.yml`](prometheus/alerts.yml) holds the alert rules for the

@@ -57,6 +57,10 @@ connectorGateway:
     sourceKeySecretKey: apiKey
   erpBPolling:
     enabled: false
+  payloadRetention:
+    enabled: false
+    batchSize: 50
+    intervalMilliseconds: 60000
   resources:
     requests: { cpu: 50m, memory: 128Mi }
     limits: { memory: 384Mi }

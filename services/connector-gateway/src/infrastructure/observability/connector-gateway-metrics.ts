@@ -67,6 +67,11 @@ export interface MetricsExporter {
     metrics(): Promise<string>;
 }
 
+export interface PayloadRetentionMetrics {
+    recordCompleted(cleared: number): void;
+    recordFailed(): void;
+}
+
 export interface GatewayOperationalSnapshot {
     readonly activeConnectors: number;
     readonly blockedConnectors: number;
@@ -81,6 +86,7 @@ export interface GatewayOperationalMetricsSource {
 }
 
 export interface ConnectorGatewayMetrics {
+    readonly payloadRetention: PayloadRetentionMetrics;
     readonly deliveryWorker: DeliveryWorkerMetrics;
     readonly erpBPolling: ErpBPollingMetrics;
     readonly exporter: MetricsExporter;
@@ -95,6 +101,21 @@ export function createConnectorGatewayMetrics({
 } = {}): ConnectorGatewayMetrics {
     const registry = new Registry();
     collectDefaultMetrics({ prefix: "connector_gateway_", register: registry });
+
+    const retentionBatches = new Counter({
+        help: "Number of payload retention batches by terminal outcome",
+        labelNames: ["outcome"] as const,
+        name: "connector_gateway_payload_retention_batches_total",
+        registers: [registry]
+    });
+    const retentionCleared = new Counter({
+        help: "Number of terminal deliveries whose payload columns were cleared",
+        name: "connector_gateway_payload_retention_cleared_deliveries_total",
+        registers: [registry]
+    });
+    retentionBatches.inc({ outcome: "completed" }, 0);
+    retentionBatches.inc({ outcome: "failed" }, 0);
+    retentionCleared.inc(0);
 
     const cycles = new Counter({
         help: "Number of delivery worker cycles by terminal outcome",
@@ -231,6 +252,18 @@ export function createConnectorGatewayMetrics({
     };
 
     return {
+        payloadRetention: {
+            recordCompleted(cleared): void {
+                if (!Number.isSafeInteger(cleared) || cleared < 0) {
+                    throw new Error("cleared must be a nonnegative safe integer");
+                }
+                retentionBatches.inc({ outcome: "completed" });
+                retentionCleared.inc(cleared);
+            },
+            recordFailed(): void {
+                retentionBatches.inc({ outcome: "failed" });
+            }
+        },
         deliveryWorker: {
             cycleStarted(): void {
                 cycleActive.set(1);

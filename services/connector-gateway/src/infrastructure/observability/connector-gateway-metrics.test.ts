@@ -28,6 +28,22 @@ const EMPTY_OPERATIONAL_SNAPSHOT = {
 };
 
 describe("createConnectorGatewayMetrics", () => {
+    it("exports payload retention totals with fixed outcome labels", async () => {
+        const metrics = createConnectorGatewayMetrics();
+        metrics.payloadRetention.recordCompleted(3);
+        metrics.payloadRetention.recordCompleted(0);
+        metrics.payloadRetention.recordFailed();
+        const exposition = await metrics.exporter.metrics();
+        expect(exposition).toContain('connector_gateway_payload_retention_batches_total{outcome="completed"} 2');
+        expect(exposition).toContain('connector_gateway_payload_retention_batches_total{outcome="failed"} 1');
+        expect(exposition).toContain("connector_gateway_payload_retention_cleared_deliveries_total 3");
+    });
+
+    it.each([-1, NaN, 1.5])("rejects invalid cleared count %s before changing metrics", async cleared => {
+        const metrics = createConnectorGatewayMetrics();
+        expect(() => metrics.payloadRetention.recordCompleted(cleared)).toThrow("cleared must be a nonnegative safe integer");
+        expect(await metrics.exporter.metrics()).toContain("connector_gateway_payload_retention_cleared_deliveries_total 0");
+    });
     it("collects the current durable delivery backlog", async () => {
         const readOperationalSnapshot = vi.fn().mockResolvedValue({
             ...EMPTY_OPERATIONAL_SNAPSHOT,

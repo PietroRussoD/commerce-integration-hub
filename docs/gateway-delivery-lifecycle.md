@@ -43,7 +43,7 @@ implemented and PostgreSQL integration-tested.
 
 Migration `010` extends that representation with atomic terminal payload
 clearance metadata. It preserves the mapping exception and continues to require
-payloads for every active state. Automated retention is still pending; see the
+payloads for every active state. Opt-in automated retention is implemented; see the
 [retention policy](#payload-retention-policy).
 
 ## Polled Page Commit
@@ -317,8 +317,15 @@ atomic guarded update. Repetition is safe; failed transactions retain content.
 Migration 011 adds a partial index for this selection. Duplicate webhook and
 polling receipt still recognize equivalence/conflicts without rehydration.
 
-The batch is not invoked by the running Gateway and no scheduler is implemented
-yet. PostgreSQL concurrency tests verify both cleanup/replay lock orders, replay
+The runtime invokes the batch only with `PAYLOAD_RETENTION_ENABLED=true`.
+Each cycle runs one batch, then waits for the configured interval; no two
+cleanup batches overlap in one process. Shutdown stops future cycles and waits
+for the active SQL transaction before closing the pool. Metrics report fixed
+completed/failed outcomes and the number of cleared deliveries. PostgreSQL
+process tests verify disabled/enabled behavior, forwarding and authenticated
+replay alongside cleanup, restart, and shutdown at a database barrier.
+
+PostgreSQL concurrency tests verify both cleanup/replay lock orders, replay
 waiting across expiry, an accepted replay that remains active across expiry,
 claim while its row is locked, and two cleanup batches skipping locked work.
 The replay adapter samples PostgreSQL time after taking the delivery lock.

@@ -2,8 +2,8 @@
 
 - Status: Accepted
 - Date: 2026-10-18
-- Implementation: schema, bounded cleanup batch, and PostgreSQL concurrency
-  acceptance implemented; runtime scheduling remains a later v1.4.0 increment.
+- Implementation: schema, bounded cleanup, opt-in runtime scheduling, metrics,
+  and PostgreSQL concurrency/process acceptance implemented.
 
 ## Context
 
@@ -45,7 +45,8 @@ Equality at `payload_expires_at` means expired. Retention does not extend or
 reset that timestamp. Active payloads may remain indefinitely if the delivery
 never reaches a terminal outcome; therefore this is not a universal 30-day
 maximum or a deletion-at-midnight promise. Existing expired terminal backlog
-will be eligible immediately when cleanup is eventually enabled.
+is eligible immediately when cleanup is enabled; each cycle still clears at
+most the configured batch size.
 
 ### Representation and SQL integrity
 
@@ -111,10 +112,11 @@ below:
 - Concurrent cleanup replicas skip locked rows and do bounded work. Rows already
   cleared are excluded. Rollback or termination before commit leaves content
   retained; a committed batch is safe to repeat after restart.
-- The later scheduler is opt-in, non-overlapping per process and bounded per
+- The scheduler is opt-in, non-overlapping per process and bounded per
   cycle. Shutdown stops new batches and settles/rolls back current work before
   pool teardown. Migration 011 adds the partial expiry/ID index for uncleared
-  terminal rows. Bounded operational metrics remain scheduler work.
+  terminal rows. Fixed-label counters report completed/failed batches and
+  cleared deliveries, without payloads, delivery IDs, or connector labels.
 
 PostgreSQL integration tests use transaction and advisory-lock barriers to
 verify both cleanup/replay orders, late replay rejection, replay accepted before
@@ -130,7 +132,27 @@ that changes only the two payload columns and `payload_cleared_at`. The cutoff
 never passes through JavaScript's lower-precision Date representation. The
 statement participates in a caller transaction when supplied one; otherwise
 PostgreSQL commits it as a single implicit transaction. Errors propagate to the
-caller. There is no runtime wiring, scheduler, or operator cleanup command yet.
+caller. The Gateway starts the scheduler after HTTP startup when
+`PAYLOAD_RETENTION_ENABLED=true`. Each cycle runs one batch immediately, then
+waits the configured interval after it settles. Failure records a failed batch
+and a generic log message, then retries at the next interval; database error
+details are not logged by the scheduler. Empty batches count as completed but
+do not generate completion logs. Counters reset on process restart and are not
+a durable audit of erasure.
+
+`stop()` cancels the next timer and waits for the active atomic SQL batch to
+commit or roll back. Shutdown stops all schedulers before destroying the pool.
+It does not cancel a batch halfway through clearing or drain the remaining
+backlog. A restart is allowed after stop settles; starting while a batch is
+stopping does not overlap work. There is no operator cleanup command.
+
+Runtime, Compose, and Helm default to disabled. The enabled defaults are 50
+deliveries per batch and a 60,000 ms interval; allowed bounds are 1–100 and
+100–86,400,000 ms. Every replica can run its own scheduler and skip other
+replicas' locked deliveries. The interval is a delay between batches, not a
+deadline guarantee, especially during outages or when a backlog exceeds one
+batch. Graceful shutdown waits for the database; the deployment's termination
+grace period can still force process termination before it settles.
 
 ### Migration and rollback boundary
 
@@ -168,9 +190,9 @@ data recovery. There is no new rollback or cleanup administration command.
 
 ## Consequences
 
-The schema, one bounded cleanup batch, and the replay database-clock guard are
-implemented. PostgreSQL tests
-cover upgrade from migration 009, rerun, active/terminal and mapping invariants,
+The schema, bounded cleanup, runtime scheduler, and replay database-clock guard
+are implemented. PostgreSQL tests cover upgrade from migration 009, rerun,
+active/terminal and mapping invariants,
 JSON/SQL null distinctions, preserved ledger/history, inclusive database-time
 boundaries, batch ordering/limits, rollback, idempotency, and both receipt paths
 after clearing, including conflicting polling-page rollback. The database clock
@@ -178,8 +200,14 @@ is fixed through transaction-local function resolution only in the boundary
 test, including a one-microsecond difference; no caller clock exists in the
 application boundary.
 
-No scheduler is enabled and the batch is not wired into the running Gateway,
-so expiry is still not an automatically enforced retention policy. Process
-shutdown behavior and observable API/Console updates remain future work if a
-runtime integration changes operator-visible behavior. No migration or
-clearing has been applied to a running cluster as evidence for this increment.
+A PostgreSQL-backed Gateway process test verifies disabled retention, terminal
+backlog clearing, forwarding of expired active work, retained work behind a
+disabled connector, authenticated replay, idempotent replay after clearing,
+restart, and graceful shutdown while a real SQL batch is held at a database
+barrier. The existing payload-free inspection contract reports
+`payloadRetained=false` after clearing; existing Console states already handle
+that result. No additional API fields or Console flows are required.
+
+Cleanup remains disabled in default deployment profiles. These tests use
+isolated containers and synthetic data; no migration or clearing has been
+applied to the running local cluster as evidence for this increment.
