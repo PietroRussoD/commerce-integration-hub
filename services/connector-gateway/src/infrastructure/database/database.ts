@@ -41,9 +41,9 @@ export interface InboundDeliveriesTable {
     readonly external_event_id: string;
     readonly provider_payload_hash: string;
     readonly raw_payload: JSONColumnType<
-        Record<string, unknown>,
-        Record<string, unknown>,
-        Record<string, unknown>
+        Record<string, unknown> | null,
+        Record<string, unknown> | null,
+        Record<string, unknown> | null
     >;
     readonly canonical_payload: JSONColumnType<
         CanonicalOrder | null,
@@ -70,6 +70,7 @@ export interface InboundDeliveriesTable {
     readonly updated_at: Generated<Date>;
     readonly completed_at: Date | null;
     readonly payload_expires_at: Generated<Date>;
+    readonly payload_cleared_at: Generated<Date | null>;
 }
 
 export interface PollingCheckpointsTable {

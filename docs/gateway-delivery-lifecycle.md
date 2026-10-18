@@ -41,6 +41,11 @@ mapping error codes. The forwarding claim query excludes null canonical
 payloads explicitly. Atomic persistence of a classified page and checkpoint is
 implemented and PostgreSQL integration-tested.
 
+Migration `010` extends that representation with atomic terminal payload
+clearance metadata. It preserves the mapping exception and continues to require
+payloads for every active state. Automated retention is still pending; see the
+[retention policy](#payload-retention-policy).
+
 ## Polled Page Commit
 
 ```mermaid
@@ -287,3 +292,27 @@ request's remote parent. The worker resumes that context and adds a span link to
 the latest prior attempt with complete W3C context; historical attempts without
 one remain replayable without a link. Link metadata is durable across the queue
 boundary and is not part of the delivery payload.
+
+## Payload Retention Policy
+
+[ADR 0024](decisions/0024-terminal-gateway-payload-retention.md) defines expiry as
+eligibility to clear **terminal** payloads. Raw and canonical content remain
+available for expired `RECEIVED`, `RETRY_WAIT`, and `FORWARDING` deliveries,
+including work queued behind an inactive connector or recovering an expired
+lease. An accepted replay that crosses expiry while active follows the same
+rule. This is not a universal 30-day maximum.
+
+Expired `DELIVERED`, `PERMANENT_FAILURE`, `BLOCKED_CONFIGURATION`, and
+`EXHAUSTED` rows may clear both payloads atomically while recording
+`payload_cleared_at`. The row identity, provider fingerprint, expiry, outcome,
+attempts and immutable audit remain. Mapping failures without canonical
+content have no clearance marker until their raw content is actually cleared.
+New replay remains prohibited after expiry; duplicate receipt must not restore
+cleared payloads or extend expiry.
+
+The schema now supports this representation and rejects partial or active
+clearance. No batch cleanup or scheduler is implemented yet. The replay adapter's
+request-time cutoff also still needs its locked-row database-clock adjustment
+and concurrency tests. Migration 010 clears no existing data; schema rollback
+is possible only before payload clearance. Erased payloads cannot be recreated
+by rolling back a migration or application.
