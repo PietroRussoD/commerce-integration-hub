@@ -2,8 +2,8 @@
 
 - Status: Accepted
 - Date: 2026-10-18
-- Implementation: schema and bounded cleanup batch implemented and tested;
-  runtime scheduling and concurrency acceptance remain later v1.4.0 increments.
+- Implementation: schema, bounded cleanup batch, and PostgreSQL concurrency
+  acceptance implemented; runtime scheduling remains a later v1.4.0 increment.
 
 ## Context
 
@@ -88,14 +88,14 @@ clearance metadata, if needed, belongs to the later observable-behavior incremen
 
 ### Replay, locking, clocks, and process failure
 
-The bounded cleanup adapter implements the batch requirements below. Replay
-clock changes and concurrent-operation acceptance remain subsequent work:
+The bounded cleanup adapter and PostgreSQL tests implement the requirements
+below:
 
 - A new replay after expiry is rejected even if cleanup has not yet run.
   Resolve the delivery row lock before taking its database decision time
   (`clock_timestamp()`), so waiting across expiry cannot authorize replay using
-  an old application request time. The current replay adapter still uses the
-  application-supplied time; adjusting this race remains pending.
+  an old application request time. The replay adapter takes this decision time
+  from PostgreSQL after locking the delivery row.
 - An accepted replay keeps its payloads when it later crosses expiry while
   active. Repeating an already recorded idempotent command returns its original
   outcome even after later clearing; it must not schedule another delivery.
@@ -115,6 +115,12 @@ clock changes and concurrent-operation acceptance remain subsequent work:
   cycle. Shutdown stops new batches and settles/rolls back current work before
   pool teardown. Migration 011 adds the partial expiry/ID index for uncleared
   terminal rows. Bounded operational metrics remain scheduler work.
+
+PostgreSQL integration tests use transaction and advisory-lock barriers to
+verify both cleanup/replay orders, late replay rejection, replay accepted before
+expiry and committed after it, claim while its row is locked, concurrent cleanup
+batches, and locked-row skipping. Rollback and safe retry are covered by the
+cleanup batch integration tests.
 
 `createClearExpiredInboundDeliveryPayloadsUseCase` accepts an integer batch
 size from 1 through 100 and invokes one batch, without draining a backlog.
@@ -162,7 +168,8 @@ data recovery. There is no new rollback or cleanup administration command.
 
 ## Consequences
 
-The schema and one bounded cleanup batch are implemented. PostgreSQL tests
+The schema, one bounded cleanup batch, and the replay database-clock guard are
+implemented. PostgreSQL tests
 cover upgrade from migration 009, rerun, active/terminal and mapping invariants,
 JSON/SQL null distinctions, preserved ledger/history, inclusive database-time
 boundaries, batch ordering/limits, rollback, idempotency, and both receipt paths
@@ -172,8 +179,7 @@ test, including a one-microsecond difference; no caller clock exists in the
 application boundary.
 
 No scheduler is enabled and the batch is not wired into the running Gateway,
-so expiry is still not an automatically enforced retention policy. Concurrent
-cleanup/claim/replay, expiry-wait replay behavior, process interruption/shutdown,
-and observable API/Console updates need their own acceptance evidence before
-being claimed. No migration or clearing has been applied to a running cluster
-as evidence for this increment.
+so expiry is still not an automatically enforced retention policy. Process
+shutdown behavior and observable API/Console updates remain future work if a
+runtime integration changes operator-visible behavior. No migration or
+clearing has been applied to a running cluster as evidence for this increment.

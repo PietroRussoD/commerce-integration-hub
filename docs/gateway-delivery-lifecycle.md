@@ -318,7 +318,10 @@ Migration 011 adds a partial index for this selection. Duplicate webhook and
 polling receipt still recognize equivalence/conflicts without rehydration.
 
 The batch is not invoked by the running Gateway and no scheduler is implemented
-yet. The replay adapter's request-time cutoff still needs its locked-row
-database-clock adjustment and concurrency tests. Migrations 010/011 clear no
-existing data; schema rollback of 010 is possible only before payload clearance.
-Erased payloads cannot be recreated by rolling back a migration or application.
+yet. PostgreSQL concurrency tests verify both cleanup/replay lock orders, replay
+waiting across expiry, an accepted replay that remains active across expiry,
+claim while its row is locked, and two cleanup batches skipping locked work.
+The replay adapter samples PostgreSQL time after taking the delivery lock.
+Migrations 010/011 clear no existing data; schema rollback of 010 is possible
+only before payload clearance. Erased payloads cannot be recreated by rolling
+back a migration or application.

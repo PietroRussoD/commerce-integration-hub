@@ -1,10 +1,12 @@
-import { sql, type Kysely } from "kysely";
+import { sql, type Kysely, type Transaction } from "kysely";
 
 import type { InboundDeliveryPayloadRetentionRepository } from "../../application/deliveries/clear-expired-inbound-delivery-payloads.js";
 import type { GatewayDatabase } from "./database.js";
 
+type RetentionDatabase = Kysely<GatewayDatabase> | Transaction<GatewayDatabase>;
+
 export class KyselyInboundDeliveryPayloadRetentionRepository implements InboundDeliveryPayloadRetentionRepository {
-    constructor(private readonly database: Kysely<GatewayDatabase>) {}
+    constructor(private readonly database: RetentionDatabase) {}
 
     async clearExpiredTerminalPayloads(limit: number): Promise<number> {
         // One statement is one atomic transaction, including row selection and
