@@ -64,6 +64,7 @@ Run it locally at any time:
 
 ## Published releases
 
+- [v1.4.0](v1.4.0.md): operational security and Gateway payload retention.
 - [v1.3.0](v1.3.0.md): clearer and safer operator workflows.
 - [v0.1.0](v0.1.0.md): reliable canonical order ingestion.
 - [v0.2.0](v0.2.0.md): reliable Kafka outbox publication.
