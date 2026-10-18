@@ -46,6 +46,11 @@ Workers can claim disjoint batches without blocking each other, while short
 transactions keep network latency outside PostgreSQL locks. An expired claim is
 recoverable without allowing its stale result to mutate the new claim.
 
-Completion, retry, recovery, and attempt recording are required before the
-forwarding lifecycle is complete. Operational monitoring must expose expired
-leases and claim backlog without using delivery IDs as metric labels.
+At the time this decision was accepted, completion, retry, recovery, and attempt
+recording were still required to complete the forwarding lifecycle. The current
+batch worker composes those transitions with fenced persistence and the opt-in
+runtime scheduler; see the
+[Gateway delivery lifecycle](../gateway-delivery-lifecycle.md).
+
+Operational monitoring must expose expired leases and claim backlog without
+using delivery IDs as metric labels.

@@ -81,7 +81,7 @@ Run a release-tag scan with GitHub CLI after the workflow change is available on
 the default branch:
 
 ```bash
-gh workflow run security.yml -f image=all -f release_tag=v1.3.0
+gh workflow run security.yml -f image=all -f release_tag=v1.4.0
 ```
 
 To repeat a scan from an exact digest, select one image and provide the digest

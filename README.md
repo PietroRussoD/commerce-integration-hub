@@ -90,9 +90,9 @@ local cluster, service mesh, database failover and failure scenarios.
 
 The [capability table](docs/product-overview.md#capability-status) distinguishes
 implemented behavior from planned work. The current repository version is
-`1.4.0`; the [v1.4.0 release candidate notes](docs/releases/v1.4.0.md) describe
-the optional protected operator profile, Gateway payload retention and release
-verification status. Earlier published milestones are listed in the
+`1.4.0`; the [published v1.4.0 release notes](docs/releases/v1.4.0.md) describe
+the optional protected operator profile, Gateway payload retention, and
+promoted-image scan evidence. Earlier published milestones are listed in the
 [release index](docs/releases/README.md#published-releases).
 
 ## Limits

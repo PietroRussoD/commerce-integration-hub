@@ -34,8 +34,9 @@ decision and its alternatives are recorded in
 2. **Build the milestone.** Implement one acceptance-tested increment at a time,
    keeping `main` buildable and accurately documented.
 3. **Prepare the release.** Commit `🔖 Prepare vX.Y.Z release`, which drops the
-   `-SNAPSHOT` suffix from all three manifests and the chart, adds `docs/releases/vX.Y.Z.md`,
-   and updates the README and any documentation that claims new behavior.
+   `-SNAPSHOT` suffix from all three manifests and the chart, adds
+   `docs/releases/vX.Y.Z.md`, and updates the published-release index, README,
+   and any documentation that claims new behavior.
 4. **Verify.** Run the required checks in `AGENTS.md` and record the results,
    including the green GitHub Actions run, in the release note.
 5. **Tag.** Create the annotated `vX.Y.Z` tag on the verified commit and push it.
@@ -66,15 +67,15 @@ Run it locally at any time:
 
 - [v1.4.0](v1.4.0.md): operational security and Gateway payload retention.
 - [v1.3.0](v1.3.0.md): clearer and safer operator workflows.
-- [v0.1.0](v0.1.0.md): reliable canonical order ingestion.
-- [v0.2.0](v0.2.0.md): reliable Kafka outbox publication.
-- [v0.3.0](v0.3.0.md): idempotent Kafka order processing.
-- [v0.4.0](v0.4.0.md): operator console and controlled simulation.
-- [v0.5.0](v0.5.0.md): durable provider gateway and forwarding.
-- [v0.6.0](v0.6.0.md): ERP polling and local observability.
-- [v0.7.0](v0.7.0.md): integration flow explorer.
-- [v0.8.0](v0.8.0.md): rebuildable OpenSearch order projection and search.
-- [v0.9.0](v0.9.0.md): durable search projection progress and observability.
-- [v1.0.0](v1.0.0.md): governed operator workflows and versioned contracts.
-- [v1.1.0](v1.1.0.md): distributed tracing across durable workflows.
 - [v1.2.0](v1.2.0.md): a local Kubernetes environment with failure tests.
+- [v1.1.0](v1.1.0.md): distributed tracing across durable workflows.
+- [v1.0.0](v1.0.0.md): governed operator workflows and versioned contracts.
+- [v0.9.0](v0.9.0.md): durable search projection progress and observability.
+- [v0.8.0](v0.8.0.md): rebuildable OpenSearch order projection and search.
+- [v0.7.0](v0.7.0.md): integration flow explorer.
+- [v0.6.0](v0.6.0.md): ERP polling and local observability.
+- [v0.5.0](v0.5.0.md): durable provider gateway and forwarding.
+- [v0.4.0](v0.4.0.md): operator console and controlled simulation.
+- [v0.3.0](v0.3.0.md): idempotent Kafka order processing.
+- [v0.2.0](v0.2.0.md): reliable Kafka outbox publication.
+- [v0.1.0](v0.1.0.md): reliable canonical order ingestion.

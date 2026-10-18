@@ -55,8 +55,14 @@ transitions.
 
 The worker can make bounded lifecycle decisions from a stable application
 contract, and HTTP implementation details remain replaceable. Unknown outcomes
-fail conservatively as retryable and therefore require a later retry limit and
-terminal transition to prevent infinite delivery.
+fail conservatively as retryable, so the delivery policy must impose a retry
+limit and terminal state to prevent infinite delivery. The current worker uses
+the bound defined by
+[ADR 0014](0014-bound-gateway-delivery-retries.md).
 
-The adapter is independently tested but does not forward runtime traffic until
-worker orchestration and fenced persistence transitions are connected.
+At the time this decision was accepted, the adapter was independently tested
+but worker orchestration and fenced persistence transitions were not yet
+connected. The current batch worker composes the adapter with those transitions
+and the opt-in scheduler; see
+[ADR 0014](0014-bound-gateway-delivery-retries.md) and the
+[Gateway delivery lifecycle](../gateway-delivery-lifecycle.md).
