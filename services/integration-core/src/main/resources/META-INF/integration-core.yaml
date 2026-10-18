@@ -830,5 +830,5 @@ paths:
       - Order Resource
 info:
   title: Commerce Integration Hub API
-  version: 1.3.0
+  version: 1.4.0
   description: Reliable commerce order ingestion and integration API.

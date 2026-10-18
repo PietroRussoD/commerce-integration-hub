@@ -90,9 +90,10 @@ local cluster, service mesh, database failover and failure scenarios.
 
 The [capability table](docs/product-overview.md#capability-status) distinguishes
 implemented behavior from planned work. The current repository version is
-`1.3.0`; its [release notes](docs/releases/v1.3.0.md) record the operator
-workflow improvements and verification for this milestone. Earlier published
-milestones are listed in the [release index](docs/releases/README.md#published-releases).
+`1.4.0`; the [v1.4.0 release candidate notes](docs/releases/v1.4.0.md) describe
+the optional protected operator profile, Gateway payload retention and release
+verification status. Earlier published milestones are listed in the
+[release index](docs/releases/README.md#published-releases).
 
 ## Limits
 
@@ -101,9 +102,11 @@ disabled by default; login and identity-provider deployment are not included.
 Gateway forwarding needs a provisioned Core credential, and polling is opt-in.
 
 PostgreSQL is authoritative; OpenSearch is a rebuildable search index. External
-event subscribers, outbox/dead-letter replay and automated Gateway payload
-cleanup are not implemented. The local cluster runs on one machine, and the
-project makes no production availability, throughput or latency claim.
+event subscribers and outbox/dead-letter replay are not implemented. Gateway
+payload cleanup is opt-in, clears expired payloads only after terminal delivery,
+and retains payloads for active deliveries beyond expiry. The local cluster runs
+on one machine, and the project makes no production availability, throughput or
+latency claim.
 Read [current limitations](docs/limitations.md) before assuming wider support.
 
 ## Technologies
