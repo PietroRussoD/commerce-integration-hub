@@ -210,6 +210,29 @@ keeps its repositories and caches in `~/.cache/commerce-integration-hub/helm`
 - **Security settings.** Containers run as non-root with a read-only root
   filesystem, no added capabilities, and the runtime default seccomp profile.
 
+## Gateway payload retention
+
+The chart leaves terminal payload cleanup disabled. To enable it, merge the
+following settings into the values used for the existing Helm deployment:
+
+```yaml
+connectorGateway:
+  payloadRetention:
+    enabled: true
+    batchSize: 50
+    intervalMilliseconds: 60000
+```
+
+Each replica runs one bounded batch per cycle and skips delivery rows locked
+by another worker. Existing expired terminal backlog is eligible immediately;
+raw and canonical payloads for active work remain available beyond expiry.
+The interval is a delay after batch completion and does not guarantee deletion
+within 30 days. Shutdown stops future cycles and waits for the active atomic
+SQL batch before closing the database pool; the deployment termination grace
+period still bounds that wait. Migrations themselves clear no payloads.
+Disabling retention stops future cycles after rollout and does not restore
+content already cleared. See [ADR 0024](../docs/decisions/0024-terminal-gateway-payload-retention.md).
+
 ## Operator API profiles
 
 The chart defaults to the local demo profile: Core and Gateway operator API

@@ -155,15 +155,43 @@ preserves ledger/history and receipt deduplication, and is safe to repeat.
 PostgreSQL tests cover both cleanup/replay lock orders, expired replay waiting
 for a row lock, accepted replay crossing expiry, claim during cleanup, and two
 cleanup batches skipping locked work. The replay decision clock is sampled
-after the row lock. The batch is not wired into the running Gateway; no
-scheduler is implemented.
+after the row lock. The runtime includes an opt-in scheduler that runs one
+batch immediately after startup and schedules the next only after completion.
+Shutdown cancels future cycles and waits for the active atomic SQL batch before
+closing the pool. Failure is counted and retried next interval with a generic
+log message, without database error details or payloads.
 [ADR 0024](../../docs/decisions/0024-terminal-gateway-payload-retention.md)
 keeps raw and canonical payloads for active deliveries beyond expiry and permits
 clearing only after a terminal outcome. This is not a universal 30-day maximum.
 Migrations 010/011 clear no existing content. Migration 011 adds the partial
 expiry/ID index with a regular index build; schema rollback of 010 fails after
-clearance because the original payloads cannot be reconstructed. Runtime
-scheduling and shutdown acceptance remain subsequent work.
+clearance because the original payloads cannot be reconstructed.
+
+| Variable | Default | Range |
+| --- | ---: | --- |
+| `PAYLOAD_RETENTION_ENABLED` | `false` | `true` or `false` |
+| `PAYLOAD_RETENTION_BATCH_SIZE` | `50` | `1..100` |
+| `PAYLOAD_RETENTION_INTERVAL_MILLISECONDS` | `60000` | `100..86400000` |
+
+Each enabled replica can run cleanup; database row locks prevent duplicate
+clearing. The interval is the delay after a batch settles, not an erasure
+deadline. An existing terminal backlog is immediately eligible on enablement;
+active work can retain content indefinitely until it becomes terminal.
+Graceful stop waits for the database, within the deployment's termination grace
+period. Disable retention to stop future clearing; this does not restore data.
+
+Enable it explicitly in the local demo:
+
+```bash
+CONNECTOR_GATEWAY_PAYLOAD_RETENTION_ENABLED=true \
+  docker compose --profile gateway up --build -d connector-gateway
+```
+
+Compose also accepts `CONNECTOR_GATEWAY_PAYLOAD_RETENTION_BATCH_SIZE` and
+`CONNECTOR_GATEWAY_PAYLOAD_RETENTION_INTERVAL_MILLISECONDS`. Helm exposes the
+same three settings under `connectorGateway.payloadRetention`, disabled by
+default. The existing inspection API returns `payloadRetained=false` after
+clearing; the Console already handles that state without additional fields.
 
 The local demo keeps authorization disabled because the repository does not
 include an identity provider or token issuer. Enable the Gateway resource-server
@@ -208,6 +236,10 @@ a signed webhook to the Integration Core HTTP boundary and persisted completion.
 It also runs the complete ERP_B polling process against a local synthetic HTTP
 provider and verifies operator list, detail, and replay against PostgreSQL using
 short-lived RS256 tokens and a test-only HTTP JWKS server.
+The retention process test verifies disabled cleanup, terminal backlog clearing,
+expired active forwarding, disabled-connector protection, replay idempotency
+after clearing, restart, metrics, and shutdown with an active SQL batch held at
+a controlled database barrier.
 
 ## Database migration
 

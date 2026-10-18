@@ -81,6 +81,9 @@ spec:
             - name: DATABASE_URL
               valueFrom: { secretKeyRef: { name: {{ $gateway.database.secretName }}, key: uri } }
             - { name: DELIVERY_WORKER_ENABLED, value: {{ $worker.enabled | quote }} }
+            - { name: PAYLOAD_RETENTION_ENABLED, value: {{ $gateway.payloadRetention.enabled | quote }} }
+            - { name: PAYLOAD_RETENTION_BATCH_SIZE, value: {{ $gateway.payloadRetention.batchSize | quote }} }
+            - { name: PAYLOAD_RETENTION_INTERVAL_MILLISECONDS, value: {{ $gateway.payloadRetention.intervalMilliseconds | quote }} }
             - { name: DELIVERY_WORKER_ID, value: "$(POD_NAME)" }
             {{- if $worker.enabled }}
             - name: INTEGRATION_CORE_SOURCE_API_KEY
