@@ -4,27 +4,60 @@ on:
   schedule:
     - cron: "17 5 * * 1"
   workflow_dispatch:
+    inputs:
+      image:
+        description: Image to scan (manual runs only)
+        type: choice
+        options:
+          - all
+          - integration-core
+          - connector-gateway
+        default: all
+        required: true
+      release_tag:
+        description: Release tag to scan (for example v1.3.0); scheduled runs scan latest
+        type: string
+        default: v1.3.0
+        required: true
+      image_digest:
+        description: Optional sha256 digest for the selected single image
+        type: string
+        required: false
 
 permissions:
   contents: read
   packages: read
 
-concurrency:
-  group: container-security
-  cancel-in-progress: true
-
 jobs:
   scan-published-images:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        image:
-          - integration-core
-          - connector-gateway
+        image: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.image != 'all' && format('["{0}"]', inputs.image) || '["integration-core","connector-gateway"]') }}
+    env:
+      IMAGE_REPOSITORY: ghcr.io/pietrorussod/commerce-integration-hub/${{ matrix.image }}
+      IMAGE_SELECTION: ${{ github.event_name == 'workflow_dispatch' && inputs.image || 'all' }}
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || 'latest' }}
+      REQUESTED_DIGEST: ${{ github.event_name == 'workflow_dispatch' && inputs.image_digest || '' }}
+      EVIDENCE_DIRECTORY: security-evidence/${{ matrix.image }}
 
     steps:
+      - name: Initialize scan evidence
+        shell: bash
+        run: |
+          mkdir -p "$EVIDENCE_DIRECTORY"
+          jq -n \
+            --arg repository "$IMAGE_REPOSITORY" \
+            --arg requested_tag "$RELEASE_TAG" \
+            --arg requested_digest "$REQUESTED_DIGEST" \
+            --arg platform "linux/amd64" \
+            --arg run_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg policy "Trivy v0.74.0; os,library; HIGH,CRITICAL; unfixed included" \
+            '{repository:$repository, requested_tag:$requested_tag, requested_digest:(if $requested_digest == "" then null else $requested_digest end), platform:$platform, run_url:$run_url, policy:$policy, status:"INITIALIZED"}' \
+            > "$EVIDENCE_DIRECTORY/metadata.json"
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
         with:
@@ -32,15 +65,135 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Scan published container image
+      - name: Resolve and pull immutable image
+        id: image
+        shell: bash
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "release_tag must be a vX.Y.Z release tag"
+            exit 2
+          fi
+          if [[ -n "$REQUESTED_DIGEST" ]]; then
+            if [[ "$IMAGE_SELECTION" == "all" ]]; then
+              echo "image_digest requires selecting one image"
+              exit 2
+            fi
+            if [[ ! "$REQUESTED_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+              echo "image_digest must be sha256 followed by 64 lowercase hexadecimal characters"
+              exit 2
+            fi
+            requested_reference="$IMAGE_REPOSITORY@$REQUESTED_DIGEST"
+          else
+            requested_reference="$IMAGE_REPOSITORY:$RELEASE_TAG"
+          fi
+
+          docker pull --platform linux/amd64 "$requested_reference"
+          if [[ -n "$REQUESTED_DIGEST" ]]; then
+            resolved_digest="$REQUESTED_DIGEST"
+          else
+            resolved_reference="$(docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "$requested_reference" | awk -F@ -v repository="$IMAGE_REPOSITORY" '$1 == repository { print $2; exit }')"
+            if [[ ! "$resolved_reference" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+              echo "Could not resolve the pulled image to an immutable registry digest"
+              exit 2
+            fi
+            resolved_digest="$resolved_reference"
+          fi
+
+          platform="$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$requested_reference")"
+          if [[ "$platform" != "linux/amd64" ]]; then
+            echo "Expected linux/amd64 but pulled $platform"
+            exit 2
+          fi
+          scan_reference="$IMAGE_REPOSITORY@$resolved_digest"
+          printf 'reference=%s\ndigest=%s\nplatform=%s\n' "$scan_reference" "$resolved_digest" "$platform" >> "$GITHUB_OUTPUT"
+
+      - name: Scan immutable image digest
+        id: scan
+        continue-on-error: true
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/pietrorussod/commerce-integration-hub/${{ matrix.image }}:latest
+          image-ref: ${{ steps.image.outputs.reference }}
           scanners: vuln
           vuln-type: os,library
           severity: HIGH,CRITICAL
-          exit-code: "1"
+          exit-code: "0"
           ignore-unfixed: "false"
-          format: table
+          format: json
+          output: ${{ env.EVIDENCE_DIRECTORY }}/trivy-report.json
+          cache-dir: ${{ github.workspace }}/.cache/trivy
           hide-progress: true
+          timeout: 10m
           version: v0.74.0
+
+      - name: Record scanner and vulnerability database metadata
+        if: always()
+        shell: bash
+        env:
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+          IMAGE_PLATFORM: ${{ steps.image.outputs.platform }}
+          SCAN_OUTCOME: ${{ steps.scan.outcome }}
+          RESOLUTION_OUTCOME: ${{ steps.image.outcome }}
+        run: |
+          trivy_version="unavailable"
+          database_metadata='{}'
+          if command -v trivy >/dev/null 2>&1; then
+            trivy_version="$(trivy --version | sed -n '1p')"
+            database_file="$GITHUB_WORKSPACE/.cache/trivy/db/metadata.json"
+            if [[ -f "$database_file" ]]; then
+              database_metadata="$(jq -c . "$database_file")"
+            fi
+          fi
+          jq \
+            --arg digest "${IMAGE_DIGEST:-unresolved}" \
+            --arg platform "${IMAGE_PLATFORM:-unresolved}" \
+            --arg scan_time "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg trivy_version "$trivy_version" \
+            --arg scan_outcome "${SCAN_OUTCOME:-not-run}" \
+            --arg resolution_outcome "${RESOLUTION_OUTCOME:-not-run}" \
+            --argjson vulnerability_database "$database_metadata" \
+            '. + {resolved_digest:$digest, platform:$platform, scanned_at:$scan_time, trivy_version:$trivy_version, vulnerability_database:$vulnerability_database, image_resolution_step_outcome:$resolution_outcome, scanner_step_outcome:$scan_outcome, status:(if $scan_outcome == "success" then "SCANNED" else "SCANNER_ERROR" end)}' \
+            "$EVIDENCE_DIRECTORY/metadata.json" > "$EVIDENCE_DIRECTORY/metadata.tmp"
+          mv "$EVIDENCE_DIRECTORY/metadata.tmp" "$EVIDENCE_DIRECTORY/metadata.json"
+
+      - name: Evaluate scan report without hiding its findings
+        if: always()
+        shell: bash
+        env:
+          SCAN_OUTCOME: ${{ steps.scan.outcome }}
+        run: |
+          report="$EVIDENCE_DIRECTORY/trivy-report.json"
+          if [[ "$SCAN_OUTCOME" != "success" || ! -s "$report" ]]; then
+            jq '. + {high_or_critical_findings:null, status:"SCANNER_ERROR"}' \
+              "$EVIDENCE_DIRECTORY/metadata.json" > "$EVIDENCE_DIRECTORY/metadata.tmp"
+          else
+            findings="$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL")] | length' "$report")"
+            jq --argjson findings "$findings" '. + {high_or_critical_findings:$findings, status:(if $findings == 0 then "PASSED" else "VULNERABILITIES_FOUND" end)}' \
+              "$EVIDENCE_DIRECTORY/metadata.json" > "$EVIDENCE_DIRECTORY/metadata.tmp"
+          fi
+          mv "$EVIDENCE_DIRECTORY/metadata.tmp" "$EVIDENCE_DIRECTORY/metadata.json"
+
+      - name: Preserve scan report and metadata
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: container-security-${{ matrix.image }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.EVIDENCE_DIRECTORY }}
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Enforce vulnerability policy
+        if: always()
+        shell: bash
+        env:
+          SCAN_OUTCOME: ${{ steps.scan.outcome }}
+        run: |
+          report="$EVIDENCE_DIRECTORY/trivy-report.json"
+          if [[ "$SCAN_OUTCOME" != "success" || ! -s "$report" ]]; then
+            echo "Image scan did not produce a report; see scanner and resolution steps above."
+            exit 2
+          fi
+          findings="$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL")] | length' "$report")"
+          if (( findings > 0 )); then
+            echo "Found $findings HIGH or CRITICAL vulnerabilities in ${{ steps.image.outputs.reference }}"
+            exit 1
+          fi

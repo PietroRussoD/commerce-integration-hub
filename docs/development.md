@@ -69,9 +69,34 @@ docker run --rm \
 ```
 
 The published Integration Core and Connector Gateway images are scanned with
-Trivy every Monday and on demand instead of being rebuilt and scanned on every
-push. The local Integration Core command and release-image rules are documented
-in its [container section](../services/integration-core/README.md#container-image).
+Trivy every Monday (`latest`) and on demand. A manual run can scan both images
+at a selected release tag or one selected image by immutable `sha256` digest.
+Each report artifact records the resolved digest, `linux/amd64` platform, scan
+time, Trivy version, vulnerability database metadata and policy, and is retained
+for 90 days. The full JSON report is uploaded before HIGH/CRITICAL findings fail
+the job, so a failed scan remains reviewable. Scanner or image-resolution
+failures also fail the job and are recorded as errors; they are not clean scans.
+
+Run a release-tag scan with GitHub CLI after the workflow change is available on
+the default branch:
+
+```bash
+gh workflow run security.yml -f image=all -f release_tag=v1.3.0
+```
+
+To repeat a scan from an exact digest, select one image and provide the digest
+shown in a prior report:
+
+```bash
+gh workflow run security.yml \
+  -f image=integration-core \
+  -f image_digest=sha256:<64-lowercase-hex-digits>
+```
+
+The manual workflow accepts only the two published image names, SemVer release
+tags, and SHA-256 digests. It scans `linux/amd64` consistently. The local
+Integration Core command and release-image rules are documented in its
+[container section](../services/integration-core/README.md#container-image).
 Dependabot checks Maven dependencies, GitHub Actions, the service Dockerfile,
 and Docker Compose images weekly. Minor and patch updates are grouped, while
 major updates remain isolated for manual review. Java runtime major updates are
