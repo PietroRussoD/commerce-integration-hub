@@ -246,7 +246,7 @@ function OrdersTable({ page, isStatusFiltered, onClearStatus }: { page: Operator
                   <div className="min-w-0">
                     <Link
                       to={{ pathname: `/orders/${order.id}`, search: location.search }}
-                      className="block break-all font-semibold text-app-foreground underline-offset-4 hover:text-app-brand-primary hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
+                      className="block break-words font-semibold text-app-foreground underline-offset-4 hover:text-app-brand-primary hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-brand-focus"
                     >
                       {order.externalOrderId}
                     </Link>
