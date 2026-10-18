@@ -1,5 +1,7 @@
 {{- $gateway := .Values.connectorGateway }}
 {{- $worker := $gateway.deliveryWorker }}
+{{- $operatorSecurity := .Values.operatorSecurity }}
+{{- include "hub.operatorSecurity.validate" . }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -95,12 +97,12 @@ spec:
               valueFrom: { secretKeyRef: { name: hub-synthetic, key: webhookKeyId } }
             - name: MARKETPLACE_A_WEBHOOK_CURRENT_SECRET_BASE64
               valueFrom: { secretKeyRef: { name: hub-synthetic, key: webhookSecretBase64 } }
-            - { name: OPERATOR_AUTHORIZATION_ENABLED, value: "false" }
-            - { name: OPERATOR_OIDC_ENABLED, value: "false" }
-            - { name: OPERATOR_OIDC_AUDIENCE, value: integration-hub-operator-api }
-            - { name: OPERATOR_OIDC_CLOCK_SKEW_SECONDS, value: "30" }
-            - { name: OPERATOR_OIDC_ISSUER, value: "http://identity.example.invalid" }
-            - { name: OPERATOR_OIDC_JWKS_URL, value: "http://identity.example.invalid/jwks" }
+            - { name: OPERATOR_AUTHORIZATION_ENABLED, value: {{ $operatorSecurity.enabled | quote }} }
+            - { name: OPERATOR_OIDC_ENABLED, value: {{ $operatorSecurity.enabled | quote }} }
+            - { name: OPERATOR_OIDC_AUDIENCE, value: {{ ternary $operatorSecurity.audience "integration-hub-operator-api" $operatorSecurity.enabled | quote }} }
+            - { name: OPERATOR_OIDC_CLOCK_SKEW_SECONDS, value: {{ $operatorSecurity.clockSkewSeconds | quote }} }
+            - { name: OPERATOR_OIDC_ISSUER, value: {{ ternary $operatorSecurity.issuer "http://identity.example.invalid" $operatorSecurity.enabled | quote }} }
+            - { name: OPERATOR_OIDC_JWKS_URL, value: {{ ternary $operatorSecurity.gatewayJwksUrl "http://identity.example.invalid/jwks" $operatorSecurity.enabled | quote }} }
             - { name: OTEL_SDK_DISABLED, value: {{ not .Values.tracing.enabled | quote }} }
             - { name: OTEL_EXPORTER_OTLP_ENDPOINT, value: {{ .Values.tracing.endpoint | quote }} }
             - { name: OTEL_SERVICE_NAME, value: connector-gateway }

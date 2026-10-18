@@ -1,4 +1,6 @@
 {{- $core := .Values.integrationCore }}
+{{- $operatorSecurity := .Values.operatorSecurity }}
+{{- include "hub.operatorSecurity.validate" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -53,12 +55,12 @@ spec:
             - { name: ORDER_SEARCH_RECONCILIATION_ENABLED, value: "false" }
             - name: INTEGRATION_HUB_SECURITY_SOURCE_CREDENTIAL_PEPPERS
               valueFrom: { secretKeyRef: { name: hub-synthetic, key: sourceCredentialPeppers } }
-            - { name: OPERATOR_AUTHORIZATION_ENABLED, value: "false" }
-            - { name: OPERATOR_OIDC_ENABLED, value: "false" }
-            - { name: OPERATOR_OIDC_AUDIENCE, value: integration-hub-operator-api }
-            - { name: OPERATOR_OIDC_AUTH_SERVER_URL, value: "https://identity.example.invalid/realms/integration-hub" }
-            - { name: OPERATOR_OIDC_ISSUER, value: "https://identity.example.invalid/realms/integration-hub" }
-            - { name: OPERATOR_OIDC_CLOCK_SKEW_SECONDS, value: "30" }
+            - { name: OPERATOR_AUTHORIZATION_ENABLED, value: {{ $operatorSecurity.enabled | quote }} }
+            - { name: OPERATOR_OIDC_ENABLED, value: {{ $operatorSecurity.enabled | quote }} }
+            - { name: OPERATOR_OIDC_AUDIENCE, value: {{ ternary $operatorSecurity.audience "integration-hub-operator-api" $operatorSecurity.enabled | quote }} }
+            - { name: OPERATOR_OIDC_AUTH_SERVER_URL, value: {{ ternary $operatorSecurity.coreAuthServerUrl "https://identity.example.invalid/realms/integration-hub" $operatorSecurity.enabled | quote }} }
+            - { name: OPERATOR_OIDC_ISSUER, value: {{ ternary $operatorSecurity.issuer "https://identity.example.invalid/realms/integration-hub" $operatorSecurity.enabled | quote }} }
+            - { name: OPERATOR_OIDC_CLOCK_SKEW_SECONDS, value: {{ $operatorSecurity.clockSkewSeconds | quote }} }
             - { name: OTEL_SDK_DISABLED, value: {{ not .Values.tracing.enabled | quote }} }
             - { name: OTEL_EXPORTER_OTLP_ENDPOINT, value: {{ .Values.tracing.endpoint | quote }} }
           startupProbe:

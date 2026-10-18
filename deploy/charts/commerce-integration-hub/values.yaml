@@ -19,6 +19,16 @@ tracing:
   enabled: false
   endpoint: http://otel-collector.observability:4317
 
+# The local demo has no identity provider. Enable only with settings for an
+# external issuer; the chart does not create an identity provider or tokens.
+operatorSecurity:
+  enabled: false
+  issuer: ""
+  audience: ""
+  coreAuthServerUrl: ""
+  gatewayJwksUrl: ""
+  clockSkewSeconds: 30
+
 integrationCore:
   replicas: 2
   database:

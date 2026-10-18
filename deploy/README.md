@@ -208,3 +208,37 @@ keeps its repositories and caches in `~/.cache/commerce-integration-hub/helm`
   `gateway-source-key`.
 - **Security settings.** Containers run as non-root with a read-only root
   filesystem, no added capabilities, and the runtime default seccomp profile.
+
+## Operator API profiles
+
+The chart defaults to the local demo profile: Core and Gateway operator API
+authorization is disabled, matching the Compose demo. The repository does not
+include an identity provider or token issuer, so treat this profile as a local
+demonstration configuration.
+
+To use an external OIDC issuer, set one `operatorSecurity` block in a Helm
+values file and enable both services together:
+
+```yaml
+operatorSecurity:
+  enabled: true
+  issuer: https://idp.example.com/realms/integration-hub
+  audience: integration-hub-operator-api
+  coreAuthServerUrl: https://idp.example.com/realms/integration-hub
+  gatewayJwksUrl: https://idp.example.com/realms/integration-hub/protocol/openid-connect/certs
+  clockSkewSeconds: 30
+```
+
+Replace the example URLs with the issuer's exact issuer, discovery/auth-server,
+and JWKS endpoints. Helm rejects an enabled profile with missing settings,
+invalid URLs, an out-of-range clock skew, or a `.invalid` placeholder. Both
+services must be able to reach their configured issuer endpoints. Use HTTPS for
+an external issuer; HTTP is useful only for an isolated local fixture.
+
+The chart passes the same issuer and audience to Core and Gateway. Their role
+policies read the `groups` claim and require `operator` for reads and
+`platform-admin` for Gateway replay. Obtain tokens from the external identity
+provider and enter them in the Console's in-memory token control. The chart
+creates no issuer, client secret, signing key, users, roles, or login flow. It
+does not change the separate controls on health, readiness, metrics, provider
+routes, or source API keys.
