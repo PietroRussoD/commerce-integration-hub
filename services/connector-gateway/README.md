@@ -152,14 +152,18 @@ Payload retention has an expiry timestamp, a schema for atomic terminal
 clearing with `payload_cleared_at`, and a PostgreSQL-tested application batch
 bounded to 1–100 deliveries. It uses one database cutoff and `SKIP LOCKED`,
 preserves ledger/history and receipt deduplication, and is safe to repeat.
-The batch is not wired into the running Gateway; no scheduler is implemented.
+PostgreSQL tests cover both cleanup/replay lock orders, expired replay waiting
+for a row lock, accepted replay crossing expiry, claim during cleanup, and two
+cleanup batches skipping locked work. The replay decision clock is sampled
+after the row lock. The batch is not wired into the running Gateway; no
+scheduler is implemented.
 [ADR 0024](../../docs/decisions/0024-terminal-gateway-payload-retention.md)
 keeps raw and canonical payloads for active deliveries beyond expiry and permits
 clearing only after a terminal outcome. This is not a universal 30-day maximum.
 Migrations 010/011 clear no existing content. Migration 011 adds the partial
 expiry/ID index with a regular index build; schema rollback of 010 fails after
-clearance because the original payloads cannot be reconstructed. Concurrent
-cleanup/claim/replay and runtime shutdown acceptance remain subsequent work.
+clearance because the original payloads cannot be reconstructed. Runtime
+scheduling and shutdown acceptance remain subsequent work.
 
 The local demo keeps authorization disabled because the repository does not
 include an identity provider or token issuer. Enable the Gateway resource-server

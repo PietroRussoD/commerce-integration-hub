@@ -4,6 +4,8 @@ import type {
     ReplayInboundDeliveryRepository,
     ReplayInboundDeliveryResult
 } from "../../application/deliveries/replay-inbound-delivery.js";
+import { sql } from "kysely";
+
 import {
     completeOperatorCommandAuditEntry,
     reserveOperatorCommandAuditEntry
@@ -54,7 +56,11 @@ export class KyselyInboundDeliveryReplayRepository implements ReplayInboundDeliv
                 .where("delivery.id", "=", command.deliveryId)
                 .forUpdate("delivery")
                 .executeTakeFirst();
-            const rejectionCode = readRejectionCode(delivery, command.replayedAt);
+            // Sample after the row lock: a request may have waited across expiry.
+            const databaseTime = await sql<{ now: Date }>`
+                SELECT clock_timestamp() AS now
+            `.execute(transaction);
+            const rejectionCode = readRejectionCode(delivery, databaseTime.rows[0]!.now);
             if (rejectionCode !== null) {
                 await recordRejectedCommand(transaction, command, rejectionCode);
                 return {

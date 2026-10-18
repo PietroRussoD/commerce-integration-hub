@@ -105,8 +105,9 @@ mistaken for available behavior.
   [ADR 0024](decisions/0024-terminal-gateway-payload-retention.md) and migration
   010 define terminal-only clearing with a clearance marker; active deliveries
   retain raw and canonical payloads even after expiry. This is not a universal
-  30-day maximum. Migrations 010/011 delete no content; scheduling and
-  cleanup/claim/replay concurrency acceptance remain unimplemented.
+  30-day maximum. Migrations 010/011 delete no content; runtime scheduling and
+  shutdown integration remain unimplemented. PostgreSQL concurrency acceptance
+  covers cleanup/claim/replay ordering and concurrent cleanup batches.
 
 ## Deployment and Scale
 
