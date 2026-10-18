@@ -651,6 +651,7 @@ async function submitSearch(page: Page) {
 }
 
 async function expectReadableContrast(page: Page, selector: string) {
+  await expect(page.locator(selector).first()).toBeVisible();
   const ratio = await page.evaluate((targetSelector) => {
     const target = document.querySelector(targetSelector);
     if (target === null) throw new Error(`No element matched ${targetSelector}`);
