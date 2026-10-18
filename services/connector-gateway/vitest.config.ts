@@ -16,6 +16,7 @@ export default defineConfig({
                 "src/infrastructure/database/kysely-inbound-delivery-attempt-repository.ts",
                 "src/infrastructure/database/kysely-inbound-delivery-claim-repository.ts",
                 "src/infrastructure/database/kysely-inbound-delivery-inspection-repository.ts",
+                "src/infrastructure/database/kysely-inbound-delivery-payload-retention-repository.ts",
                 "src/infrastructure/database/kysely-inbound-delivery-replay-repository.ts",
                 "src/infrastructure/database/kysely-inbound-delivery-repository.ts",
                 "src/infrastructure/database/kysely-operator-command-audit-repository.ts",

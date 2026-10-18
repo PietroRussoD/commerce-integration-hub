@@ -99,13 +99,14 @@ mistaken for available behavior.
 - Raw provider payloads are not retained by the canonical API.
 - The Connector Gateway does retain synthetic provider and canonical payloads
   with a default 30-day expiry timestamp so accepted work can be forwarded and
-  investigated. Automated payload clearing is not implemented yet, so the
-  timestamp is not currently an enforced retention policy.
+  investigated. A bounded cleanup batch is implemented and tested in isolation,
+  but is not wired into the running Gateway, so the timestamp is not currently
+  an automatically enforced retention policy.
   [ADR 0024](decisions/0024-terminal-gateway-payload-retention.md) and migration
   010 define terminal-only clearing with a clearance marker; active deliveries
   retain raw and canonical payloads even after expiry. This is not a universal
-  30-day maximum. The migration deletes no content; batch cleanup, scheduling,
-  and cleanup/claim/replay concurrency acceptance remain unimplemented.
+  30-day maximum. Migrations 010/011 delete no content; scheduling and
+  cleanup/claim/replay concurrency acceptance remain unimplemented.
 
 ## Deployment and Scale
 
