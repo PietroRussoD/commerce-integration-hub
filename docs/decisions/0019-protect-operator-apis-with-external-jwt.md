@@ -48,6 +48,14 @@ a bearer challenge. A valid identity without the required role returns
 `403 Forbidden`. Responses and logs must not expose bearer tokens, signature
 material, unbounded claims, or detailed cryptographic failure reasons.
 
+Integration Core applies the `operator-oidc` logging filter to its console
+handler. Quarkus OIDC token-verification warnings can include the compact JWT
+in their formatting arguments; the filter replaces those diagnostics with a
+generic warning and clears their parameters and exception. Other diagnostics
+and the warning level are preserved. The configured output is the console;
+additional logging handlers must apply the same filter before exporting these
+records.
+
 The existing source API-key and webhook HMAC boundaries remain unchanged.
 Operator authorization is applied only to `/api/v1/operator/**` in the Core and
 Gateway. Health, readiness, metrics, OpenAPI, and provider routes retain their
