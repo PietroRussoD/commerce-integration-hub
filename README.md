@@ -90,9 +90,9 @@ local cluster, service mesh, database failover and failure scenarios.
 
 The [capability table](docs/product-overview.md#capability-status) distinguishes
 implemented behavior from planned work. The current repository version is
-`1.2.0`; its [release notes](docs/releases/v1.2.0.md) record the verification
-and defects found through failure testing. Earlier milestones are listed in
-the [release index](docs/releases/README.md#published-releases).
+`1.3.0`; its [release notes](docs/releases/v1.3.0.md) record the operator
+workflow improvements and verification for this milestone. Earlier published
+milestones are listed in the [release index](docs/releases/README.md#published-releases).
 
 ## Limits
 
