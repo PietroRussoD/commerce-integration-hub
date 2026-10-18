@@ -284,9 +284,11 @@ context leaking between requests.
 
 Development and test profiles use human-readable logs with the complete MDC.
 Production emits JSON, making the value searchable as `mdc.correlationId` in log
-platforms. W3C trace-context propagation belongs to a later observability
-increment; the repository correlation ID is already carried in event envelopes
-and Kafka headers.
+platforms. W3C trace context is propagated across HTTP, Kafka, and durable-work
+boundaries when tracing is enabled; see the
+[distributed tracing decision](../../docs/decisions/0020-distributed-tracing-with-opentelemetry.md).
+The repository correlation ID is separate and remains in event envelopes and
+Kafka headers.
 
 ## Build
 

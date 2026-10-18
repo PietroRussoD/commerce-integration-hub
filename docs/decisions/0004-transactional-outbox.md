@@ -38,10 +38,21 @@ one aggregate type.
 ## Consequences
 
 Database state and publication intent are atomic, while delivery to the broker
-is eventually consistent. The future publisher and consumers must tolerate
+is eventually consistent. The publisher and consumers must tolerate
 at-least-once delivery, and consumers must be idempotent.
 
-Event payloads require explicit versions and compatibility discipline. Publisher
-leasing, retries, telemetry, retention, and cleanup remain required future
-increments; this decision does not claim that outbox publication is already
-implemented.
+Event payloads require explicit versions and compatibility discipline. At the
+time this decision was accepted, publisher leasing, retries, broker integration,
+and consumption were future increments; this record defines the atomic
+persistence boundary only.
+
+## Follow-up
+
+Later decisions define the implemented claim and retry lifecycle
+([ADR 0005](0005-short-lived-outbox-claims.md),
+[ADR 0006](0006-bounded-outbox-retries.md)), event envelope
+([ADR 0007](0007-structured-event-envelope.md)), and consumer processing and
+dead-letter behavior
+([ADR 0008](0008-transactional-inbox-order-processing.md),
+[ADR 0009](0009-bounded-consumer-retries-and-dead-letter-routing.md)). The
+current runtime is described in the [outbox lifecycle](../outbox-lifecycle.md).

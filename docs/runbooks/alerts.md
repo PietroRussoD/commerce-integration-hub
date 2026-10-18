@@ -65,8 +65,8 @@ orders arrive faster than the outbox publishes them.
 **Check:** the dispatch rate (`outcome="published"`) against the arrival rate of
 orders.
 
-**Do:** if it is sustained, the publishing throughput is the limit to raise
-(batch size, interval, replicas). See ADR 0022 for the measured rate.
+**Do:** if it is sustained, raise the batch size, shorten the dispatch interval,
+or add replicas. See ADR 0022 for the measured rate.
 
 ## OutboxEventsFailed
 
@@ -77,9 +77,9 @@ stuck.
 **Check:** the failed rows and their error code:
 `select id, event_type, last_error_code, failed_at from outbox_events where status = 'FAILED'`.
 
-**Do:** fix the cause the error code names, then republish the events. There is
-no replay command for outbox events yet; the alert stays active until they are
-dealt with.
+**Do:** fix the cause named by the error code. Restoring the broker does not
+republish terminal `FAILED` events, and there is no supported outbox replay
+command yet; the rows remain available for diagnosis.
 
 ## OutboxBacklogUnknown
 

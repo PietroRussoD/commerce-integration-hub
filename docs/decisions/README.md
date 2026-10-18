@@ -53,7 +53,7 @@ implementation chronology.
   API ingress, and retries kept in the applications.
 - [ADR 0024](0024-terminal-gateway-payload-retention.md): clear expired terminal
   Gateway payloads while retaining active work, deduplication and audit; schema
-  representation implemented, automated enforcement pending.
+  invariants and opt-in terminal-only cleanup implemented.
 
 Accepted records are not edited to hide a later change of direction. Later
 extensions or replacements are recorded in a new ADR and linked to the earlier
