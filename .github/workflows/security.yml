@@ -15,9 +15,9 @@ on:
         default: all
         required: true
       release_tag:
-        description: Release tag to scan (for example v1.3.0); scheduled runs scan latest
+        description: Release tag to scan (for example v1.4.0); scheduled runs scan latest
         type: string
-        default: v1.3.0
+        default: v1.4.0
         required: true
       image_digest:
         description: Optional sha256 digest for the selected single image
