@@ -1,12 +1,13 @@
-# ADR 0017: Version Every Module With One Repository Version
+# ADR 0017: Version Deployable Modules With One Repository Version
 
 - Status: Accepted
 - Date: 2026-09-05
 
 ## Context
 
-The repository contains three deployable modules and one development tool, each
-declaring a version in its own manifest: `services/integration-core/pom.xml`,
+The repository contains three deployable modules and one development tool.
+The deployable modules declare a version in their manifests:
+`services/integration-core/pom.xml`,
 `services/connector-gateway/package.json`, and
 `apps/operator-console/package.json`.
 
@@ -23,18 +24,21 @@ step. A reader opening `pom.xml` saw a version four releases behind the tag.
 
 ## Decision
 
-Every module carries the same version as the repository release it belongs to:
+Every deployable module carries the same version as the repository release it
+belongs to:
 `X.Y.Z-SNAPSHOT` while the milestone is in development, `X.Y.Z` on the commit
 that is tagged.
 
-`scripts/check-module-versions.sh` verifies that the manifests agree. CI runs it
-on every push and pull request, and the release workflow runs it with the tag
-name so that a tag whose manifests do not match it cannot promote images. The
-steps that apply the versions are documented in the
+`scripts/check-module-versions.sh` verifies that the deployable module
+manifests and Helm chart agree. The provider simulator is a development tool,
+not a deployable module, and its package version is outside this policy. CI runs
+the check on every push and pull request, and the release workflow runs it with
+the tag name so that a tag whose manifests do not match it cannot promote
+images. The steps that apply the versions are documented in the
 [release process](../releases/README.md).
 
-A module version therefore states which repository release the module belongs
-to, and nothing more. It is not a claim that the module changed.
+A deployable module version therefore states which repository release the
+module belongs to, and nothing more. It is not a claim that the module changed.
 
 ## Alternatives
 
@@ -53,9 +57,9 @@ to, and nothing more. It is not a claim that the module changed.
 
 ## Consequences
 
-A module advances to a new version even when the release did not change it.
-Every release must bump three manifests instead of one, and the check fails the
-build when it does not happen. Publishing any module to a registry as an
-independently consumable artifact would require revisiting this decision, since
-consumers would then need a version that tracks the module rather than the
-repository.
+A deployable module advances to a new version even when the release did not
+change it. Every release must bump three application manifests and both chart
+version fields, and the check fails the build when they disagree. Publishing
+any module to a registry as an independently consumable artifact would require
+revisiting this decision, since consumers would then need a version that tracks
+the module rather than the repository.

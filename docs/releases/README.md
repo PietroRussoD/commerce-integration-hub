@@ -7,9 +7,11 @@ records how a release is produced.
 ## One version for the whole repository
 
 The Integration Core, the Connector Gateway, the Operator Console, and the
-Helm chart are versioned together. A single annotated `vX.Y.Z` tag identifies the release, and
-`.github/workflows/release-image.yml` promotes every published image to that
-same tag. A module therefore advances even when the release did not change it.
+Helm chart are versioned together. The provider simulator is a development
+tool and is excluded from this version policy. A single annotated `vX.Y.Z` tag
+identifies the release, and `.github/workflows/release-image.yml` promotes every
+published image to that same tag. A deployable module therefore advances even
+when the release did not change it.
 
 Independent per-module versions were considered and rejected. Nothing consumes
 these modules as a dependency: they are deployed together from one `compose.yaml`

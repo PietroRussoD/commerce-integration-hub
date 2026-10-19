@@ -36,7 +36,7 @@ implementation chronology.
 - [ADR 0016](0016-version-order-state-and-evolve-ready-event.md): persisted
   aggregate versions and `OrderReady.v2` for stale-event protection.
 - [ADR 0017](0017-single-repository-version.md): one repository version for
-  every module, enforced by an automated check.
+  every deployable module, enforced by an automated check.
 - [ADR 0018](0018-safe-opensearch-reindex-cutover.md): dual-write OpenSearch
   rebuild, validation, and atomic read-alias cutover.
 - [ADR 0019](0019-protect-operator-apis-with-external-jwt.md): external OIDC
