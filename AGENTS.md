@@ -75,6 +75,7 @@ generated artifacts, and documentation that claims unimplemented behavior.
 
 ## Releases
 
-Every module carries the same repository version. The
-[release process](docs/releases/README.md) documents that policy and the steps
+Every deployable module carries the same repository version; the provider
+simulator is a development tool outside this policy. The
+[release process](docs/releases/README.md) documents the policy and the steps
 that produce a release.

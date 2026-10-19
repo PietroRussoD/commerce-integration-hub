@@ -38,7 +38,9 @@ decision and its alternatives are recorded in
 3. **Prepare the release.** Commit `🔖 Prepare vX.Y.Z release`, which drops the
    `-SNAPSHOT` suffix from all three manifests and the chart, adds
    `docs/releases/vX.Y.Z.md`, and updates the published-release index, README,
-   and any documentation that claims new behavior.
+   and any documentation that claims new behavior. Update the `release_tag`
+   default and example in `.github/workflows/security.yml` to `vX.Y.Z` so a
+   manual scan defaults to the release being prepared.
 4. **Verify.** Run the required checks in `AGENTS.md` and record the results,
    including the green GitHub Actions run, in the release note.
 5. **Tag.** Create the annotated `vX.Y.Z` tag on the verified commit and push it.
