@@ -153,9 +153,11 @@ A cycle stuck on the database or on a slow Core shows as active without ending.
 **Check:** `GET /api/v1/operator/deliveries?status=...` and each delivery's
 attempts: the HTTP status and error code say why.
 
-**Do:** fix the cause (mapping, credential, contract), then replay the
-deliveries with the operator replay command
-(see [Gateway delivery lifecycle](../gateway-delivery-lifecycle.md)).
+**Do:** fix the mapping or contract issue so future deliveries can succeed.
+Existing `PERMANENT_FAILURE` deliveries remain terminal; there is no supported
+replay command for that state. Operator replay is limited to eligible
+`EXHAUSTED` deliveries; see
+[Controlled operator replay](../gateway-delivery-lifecycle.md#controlled-operator-replay).
 
 ## GatewayDeliveryFailuresHigh
 
