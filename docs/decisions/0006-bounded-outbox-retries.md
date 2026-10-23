@@ -43,4 +43,6 @@ Retries are bounded, spread over time, and deterministic in tests through an
 injectable jitter source. Terminal failures remain available for diagnosis and
 future audited replay. Default retry values are configurable and connected
 through CDI and scheduled orchestration. Subsequent increments added bounded
-outbox metrics; alerting and audited outbox replay remain unimplemented.
+outbox metrics and tested alert rules for backlog, dispatch failures, and
+terminal failures; see the [alert runbook](../runbooks/alerts.md).
+Audited outbox replay remains unimplemented.
