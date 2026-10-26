@@ -246,7 +246,7 @@ services:
       start_period: 5s
 
   prometheus:
-    image: prom/prometheus:v3.15.0
+    image: prom/prometheus:v3.15.1
     profiles: ["observability"]
     command:
       - --config.file=/etc/prometheus/prometheus.yml
@@ -297,7 +297,7 @@ services:
       - "127.0.0.1:${JAEGER_UI_PORT:-16686}:16686"
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.162.0
+    image: otel/opentelemetry-collector-contrib:0.163.2
     profiles: ["observability"]
     command: ["--config=/etc/otelcol-contrib/config.yaml"]
     volumes:
