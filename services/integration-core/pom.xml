@@ -12,9 +12,9 @@
     <properties>
         <compiler-plugin.version>3.16.0</compiler-plugin.version>
         <cyclonedx-maven-plugin.version>2.9.3</cyclonedx-maven-plugin.version>
-        <failsafe-plugin.version>3.6.0</failsafe-plugin.version>
+        <failsafe-plugin.version>3.6.1</failsafe-plugin.version>
         <exec-maven-plugin.version>3.6.4</exec-maven-plugin.version>
-        <jacoco.version>0.8.15</jacoco.version>
+        <jacoco.version>0.8.16</jacoco.version>
         <jooq.version>3.21.9</jooq.version>
         <kotlin.version>2.4.21</kotlin.version>
         <maven.compiler.release>25</maven.compiler.release>
@@ -23,10 +23,10 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.33.3</quarkus.platform.version>
-        <quarkus-jooq.version>2.1.0</quarkus-jooq.version>
+        <quarkus.platform.version>3.40.1.1</quarkus.platform.version>
+        <quarkus-jooq.version>2.2.0</quarkus-jooq.version>
         <spotless-maven-plugin.version>3.10.4</spotless-maven-plugin.version>
-        <surefire-plugin.version>3.6.0</surefire-plugin.version>
+        <surefire-plugin.version>3.6.1</surefire-plugin.version>
         <testcontainers.version>2.0.5</testcontainers.version>
     </properties>
 
@@ -42,22 +42,22 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>2.22.3</version>
+                <version>2.22.4</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.22.3</version>
+                <version>2.22.4</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-handler</artifactId>
-                <version>4.1.137.Final</version>
+                <version>4.2.19.Final</version>
             </dependency>
             <dependency>
                 <groupId>at.yawk.lz4</groupId>
                 <artifactId>lz4-java</artifactId>
-                <version>1.12.0</version>
+                <version>1.12.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
