@@ -436,3 +436,11 @@ Tags matching `v*` promote the existing image without rebuilding it, but only
 when its OCI source revision is an ancestor of the tagged commit. The same tag
 therefore represents a coherent repository release even when an unchanged
 component was last built by an earlier commit included in that release.
+
+Until the distroless base includes Debian's zlib security update, the Dockerfile
+copies the pinned Debian 13 `zlib1g` package's library and package metadata from
+a separate build stage. This addresses CVE-2026-76844 and CVE-2026-85091 while
+preserving the non-root distroless runtime. Builds require the pinned package to
+remain available in the configured Debian repositories. When updating the base,
+check whether it includes the fix, remove the temporary stage if it does, and
+scan the resulting image. See [Debian security advisory DSA-6613-1](https://lists.debian.org/debian-security-announce/2026/msg00532.html).

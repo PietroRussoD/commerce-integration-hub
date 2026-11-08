@@ -15,7 +15,23 @@ COPY src ./src
 
 RUN pnpm build && pnpm prune --prod
 
-FROM gcr.io/distroless/nodejs24-debian13:nonroot@sha256:59c479c9b8c123e66047315c968aa2d35e31ae5149c856e4110a79c8b3563f0b AS runtime
+# Debian's security update is not yet included in the distroless base.
+# Copy the real package files and status together until the base catches up.
+FROM debian:13-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 AS zlib-security-update
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends 'zlib1g=1:1.3.dfsg+really1.3.1-1+deb13u1' \
+    && arch="$(dpkg-query -W -f='${Architecture}' zlib1g)" \
+    && mkdir -p /overlay/var/lib/dpkg/status.d \
+    && dpkg-query -s zlib1g > /overlay/var/lib/dpkg/status.d/zlib1g \
+    && dpkg -L zlib1g | grep -E '/libz\.so\.1(\.3\.1)?$' | while read -r path; do \
+      mkdir -p "/overlay$(dirname "$path")"; cp -a "$path" "/overlay$path"; \
+    done \
+    && test "$(find /overlay/usr/lib -type f -name 'libz.so.1.3.1' | wc -l)" -eq 1 \
+    && cp "/var/lib/dpkg/info/zlib1g:${arch}.md5sums" /overlay/var/lib/dpkg/status.d/zlib1g.md5sums
+
+FROM gcr.io/distroless/nodejs24-debian13:nonroot@sha256:b8cec4b2f2126ff7bd034ec9ac207ffb3272667dfdc48376e3b035d3270549ba AS runtime
+
+COPY --from=zlib-security-update /overlay/ /
 
 ENV NODE_ENV=production
 
