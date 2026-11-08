@@ -1,2 +1,6 @@
 allowBuilds:
   esbuild: true
+overrides:
+  vite@8.2.2: 8.3.3
+  fast-uri@3.1.8: 3.1.9
+  fast-uri@4.2.1: 4.2.3
