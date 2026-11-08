@@ -20,9 +20,9 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      connector_gateway: ${{ steps.filter.outputs.connector_gateway }}
-      integration_core: ${{ steps.filter.outputs.integration_core }}
-      operator_console: ${{ steps.filter.outputs.operator_console }}
+      connector_gateway: ${{ steps.force.outputs.connector_gateway || steps.filter.outputs.connector_gateway }}
+      integration_core: ${{ steps.force.outputs.integration_core || steps.filter.outputs.integration_core }}
+      operator_console: ${{ steps.force.outputs.operator_console || steps.filter.outputs.operator_console }}
 
     steps:
       - name: Check out repository
@@ -31,8 +31,17 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Mark all applications as affected after a forced push
+        id: force
+        if: github.event_name == 'push' && github.event.forced == true
+        run: |
+          echo "connector_gateway=true" >> "$GITHUB_OUTPUT"
+          echo "integration_core=true" >> "$GITHUB_OUTPUT"
+          echo "operator_console=true" >> "$GITHUB_OUTPUT"
+
       - name: Detect affected applications
         id: filter
+        if: github.event_name != 'push' || github.event.forced != true
         uses: dorny/paths-filter@v4.0.3
         with:
           filters: |
