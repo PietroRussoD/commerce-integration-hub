@@ -1,7 +1,7 @@
 {
   "name": "@commerce-integration-hub/operator-console",
   "private": true,
-  "version": "1.4.1-SNAPSHOT",
+  "version": "1.4.1",
   "packageManager": "pnpm@11.23.0",
   "type": "module",
   "engines": {

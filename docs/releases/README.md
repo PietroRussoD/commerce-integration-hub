@@ -1,8 +1,8 @@
 # Releases
 
-Each release note in this directory records one published milestone: what it
-adds, how it was verified, and what it deliberately leaves out. This page
-records how a release is produced.
+Each release note records what a milestone adds, how it was verified, and what
+it deliberately leaves out. A release being prepared is marked explicitly
+until it is published. This page records how a release is produced.
 
 ## One version for the whole repository
 
@@ -68,6 +68,9 @@ Run it locally at any time:
 ```
 
 ## Published releases
+
+A [v1.4.1 release candidate](v1.4.1.md) is being prepared; its tag and GitHub
+Release are not yet published.
 
 - [v1.4.0](v1.4.0.md): operational security and Gateway payload retention.
 - [v1.3.0](v1.3.0.md): clearer and safer operator workflows.

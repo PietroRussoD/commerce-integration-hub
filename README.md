@@ -90,10 +90,13 @@ local cluster, service mesh, database failover and failure scenarios.
 
 The [capability table](docs/product-overview.md#capability-status) distinguishes
 implemented behavior from planned work. The repository is preparing
-`1.4.1-SNAPSHOT`; the [published v1.4.0 release notes](docs/releases/v1.4.0.md) describe
+`1.4.1`; the [published v1.4.0 release notes](docs/releases/v1.4.0.md) describe
 the optional protected operator profile, Gateway payload retention, and
 promoted-image scan evidence. Earlier published milestones are listed in the
 [release index](docs/releases/README.md#published-releases).
+The v1.4.0 images had HIGH findings in a later rescan; see the
+[v1.4.1 preparation notes](docs/releases/v1.4.1.md) for current evidence and
+remaining release checks.
 
 ## Limits
 
