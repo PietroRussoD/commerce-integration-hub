@@ -1,7 +1,7 @@
 {
     "name": "@commerce-integration-hub/connector-gateway",
     "private": true,
-    "version": "1.4.0",
+    "version": "1.4.1-SNAPSHOT",
     "packageManager": "pnpm@11.23.0",
     "type": "module",
     "engines": {

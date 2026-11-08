@@ -6,7 +6,7 @@
 
     <groupId>dev.pietrorussod.integrationhub</groupId>
     <artifactId>integration-core</artifactId>
-    <version>1.4.0</version>
+    <version>1.4.1-SNAPSHOT</version>
     <packaging>quarkus</packaging>
 
     <properties>
