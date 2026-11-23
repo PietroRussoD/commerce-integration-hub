@@ -2,7 +2,7 @@ name: commerce-integration-hub
 
 services:
   postgres:
-    image: postgres:18.6
+    image: postgres:19.0
     environment:
       POSTGRES_DB: integration_hub
       POSTGRES_USER: integration_hub
@@ -37,7 +37,7 @@ services:
       start_period: 20s
 
   connector-gateway-postgres:
-    image: postgres:18.6
+    image: postgres:19.0
     profiles: ["gateway"]
     environment:
       POSTGRES_DB: connector_gateway
